@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0"
+         xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd"
+         xml:base="../" xml:id="localSearch" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <title>Local search</title>
+
+  <section>
+    <title>Overview</title>
+
+    <para>Local search starts from an initial solution and evolves that single solution into a mostly better and better
+    solution. It uses a single search path of solutions, not a search tree. At each solution in this path it evaluates a
+    number of moves on the solution and applies the most suitable move to take the step to the next solution. It does
+    that for a high number of iterations until it's terminated (usually because its time has run out).</para>
+
+    <para>Local search acts a lot like a human planner: it uses a single search path and moves facts around to find a
+    good feasible solution. Therefore it's pretty natural to implement.</para>
+
+    <para><emphasis role="bold">Local search often needs to start from an initialized solution</emphasis>, therefore
+    it's recommended to configure a construction heuristic solver phase before it.</para>
+  </section>
+
+  <section xml:id="hillClimbing">
+    <title>Hill climbing (simple local search)</title>
+
+    <section>
+      <title>Algorithm description</title>
+
+      <para>Hill climbing tries all selected moves and then takes the best move, which is the move which leads to the
+      solution with the highest score. That best move is called the step move. From that new solution, it again tries
+      all selected moves and takes the best move and continues like that iteratively. If multiple selected moves tie for
+      the best move, one of them is randomly chosen as the best move.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Local_search/hillClimbingNQueens04.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Notice that one a queen has moved, it can be moved again later. This is a good thing, because in an
+      NP-complete problem it's impossible to predict what will be the optimal final value for a planning
+      variable.</para>
+
+      <para>Hill climbing can easily get stuck in a local optima:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Local_search/hillClimbingGetsStuckInLocalOptimaNQueens04.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Improvements upon hill climbing (such as tabu search and simulated annealing) address the problem of being
+      stuck in local optima.</para>
+    </section>
+  </section>
+
+  <section xml:id="tabuSearch">
+    <title>Tabu search</title>
+
+    <section>
+      <title>Algorithm description</title>
+
+      <para>Tabu search works like hill climbing, but it maintains a tabu list to avoid getting stuck in local optima.
+      The tabu list holds recently used objects that are <emphasis>taboo</emphasis> to use for now. Moves that involve
+      an object in the tabu list, are not accepted. The tabu list objects can be anything related to the move, such as
+      the planning entity, planning value, move, solution, ... Here's an example with entity tabu for 4 queens, so the
+      queens are put in the tabu list:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Local_search/entityTabuSearch.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>See Tabu Search acceptor below.</para>
+    </section>
+  </section>
+
+  <section xml:id="simulatedAnnealing">
+    <title>Simulated annealing</title>
+
+    <section>
+      <title>Algorithm description</title>
+
+      <para>Simulated annealing evaluates only a few moves per step, so it steps quickly. In the classic implementation,
+      the first accepted move is the winning step. A move is accepted if it doesn't decrease the score or - in case it
+      does decrease the score - if passes a random check. The chance that a decreasing move passes the random check
+      decreases relative to the size of the score decrement and the time the phase has been running (which is
+      represented as the temperature).</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Local_search/simulatedAnnealing.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>See Simulated Annealing acceptor below.</para>
+    </section>
+  </section>
+
+  <section xml:id="lateAcceptance">
+    <title>Late acceptance</title>
+
+    <section>
+      <title>Algorithm description</title>
+
+      <para>Late acceptance also evaluates only a few moves per step. A move is accepted if it leads to score that is
+      at least the winning score of a fixed number of steps ago.
+      </para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Local_search/lateAcceptance.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>See Late Acceptance acceptor below.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>About neighborhoods, moves and steps</title>
+
+    <section>
+      <title>Move generation tips</title>
+
+      <para>At each solution, local search will try all possible moves and pick the best move to change to the next
+      solution. It's up to you to generate those moves. Let's take a look at all the possible moves on the starting
+      solution of 4 queens:</para>
+
+      <para>It's highly recommended that you verify all solutions are connected by your move set. This means that by
+      combining a finite number of moves you can reach any solution from any solution. Otherwise you're already
+      excluding solutions at the start. Especially if you're using only big moves, you should check it. Just because big
+      moves outperform small moves in a short test run, it doesn't mean that they will outperform them in a long test
+      run.</para>
+
+      <para>You can mix different move types. Usually you're better off preferring small (fine-grained) moves over big
+      (course-grained) moves because the score delta calculation will pay off more. However, as the traveling tournament
+      example proves, if you can remove a hard constraint by using a certain set of big moves, you can win performance
+      and scalability. A big moves version could evaluate a lot less unfeasible solutions, which enables it to
+      outperform and outscale a small moves version.</para>
+    </section>
+
+    <section>
+      <title>A step</title>
+
+      <para>A step is the winning move. The local search solver tries every move on the current solution and picks the
+      best accepted move as the step:</para>
+
+      <figure>
+        <title>Decide the next step at step 0 (4 queens example)</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Chapter-Local_search/decideNextStepNQueens04.png" format="PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Because the move <emphasis>B0 to B3</emphasis> has the highest score (<literal>-3</literal>), it is picked
+      as the next step. Notice that <emphasis>C0 to C3</emphasis> (not shown) could also have been picked because it
+      also has the score <literal>-3</literal>. If multiple moves have the same highest score, one is picked randomly,
+      in this case <emphasis>B0 to B3</emphasis>.</para>
+
+      <para>The step is made and from that new solution, the local search solver tries all the possible moves again, to
+      decide the next step after that. It continually does this in a loop, and we get something like this:</para>
+
+      <figure>
+        <title>All steps (4 queens example)</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Chapter-Local_search/allStepsNQueens04.png" format="PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Notice that the local search solver doesn't use a search tree, but a search path. The search path is
+      highlighted by the green arrows. At each step it tries all possible moves, but unless it's the step, it doesn't
+      investigate that solution further. This is one of the reasons why local search is very scalable.</para>
+
+      <para>As you can see, the local search solver solves the 4 queens problem by starting with the starting solution
+      and make the following steps sequentially:</para>
+
+      <orderedlist>
+        <listitem>
+          <para><emphasis>B0 to B3</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis>D0 to B2</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis>A0 to B1</emphasis></para>
+        </listitem>
+      </orderedlist>
+
+      <para>If we turn on <literal>debug</literal> logging for the category <literal>org.drools.planner</literal>, then
+      those steps are shown into the log:</para>
+
+      <programlisting>INFO  Solving started: time spend (0), score (-6), new best score (-6), random seed (0).
+DEBUG     Step index (0), time spend (20), score (-3), new best score (-3), accepted/selected move count (12/12) for picked step (col1@row0 =&gt; row3).
+DEBUG     Step index (1), time spend (31), score (-1), new best score (-1), accepted/selected move count (12/12) for picked step (col0@row0 =&gt; row1).
+DEBUG     Step index (2), time spend (40), score (0), new best score (0), accepted/selected move count (12/12) for picked step (col3@row0 =&gt; row2).
+INFO  Phase (0) localSearch ended: step total (3), time spend (41), best score (0).
+INFO  Solving ended: time spend (41), best score (0), average calculate count per second (1780).</programlisting>
+
+      <para>Notice that the logging uses the <literal>toString()</literal> method of our <literal>Move</literal>
+      implementation: <literal>col1@row0 =&gt; row3</literal>.</para>
+
+      <para>The local search solver solves the 4 queens problem in 3 steps, by evaluating only 37 possible solutions (3
+      steps with 12 moves each + 1 starting solution), which is only fraction of all 256 possible solutions. It solves
+      16 queens in 31 steps, by evaluating only 7441 out of 18446744073709551616 possible solutions. Note: with
+      construction heuristics it's even a lot more efficient.</para>
+    </section>
+
+    <section>
+      <title>Getting stuck in local optima</title>
+
+      <para>A <emphasis>hill climber</emphasis> always takes improving moves. This may seem like a good thing, but it's
+      not. It suffers from a number of problems:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>It can get stuck in a local optimum. For example if it reaches a solution X with a score -1 and there is
+          no improving move, it is forced to take a next step that leads to a solution Y with score -2, after that
+          however, it's very real that it will pick the step back to solution X with score -1. It will then start
+          looping between solution X and Y.</para>
+        </listitem>
+
+        <listitem>
+          <para>It can start walking in its own footsteps, picking the same next step at every step.</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Of course Drools Planner implements better local searches, such as <emphasis>tabu search</emphasis> and
+      <emphasis>simulated annealing</emphasis> which can avoid these problems. We recommend to never use a hill climber,
+      unless you're absolutely sure there are no local optima in your planning problem.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Deciding the next step</title>
+
+    <para>The local search solver decides the next step with the aid of 3 configurable components:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>A <literal>MoveSelector</literal> which selects the possible moves of the current solution. See the
+        chapter about Move and neighborhood selection.</para>
+      </listitem>
+
+      <listitem>
+        <para>An <emphasis>acceptor</emphasis> which filters out unacceptable moves. It can also weigh a move it
+        accepts.</para>
+      </listitem>
+
+      <listitem>
+        <para>A <emphasis>forager</emphasis> which gathers all accepted moves and picks the next step from them.</para>
+      </listitem>
+    </itemizedlist>
+
+    <figure>
+      <title>Decide the next step at step 0 (4 queens example)</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Local_search/decideNextStepNQueens04.png" format="PNG"/>
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <para>In the above example the selector generated the moves shown with the blue lines, the acceptor accepted all of
+    them and the forager picked the move <emphasis>B0 to B3</emphasis>.</para>
+
+    <para>If we turn on <literal>trace</literal> logging for the category <literal>org.drools.planner</literal>, then
+    the decision making is shown in the log:</para>
+
+    <programlisting>INFO  Solver started: time spend (0), score (-6), new best score (-6), random seed (0).
+TRACE         Ignoring not doable move (col0@row0 =&gt; row0).
+TRACE         Move index (1), score (-4), accepted (true) for move (col0@row0 =&gt; row1).
+TRACE         Move index (2), score (-4), accepted (true) for move (col0@row0 =&gt; row2).
+TRACE         Move index (3), score (-4), accepted (true) for move (col0@row0 =&gt; row3).
+...
+TRACE         Move index (6), score (-3), accepted (true) for move (col1@row0 =&gt; row3).
+...
+TRACE         Move index (9), score (-3), accepted (true) for move (col2@row0 =&gt; row3).
+...
+TRACE         Move index (12), score (-4), accepted (true) for move (col3@row0 =&gt; row3).
+DEBUG     Step index (0), time spend (6), score (-3), new best score (-3), accepted/selected move count (12/12) for picked step (col1@row0 =&gt; row3).
+...</programlisting>
+
+    <para>Because the last solution can degrade (especially in tabu search and simulated annealing), the
+    <literal>Solver</literal> remembers the best solution it has encountered through the entire search path. Each time
+    the current solution is better than the last best solution, the current solution is cloned and referenced as the new
+    best solution.</para>
+
+    <section>
+      <title>Acceptor</title>
+
+      <para>An acceptor is used (together with a forager) to active tabu search, simulated annealing, great deluge, ...
+      For each move it checks whether it is accepted or not.</para>
+
+      <para>You can implement your own <literal>Acceptor</literal>, although the build-in acceptors should suffice for
+      most needs. You can also combine multiple acceptors.</para>
+
+      <section>
+        <title>Tabu search acceptor</title>
+
+        <para>When tabu search takes steps it creates tabu's. It does not accept a move as the next step if that move
+        breaks tabu. Drools Planner implements several tabu types:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis>Solution tabu</emphasis> makes recently visited solutions tabu. It does not accept a move
+            that leads to one of those solutions. If you can spare the memory, don't be cheap on the tabu size.</para>
+
+            <programlisting language="xml">    &lt;acceptor&gt;
+        &lt;solutionTabuSize&gt;1000&lt;/solutionTabuSize&gt;
+    &lt;/acceptor&gt;</programlisting>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Move tabu</emphasis> makes recent steps tabu. It does not accept a move equal to one of
+            those steps.</para>
+
+            <programlisting language="xml">    &lt;acceptor&gt;
+        &lt;moveTabuSize&gt;7&lt;/moveTabuSize&gt;
+    &lt;/acceptor&gt;</programlisting>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Undo move tabu </emphasis>makes the undo move of recent steps tabu.</para>
+
+            <programlisting language="xml">    &lt;acceptor&gt;
+        &lt;undoMoveTabuSize&gt;7&lt;/undoMoveTabuSize&gt;
+    &lt;/acceptor&gt;</programlisting>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Planning entity tabu</emphasis> makes the planning entities of recent steps tabu. For
+            example, for N queens it makes the recently moved queens tabu.</para>
+
+            <programlisting language="xml">    &lt;acceptor&gt;
+        &lt;planningEntityTabuSize&gt;7&lt;/planningEntityTabuSize&gt;
+    &lt;/acceptor&gt;</programlisting>
+          </listitem>
+
+          <listitem>
+            <para><emphasis>Planning value tabu</emphasis> makes the planning values of recent steps tabu. For example,
+            for N queens it makes the recently moved to rows tabu.</para>
+
+            <programlisting language="xml">    &lt;acceptor&gt;
+        &lt;planningValueTabuSize&gt;7&lt;/planningValueTabuSize&gt;
+    &lt;/acceptor&gt;</programlisting>
+          </listitem>
+        </itemizedlist>
+
+        <para>You can even combine tabu types:</para>
+
+        <programlisting language="xml">    &lt;acceptor&gt;
+        &lt;solutionTabuSize&gt;1000&lt;/solutionTabuSize&gt;
+        &lt;moveTabuSize&gt;7&lt;/moveTabuSize&gt;
+    &lt;/acceptor&gt;</programlisting>
+
+        <para>If you pick a too small tabu size, your solver can still get stuck in a local optimum. On the other hand,
+        with the exception of solution tabu, if you pick a too large tabu size, your solver can get stuck by bouncing of
+        the walls. Use the benchmarker to fine tweak your configuration. Experiments teach us that it is generally best
+        to use a prime number for the move tabu, undo move tabu, entity tabu or value tabu size.</para>
+
+        <para>A tabu search acceptor should be combined with a high subset selection, such as
+        <literal>1000</literal>.</para>
+      </section>
+
+      <section>
+        <title>Simulated annealing acceptor</title>
+
+        <para>Simulated annealing does not always pick the move with the highest score, neither does it evaluate many
+        moves per step. At least at first. Instead, it gives non improving moves also a chance to be picked, depending
+        on its score and the time gradient of the <literal>Termination</literal>. In the end, it gradually turns into a
+        hill climber, only accepting improving moves.</para>
+
+        <para>In many use cases, simulated annealing surpasses tabu search. By changing a few lines of configuration,
+        you can easily switch from tabu search to simulated annealing and back.</para>
+
+        <para>Start with a <literal>simulatedAnnealingStartingTemperature</literal> set to the maximum score delta a
+        single move can cause. Use the <literal>Benchmarker</literal> to tweak the value.</para>
+
+        <programlisting language="xml">    &lt;acceptor&gt;
+      &lt;simulatedAnnealingStartingTemperature&gt;2hard/100soft&lt;/simulatedAnnealingStartingTemperature&gt;
+    &lt;/acceptor&gt;
+    &lt;forager&gt;
+        &lt;minimalAcceptedSelection&gt;4&lt;/minimalAcceptedSelection&gt;
+    &lt;/forager&gt;</programlisting>
+
+        <para>A simulated annealing acceptor should be combined with a low subset selection. The classic algorithm uses
+        a <literal>minimalAcceptedSelection</literal> of <literal>1</literal>, but usually <literal>4</literal> performs
+        better.</para>
+
+        <para>You can even combine it with a tabu acceptor at the same time. Use a lower tabu size than in a pure tabu
+        search configuration.</para>
+
+        <programlisting language="xml">    &lt;acceptor&gt;
+      &lt;simulatedAnnealingStartingTemperature&gt;10.0&lt;/simulatedAnnealingStartingTemperature&gt;
+      &lt;planningEntityTabuSize&gt;5&lt;/planningEntityTabuSize&gt;
+    &lt;/acceptor&gt;
+    &lt;forager&gt;
+        &lt;minimalAcceptedSelection&gt;4&lt;/minimalAcceptedSelection&gt;
+    &lt;/forager&gt;</programlisting>
+
+        <para>This differs from phasing, another powerful technique, where first simulated annealing is used, followed
+        by tabu search.</para>
+      </section>
+
+      <section>
+        <title>Late acceptance acceptor</title>
+
+        <para>Late acceptance accepts any move that has a score which is higher than the best score of a number of steps
+        ago. That number of steps is the <literal>lateAcceptanceSize</literal>.</para>
+
+        <programlisting language="xml">    &lt;acceptor&gt;
+      &lt;lateAcceptanceSize&gt;500&lt;/lateAcceptanceSize&gt;
+    &lt;/acceptor&gt;
+    &lt;forager&gt;
+        &lt;minimalAcceptedSelection&gt;1000&lt;/minimalAcceptedSelection&gt;
+    &lt;/forager&gt;</programlisting>
+      </section>
+    </section>
+
+    <section>
+      <title>Forager</title>
+
+      <para>A forager gathers all accepted moves and picks the move which is the next step. Normally it picks the
+      accepted move with the highest score. If several accepted moves have the highest score, one is picked
+      randomly.</para>
+
+      <para>You can implement your own <literal>Forager</literal>, although the build-in forager should suffice for most
+      needs.</para>
+
+      <section>
+        <title>Subset selection</title>
+
+        <para>When there are many possible moves, it becomes inefficient to evaluate all of them at every step. To
+        evaluate only a random subset of all the moves, use:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>An <literal>minimalAcceptedSelection</literal> integer, which specifies how many accepted moves should
+            have be evaluated during each step. By default it is positive infinity, so all accepted moves are evaluated
+            at every step.</para>
+
+            <programlisting language="xml">  &lt;forager&gt;
+    &lt;minimalAcceptedSelection&gt;1000&lt;/minimalAcceptedSelection&gt;
+  &lt;/forager&gt;</programlisting>
+          </listitem>
+        </itemizedlist>
+
+        <para>Unlike the n queens problem, real world problems require the use of subset selection. Start from an
+        <literal>minimalAcceptedSelection</literal> that takes a step in less then 2 seconds. Turn on INFO logging to
+        see the step times. Use the <literal>Benchmarker</literal> to tweak the value.</para>
+
+        <important>
+          <para>With a low <literal>minimalAcceptedSelection</literal> it is recommended to avoid using
+          <literal>selectionOrder</literal> SHUFFLED because the shuffling generates a random number for every element
+          in the selector, taking up a lot of time, but only a few are actually selected.</para>
+        </important>
+      </section>
+
+      <section>
+        <title>Pick early type</title>
+
+        <para>A forager can pick a move early during a step, ignoring subsequent selected moves. There are 3 pick early
+        types:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><literal>NEVER</literal>: A move is never picked early: all accepted moves are evaluated that the
+            selection allows. This is the default.</para>
+
+            <programlisting language="xml">    &lt;forager&gt;
+        &lt;pickEarlyType&gt;NEVER&lt;/pickEarlyType&gt;
+    &lt;/forager&gt;</programlisting>
+          </listitem>
+
+          <listitem>
+            <para><literal>FIRST_BEST_SCORE_IMPROVING</literal>: Pick the first accepted move that improves the best
+            score. If none improve the best score, it behaves exactly like the pickEarlyType NEVER.</para>
+
+            <programlisting language="xml">    &lt;forager&gt;
+        &lt;pickEarlyType&gt;FIRST_BEST_SCORE_IMPROVING&lt;/pickEarlyType&gt;
+    &lt;/forager&gt;</programlisting>
+          </listitem>
+
+          <listitem>
+            <para><literal>FIRST_LAST_STEP_SCORE_IMPROVING</literal>: Pick the first accepted move that improves the
+            last step score. If none improve the last step score, it behaves exactly like the pickEarlyType
+            NEVER.</para>
+
+            <programlisting language="xml">    &lt;forager&gt;
+        &lt;pickEarlyType&gt;FIRST_LAST_STEP_SCORE_IMPROVING&lt;/pickEarlyType&gt;
+    &lt;/forager&gt;</programlisting>
+          </listitem>
+        </itemizedlist>
+      </section>
+    </section>
+  </section>
+
+  <section>
+    <title>Using a custom Termination, MoveSelector, EntitySelector, ValueSelector or Acceptor</title>
+
+    <para>You can plug in a custom <literal>Termination</literal>, <literal>MoveSelector</literal>,
+    <literal>EntitySelector</literal>, <literal>ValueSelector</literal> or <literal>Acceptor</literal> by extending the
+    abstract class and also the related <literal>*Config</literal> class.</para>
+
+    <para>For example, to use a custom <literal>MoveSelector</literal>, extend the
+    <literal>AbstractMoveSelector</literal> class, extend the <literal>MoveSelectorConfig</literal> class and configure
+    it in the solver configuration.</para>
+
+    <note>
+      <para>It's not possible to directly inject a <literal>Termination</literal>, ... instance, instead of also extend
+      a <literal>Config</literal> class because:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A <literal>SolverFactory</literal> can build multiple <literal>Solver</literal> instances, which each
+          require a distinct <literal>Termination</literal>, ... instance.</para>
+        </listitem>
+
+        <listitem>
+          <para>A solver configuration needs to be serializable to and from XML. This makes benchmarking with
+          <literal>PlannerBenchmark</literal> particularly easy because you can configure different
+          <literal>Solver</literal> variants in XML.</para>
+        </listitem>
+
+        <listitem>
+          <para>A <literal>Config</literal> class is often easier and clearer to configure. For example:
+          <literal>TerminationConfig</literal> translates <literal>maximumMinutesSpend</literal> and
+          <literal>maximumSecondsSpend</literal> into <literal>maximumTimeMillisSpend</literal>.</para>
+        </listitem>
+      </itemizedlist>
+    </note>
+
+    <para>If you build a better implementation that's not domain specific, consider contributing it back as a pull
+    request on github and we'll optimize it and take it along in future refactors.</para>
+  </section>
+</chapter>
