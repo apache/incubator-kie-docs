@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0"
+         xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd"
+         xml:base="../" xml:id="quickStart" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <title>Quick start</title>
+
+  <section xml:id="cloudBalancingTutorial">
+    <title>Cloud balancing tutorial</title>
+
+    <section>
+      <title>Problem statement</title>
+
+      <para>Suppose your company owns a number of cloud computers and needs to run a number of processes on those
+      computers. Assign each process to a computer under the following 4 constraints.</para>
+
+      <para>Hard constraints which must be fulfilled:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Every computer must be able to handle the minimum hardware requirements of the sum of its
+          processes:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>The CPU power of a computer must be at least the sum of the CPU power required by the processes
+              assigned to that computer.</para>
+            </listitem>
+
+            <listitem>
+              <para>The RAM memory of a computer must be at least the sum of the RAM memory required by the processes
+              assigned to that computer.</para>
+            </listitem>
+
+            <listitem>
+              <para>The network bandwidth of a computer must be at least the sum of the network bandwidth required by
+              the processes assigned to that computer.</para>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+      <para>Soft constraints which should be optimized:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Each computer that has one or more processes assigned, incurs a maintenance cost (which is fixed per
+          computer).</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Minimize the total maintenance cost.</para>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+      <para>How would you do that? This problem is a form of <emphasis>bin packing</emphasis>. Here's a simplified
+      example where we assign 4 processes to 2 computers with 2 constraints (CPU and RAM) with a simple
+      algorithm:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Quick_start/cloudBalanceUseCase.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>The simple algorithm used here is the <emphasis>First Fit Decreasing</emphasis> algorithm, which assigns the
+      bigger processes first and assigns the smaller processes to the remaining space. As you can see, it's not optimal,
+      because it does not leave enough room to assign the yellow process D.</para>
+
+      <para>Drools Planner does find the more optimal solution fast, by using additional, smarter algorithms. And it
+      scales too: both in data (more processes, more computers) and constraints (more hardware requirements, other
+      constraints). So let's take a look how we can use Planner for this.</para>
+    </section>
+
+    <section>
+      <title>Problem size</title>
+
+      <programlisting>cb-0002comp-0006proc has   2 computers and    6 processes with a search space of      64.
+cb-0003comp-0009proc has   3 computers and    9 processes with a search space of    10^4.
+cb-0004comp-0012proc has   4 computers and   12 processes with a search space of    10^7.
+cb-0100comp-0300proc has 100 computers and  300 processes with a search space of  10^600.
+cb-0200comp-0600proc has 200 computers and  600 processes with a search space of 10^1380.
+cb-0400comp-1200proc has 400 computers and 1200 processes with a search space of 10^3122.
+cb-0800comp-2400proc has 800 computers and 2400 processes with a search space of 10^6967.</programlisting>
+    </section>
+
+    <section>
+      <title>Domain model diagram</title>
+
+      <para>Let's start by taking a look at the domain model. It's pretty simple:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><literal>Computer</literal>: represents a computer with certain hardware (CPU power, RAM memory, network
+          bandwidth) and maintenance cost.</para>
+        </listitem>
+
+        <listitem>
+          <para><literal>Process</literal>: represents a process with a demand. Needs to be assigned to a
+          <literal>Computer</literal> by Drools Planner.</para>
+        </listitem>
+
+        <listitem>
+          <para><literal>CloudBalance</literal>: represents a problem. Contains every <literal>Computer</literal> and
+          <literal>Process</literal> for a certain data set.</para>
+        </listitem>
+      </itemizedlist>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Quick_start/cloudBalanceClassDiagram.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>In the UML class diagram above, the Planner concepts are already annotated:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Planning entity: the class (or classes) that changes during planning. In this example that's the class
+          <literal>Process</literal>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Planning variable: the property (or properties) of a planning entity class that changes during planning.
+          In this examples, that's the property <literal>computer</literal> on the class
+          <literal>Process</literal>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Solution: the class that represents a data set and contains all planning entities. In this example
+          that's the class <literal>CloudBalance</literal>.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>Main method</title>
+
+      <para>Try it yourself. <link linkend="downloadAndRunTheExamples">Download and configure the examples in your
+      favorite IDE.</link> Run
+      <literal>org.drools.planner.examples.cloudbalancing.app.CloudBalancingHelloWorld</literal>. By default, it is
+      configured to run for 120 seconds. It will execute this code:</para>
+
+      <example>
+        <title>CloudBalancingHelloWorld.java</title>
+
+        <programlisting language="java">public class CloudBalancingHelloWorld {
+
+    public static void main(String[] args) {
+        // Build the Solver
+        SolverFactory solverFactory = new XmlSolverFactory(
+                "/org/drools/planner/examples/cloudbalancing/solver/cloudBalancingSolverConfig.xml");
+        Solver solver = solverFactory.buildSolver();
+
+        // Load a problem with 400 computers and 1200 processes
+        CloudBalance unsolvedCloudBalance = new CloudBalancingGenerator().createCloudBalance(400, 1200);
+
+        // Solve the problem
+        solver.setPlanningProblem(unsolvedCloudBalance);
+        solver.solve();
+        CloudBalance solvedCloudBalance = (CloudBalance) solver.getBestSolution();
+
+        // Display the result
+        System.out.println("\nSolved cloudBalance with 400 computers and 1200 processes:\n"
+                + toDisplayString(solvedCloudBalance));
+    }
+
+    ...
+
+}</programlisting>
+      </example>
+
+      <para>The code above does this:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Build the <literal>Solver</literal> based on a solver configuration (in this case an XML file).</para>
+
+          <programlisting language="java">        SolverFactory solverFactory = new XmlSolverFactory(
+                "/org/drools/planner/examples/cloudbalancing/solver/cloudBalancingSolverConfig.xml");
+        Solver solver = solverFactory.buildSolver();</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Load the problem. <literal>CloudBalancingGenerator</literal> generates a random problem: you'll replace
+          this with a class that loads a real problem, for example from a database.</para>
+
+          <programlisting language="java">        CloudBalance unsolvedCloudBalance = new CloudBalancingGenerator().createCloudBalance(400, 1200);</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Solve the problem.</para>
+
+          <programlisting language="java">        solver.setPlanningProblem(unsolvedCloudBalance);
+        solver.solve();
+        CloudBalance solvedCloudBalance = (CloudBalance) solver.getBestSolution();</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Display the result.</para>
+
+          <programlisting language="java">        System.out.println("\nSolved cloudBalance with 400 computers and 1200 processes:\n"
+                + toDisplayString(solvedCloudBalance));</programlisting>
+        </listitem>
+      </itemizedlist>
+
+      <para>The only non-obvious part is building the <literal>Solver</literal>. Let's examine that.</para>
+    </section>
+
+    <section>
+      <title>Solver configuration</title>
+
+      <para>Take a look at the solver configuration:</para>
+
+      <example>
+        <title>cloudBalancingSolverConfig.xml</title>
+
+        <programlisting language="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;solver&gt;
+  &lt;!--&lt;environmentMode&gt;FAST_ASSERT&lt;/environmentMode&gt;--&gt;
+
+  &lt;!-- Domain model configuration --&gt;
+  &lt;solutionClass&gt;org.drools.planner.examples.cloudbalancing.domain.CloudBalance&lt;/solutionClass&gt;
+  &lt;planningEntityClass&gt;org.drools.planner.examples.cloudbalancing.domain.CloudProcess&lt;/planningEntityClass&gt;
+
+  &lt;!-- Score configuration --&gt;
+  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_SOFT&lt;/scoreDefinitionType&gt;
+    &lt;simpleScoreCalculatorClass&gt;org.drools.planner.examples.cloudbalancing.solver.score.CloudBalancingSimpleScoreCalculator&lt;/simpleScoreCalculatorClass&gt;
+    &lt;!--&lt;scoreDrl&gt;/org/drools/planner/examples/cloudbalancing/solver/cloudBalancingScoreRules.drl&lt;/scoreDrl&gt;--&gt;
+  &lt;/scoreDirectorFactory&gt;
+  
+  &lt;!-- Optimization algorithms configuration --&gt;
+  &lt;termination&gt;
+    &lt;maximumSecondsSpend&gt;120&lt;/maximumSecondsSpend&gt;
+  &lt;/termination&gt;
+  &lt;constructionHeuristic&gt;
+    &lt;constructionHeuristicType&gt;FIRST_FIT_DECREASING&lt;/constructionHeuristicType&gt;
+    &lt;constructionHeuristicPickEarlyType&gt;FIRST_LAST_STEP_SCORE_EQUAL_OR_IMPROVING&lt;/constructionHeuristicPickEarlyType&gt;
+  &lt;/constructionHeuristic&gt;
+  &lt;localSearch&gt;
+    &lt;acceptor&gt;
+      &lt;planningEntityTabuSize&gt;7&lt;/planningEntityTabuSize&gt;
+    &lt;/acceptor&gt;
+    &lt;forager&gt;
+      &lt;minimalAcceptedSelection&gt;1000&lt;/minimalAcceptedSelection&gt;
+    &lt;/forager&gt;
+  &lt;/localSearch&gt;
+&lt;/solver&gt;</programlisting>
+      </example>
+
+      <para>This solver configuration consists out of 3 parts:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Domain model configuration</emphasis>: What can Planner change? We need to make
+          Planner aware of our domain classes:</para>
+
+          <programlisting language="xml">  &lt;solutionClass&gt;org.drools.planner.examples.cloudbalancing.domain.CloudBalance&lt;/solutionClass&gt;
+  &lt;planningEntityClass&gt;org.drools.planner.examples.cloudbalancing.domain.CloudProcess&lt;/planningEntityClass&gt;</programlisting>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Score configuration</emphasis>: How should Planner optimize the planning
+          variables? Since we have hard and soft constraints, we use a <literal>HardSoftScore</literal>. But we also
+          need to tell Planner how to calculate such the score, depending on our business requirements. Further down, we
+          'll look into 2 alternatives to calculate the score: using a simple Java implementation or using Drools
+          DRL.</para>
+
+          <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_SOFT&lt;/scoreDefinitionType&gt;
+    &lt;simpleScoreCalculatorClass&gt;org.drools.planner.examples.cloudbalancing.solver.score.CloudBalancingSimpleScoreCalculator&lt;/simpleScoreCalculatorClass&gt;
+    &lt;!--&lt;scoreDrl&gt;/org/drools/planner/examples/cloudbalancing/solver/cloudBalancingScoreRules.drl&lt;/scoreDrl&gt;--&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Optimization algorithms configuration</emphasis>: How should Planner optimize it?
+          Don't worry about this for now: this is a good default configuration that works on most planning problems. It
+          will already surpass human planners and most in-house implementations. Using the Planner benchmark toolkit,
+          you can tweak it to get even better results.</para>
+
+          <programlisting language="xml">  &lt;termination&gt;
+    &lt;maximumSecondsSpend&gt;120&lt;/maximumSecondsSpend&gt;
+  &lt;/termination&gt;
+  &lt;constructionHeuristic&gt;
+    &lt;constructionHeuristicType&gt;FIRST_FIT_DECREASING&lt;/constructionHeuristicType&gt;
+    &lt;constructionHeuristicPickEarlyType&gt;FIRST_LAST_STEP_SCORE_EQUAL_OR_IMPROVING&lt;/constructionHeuristicPickEarlyType&gt;
+  &lt;/constructionHeuristic&gt;
+  &lt;localSearch&gt;
+    &lt;acceptor&gt;
+      &lt;planningEntityTabuSize&gt;7&lt;/planningEntityTabuSize&gt;
+    &lt;/acceptor&gt;
+    &lt;forager&gt;
+      &lt;minimalAcceptedSelection&gt;1000&lt;/minimalAcceptedSelection&gt;
+    &lt;/forager&gt;
+  &lt;/localSearch&gt;</programlisting>
+        </listitem>
+      </itemizedlist>
+
+      <para>Let's examine the domain model classes and the score configuration.</para>
+    </section>
+
+    <section>
+      <title>Domain model implementation</title>
+
+      <section>
+        <title>The class <literal>Computer</literal></title>
+
+        <para>The class <literal>Computer</literal> is a POJO (Plain Old Java Object), nothing special. Usually, you'll
+        have more of these kind of classes.</para>
+
+        <example>
+          <title>CloudComputer.java</title>
+
+          <programlisting language="java">public class CloudComputer ... {
+
+    private int cpuPower;
+    private int memory;
+    private int networkBandwidth;
+    private int cost;
+
+    ... // getters
+}</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>The class <literal>Process</literal></title>
+
+        <para>The class <literal>Process</literal> is a little bit special. We need to tell Planner that it can change
+        the field <literal>computer</literal>, so we annotate the class with <literal>@PlanningEntity</literal> and the
+        getter <literal>getComputer</literal> with <literal>@PlanningVariable</literal>:</para>
+
+        <example>
+          <title>CloudProcess.java</title>
+
+          <programlisting language="java">@PlanningEntity(...)
+public class CloudProcess ... {
+
+    private int requiredCpuPower;
+    private int requiredMemory;
+    private int requiredNetworkBandwidth;
+
+    private CloudComputer computer;
+
+    ... // getters
+
+    @PlanningVariable(...)
+    @ValueRange(type = ValueRangeType.FROM_SOLUTION_PROPERTY, solutionProperty = "computerList")
+    public CloudComputer getComputer() {
+        return computer;
+    }
+
+    public void setComputer(CloudComputer computer) {
+        computer = computer;
+    }
+
+    // ************************************************************************
+    // Complex methods
+    // ************************************************************************
+
+    ...
+
+}</programlisting>
+        </example>
+
+        <para>The values that Planner can choose from for the field <literal>computer</literal>, are retrieved from a
+        method on the <literal>Solution</literal> implementation: <literal>CloudBalance.getComputerList()</literal>
+        which returns a list of all computers in the current data set. We tell Planner about this by using the
+        annotation <literal>@ValueRange</literal>.</para>
+      </section>
+
+      <section>
+        <title>The class <literal>CloudBalance</literal></title>
+
+        <para>The class <literal>CloudBalance</literal> implements the <filename>Solution</filename> interface. It holds
+        a list of all computers and processes. We need to tell Planner how to retrieve the collection of process which
+        it can change, so we need to annotate the getter <literal>getProcessList</literal> with
+        <literal>@PlanningEntityCollectionProperty</literal>.</para>
+
+        <para>The <literal>CloudBalance</literal> class also has a property <literal>score</literal> which is the
+        <literal>Score</literal> of that <literal>Solution</literal> instance in it's current state:</para>
+
+        <example>
+          <title>CloudBalance.java</title>
+
+          <programlisting language="java">public class CloudBalance ... implements Solution&lt;HardSoftScore&gt; {
+
+    private List&lt;CloudComputer&gt; computerList;
+
+    private List&lt;CloudProcess&gt; processList;
+
+    private HardSoftScore score;
+
+    public List&lt;CloudComputer&gt; getComputerList() {
+        return computerList;
+    }
+
+    @PlanningEntityCollectionProperty
+    public List&lt;CloudProcess&gt; getProcessList() {
+        return processList;
+    }
+
+    ...
+
+    public HardSoftScore getScore() {
+        return score;
+    }
+
+    public void setScore(HardSoftScore score) {
+        this.score = score;
+    }
+
+    // ************************************************************************
+    // Complex methods
+    // ************************************************************************
+
+    public Collection&lt;? extends Object&gt; getProblemFacts() {
+        List&lt;Object&gt; facts = new ArrayList&lt;Object&gt;();
+        facts.addAll(computerList);
+        // Do not add the planning entity's (processList) because that will be done automatically
+        return facts;
+    }
+
+    ...
+
+}</programlisting>
+        </example>
+
+        <para>The method <literal>getProblemFacts()</literal> is only needed for score calculation with Drools. It's not
+        needed for the other score calculation types.</para>
+      </section>
+    </section>
+
+    <section>
+      <title>Score configuration</title>
+
+      <para>Planner will search for the <literal>Solution</literal> with the highest <literal>Score</literal>. We're
+      using a <literal>HardSoftScore</literal>, which means Planner will look for the solution with no hard constraints
+      broken (fulfill hardware requirements) and as little as possible soft constraints broken (minimize maintenance
+      cost).</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Quick_start/cloudBalanceScoreCalculation.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Of course, Planner needs to be told about these domain-specific score constraints. There are several ways to
+      implement such a score function:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Simple Java</para>
+        </listitem>
+
+        <listitem>
+          <para>Incremental Java</para>
+        </listitem>
+
+        <listitem>
+          <para>Drools</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Let's take a look look at 2 different implementations:</para>
+
+      <section>
+        <title>Simple Java score configuration</title>
+
+        <para>One way to define a score function is to implement the interface <literal>SimpleScoreCalculator</literal>
+        in plain Java.</para>
+
+        <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_SOFT&lt;/scoreDefinitionType&gt;
+    &lt;simpleScoreCalculatorClass&gt;org.drools.planner.examples.cloudbalancing.solver.score.CloudBalancingSimpleScoreCalculator&lt;/simpleScoreCalculatorClass&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+        <para>Just implement the method <literal>calculateScore(Solution)</literal> to return a
+        <literal>HardSoftScore</literal> instance.</para>
+
+        <example>
+          <title>CloudBalancingSimpleScoreCalculator.java</title>
+
+          <programlisting language="java">public class CloudBalancingSimpleScoreCalculator implements SimpleScoreCalculator&lt;CloudBalance&gt; {
+
+    /**
+     * A very simple implementation. The double loop can easily be removed by using Maps as shown in
+     * {@link CloudBalancingMapBasedSimpleScoreCalculator#calculateScore(CloudBalance)}.
+     */
+    public HardSoftScore calculateScore(CloudBalance cloudBalance) {
+        int hardScore = 0;
+        int softScore = 0;
+        for (CloudComputer computer : cloudBalance.getComputerList()) {
+            int cpuPowerUsage = 0;
+            int memoryUsage = 0;
+            int networkBandwidthUsage = 0;
+            boolean used = false;
+
+            // Calculate usage
+            for (CloudProcess process : cloudBalance.getProcessList()) {
+                if (computer.equals(process.getComputer())) {
+                    cpuPowerUsage += process.getRequiredCpuPower();
+                    memoryUsage += process.getRequiredMemory();
+                    networkBandwidthUsage += process.getRequiredNetworkBandwidth();
+                    used = true;
+                }
+            }
+            
+            // Hard constraints
+            int cpuPowerAvailable = computer.getCpuPower() - cpuPowerUsage;
+            if (cpuPowerAvailable &lt; 0) {
+                hardScore += cpuPowerAvailable;
+            }
+            int memoryAvailable = computer.getMemory() - memoryUsage;
+            if (memoryAvailable &lt; 0) {
+                hardScore += memoryAvailable;
+            }
+            int networkBandwidthAvailable = computer.getNetworkBandwidth() - networkBandwidthUsage;
+            if (networkBandwidthAvailable &lt; 0) {
+                hardScore += networkBandwidthAvailable;
+            }
+            
+            // Soft constraints
+            if (used) {
+                softScore -= computer.getCost();
+            }
+        }
+        return HardSoftScore.valueOf(hardScore, softScore);
+    }
+
+}</programlisting>
+        </example>
+
+        <para>Even if we optimize the code above to use <literal>Map</literal>s to iterate through the
+        <literal>processList</literal> only once, <emphasis role="bold">it is still slow</emphasis> because it doesn't
+        do incremental score calculation. To fix that, either use an incremental Java score function or a Drools score
+        function. Let's take a look at the latter.</para>
+      </section>
+
+      <section>
+        <title>Drools score configuration</title>
+
+        <para>To use the Drools rule engine as a score function, simply add a <literal>scoreDrl</literal> resource in
+        the classpath:</para>
+
+        <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_SOFT&lt;/scoreDefinitionType&gt;
+    &lt;scoreDrl&gt;/org/drools/planner/examples/cloudbalancing/solver/cloudBalancingScoreRules.drl&lt;/scoreDrl&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+        <para>First, we want to make sure that all computers have enough CPU, RAM and network bandwidth to support all
+        their processes, so we make these hard constraints:</para>
+
+        <example>
+          <title>cloudBalancingScoreRules.drl - hard constraints</title>
+
+          <programlisting>...
+
+import org.drools.planner.examples.cloudbalancing.domain.CloudBalance;
+import org.drools.planner.examples.cloudbalancing.domain.CloudComputer;
+import org.drools.planner.examples.cloudbalancing.domain.CloudProcess;
+
+global HardSoftScoreHolder scoreHolder;
+
+// ############################################################################
+// Hard constraints
+// ############################################################################
+
+rule "requiredCpuPowerTotal"
+    when
+        $computer : CloudComputer($cpuPower : cpuPower)
+        $requiredCpuPowerTotal : Number(intValue &gt; $cpuPower) from accumulate(
+            CloudProcess(
+                computer == $computer,
+                $requiredCpuPower : requiredCpuPower),
+            sum($requiredCpuPower)
+        )
+    then
+        insertLogical(new IntConstraintOccurrence("requiredCpuPowerTotal", ConstraintType.HARD,
+                $cpuPower - $requiredCpuPowerTotal.intValue(),
+                $computer));
+end
+
+rule "requiredMemoryTotal"
+    ...
+end
+
+rule "requiredNetworkBandwidthTotal"
+    ...
+end
+
+// ############################################################################
+// Calculate hard score
+// ############################################################################
+
+// Accumulate hard constraints
+rule "accumulateHardScore"
+        salience -1 // Do the other rules first (optional, for performance)
+    when
+        $hardTotal : Number() from accumulate(
+            IntConstraintOccurrence(constraintType == ConstraintType.HARD, $weight : weight),
+            sum($weight)
+        )
+    then
+        scoreHolder.setHardScore($hardTotal.intValue());
+end</programlisting>
+        </example>
+
+        <para>Next, if those constraints are met, we want to minimize the maintenance cost, so we add that as a soft
+        constraint:</para>
+
+        <example>
+          <title>cloudBalancingScoreRules.drl - soft constraints</title>
+
+          <programlisting>// ############################################################################
+// Soft constraints
+// ############################################################################
+
+rule "computerCost"
+    when
+        $computer : CloudComputer($cost : cost)
+        exists CloudProcess(computer == $computer)
+    then
+        insertLogical(new IntConstraintOccurrence("computerCost", ConstraintType.SOFT,
+                - $cost,
+                $computer));
+end
+
+// ############################################################################
+// Calculate soft score
+// ############################################################################
+
+// Accumulate soft constraints
+rule "accumulateSoftScore"
+        salience -1 // Do the other rules first (optional, for performance)
+    when
+        $softTotal : Number() from accumulate(
+            IntConstraintOccurrence(constraintType == ConstraintType.SOFT, $weight : weight),
+            sum($weight)
+        )
+    then
+        scoreHolder.setSoftScore($softTotal.intValue());
+end</programlisting>
+        </example>
+
+        <para>If you use the Drools rule engine for score calculation, you can integrate with other Drools technologies,
+        such as decision tables (XLS or web based), the Guvnor rule repository, ...</para>
+      </section>
+    </section>
+
+    <section>
+      <title>Beyond this tutorial</title>
+
+      <para>Now that this simple example works, try going further. Enrich the domain model and add extra constraints
+      such as these:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Each <literal>Process</literal> belongs to a <literal>Service</literal>. A computer can crash, so
+          processes running the same service should be assigned to different computers.</para>
+        </listitem>
+
+        <listitem>
+          <para>Each <literal>Computer</literal> is located in a <literal>Building</literal>. A building can burn down,
+          so processes of the same services should be assigned to computers in different buildings.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+  </section>
+</chapter>

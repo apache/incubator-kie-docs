@@ -1,0 +1,1191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0"
+         xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd"
+         xml:base="../" xml:id="scoreCalculation" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <title>Score calculation</title>
+
+  <section>
+    <title>Score terminology</title>
+
+    <section>
+      <title>What is a score?</title>
+
+      <para>Every initialized <literal>Solution</literal> has a score. That score is an objective way to compare 2
+      solutions: the solution with the higher score is better. The <literal>Solver</literal> aims to find the
+      <literal>Solution</literal> with the highest <literal>Score</literal> of all possible solutions. The
+      <emphasis>best solution</emphasis> is the <literal>Solution</literal> with the highest <literal>Score</literal>
+      that <literal>Solver</literal> has encountered during solving, which might be the <emphasis>optimal
+      solution</emphasis>.</para>
+
+      <para>Planner cannot automatically know which <literal>Solution</literal> is best for your business, so you need
+      to tell it how to calculate the score of a given <literal>Solution</literal> according to your business needs.
+      There are multiple score techniques that you can use and combine:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Maximize or minimize a constraint: score constraint signum (positive or negative)</para>
+        </listitem>
+
+        <listitem>
+          <para>Put a cost/profit on constraints: score constraint weight</para>
+        </listitem>
+
+        <listitem>
+          <para>Prioritize constraints: score level</para>
+        </listitem>
+
+        <listitem>
+          <para>Pareto scoring</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>Score constraint signum (positive or negative)</title>
+
+      <para>All score techniques are based on constraints. Such a constraint can be a simple pattern (such as
+      <emphasis>Maximize the apple harvest in the solution</emphasis>) or a more complex pattern. A positive constraint
+      is a constraint you're trying to maximize. A negative constraint is a constraint you're trying to minimize.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/positiveAndNegativeConstraints.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Notice in the image above, that the optimal solution always has the highest score, regardless if the
+      constraints are positive or negative.</para>
+
+      <para>Most planning problems have only negative constraints and therefore have a negative score. In that case, the
+      score is usually the sum of the weight of the negative constraints being broken, with a perfect score of 0. This
+      explains why the score of a solution of 4 queens is the negative (and not the positive!) of the number of queen
+      couples which can attack each other.</para>
+
+      <para>Negative and positive constraints can be combined, even in the same score level.</para>
+
+      <note>
+        <para>Don't presume your business knows all its score constraints in advance. Expect score constraints to be
+        added or changed after the first releases.</para>
+      </note>
+
+      <para>When a constraint activates (because the negative constraint is broken or the positive constraint is
+      fulfilled) on a certain planning entity set, it is called a <emphasis>constraint occurrence</emphasis>.</para>
+    </section>
+
+    <section>
+      <title>Score constraint weight</title>
+
+      <para>Not all score constraints are equally important. If breaking one constraint is equally bad as breaking
+      another constraint x times, then those 2 constraints have a different weight (but they are in the same score
+      level). For example in vehicle routing, you can make 2 "unhappy driver" constraint occurrences count as much as 1
+      "fuel tank usage" constraint occurrence:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreWeighting.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Score weighting is often used in use cases where you can put a price tag on everything. In that case, the
+      positive constraints maximize revenue and the negative constraints minimize expenses: together they maximize
+      profit. Alternatively, score weighting is also often used to create social fairness. For example: nurses that
+      request a free day on New Year's eve pay a higher weight than on a normal day.</para>
+
+      <para>The weight of a constraint occurrence can be dynamically based on the planning entities involved. For
+      example in cloud balance: the weight of the soft constraint occurrence for an active <literal>Computer</literal>
+      is the <literal>cost</literal> of that <literal>Computer</literal>.</para>
+    </section>
+
+    <section>
+      <title>Score level</title>
+
+      <para>Sometimes a score constraint outranks another score constraint, no matter how many times the other is
+      broken. In that case, those score constraints are in different levels. For example: a nurse cannot do 2 shifts at
+      the same time (due to the constraints of physical reality), this outranks all nurse happiness constraints.</para>
+
+      <para>Most use cases have only 2 score levels: hard and soft. When comparing 2 scores, they are compared
+      lexicographically: the first score level gets compared first. If those differ, the others score levels are
+      ignored. For example: a score that breaks 0 hard constraints and 1000000 soft constraints is better than a score
+      that breaks 1 hard constraint and 0 soft constraints.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreLevels.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Score levels often employ score weighting per level. In such case, the hard constraint level usually makes
+      the solution feasible and the soft constraint level maximizes profit by weighting the constraints on price.</para>
+
+      <para>Don't use a big constraint weight when your business actually wants different score levels. That hack, known
+      as <emphasis>score folding</emphasis>, is broken:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreFoldingIsBroken.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <note>
+        <para>Your business will probably tell you that your hard constraints all have the same weight, because they
+        cannot be broken (so their weight does not matter). This is not true and it could create a <link
+        linkend="scoreTrap">score trap</link>. For example in cloud balance: if a <literal>Computer</literal> has 7 CPU
+        too little for its <literal>Process</literal>es, then it must be weighted 7 times as much as if it had only 1
+        CPU too little. This way, there is an incentive to move a <literal>Process</literal> with 6 CPU or less away
+        from that Computer.</para>
+      </note>
+
+      <para>3 or more score levels is supported. For example: a company might decide that profit outranks employee
+      satisfaction (or visa versa), while both are outranked by the constraints of physical reality.</para>
+    </section>
+
+    <section>
+      <title>Pareto scoring (AKA multi-objective optimization scoring)</title>
+
+      <para>Far less common is the use case of pareto optimization, which is also known under the more confusing term
+      multi-objective optimization. In pareto scoring, score constraints are in the same score level, yet they are not
+      weighted against each other. When 2 scores are compared, each of the score constraints are compared individually
+      and the score with the most dominating score constraints wins. Pareto scoring can even be combined with score
+      levels and score constraint weighting.</para>
+
+      <para>Consider this example with positive constraints, where we want to get the most apples and oranges. Since
+      it's impossible to compare apples and oranges, we can't weight them against each other. Yet, despite that we can't
+      compare them, we can state that 2 apples are better then 1 apple. Similarly, we can state that 2 apples and 1
+      orange are better than just 1 orange. So despite our inability to compare some Scores conclusively (at which point
+      we declare them equal), we can find a set of optimal scores. Those are called pareto optimal.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata align="center" fileref="images/Chapter-Score_calculation/paretoOptimizationScoring.png"
+                     format="PNG"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Scores are considered equal far more often. It's left up to a human to choose the better out of a set of
+      best solutions (with equal scores) found by Planner. In the example above, the user must choose between solution A
+      (3 apples and 1 orange) and solution B (1 apples and 6 oranges). It's guaranteed that Planner has not found
+      another solution which has more apples or more oranges or even a better combination of both (such as 2 apples and
+      3 oranges).</para>
+
+      <para>To implement pareto scoring in Planner, <link linkend="customScore">implement a custom
+      <literal>ScoreDefinition</literal> and <literal>Score</literal></link>. Future versions will provide
+      out-of-the-box support.</para>
+
+      <note>
+        <para>A pareto <literal>Score</literal>'s method <literal>compareTo</literal> is not transitive because it does
+        a pareto comparison. For example: 2 apples is greater than 1 apple. 1 apples is equal to 1 orange. Yet, 2 apples
+        are not greater than 1 orange (but actually equal). Pareto comparison violates the contract of the interface
+        <literal>java.lang.Comparable</literal>'s method <literal>compareTo</literal>, but Planner's systems are
+        <emphasis>pareto comparison safe</emphasis>, unless explicitly stated otherwise in this documentation.</para>
+      </note>
+    </section>
+
+    <section>
+      <title>Combining score techniques</title>
+
+      <para>All the score techniques mentioned above, can be combined seamlessly:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreComposition.png"/>
+        </imageobject>
+      </mediaobject>
+    </section>
+
+    <section>
+      <title>The <literal>Score</literal> interface</title>
+
+      <para>A score is represented by the <literal>Score</literal> interface, which naturally extends
+      <literal>Comparable</literal>:</para>
+
+      <programlisting language="java">public interface Score&lt;...&gt; extends Comparable&lt;...&gt; {
+    ...
+}</programlisting>
+
+      <para>The <literal>Score</literal> implementation to use depends on your use case. Your score might not
+      efficiently fit in a single <literal>double</literal> value. Planner has several build-in Score implementations,
+      but you can implement a custom Score too. Most use cases will just use the build-in
+      <literal>HardSoftScore</literal>.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreClassDiagram.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>The <literal>Score</literal> implementation (for example <literal>HardSoftScore</literal>) must be the same
+      throughout a <literal>Solver</literal> runtime. The <literal>Score</literal> implementation is configured in the
+      solver configuration as a ScoreDefinition:</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_SOFT&lt;/scoreDefinitionType&gt;
+    ...
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+      <para>As for all calculations with a computer, choose the correct type. Don't use <literal>double</literal> for
+      financial data.</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreWeightType.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>Based on your score constraints and score level requirements, you'll choose a certain
+      <literal>ScoreDefinition</literal>:</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Choose a Score definition</title>
+
+    <para>Each <literal>Score</literal> implementation also has a <literal>ScoreDefinition</literal> implementation. For
+    example: <literal>SimpleScore</literal> is definied by <literal>SimpleScoreDefinition</literal>.</para>
+
+    <section>
+      <title>SimpleScore</title>
+
+      <para>A <literal>SimpleScore</literal> has a single <literal>int</literal> value, for example
+      <literal>-123</literal>. It has a single score level.</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;SIMPLE&lt;/scoreDefinitionType&gt;
+    ...
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+      <para>Variants of this <literal>scoreDefinitionType</literal>:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><literal>SIMPLE_LONG</literal>: Uses <literal>SimpleLongScore</literal> which has a
+          <literal>long</literal> value instead of an <literal>int</literal> value.</para>
+        </listitem>
+
+        <listitem>
+          <para><literal>SIMPLE_DOUBLE</literal>: Uses <literal>SimpleDoubleScore</literal> which has a
+          <literal>double</literal> value instead of an <literal>int</literal> value.</para>
+        </listitem>
+
+        <listitem>
+          <para><literal>SIMPLE_BIG_DECIMAL</literal>: Uses <literal>SimpleBigDecimalScore</literal> which has a
+          <literal>BigDecimal</literal> value instead of an <literal>int</literal> value.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>HardSoftScore (recommended)</title>
+
+      <para>A <literal>HardSoftScore</literal> has a hard <literal>int</literal> value and a soft <literal>int</literal>
+      value, for example <literal>-123hard/-456soft</literal>. It has 2 score levels (hard and soft).</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_SOFT&lt;/scoreDefinitionType&gt;
+    ...
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+      <para>Variants of this <literal>scoreDefinitionType</literal>:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><literal>HARD_SOFT_LONG</literal>: Uses <literal>HardSoftLongScore</literal> which has
+          <literal>long</literal> values instead of <literal>int</literal> values.</para>
+        </listitem>
+
+        <listitem>
+          <para><literal>HARD_SOFT_DOUBLE</literal>: Uses <literal>HardSoftDoubleScore</literal> which has
+          <literal>double</literal> values instead of <literal>int</literal> values.</para>
+        </listitem>
+
+        <listitem>
+          <para><literal>HARD_SOFT_BIG_DECIMAL</literal>: Uses <literal>HardSoftBigDecimalScore</literal> which has
+          <literal>BigDecimal</literal> values instead of <literal>int</literal> values..</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>HardMediumSoftScore</title>
+
+      <para>A <literal>HardMediumSoftScore</literal> which has a hard <literal>int</literal> value, a medium
+      <literal>int</literal> value and a soft <literal>int</literal> value, for example
+      <literal>-123hard/-456medium/-789soft</literal>. It has 3 score levels (hard, medium and soft).</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;HARD_MEDIUM_SOFT&lt;/scoreDefinitionType&gt;
+    ...
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+    </section>
+
+    <section>
+      <title>BendableScore</title>
+
+      <para>A <literal>BendableScore</literal> has a configurable number of score levels. It has an array of hard
+      <literal>int</literal> values and an array of soft <literal>int</literal> value, for example 2 hard levels and 3
+      soft levels for a score <literal>-123/-456/-789/-012/-345</literal>. The number of hard and soft score levels
+      needs to be set at configuration time, it's not flexible to change during solving.</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;BENDABLE&lt;/scoreDefinitionType&gt;
+    &lt;bendableHardLevelCount&gt;2&lt;/bendableHardLevelCount&gt;
+    &lt;bendableSoftLevelCount&gt;3&lt;/bendableSoftLevelCount&gt;
+    ...
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+    </section>
+
+    <section xml:id="customScore">
+      <title>Implementing a custom Score</title>
+
+      <para>The <literal>ScoreDefinition</literal> interface defines the score representation.</para>
+
+      <para>To implement a custom Score, you'll also need to implement a custom <literal>ScoreDefinition</literal>.
+      Extend <literal>AbstractScoreDefinition</literal> (preferable by copy pasting
+      <literal>HardSoftScoreDefinition</literal> or <literal>SimpleScoreDefinition</literal>) and start from
+      there.</para>
+
+      <para>Then hook your custom <literal>ScoreDefinition</literal> in your
+      <filename>SolverConfig.xml</filename>:</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionClass&gt;...MyScoreDefinition&lt;/scoreDefinitionClass&gt;
+    ...
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+    </section>
+  </section>
+
+  <section>
+    <title>Calculate the <literal>Score</literal></title>
+
+    <section>
+      <title>Score calculation types</title>
+
+      <para>There are several ways to calculate the <literal>Score</literal> of a <literal>Solution</literal>:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Simple Java score calculation</emphasis>: implement a single Java method</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Incremental Java score calculation</emphasis>: implement multiple Java
+          methods</para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">Drools score calculation</emphasis>: implement score rules</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Every score calculation type can use any Score definition. For example, simple Java score calculation can
+      output a <literal>HardSoftScore</literal>.</para>
+
+      <para>All score calculation types are Object Orientated and can reuse existing Java code.</para>
+    </section>
+
+    <section>
+      <title>Simple Java score calculation</title>
+
+      <para>A simple way to implement your score calculation in Java.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Advantages:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Plain old Java: no learning curve</para>
+            </listitem>
+
+            <listitem>
+              <para>Opportunity to delegate score calculation to an existing code base or legacy system</para>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+
+        <listitem>
+          <para>Disadvantages:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Slower and less scalable</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Because there is no <link linkend="incrementalScoreCalculation">incremental score
+                  calculation</link></para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+      <para>Just implement one method of the interface <literal>SimpleScoreCalculator</literal>:</para>
+
+      <programlisting language="java">public interface SimpleScoreCalculator&lt;Sol extends Solution&gt; {
+
+    Score calculateScore(Sol solution);
+   
+}</programlisting>
+
+      <para>For example in n queens:</para>
+
+      <programlisting language="java">public class NQueensSimpleScoreCalculator implements SimpleScoreCalculator&lt;NQueens&gt; {
+
+    public SimpleScore calculateScore(NQueens nQueens) {
+        int n = nQueens.getN();
+        List&lt;Queen&gt; queenList = nQueens.getQueenList();
+        
+        int score = 0;
+        for (int i = 0; i &lt; n; i++) {
+            for (int j = i + 1; j &lt; n; j++) {
+                Queen leftQueen = queenList.get(i);
+                Queen rightQueen = queenList.get(j);
+                if (leftQueen.getRow() != null &amp;&amp; rightQueen.getRow() != null) {
+                    if (leftQueen.getRowIndex() == rightQueen.getRowIndex()) {
+                        score--;
+                    }
+                    if (leftQueen.getAscendingDiagonalIndex() == rightQueen.getAscendingDiagonalIndex()) {
+                        score--;
+                    }
+                    if (leftQueen.getDescendingDiagonalIndex() == rightQueen.getDescendingDiagonalIndex()) {
+                        score--;
+                    }
+                }
+            }
+        }
+        return SimpleScore.valueOf(score);
+    }
+
+}</programlisting>
+
+      <para>Configure it in your solver configuration:</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;...&lt;/scoreDefinitionType&gt;
+    &lt;simpleScoreCalculatorClass&gt;org.drools.planner.examples.nqueens.solver.score.NQueensSimpleScoreCalculator&lt;/simpleScoreCalculatorClass&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+      <para>Alternatively, build a <literal>SimpleScoreCalculator</literal> instance at runtime and set it with the
+      programmatic API:</para>
+
+      <programlisting language="java">    solverFactory.getSolverConfig().getScoreDirectorFactoryConfig.setSimpleScoreCalculator(simpleScoreCalculator);</programlisting>
+    </section>
+
+    <section>
+      <title>Incremental Java score calculation</title>
+
+      <para>A way to implement your score calculation incrementally in Java.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Advantages:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Very fast and scalable</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Currently the fastest if implemented correctly</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+
+        <listitem>
+          <para>Disadvantages:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Hard to write</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>A scalable implementation heavily uses maps, indexes, ... (things the Drools rule engine can do
+                  for you)</para>
+                </listitem>
+
+                <listitem>
+                  <para>You have to learn, design, write and improve all these performance optimizations yourself</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Hard to read</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Regular score constraint changes can lead to a high maintenance cost</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+          </itemizedlist>
+        </listitem>
+      </itemizedlist>
+
+      <para>Implement all the methods of the interface <literal>IncrementalScoreCalculator</literal> and extend the
+      class <literal>AbstractIncrementalScoreCalculator</literal>:</para>
+
+      <programlisting language="java">public interface IncrementalScoreCalculator&lt;Sol extends Solution&gt; {
+
+    void resetWorkingSolution(Sol workingSolution);
+
+    void beforeEntityAdded(Object entity);
+
+    void afterEntityAdded(Object entity);
+
+    void beforeAllVariablesChanged(Object entity);
+
+    void afterAllVariablesChanged(Object entity);
+
+    void beforeVariableChanged(Object entity, String variableName);
+
+    void afterVariableChanged(Object entity, String variableName);
+
+    void beforeEntityRemoved(Object entity);
+
+    void afterEntityRemoved(Object entity);
+
+    Score calculateScore();
+    
+}</programlisting>
+
+      <para>For example in n queens:</para>
+
+      <programlisting language="java">public class NQueensAdvancedIncrementalScoreCalculator extends AbstractIncrementalScoreCalculator&lt;NQueens&gt; {
+
+    private Map&lt;Integer, List&lt;Queen&gt;&gt; rowIndexMap;
+    private Map&lt;Integer, List&lt;Queen&gt;&gt; ascendingDiagonalIndexMap;
+    private Map&lt;Integer, List&lt;Queen&gt;&gt; descendingDiagonalIndexMap;
+
+    private int score;
+
+    public void resetWorkingSolution(NQueens nQueens) {
+        int n = nQueens.getN();
+        rowIndexMap = new HashMap&lt;Integer, List&lt;Queen&gt;&gt;(n);
+        ascendingDiagonalIndexMap = new HashMap&lt;Integer, List&lt;Queen&gt;&gt;(n * 2);
+        descendingDiagonalIndexMap = new HashMap&lt;Integer, List&lt;Queen&gt;&gt;(n * 2);
+        for (int i = 0; i &lt; n; i++) {
+            rowIndexMap.put(i, new ArrayList&lt;Queen&gt;(n));
+            ascendingDiagonalIndexMap.put(i, new ArrayList&lt;Queen&gt;(n));
+            descendingDiagonalIndexMap.put(i, new ArrayList&lt;Queen&gt;(n));
+            if (i != 0) {
+                ascendingDiagonalIndexMap.put(n - 1 + i, new ArrayList&lt;Queen&gt;(n));
+                descendingDiagonalIndexMap.put((-i), new ArrayList&lt;Queen&gt;(n));
+            }
+        }
+        score = 0;
+        for (Queen queen : nQueens.getQueenList()) {
+            insert(queen);
+        }
+    }
+
+    public void beforeEntityAdded(Object entity) {
+        // Do nothing
+    }
+
+    public void afterEntityAdded(Object entity) {
+        insert((Queen) entity);
+    }
+
+    public void beforeAllVariablesChanged(Object entity) {
+        retract((Queen) entity);
+    }
+
+    public void afterAllVariablesChanged(Object entity) {
+        insert((Queen) entity);
+    }
+
+    public void beforeVariableChanged(Object entity, String variableName) {
+        retract((Queen) entity);
+    }
+
+    public void afterVariableChanged(Object entity, String variableName) {
+        insert((Queen) entity);
+    }
+
+    public void beforeEntityRemoved(Object entity) {
+        retract((Queen) entity);
+    }
+
+    public void afterEntityRemoved(Object entity) {
+        // Do nothing
+    }
+
+    private void insert(Queen queen) {
+        Row row = queen.getRow();
+        if (row != null) {
+            int rowIndex = queen.getRowIndex();
+            List&lt;Queen&gt; rowIndexList = rowIndexMap.get(rowIndex);
+            score -= rowIndexList.size();
+            rowIndexList.add(queen);
+            List&lt;Queen&gt; ascendingDiagonalIndexList = ascendingDiagonalIndexMap.get(queen.getAscendingDiagonalIndex());
+            score -= ascendingDiagonalIndexList.size();
+            ascendingDiagonalIndexList.add(queen);
+            List&lt;Queen&gt; descendingDiagonalIndexList = descendingDiagonalIndexMap.get(queen.getDescendingDiagonalIndex());
+            score -= descendingDiagonalIndexList.size();
+            descendingDiagonalIndexList.add(queen);
+        }
+    }
+
+    private void retract(Queen queen) {
+        Row row = queen.getRow();
+        if (row != null) {
+            List&lt;Queen&gt; rowIndexList = rowIndexMap.get(queen.getRowIndex());
+            rowIndexList.remove(queen);
+            score += rowIndexList.size();
+            List&lt;Queen&gt; ascendingDiagonalIndexList = ascendingDiagonalIndexMap.get(queen.getAscendingDiagonalIndex());
+            ascendingDiagonalIndexList.remove(queen);
+            score += ascendingDiagonalIndexList.size();
+            List&lt;Queen&gt; descendingDiagonalIndexList = descendingDiagonalIndexMap.get(queen.getDescendingDiagonalIndex());
+            descendingDiagonalIndexList.remove(queen);
+            score += descendingDiagonalIndexList.size();
+        }
+    }
+
+    public SimpleScore calculateScore() {
+        return SimpleScore.valueOf(score);
+    }
+
+}</programlisting>
+
+      <para>Configure it in your solver configuration:</para>
+
+      <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;...&lt;/scoreDefinitionType&gt;
+    &lt;incrementalScoreCalculatorClass&gt;org.drools.planner.examples.nqueens.solver.score.NQueensAdvancedIncrementalScoreCalculator&lt;/incrementalScoreCalculatorClass&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+      <para>Optionally, to get better output when the <literal>IncrementalScoreCalculator</literal> is corrupted in
+      <literal>environmentMode</literal> <literal>FAST_ASSERT</literal> or <literal>FULL_ASSERT</literal>, you can
+      overwrite the method <literal>buildScoreCorruptionAnalysis</literal> from
+      <literal>AbstractIncrementalScoreCalculator</literal>.</para>
+    </section>
+
+    <section>
+      <title>Drools score calculation</title>
+
+      <section>
+        <title>Overview</title>
+
+        <para>Implement your score calculation using the Drools rule engine. Every score constraint is written as one or
+        more score rules.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Advantages:</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>Incremental score calculation for free</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>Because most DRL syntax uses forward chaining, it does incremental calculation without any
+                    extra code</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+
+              <listitem>
+                <para>Score constraints are isolated as separate rules</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>Easy to add or edit existing score rules</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+
+              <listitem>
+                <para>Flexibility to augment your score constraints by</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>Defining them in decision tables</para>
+
+                    <itemizedlist>
+                      <listitem>
+                        <para>Excel (XLS) spreadsheet</para>
+                      </listitem>
+
+                      <listitem>
+                        <para>Guvnor WebUI</para>
+                      </listitem>
+                    </itemizedlist>
+                  </listitem>
+
+                  <listitem>
+                    <para>Translate them into natural language with DSL</para>
+                  </listitem>
+
+                  <listitem>
+                    <para>Store and release in the Guvnor repository</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+
+              <listitem>
+                <para>Performance optimizations in future versions for free</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>In every release, the Drools rule engine tends to become faster.</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+
+          <listitem>
+            <para>Disadvantages:</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>DRL learning curve</para>
+              </listitem>
+
+              <listitem>
+                <para>Usage of DRL</para>
+
+                <itemizedlist>
+                  <listitem>
+                    <para>Polyglot fear can prohibit the use of a new language such as DRL in some organizations</para>
+                  </listitem>
+                </itemizedlist>
+              </listitem>
+            </itemizedlist>
+          </listitem>
+        </itemizedlist>
+      </section>
+
+      <section>
+        <title>Drools score rules configuration</title>
+
+        <para>There are several ways to define where your score rules live.</para>
+
+        <section>
+          <title>A scoreDrl resource on the classpath</title>
+
+          <para>This is the easy way: the score rule live in a DRL file which is a resource on the classpath. Just add
+          your score rules <filename>*.drl</filename> file in the solver configuration:</para>
+
+          <programlisting language="xml">  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;...&lt;/scoreDefinitionType&gt;
+    &lt;scoreDrl&gt;/org/drools/planner/examples/nqueens/solver/nQueensScoreRules.drl&lt;/scoreDrl&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+
+          <para>You can add multiple <literal>&lt;scoreDrl&gt;</literal> entries if needed, but normally you'll define
+          all your score rules in 1 file.</para>
+        </section>
+
+        <section>
+          <title>A RuleBase (possibly defined by Guvnor)</title>
+
+          <para>If you prefer to build the <literal>RuleBase</literal> yourself or if you're combining Planner with
+          Guvnor, you can set the <literal>RuleBase</literal> on the <literal>SolverFactory</literal> before building
+          the <literal>Solver</literal>:</para>
+
+          <programlisting language="java">    solverFactory.getSolverConfig().getScoreDirectorFactoryConfig.setRuleBase(ruleBase);</programlisting>
+        </section>
+      </section>
+
+      <section>
+        <title>Implementing a score rule</title>
+
+        <para>Here's an example of a score constraint implemented as a score rule in a DRL file:</para>
+
+        <programlisting>rule "multipleQueensHorizontal"
+    when
+        $q1 : Queen($id : id, $y : y);
+        $q2 : Queen(id &gt; $id, y == $y);
+    then
+        insertLogical(new UnweightedConstraintOccurrence("multipleQueensHorizontal", $q1, $q2));
+end</programlisting>
+
+        <para>This score rule will fire once for every 2 queens with the same <literal>y</literal>. The <literal>(id
+        &gt; $id)</literal> condition is needed to assure that for 2 queens A and B, it can only fire for (A, B) and not
+        for (B, A), (A, A) or (B, B). Let's take a closer look at this score rule on this solution of 4 queens:</para>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Chapter-Score_calculation/unsolvedNQueens04.png" format="PNG"/>
+          </imageobject>
+        </mediaobject>
+
+        <para>In this solution the multipleQueensHorizontal score rule will fire for 6 queen couples: (A, B), (A, C),
+        (A, D), (B, C), (B, D) and (C, D). Because none of the queens are on the same vertical or diagonal line, this
+        solution will have a score of <literal>-6</literal>. An optimal solution of 4 queens has a score of
+        <literal>0</literal>.</para>
+
+        <note>
+          <para>Notice that every score rule will relate to at least 1 planning entity class (directly or indirectly
+          though a logically inserted fact).</para>
+
+          <para>This is normal: it would be a waste of time to write a score rule that only relates to problem facts, as
+          the consequence will never change during planning, no matter what the possible solution.</para>
+        </note>
+      </section>
+
+      <section>
+        <title>Aggregating the score rules into the <literal>Score</literal></title>
+
+        <para>A <literal>ScoreHolder</literal> instance is asserted into the <literal>WorkingMemory</literal> as a
+        global called <literal>scoreHolder</literal>. Your score rules need to (directly or indirectly) update that
+        instance. Usually you'll make a single rule as an aggregation of the other rules to update the score:</para>
+
+        <programlisting>global SimpleScoreHolder scoreHolder;
+
+rule "multipleQueensHorizontal"
+    when
+        $q1 : Queen($id : id, $y : y);
+        $q2 : Queen(id &gt; $id, y == $y);
+    then
+        insertLogical(new UnweightedConstraintOccurrence("multipleQueensHorizontal", $q1, $q2));
+end
+
+// multipleQueensVertical is obsolete because it is always 0
+
+rule "multipleQueensAscendingDiagonal"
+    when
+        $q1 : Queen($id : id, $ascendingD : ascendingD);
+        $q2 : Queen(id &gt; $id, ascendingD == $ascendingD);
+    then
+        insertLogical(new UnweightedConstraintOccurrence("multipleQueensAscendingDiagonal", $q1, $q2));
+end
+
+rule "multipleQueensDescendingDiagonal"
+    when
+        $q1 : Queen($id : id, $descendingD : descendingD);
+        $q2 : Queen(id &gt; $id, descendingD == $descendingD);
+    then
+        insertLogical(new UnweightedConstraintOccurrence("multipleQueensDescendingDiagonal", $q1, $q2));
+end
+
+rule "accumulateScore"
+    when
+        $occurrenceCount : Number() from accumulate(
+            $unweightedConstraintOccurrence : UnweightedConstraintOccurrence(),
+            count($unweightedConstraintOccurrence)
+        );
+    then
+        scoreHolder.setScore(- $occurrenceCount.intValue());
+end</programlisting>
+
+        <para>Most use cases will also weigh their constraints differently, by multiplying the count of each score rule
+        with its weight.</para>
+
+        <para>Here's an example from CurriculumCourse, where assigning a <literal>Lecture</literal> to a
+        <literal>Room</literal> which is missing 2 seats is weighted equally bad as having 1 isolated
+        <literal>Lecture</literal> in a <literal>Curriculum</literal>:</para>
+
+        <programlisting>// RoomCapacity: For each lecture, the number of students that attend the course must be less or equal
+// than the number of seats of all the rooms that host its lectures.
+// Each student above the capacity counts as 1 point of penalty.
+rule "roomCapacity"
+    when
+        ...
+    then
+        insertLogical(new IntConstraintOccurrence("roomCapacity", ConstraintType.SOFT,
+                ($capacity - $studentSize),
+                $room, $lecture));
+end
+
+// CurriculumCompactness: Lectures belonging to a curriculum should be adjacent
+// to each other (i.e., in consecutive periods).
+// For a given curriculum we account for a violation every time there is one lecture not adjacent
+// to any other lecture within the same day.
+// Each isolated lecture in a curriculum counts as 2 points of penalty.
+rule "curriculumCompactness"
+    when
+        ...
+    then
+        insertLogical(new IntConstraintOccurrence("curriculumCompactness", ConstraintType.SOFT,
+                -2,
+                $lecture, $curriculum));
+end
+
+
+// Accumulate soft constraints
+rule "accumulateSoftScore"
+        salience -1 // Do the other rules first (optional, for performance)
+    when
+        $softTotal : Number() from accumulate(
+            IntConstraintOccurrence(constraintType == ConstraintType.SOFT, $weight : weight),
+            sum($weight)
+        )
+    then
+        scoreHolder.setSoftScore($softTotal.intValue());
+end</programlisting>
+      </section>
+    </section>
+
+    <section>
+      <title>Detecting invalid scores</title>
+
+      <para>Put the <literal>environmentMode</literal> in <literal>FULL_ASSERT</literal> (or
+      <literal>FAST_ASSERT</literal>) to detect corruption in the <link
+      linkend="incrementalScoreCalculation">incremental score calculation</link>. For the difference between both modes,
+      <link linkend="environmentMode">see the section about <literal>environmentMode</literal></link>. However, that
+      will not detect if your score calculator implements your score constraints as your business actually
+      desires.</para>
+
+      <para>A piece of incremental score calculator code can be difficult to write and to review. You can assert its
+      correctness by using a different implementation (for example a <literal>SimpleScoreCalculator</literal>) to do the
+      assertions triggered by the <literal>environmentMode</literal>. Just configure it as
+      <literal>assertionScoreDirectorFactory</literal>:</para>
+
+      <programlisting language="xml">  &lt;environmentMode&gt;FAST_ASSERT&lt;/environmentMode&gt;
+  ...
+  &lt;scoreDirectorFactory&gt;
+    &lt;scoreDefinitionType&gt;...&lt;/scoreDefinitionType&gt;
+    &lt;scoreDrl&gt;/org/drools/planner/examples/nqueens/solver/nQueensScoreRules.drl&lt;/scoreDrl&gt;
+    &lt;assertionScoreDirectorFactory&gt;
+      &lt;simpleScoreCalculatorClass&gt;org.drools.planner.examples.nqueens.solver.score.NQueensSimpleScoreCalculator&lt;/simpleScoreCalculatorClass&gt;
+    &lt;/assertionScoreDirectorFactory&gt;
+  &lt;/scoreDirectorFactory&gt;</programlisting>
+    </section>
+  </section>
+
+  <section>
+    <title>Score calculation performance tricks</title>
+
+    <section>
+      <title>Overview</title>
+
+      <para>The <literal>Solver</literal> will normally spend most of its execution time running the score calculation
+      (which is called in its deepest loops). Faster score calculation will return the same solution in less time with
+      the same algorithm, which normally means a better solution in equal time.</para>
+    </section>
+
+    <section>
+      <title>Average calculation count per second</title>
+
+      <para>After solving a problem, the <literal>Solver</literal> will log the <emphasis>average calculation count per
+      second</emphasis>. This is a good measurement of Score calculation performance, despite that it is affected by non
+      score calculation execution time. It depends on the problem scale of the problem dataset. Normally, even for high
+      scale problems, it is higher than <literal>1000</literal>, except when you're using
+      <literal>SimpleScoreCalculator</literal>.</para>
+
+      <important>
+        <para>When improving your score calculation, focus on maximizing the average calculation count per second,
+        instead of maximizing the best score. A big improvement in score calculation can sometimes yield little or no
+        best score improvement, for example when the algorithm is stuck in a local or global optima. If you're watching
+        the calculation count instead, score calculation improvements are far more visible.</para>
+
+        <para>Furthermore, watching the calculation count, allows you to remove or add score constraints, and still
+        compare it with the original calculation count. Comparing the best score with the original would be wrong,
+        because it's comparing apples and oranges.</para>
+      </important>
+    </section>
+
+    <section xml:id="incrementalScoreCalculation">
+      <title>Incremental score calculation (with delta's)</title>
+
+      <para>When a <literal>Solution</literal> changes, incremental score calculation (AKA delta based score
+      calculation), will calculate the delta with the previous state to find the new <literal>Score</literal>, instead
+      of recalculating the entire score on every solution evaluation.</para>
+
+      <para>For example, if a single queen A moves from row <literal>1</literal> to <literal>2</literal>, it won't
+      bother to check if queen B and C can attack each other, since neither of them changed.</para>
+
+      <figure>
+        <title>Incremental score calculation for the 4 queens puzzle</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Chapter-Score_calculation/deltaBasedScoreCalculationNQueens04.png" format="PNG"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>This is a huge performance and scalability gain. <emphasis role="bold">Drools score calculation gives you
+      this huge scalability gain without forcing you to write a complicated incremental score calculation
+      algorithm.</emphasis> Just let the Drools rule engine do the hard work.</para>
+
+      <para>Notice that the speedup is relative to the size of your planning problem (your <emphasis>n</emphasis>),
+      making incremental score calculation far more scalable.</para>
+    </section>
+
+    <section>
+      <title>Avoid calling remote services during score calculation</title>
+
+      <para>Do not call remote services in your score calculation (except if you're bridging
+      <literal>SimpleScoreCalculator</literal> to a legacy system). The network latency will kill your score calculation
+      performance. Cache the results of those remote services if possible.</para>
+
+      <para>If some parts of a constraint can be calculated once, when the <literal>Solver</literal> starts, and never
+      change during solving, then turn them into <link linkend="cachedProblemFact">cached problem facts</link>.</para>
+    </section>
+
+    <section>
+      <title>Unused constraint</title>
+
+      <para>If you know a certain constraint can never be broken, don't bother writing a score constraint for it. For
+      example in n queens, the score calculation doesn't check if multiple queens occupy the same column, because a
+      <literal>Queen</literal>'s <literal>column</literal> never changes and every <literal>Solution</literal> starts
+      with each <literal>Queen</literal> on a different <literal>column</literal>.</para>
+
+      <note>
+        <para>Don't go overboard with this. If some datasets don't use a specific constraint but others do, just return
+        out of the constraint as soon as you can. There is no need to dynamically change your score calculation based on
+        the dataset.</para>
+      </note>
+    </section>
+
+    <section xml:id="buildInHardConstraint">
+      <title>Build-in hard constraint</title>
+
+      <para>Instead of implementing a hard constraint, you can sometimes make it build-in too. For example: If
+      <literal>Course</literal> A should never be assigned to <literal>Room</literal> X, but it uses ValueRange from
+      Solution, the <literal>Solver</literal> will often try to assign it to <literal>Room</literal> X too (only to find
+      out that it breaks a hard constraint). Use <link linkend="filteredSelection">filtered selection</link> to define
+      that Course A should only be assigned a <literal>Room</literal> other than X.</para>
+
+      <para>This tends to give a good performance gain, not just because the score calculation is faster, but mainly
+      because most optimization algorithms will spend less time evaluating unfeasible solutions.</para>
+
+      <note>
+        <para>Don't go overboard with this. Many optimization algorithms rely on the freedom to break hard constraints
+        when changing planning entities, to get out of local optima. There is a real risk of trading short term benefits
+        for long term harm.</para>
+      </note>
+    </section>
+
+    <section>
+      <title>Other performance tricks</title>
+
+      <itemizedlist>
+        <listitem>
+          <para>Verify that your score calculation happens in the correct <literal>Number</literal> type. If you're
+          making the sum of <literal>int</literal> values, don't let Drools sum it in a <literal>double</literal> which
+          takes longer.</para>
+        </listitem>
+
+        <listitem>
+          <para>For optimal performance, always use server mode (<literal>java -server</literal>). We have seen
+          performance increases of 50% by turning on server mode.</para>
+        </listitem>
+
+        <listitem>
+          <para>For optimal performance, use at least java 1.6. We have seen performance increases of 30% by switching
+          from java 1.5 to 1.6.</para>
+        </listitem>
+
+        <listitem>
+          <para>Always remember that premature optimization is the root of all evil. Make sure your design is flexible
+          enough to allow configuration based tweaking.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section xml:id="scoreTrap">
+      <title>Score trap</title>
+
+      <para>Make sure that none of your score constraints cause a score trap. A trapped score constraint uses the same
+      weight for different constraint occurrences, when it could just as easily use a different weight. It effectively
+      lumps its constraint occurrences together, which creates a flatlined score function for that constraint. This can
+      cause a solution state in which several moves need to be done to resolve or lower the weight of that single
+      constraint. Some examples of score traps:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>If you need 2 doctors at each table, but you're only moving 1 doctor at a time. So the solver has no
+          incentive to move a doctor to a table with no doctors. Punish a table with no doctors more then a table with
+          only 1 doctor in that score constraint in the score function.</para>
+        </listitem>
+
+        <listitem>
+          <para>2 exams needs to be conducted at the same time, but you're only move 1 exam at a time. So the solver has
+          a disincentive move one of those exams to another timeslot without moving the other in the same move. Add a
+          course-grained move that moves both exams at the same time. </para>
+        </listitem>
+      </itemizedlist>
+
+      <para>For example, consider this score trap. If the blue item moves from an overloaded computer to an empty
+      computer, the hard score should improve. The trapped score implementation fails to do that:</para>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Chapter-Score_calculation/scoreTrap.png"/>
+        </imageobject>
+      </mediaobject>
+
+      <para>The Solver should eventually get out of this trap, but it will take a lot of effort (especially if there are
+      even more processes on the overloaded computer). Before they do that, they might actually start moving more
+      processes into that overloaded computer, as there is no penalty for doing so.</para>
+
+      <note>
+        <para>Avoiding score traps does not mean that your score function should be smart enough to avoid local optima.
+        Leave it to the optimization algorithms to deal with the local optima.</para>
+
+        <para>Avoiding score traps means to avoid - for each score constraint individually - a flatlined score
+        function.</para>
+      </note>
+
+      <important>
+        <para>Always specify the degree of infeasibility. The business will often say: "if the solution is infeasible,
+        it doesn't matter how infeasible it." While that's true for the business, it's not true for score calculation:
+        it benefits from knowing how infeasible it is. In practice, soft constraints usually do this naturally and it's
+        just a matter of doing it for the hard constraints too.</para>
+      </important>
+
+      <para>There are several ways to deal with a score trap:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Improve the score constraint to make a distinction in the score weight. For example: penalize
+          <literal>-1hard</literal> for every missing CPU, instead of just <literal>-1hard</literal> if any CPU is
+          missing.</para>
+        </listitem>
+
+        <listitem>
+          <para>If changing the score constraint is not allowed from the business perspective, add a lower score level
+          with a score constraint that makes such a distinction. For example: penalize <literal>-1subsoft</literal> for
+          every missing CPU, on top of <literal>-1hard</literal> if any CPU is missing. The business ignores the subsoft
+          score level.</para>
+        </listitem>
+
+        <listitem>
+          <para>Add course-grained moves and union select them with the existing fine-grained moves. A course-grained
+          move effectively does multiple moves to directly get out of a score trap with a single move. For example: move
+          multiple items from the same container to another container.</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>stepLimit benchmark</title>
+
+      <para>Not all score constraints have the same performance cost. Sometimes 1 score constraint can kill the score
+      calculation performance outright. Use the benchmarker to do a 1 minute run and check what happens to the average
+      calculation count per second if you comment out all but 1 of the score constraints.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>Reusing the score calculation outside the Solver</title>
+
+    <para>Other parts of your application, for example your webUI, might need to calculate the score too. Do that by
+    reusing the <literal>ScoreDirectorFactory</literal> of the <literal>Solver</literal> to build a separate
+    <literal>ScoreDirector</literal> for that webUI:</para>
+
+    <programlisting language="java">ScoreDirectorFactory scoreDirectorFactory = solver.getScoreDirectorFactory();
+ScoreDirector guiScoreDirector = scoreDirectorFactory.buildScoreDirector();</programlisting>
+
+    <para>Then use it when you need to calculate the <literal>Score</literal> of a <literal>Solution</literal>:</para>
+
+    <programlisting language="java">guiScoreDirector.setWorkingSolution(solution);
+Score score = guiScoreDirector.calculateScore();</programlisting>
+
+    <para>Currently it's not officially supported to get the specific constraint occurrences, to explain in the GUI what
+    entities are causing which part of the <literal>Score</literal>. But if you're using the
+    <literal>DroolsScoreDirector</literal>, it's possible to extract it. See the examples.</para>
+  </section>
+</chapter>
