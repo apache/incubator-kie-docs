@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section version="5.0" 
+  xml:base="../../" 
+  xml:id="drools.ReleaseNotesDrools.6.3.0"
+  xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd" 
+  xmlns="http://docbook.org/ns/docbook" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+  xmlns:xlink="http://www.w3.org/1999/xlink" 
+  xmlns:xi="http://www.w3.org/2001/XInclude" 
+  xmlns:ns="http://docbook.org/ns/docbook">
+
+  <title>What is New and Noteworthy in Drools 6.3.0</title>
+      
+  <section>
+    <title>Browsing graphs of objects with OOPath</title>
+
+    <warning>
+      <para>This feature is experimental</para>
+    </warning>
+
+    <para>When the field of a fact is a collection it is possible to bind and reason over
+    all the items in that collection on by one using the <literal>from</literal> keyword.
+    Nevertheless, when it is required to browse a graph of object the extensive use of the
+    <literal>from</literal> conditional element may result in a verbose and cubersome syntax
+    like in the following example:
+    </para>
+
+    <example>
+      <title>Browsing a graph of objects with from</title>
+
+      <programlisting>rule "Find all grades for Big Data exam" when
+    $student: Student( $plan: plan )
+    $exam: Exam( course == "Big Data" ) from $plan.exams
+    $grade: Grade() from $exam.grades
+then /* RHS */ end</programlisting>
+    </example>
+
+    <para>In this example it has been assumed to use a domain model consisting of a
+    <literal>Student</literal> who has a <literal>Plan</literal> of study: a <literal>Plan</literal>
+    can have zero or more <literal>Exam</literal>s and an <literal>Exam</literal> zero or more
+    <literal>Grade</literal>s. Note that only the root object of the graph (the <literal>Student</literal>
+    in this case) needs to be in the working memory in order to make this works.</para>
+
+    <para>By borrowing ideas from XPath, this syntax can be made more succinct, as XPath has a
+    compact notation for navigating through related elements while handling collections and
+    filtering constraints. This XPath-inspired notation has been called <literal>OOPath</literal>
+    since it is explictly intended to browse graph of objects. Using this notation the former
+    example can be rewritten as it follows:
+    </para>
+
+    <example>
+      <title>Browsing a graph of objects with OOPath</title>
+
+      <programlisting>rule "Find all grades for Big Data exam" when
+    Student( $grade: /plan/exams{course == "Big Data"}/grades )
+then /* RHS */ end</programlisting>
+    </example>
+
+    <para>Formally, the core grammar of an <literal>OOPath</literal> expression can be defined in EBNF notation in this way.</para>
+
+    <programlisting>OOPExpr = "/" OOPSegment { ( "/" | "." ) OOPSegment } ;
+OOPSegment = [ID ( ":" | ":=" )] ID ["[" Number "]"] ["{" Constraints "}"];</programlisting>
+
+    <para>In practice an <literal>OOPath</literal> expression has the following features.</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>It has to start with <literal>/</literal>.</para>
+      </listitem>
+
+      <listitem>
+        <para>It can dereference a single property of an object with the <literal>.</literal> operator</para>
+      </listitem>
+
+      <listitem>
+        <para>It can dereference a multiple property of an object using the <literal>/</literal> operator.
+        If a collection is returned, it will iterate over the values in the collection</para>
+      </listitem>
+
+      <listitem>
+        <para>While traversing referenced objects it can filter away those not satisfying
+        one or more constraints, written as predicate expressions between curly
+        brackets like in:</para>
+
+        <programlisting>Student( $grade: /plan/exams{course == "Big Data"}/grades )</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Items can also be accessed by their index by putting it between square brackets
+        like in:</para>
+
+        <programlisting>Student( $grade: /plan/exams[0]/grades )</programlisting>
+
+        <para>To adhere to Java convention OOPath indexes are 0-based, compared to XPath 1-based</para>
+      </listitem>
+    </itemizedlist>
+
+    <section>
+      <title>Reactive OOPath</title>
+
+      <para>At the moment Drools is not able to react to updates involving a deeply nested traversed
+      during the evaluation of an <literal>OOPath</literal> expression. To make these objects reactive
+      to changes at the moment it is necessary to make them extend the class
+      <literal>org.drools.core.phreak.ReactiveObject</literal>. It is planned to overcome this
+      limitation by implementing a mechanism that automatically instruments the classes belonging
+      to a specific domain model.</para>
+
+      <para>Having extendend that class, the domain objects can notify the engine when one of
+      its field has been updated by invoking the inherited method <literal>notifyModification</literal>
+      as in the following example:</para>
+
+      <example>
+        <title>Notifying the engine that an exam has been moved to a different course</title>
+
+        <programlisting>public void setCourse(String course) {
+    this.course = course;
+    notifyModification(this);
+}</programlisting>
+
+      </example>
+
+      <para>In this way if an exam is moved to a different course, the rule is
+      re-triggered and the list of grades matching the rule recomputed.</para>
+
+    </section>
+  </section>
+</section>
+
+
+
