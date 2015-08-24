@@ -23,7 +23,7 @@ import org.kie.remote.client.api.RemoteRestRuntimeEngineFactory;
 import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 
 //TODO: changed, add to documentation
-public class DocumentationBuilderExamples {
+public class DocumentationBuilderExamplesTODO {
 
     private static final String KRIS_USER = "kris";
     private static final String KRIS_PASSWORD = "kris123@";
@@ -56,3 +56,4 @@ public class DocumentationBuilderExamples {
         
     }
 }
+// END

@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.kie.api.task.model.Task;
 
 //TODO: changed, add to documentation
-public class DocumentationRestCallExample {
+public class DocumentationRestCallExamplesTODO {
 
     /*
      * Example 13.8
@@ -61,3 +61,4 @@ public class DocumentationRestCallExample {
     }
 
 }
+// END

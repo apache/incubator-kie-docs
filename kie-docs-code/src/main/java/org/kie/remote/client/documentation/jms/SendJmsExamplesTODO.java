@@ -58,9 +58,9 @@ import org.kie.services.client.serialization.jaxb.rest.JaxbExceptionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SendJmsExample {
+public class SendJmsExamplesTODO {
 
-    protected static final Logger logger = LoggerFactory.getLogger(SendJmsExample.class);
+    protected static final Logger logger = LoggerFactory.getLogger(SendJmsExamplesTODO.class);
 
     public void sendCommandsViaJms( String user, String password, String connectionUser, String connectionPassword,
             String deploymentId, String processId, String hostName ) {
@@ -288,3 +288,4 @@ public class SendJmsExample {
         }
     }
 }
+// END
