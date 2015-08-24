@@ -23,7 +23,7 @@ import org.kie.remote.client.api.RemoteJmsRuntimeEngineFactory;
 import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 
 //TODO: changed, add to documentation
-public class MigrationFrom6_0To6_2Example {
+public class MigrationFrom6_0To6_2ExamplesTODO {
 
     /**
      * In the 6.0.x code, we did this: 
@@ -82,3 +82,4 @@ public class MigrationFrom6_0To6_2Example {
        
     }
 }
+// END

@@ -157,3 +157,4 @@ public class WebserviceJavaApiExamples {
 }
 // end::simpleWebserviceBuilderExample[]
 // @formatter:on
+// END
