@@ -45,7 +45,6 @@ public class JmsJavaApiExamples {
      */
     // @formatter:off
     // tag::connFactoryJmsBuilderExample[]
-    
     private static final String CONNECTION_FACTORY_NAME = "jms/RemoteConnectionFactory"; // <1>
     private static final String KSESSION_QUEUE_NAME = "jms/queue/KIE.SESSION";
     private static final String TASK_QUEUE_NAME = "jms/queue/KIE.TASK";
@@ -197,3 +196,4 @@ public class JmsJavaApiExamples {
     // @formatter:on
     
 }
+// END

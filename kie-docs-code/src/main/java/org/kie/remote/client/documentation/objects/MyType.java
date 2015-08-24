@@ -90,3 +90,4 @@ public class MyType implements Externalizable {
     }
     
 }
+// END

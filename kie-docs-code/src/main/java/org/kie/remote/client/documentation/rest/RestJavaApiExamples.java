@@ -39,12 +39,12 @@ public class RestJavaApiExamples {
         String deploymentId = "com.burns.reactor:homer:1.0";
         String serverInstanceUrl = "http://localhost:8080/" + appName;
 
-        RuntimeEngine engine = RemoteRuntimeEngineFactory.newRestBuilder() // <1>
-            .addDeploymentId(deploymentId) // <2> 
+        RuntimeEngine engine = RemoteRuntimeEngineFactory.newRestBuilder()
+            .addDeploymentId(deploymentId)
             .addUrl(new URL(serverInstanceUrl))
             .addUserName("homer")
             .addPassword("d0nut5R!!!")
-            .build(); // <3>
+            .build(); 
 
         KieSession kieSessionClient = engine.getKieSession(); 
         // end::simpleBuilderExample[]
@@ -106,3 +106,4 @@ public class RestJavaApiExamples {
     // end::simpleRestBuilderExample[]
     // @formatter:on
 }
+// END

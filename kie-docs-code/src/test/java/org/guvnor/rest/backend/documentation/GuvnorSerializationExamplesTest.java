@@ -57,7 +57,7 @@ public class GuvnorSerializationExamplesTest {
         projectRequests.add(projectReq);
 
         ObjectMapper om = new ObjectMapper();
-        System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(projectRequests) );
+//        System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(projectRequests) );
     }
     
     @Test
@@ -85,7 +85,7 @@ public class GuvnorSerializationExamplesTest {
             orgUnits.add( orgUnit );
 
         ObjectMapper om = new ObjectMapper();
-        System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(orgUnits) );
+        // System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(orgUnits) );
     }
     
     @Test
@@ -98,7 +98,7 @@ public class GuvnorSerializationExamplesTest {
         updateOrgUnit.setDefaultGroupId("org.new.default.group.id");
         
         ObjectMapper om = new ObjectMapper();
-        System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(updateOrgUnit) );
+        // System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(updateOrgUnit) );
         
         String jsonStr = "{ \"name\" : null,  \"owner\" : \"NewOwner\",  \"defaultGroupId\" : \"org.new.default.group.id\" }";
         updateOrgUnit = om.readValue(jsonStr, UpdateOrganizationalUnit.class);
