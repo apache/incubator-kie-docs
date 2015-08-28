@@ -1,13 +1,112 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0"
-  xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd"
-  xml:base="./../" xml:id="jBPMReleaseNotes630" xmlns="http://docbook.org/ns/docbook"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema"
-  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude"
-  xmlns:ns="http://docbook.org/ns/docbook">
+<section version="5.0" xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd" xml:base="./../" xml:id="jBPMReleaseNotes630" xmlns="http://docbook.org/ns/docbook" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns="http://docbook.org/ns/docbook">
   <title>New and Noteworthy in jBPM 6.3.0</title>
   <para>The following features were added to the jBPM 6.3.</para>
   
+  <section>
+    <title>Process engine extensions</title>
+    <itemizedlist>
+      <listitem>
+        <para>JavaScript as script language</para>
+        <para>You can now use JavaScript as dialect in scripts (script task and on-entry and on-exit scripts) and for
+        constraints (for example on gateways).  Same as with the Java and MVEL dialect, you have direct access to variables,
+        globals and to the kcontext variable (giving you access to the ProcessContext).</para>
+        <para>For example, you can write something like:
+          <programlisting>kcontext.setVariable('surname', "tester");
+var text = 'Hello ';
+print(text + kcontext.getVariable('name') + '\n');
+try {
+  somethingInvalid;
+} catch(err) {
+  print(err + '\n');
+}</programlisting>
+        </para>
+      </listitem>
+    </itemizedlist>
+  </section>
+  
+  <section>
+    <title>Case management API</title>
+    <para>The core process engine has always contained the flexibility to model adaptive and flexible processes.
+    These kinds of features are typically also required in the context of case management. To simplify picking up some
+    of these more advanced features, we created a (wrapper) API that exposes some of these features in a simple API.  Note
+    that this API simply relies on other existing features / API and can easily be extended.  The API and implementation
+    is added as part of a new jbpm-case-mgmt module.</para>    
+    <itemizedlist>
+      <listitem>
+        <para>Process instance description</para>
+        <para>Each case can have a unique name, specific to that case.</para>
+      </listitem>
+      <listitem>
+        <para>Case roles</para>
+        <para>A case can keep track of who is participating by using case roles.  These roles can be defined as part of
+        the case definition (by giving them a name and (optionally) a cardinality).  Case roles could also be defined
+        dynamically (at runtime).  For active case instances, specific users can be assigned to roles.</para>
+      </listitem>
+      <listitem>
+        <para>Ad-hoc cases</para>
+        <para>One can start a new case without even having a case definition.  Whatever happens inside this case is
+        completely determined at runtime.</para>
+      </listitem>
+      <listitem>
+        <para>Case file</para>
+        <para>A case can contain any kind of data, from simple key-value pairs to custom data objects or documents.</para>
+      </listitem>
+      <listitem>
+        <para>Ad-hoc tasks</para>
+        <para>Using the ad-hoc constructs available in BPMN2, one can model optional process fragments, where only
+        at runtime it is decided which of these fragments should be executed (and how many times). This could be driven
+        by end users (selecting optional fragments for execution) or automatically (for example by rules that trigger certain
+        fragments under certain conditions, or whenever triggered by external services).</para>
+      </listitem>
+      <listitem>
+        <para>Dynamic tasks</para>
+        <para>It is possible to add new tasks dynamically, even if they weren't defined upfront (in the case definition).
+        This includes human tasks, service tasks and other processes.</para>
+      </listitem>
+      <listitem>
+        <para>Milestones</para>
+        <para>You can define milestones as part of the case definition (or even dynamically) and keep track of which 
+        milestones were reach for specific case instances.</para>
+      </listitem>
+    </itemizedlist>    
+  </section>
+  
+    <section>
+    <title>Remote API</title>
+    <para>The remote REST API for accessing the workbench received the following extensions:</para>
+    <itemizedlist>
+      <listitem>
+        <para>Process instance image</para>
+        <para>Through the remote REST API you can now retrieve an image that represents the status of a particular process
+        instance, annotated on the process diagram.  This will generate the same image as you could already see in the
+        workbench by looking at the process instance diagram, i.e. active nodes will be marked with a red border and
+        completed nodes have a gray background.  This is generated based on the SVG of the process diagram, which can
+        automatically be generated by designer whenever saving a process.  A new <code>SVGImageProcessor</code> is used to add
+          the necessary annotations based on the audit log data.  Note that this processor (in the <code>jbpm-process-svg</code> module)
+        could be extended to support more advanced visualizations.</para>
+        <para>2 new REST operation URLs have been made available to provide the image: <itemizedlist>
+            <listitem>
+              <para>The following URL provides an image of the process definition:
+                <programlisting>http://&lt;server&gt;:&lt;port&gt;/kie-wb/rest/runtime/{deploymentId}/process/{processDefId}/image</programlisting>
+                The <code>deploymentId</code> URL parameter corresponds to the deployment id, while the <code>processDefId</code> 
+                parameter corresponds to the process (definition) id. </para>
+            </listitem>
+            <listitem>
+              <para>The following URL provides an image of the process definition, with the active nodes marked to correspond to the 
+                process instance URL parameter passed: 
+                <programlisting>http://&lt;server&gt;&lt;port&gt;/kie-wb/rest/runtime/{deploymentId}/process/{processDefId}/image/{procInstId}</programlisting>
+                The <code>deploymentId</code> URL parameter corresponds to the deployment id, the <code>processDefId</code> parameter 
+                corresponds to the process (definition) id, and the <code>procInstId</code> URL parameter corresponds to the 
+                process instance id.</para>
+            </listitem>
+          </itemizedlist>
+          These REST operations are available in both the KIE workbench (kie-wb) and jBPM Console NG (jbpm-console-ng).
+        </para>
+      </listitem>
+    </itemizedlist>    
+  </section>
+
   <xi:include href="../../../../../shared/ReleaseNotes/KieNavigator.xml"/>
   
 </section>

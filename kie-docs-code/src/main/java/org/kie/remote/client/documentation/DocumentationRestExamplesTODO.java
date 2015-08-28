@@ -26,7 +26,7 @@ import org.kie.api.task.model.TaskSummary;
 import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 
 //TODO: changed, add to documentation
-public class DocumentationRestExamples {
+public class DocumentationRestExamplesTODO {
 
     public void javaRemoteApiRestExample(String deploymentId, URL baseUrl, String user, String password) {
         // Configure the RuntimeEngine instance with the necessarry information to communicate with the REST services, and build it
@@ -67,3 +67,4 @@ public class DocumentationRestExamples {
     }
    
 }
+// END
