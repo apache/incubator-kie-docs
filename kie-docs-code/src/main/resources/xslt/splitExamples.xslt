@@ -3,7 +3,7 @@
 
   <xsl:template match="/root">
     <xsl:for-each select="code">
-      <xsl:result-document method="xml" href="target/examples/{@id}.java">
+      <xsl:result-document method="xml" href="${examples.dir}/{@id}.java">
         <root>
           <xsl:copy-of select="/root/@*" />
           <elem>

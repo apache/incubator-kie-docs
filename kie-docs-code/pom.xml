@@ -14,6 +14,13 @@
   <name>KIE :: Documentation :: Example Code</name>
   <description>Example (callout) Code for various KIE Documentation</description>
 
+  <!-- clean: delete ${code.xml.dir} and ${examples.dir} -->
+  <!-- process-classes/copy-java-to-examples-dir: copy src/main/java to ${code.xml.dir} -->
+  <!-- process-classes/java-to-xml-1: transform *Examples.java to XML files in ${code.xml.dir} -->
+  <!-- process-classes/java-to-xml-2: more XML transformations in ${code.xml.dir} -->
+  <!-- process-classes/split-examples: use XSLT to split the examples up into individual examples -->
+  <!-- prepare-package/remote-xml-from-examples: more XML transformations in ${code.xml.dir} -->
+  
   <properties>
     <code.xml.dir>${project.build.directory}/xml</code.xml.dir>
     <examples.dir>${project.build.directory}/examples</examples.dir>
@@ -52,12 +59,18 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-clean-plugin</artifactId>
         <executions>
           <execution>
-            <id>generated-xml-files</id>
+            <id>generated-files</id>
             <phase>clean</phase>
             <goals>
               <goal>clean</goal>
@@ -65,7 +78,10 @@
             <configuration>
               <filesets>
                 <fileset>
-                  <directory>${basedir}/src/main/xml/org</directory>
+                  <directory>${code.xml.dir}</directory>
+                </fileset>
+                <fileset>
+                  <directory>${examples.dir}</directory>
                 </fileset>
               </filesets>
             </configuration>
@@ -168,7 +184,7 @@
            <execution>
             <id>remove-xml-from-examples</id>
             <!--  first phase after 'process-classes' -->
-            <phase>process-test-sources</phase>
+            <phase>prepare-package</phase>
             <goals>
               <goal>replace</goal>
             </goals>
@@ -211,7 +227,7 @@
                   <includes>
                     <include>**/*.xml</include>
                   </includes>
-                  <stylesheet>${basedir}/src/main/resources/xslt/splitExamples.xslt</stylesheet>
+                  <stylesheet>${project.build.directory}/classes/xslt/splitExamples.xslt</stylesheet>
                 </transformationSet>
               </transformationSets>
             </configuration>
@@ -235,8 +251,8 @@
         </configuration>
         <executions>
           <execution>
-            <id>make-assembly</id> <!-- this is used for inheritance merges -->
-            <phase>package</phase> <!-- bind to the packaging phase -->
+            <id>make-assembly</id> 
+            <phase>package</phase> 
             <goals>
               <goal>single</goal>
             </goals>
