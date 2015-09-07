@@ -69,6 +69,25 @@ java.naming.factory.initial=bitronix.tm.jndi.BitronixInitialContextFactory
 &lt;property name="hibernate.transaction.jta.platform" value="org.hibernate.transaction.JBossTransactionManagerLookup" /&gt;
     </programlisting>
 
+  <warning>
+    <para>Singleton strategy with JTA transaction (UserTransaction or CMT) is not recommended because it has a risk of
+    race condition issues (e.g. "IllegalStateException: Process instance XXX is disconnected."). It can only be
+    protected by explicitly locking ksession around the transaction in the user application code.</para>
+
+    <programlisting language="java">synchronized (ksession) {
+    try {
+        tx.begin();
+
+        // use ksession
+        // application logic
+
+        tx.commit();
+    } catch (Exception e) {
+        //...
+    }
+}</programlisting>
+  </warning>
+
       <section>
         <title>Container managed transaction</title>
         
