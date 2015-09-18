@@ -23,6 +23,74 @@ try {
         </para>
       </listitem>
     </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para>Async continuation </para>
+        <para>Async continuation simplifies usage of asynchronous processing of process activities.
+          Simply marking process activity as async will instruct the engine to complete current
+          processing (including committing transaction) before entering that activity. This in turn
+          will allow more control over what is executed in sequence and improve overall managebility
+          of process execution. <link
+            xlink:href="http://mswiderski.blogspot.com/2015/04/asynchronous-continuation-in-jbpm-63.html"
+            >Here</link> you can read an article describing this in details.</para>
+      </listitem>
+      <listitem>
+        <para>Signal scopes</para>
+        <para>Version 6.3 comes with improved support for signaling process instances. Based on
+          concepts of singals defined in BPMN2 jBPM provides additional characteristic to them - the
+          scope. Scope defines how to propagate the signal:</para>
+        <para>
+          <itemizedlist>
+            <listitem>
+              <para>process instance scope - signals only elements within the same process instance,
+                other process isntances won't be affected</para>
+            </listitem>
+            <listitem>
+              <para>default (ksession) scope - signals all elements that are waiting for given
+                signal and are known to running ksession</para>
+            </listitem>
+            <listitem>
+              <para>project scope - signals all components within given project (that means managed
+                by the same instance of runtime manager)</para>
+            </listitem>
+            <listitem>
+              <para>external scope - pluggable scope that allow to customize signal propagation -
+                jBPM 6.3 comes with JMS based implementation which is enabled in workbench
+                (receiving part)</para>
+            </listitem>
+          </itemizedlist>
+        </para>
+        <para>More about the improved signaling can be found in <link
+            xlink:href="http://mswiderski.blogspot.com/2015/09/improved-signaling-in-jbpm-63.html"
+            >this article</link>.</para>
+      </listitem>
+      <listitem>
+        <para>Improved search capabilities when using jbpm services (RuntimeDataService) that
+          allows</para>
+        <para>
+          <itemizedlist>
+            <listitem>
+              <para>search by correlation key</para>
+            </listitem>
+            <listitem>
+              <para>search by process variable name</para>
+            </listitem>
+            <listitem>
+              <para>search by process variable name and value</para>
+            </listitem>
+          </itemizedlist>
+        </para>
+      </listitem>
+      <listitem>
+        <para>Throw async signals</para>
+        <para>If there are several process instances from different process definitions, all of them
+          waiting the same signal and only one of these process instances throws a RuntimeException
+          all others not related will not move forward as well, because they are executed
+          sequentially in the same transaction. That creates heavy dependency between unrelated
+          process instances. Asynchronous throw event solves the problem by individually signaling
+          each process instance in background.</para>
+      </listitem>
+    </itemizedlist>
   </section>
   
   <section>
@@ -137,6 +205,95 @@ try {
       </screenshot>
     </figure>
     
+  </section>
+  <section>
+    <title>jBPM executor</title>
+    <para>jBPM executor has been significantly enhanced in version 6.3 where the biggest improvement
+      was to provide support for JMS based notification mechanism to improve performance for
+      immediate job execution. Instead of always relying on poll based mechanism, in case of
+      immediate job request the executor is notified via JMS. Though it still provides same set of
+      capabilities:</para>
+    <itemizedlist>
+      <listitem>
+        <para>retry mechanism</para>
+      </listitem>
+      <listitem>
+        <para>error handling</para>
+      </listitem>
+      <listitem>
+        <para>search capabilities to look through job requests</para>
+      </listitem>
+    </itemizedlist>
+    <para>Retry mechanism was static in prior versions, which means that the retry happened directly
+      with next execution cycle. That made it rather low in terms of usage as in case there was a
+      temporary problem e.g. network issue, system not available. It has been improved as well and
+      allows configurable retry delay to be specified on each job individually. This delay can be
+      given as time expressions that will be calculated from current time stamp. Retry delay can be
+      given as: </para>
+    <para><itemizedlist>
+        <listitem>
+          <para>single time expression - 5m or 2h</para>
+        </listitem>
+        <listitem>
+          <para>comma separated list of time expressions that should be used for subsequent retries
+            - 10s,10m,1h,1d</para>
+        </listitem>
+      </itemizedlist> In case number of retry delays is smaller than number of retries it will use
+      last available value from the list of retry delays. Which for single value means it will
+      always be the same value.</para>
+    <para>More information about executor enhancements can be found in these two articles: <link
+        xlink:href="http://mswiderski.blogspot.com/2015/08/shift-gears-with-jbpm-executor.html"
+        >Shift gears with jBPM executor </link>and <link
+        xlink:href="http://mswiderski.blogspot.com/2015/08/asynchronous-processing-with-jbpm-63.html"
+        >Asynchronous processing</link></para>
+  </section>
+  <section>
+    <title>Unified KIE Execution Server</title>
+    <para>jBPM 6.3 brings in fully featured Unified KIE Execution Server that is based on successful
+      KIE Execution Server that was released with 6.2 and covered rules use case. In 6.3 this
+      execution server has ben enhanced and now support for rules and process (including user tasks
+      and asynchronous jobs). It provides lightweight mechanism for executing your business assets.
+      Number of environments can be built with with it:</para>
+    <para>
+      <itemizedlist>
+        <listitem>
+          <para>single execution server (similar to workbench)</para>
+        </listitem>
+        <listitem>
+          <para>execution server per kjar</para>
+        </listitem>
+        <listitem>
+          <para>execution server per domain knowledge (set of kjars)</para>
+        </listitem>
+        <listitem>
+          <para>and more...</para>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>It is prepared to run on almost any container where tested configuration include
+      following:</para>
+    <para>
+      <itemizedlist>
+        <listitem>
+          <para>JBoss EAP 6.4</para>
+        </listitem>
+        <listitem>
+          <para>Wildfly 8.1 and 8.2</para>
+        </listitem>
+        <listitem>
+          <para>Tomcat 7 and 8</para>
+        </listitem>
+        <listitem>
+          <para>WebSphere 8.5.5.x</para>
+        </listitem>
+        <listitem>
+          <para>Weblogic 12c</para>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>To get started with KIE Execution Server look at <link
+        xlink:href="http://mswiderski.blogspot.com/2015/09/unified-kie-execution-server-part-1.html"
+        >this blog series</link> that provides KIE Execution Server introduction.</para>
   </section>
   
   <xi:include href="../../../../../shared/ReleaseNotes/KieNavigator.xml"/>
