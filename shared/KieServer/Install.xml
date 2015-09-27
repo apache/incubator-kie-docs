@@ -5,10 +5,11 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xs="http://www.w3.org/2001/XMLSchema"
   xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude"
   xmlns:ns="http://docbook.org/ns/docbook">
-  <title>Installing the KIE Execution Server</title>
-  <para>The KIE Execution Server is distributed as a web application archive (WAR) file. The WAR file
-    comes in three different flavors: <itemizedlist>
-      <listitem><emphasis>webc</emphasis> - WAR for ordinary Web (Servlet) containers like Tomcat</listitem>
+  <title>Installing the KIE Server</title>
+  <para>The KIE Server is distributed as a web application archive (WAR) file. The WAR file comes in
+    three different packagings: <itemizedlist>
+      <listitem><emphasis>webc</emphasis> - WAR for ordinary Web (Servlet) containers like
+        Tomcat</listitem>
       <listitem><emphasis>ee6</emphasis> - WAR for JavaEE 6 containers like JBoss EAP 6.x</listitem>
       <listitem><emphasis>ee7</emphasis> - WAR for JavaEE 7 containers like WildFly 8.x</listitem>
     </itemizedlist>
@@ -35,16 +36,259 @@
         <para>Once authenticated, you will see an XML response in the form of engine status, similar
           to this:</para>
         <example>
-            <title>Sample handshaking server response</title>
-            <programlisting language="XML">&lt;response type="SUCCESS" msg="KIE Server info">
+          <title>Sample handshaking server response</title>
+          <programlisting language="XML">&lt;response type="SUCCESS" msg="KIE Server info">
   &lt;kie-server-info>  
     &lt;version>&project.version;&lt;/version>
   &lt;/kie-server-info>
 &lt;/response></programlisting>
-          </example>
+        </example>
       </listitem>
     </orderedlist>
   </para>
+  <section>
+    <title>Bootstrap switches</title>
+    <para>The Kie Server accepts a number of bootstrap switches (system properties) to configure the
+      behaviour of the server. The following is a table of all the supported switches.</para>
+    <para>
+      <table frame="all">
+        <title>Kie Server bootstrap switches</title>
+        <tgroup cols="4">
+          <colspec colname="c1" colnum="1" colwidth="2.0*"/>
+          <colspec colname="c2" colnum="2" colwidth="2.0*"/>
+          <colspec colname="c3" colnum="3" colwidth="4.0*"/>
+          <colspec colname="c4" colnum="4" colwidth="1.0*"/>
+          <thead>
+            <row>
+              <entry>Property</entry>
+              <entry>Value</entry>
+              <entry>Description</entry>
+              <entry>Required</entry>
+            </row>
+          </thead>
+          <tbody>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d278-cdbc-3277-34f586cd28ee"
+                  >org.drools.server.ext.disabled</emphasis></entry>
+              <entry>boolean (default is "false")</entry>
+              <entry>If true, disables the BRM support (i.e. rules support).</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d27a-35ba-25c1-375f7ecf35d9"
+                  >org.jbpm.server.ext.disabled</emphasis></entry>
+              <entry>boolean (default is "false")</entry>
+              <entry>If true, disables the BPM support (i.e. processes support)</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d276-b920-8222-1515def0d382"
+                  >org.kie.server.id</emphasis></entry>
+              <entry>string</entry>
+              <entry>An arbitrary ID to be assigned to this server. If a remote controller is
+                configured, this is the ID under which the server will connect to the controller to
+                fetch the kie container configurations.</entry>
+              <entry>No. If not provided, an ID is automatically generated.</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d286-e838-9601-f36fb91cf626"
+                  >org.kie.server.user</emphasis></entry>
+              <entry>string (default is "kieserver")</entry>
+              <entry>User name used to connect with the kieserver from the controller, required when
+                running in managed mode</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d288-28ab-6e4b-a529f64bf5cf"
+                  >org.kie.server.pwd</emphasis></entry>
+              <entry>string (default is "kieserver1!")</entry>
+              <entry>Password used to connect with the kieserver from the controller, required when
+                running in managed mode</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d289-27cd-441b-87c88d1aac84"
+                  >org.kie.server.controller</emphasis></entry>
+              <entry>comma separated list of urls</entry>
+              <entry>List of urls to controller REST endpoint. E.g.:
+                  <code>http://localhost:8080/kie-wb/rest</code></entry>
+              <entry>Yes when using a controller</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d28a-a44b-544c-ff3012ddd077"
+                  >org.kie.server.controller.user</emphasis></entry>
+              <entry>string (default is "kieserver")</entry>
+              <entry>Username used to connect to the controller REST api</entry>
+              <entry>Yes when using a controller</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d28b-6920-9056-ad5537e03b3d"
+                  >org.kie.server.controller.pwd</emphasis></entry>
+              <entry>string (default is "kieserver1!")</entry>
+              <entry>Password used to connect to the controller REST api</entry>
+              <entry>Yes when using a controller</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d28c-0bcf-855f-17de4a1a154a"
+                  >org.kie.server.location</emphasis></entry>
+              <entry>URL location of kie server instance</entry>
+              <entry>The URL used by the controller to call back on this server. E.g.:
+                  <code>http://localhost:8230/kie-server/services/rest/server</code></entry>
+              <entry>Yes when using a controller</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d290-70e3-4337-c0623e88997d"
+                  >org.kie.server.domain</emphasis></entry>
+              <entry>string</entry>
+              <entry>JAAS LoginContext domain that shall be used to authenticate users when using
+                JMS</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d291-35f6-a580-d9d9091ec570"
+                  >org.kie.server.bypass.auth.user</emphasis></entry>
+              <entry>boolean (default is "false")</entry>
+              <entry>Allows to bypass the authenticated user for task related operations e.g.
+                queries</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d297-a4e6-1f15-48a5fe5d736b"
+                  >org.kie.server.repo</emphasis></entry>
+              <entry>valid file system path (default is ".")</entry>
+              <entry>Location on local file system where kie server state files will be
+                stored</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d298-77f0-49d2-43c1bdf73d67"
+                  >org.kie.server.persistence.ds</emphasis></entry>
+              <entry>string</entry>
+              <entry>Datasource JNDI name</entry>
+              <entry>Yes when BPM support enabled</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d299-3d38-fcd9-3f423d7fecce"
+                  >org.kie.server.persistence.tm</emphasis></entry>
+              <entry>string</entry>
+              <entry>Transaction manager platform for Hibernate properties set</entry>
+              <entry>Yes when BPM support enabled</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29a-a314-2bf7-907d924fceae"
+                  >org.kie.server.persistence.dialect</emphasis></entry>
+              <entry>string</entry>
+              <entry>Hibernate dialect to be used</entry>
+              <entry>Yes when BPM support enabled</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29b-24df-ead1-cf206900593d"
+                  >org.jbpm.ht.callback</emphasis></entry>
+              <entry>string</entry>
+              <entry>One of supported callbacks for Task Service (default jaas)</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29b-bb9f-8a9d-ab034d736caf"
+                  >org.jbpm.ht.custom.callback</emphasis></entry>
+              <entry>string</entry>
+              <entry>Custom implementation of UserGroupCallback in case org.jbpm.ht.callback was set
+                to ‘custom’</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29c-2bab-5ef7-13cbec1d5a68"
+                  >kie.maven.settings.custom</emphasis></entry>
+              <entry>valid file system path </entry>
+              <entry>Location of custom settings.xml for maven configuration</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29d-4700-7f41-91fa6d386ecd"
+                  >org.kie.executor.interval</emphasis></entry>
+              <entry>integer (default is 3)</entry>
+              <entry>Number of time units between polls by executor</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29d-ee54-02a8-274ef9383f41"
+                  >org.kie.executor.pool.size</emphasis></entry>
+              <entry>integer (default is 1)</entry>
+              <entry>Number of threads in the pool for async work</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d29e-9d32-e7ba-421f2a23128d"
+                  >org.kie.executor.retry.count</emphasis></entry>
+              <entry>integer (default is 3)</entry>
+              <entry>Number of retries to handle errors</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d2e4-4418-249a-eb8a85fb5da4"
+                  >org.kie.executor.timeunit</emphasis></entry>
+              <entry>TimeUnit (default is "SECONDS")</entry>
+              <entry>TimeUnit representing interval</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d2e5-23da-b5d3-f24703b68742"
+                  >org.kie.executor.disabled</emphasis></entry>
+              <entry>boolean (default is "false")</entry>
+              <entry>Disables executor completely</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d2e5-d59e-d87d-48a3630399a9"
+                  >kie.server.jms.queues.response</emphasis></entry>
+              <entry>string (default is "queue/KIE.SERVER.RESPONSE")</entry>
+              <entry>JNDI name of response queue for JMS</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry><emphasis role="bold"
+                  xml:id="docs-internal-guid-81eb08e8-d2e6-a4d9-d10c-e3b89262924b"
+                  >org.kie.server.controller.connect</emphasis></entry>
+              <entry>long (default is 10000)</entry>
+              <entry>Waiting time in milliseconds between repeated attempts to connect kie server to
+                controller when kie server starts up</entry>
+              <entry>No</entry>
+            </row>
+            <row>
+              <entry/>
+              <entry/>
+              <entry/>
+              <entry/>
+            </row>
+          </tbody>
+        </tgroup>
+      </table>
+    </para>
+  </section>
   <section>
     <title>Installation details for different containers</title>
     <section>
@@ -52,17 +296,19 @@
       <para>
         <orderedlist>
           <listitem>
-            <para>Download and unzip the Tomcat distribution. Let's call the root of the distribution <code>TOMCAT_HOME</code>.
-              This directory is named after the Tomcat version, so for example <code>apache-tomcat-7.0.55</code>.</para>
+            <para>Download and unzip the Tomcat distribution. Let's call the root of the
+              distribution <code>TOMCAT_HOME</code>. This directory is named after the Tomcat
+              version, so for example <code>apache-tomcat-7.0.55</code>.</para>
           </listitem>
           <listitem>
-            <para>Download <emphasis>kie-server-&project.version;-webc.war</emphasis> and place it into <code>TOMCAT_HOME/webapps</code>.</para>
+            <para>Download <emphasis>kie-server-&project.version;-webc.war</emphasis> and place it
+              into <code>TOMCAT_HOME/webapps</code>.</para>
           </listitem>
           <listitem>
-            <para>Configure user(s) and role(s). Make sure that file <code>TOMCAT_HOME/conf/tomcat-users.xml</code>
-              contains the following username and role definition. You can of course choose different username and password,
-              just make sure that the user has role <code>kie-server</code>:
-              <example>
+            <para>Configure user(s) and role(s). Make sure that file
+                <code>TOMCAT_HOME/conf/tomcat-users.xml</code> contains the following username and
+              role definition. You can of course choose different username and password, just make
+              sure that the user has role <code>kie-server</code>: <example>
                 <title>Username and role definition for Tomcat</title>
                 <programlisting language="XML">&lt;role rolename="kie-server"/>
 &lt;user username="serveruser" password="my.s3cr3t.pass" roles="kie-server"/></programlisting>
@@ -70,57 +316,71 @@
             </para>
           </listitem>
           <listitem>
-            <para>Start the server by running <code>TOMCAT_HOME/bin/startup.[sh|bat]</code>. You can check out
-              the Tomcat logs in <code>TOMCAT_HOME/logs</code> to see if the application deployed successfully.</para>
+            <para>Start the server by running <code>TOMCAT_HOME/bin/startup.[sh|bat]</code>. You can
+              check out the Tomcat logs in <code>TOMCAT_HOME/logs</code> to see if the application
+              deployed successfully. Please read the table above for the bootstrap switches that can
+              be used to properly configure the instance. For
+              instance:<programlisting>./startup.sh -Dorg.kie.server.id=first-kie-server 
+             -Dorg.kie.server.location=http://localhost:8080/kie-server/services/rest/server</programlisting></para>
           </listitem>
           <listitem>
-            <para>Verify the server is running. Go to <code>http://SERVER:PORT/CONTEXT/services/rest/server/</code> and
-              type the specified username and password. You should see simple XML message with basic information about
+            <para>Verify the server is running. Go to
+                <code>http://SERVER:PORT/CONTEXT/services/rest/server/</code> and type the specified
+              username and password. You should see simple XML message with basic information about
               the server.</para>
           </listitem>
         </orderedlist>
         <para>
-          <important>You can not leverage the JMS interface when running on Tomcat, or any other Web container.
-            The Web container version of the WAR contains only the REST interface. </important>
+          <important>You can not leverage the JMS interface when running on Tomcat, or any other Web
+            container. The Web container version of the WAR contains only the REST interface.
+          </important>
         </para>
       </para>
     </section>
-
     <section>
       <title>WildFly 8.x</title>
       <para>
         <orderedlist>
           <listitem>
-            <para>Download and unzip the WildFly distribution. Let's call the root of the distribution <code>WILDFLY_HOME</code>.
-              This directory is named after the WildFly version, so for example <code>wildfly-8.2.0.Final</code>.
-            </para>
+            <para>Download and unzip the WildFly distribution. Let's call the root of the
+              distribution <code>WILDFLY_HOME</code>. This directory is named after the WildFly
+              version, so for example <code>wildfly-8.2.0.Final</code>. </para>
           </listitem>
           <listitem>
-            <para>Download <emphasis>kie-server-&project.version;-ee7.war</emphasis> and place it into <code>WILDFLY_HOME/standalone/deployments</code>.
-            </para>
+            <para>Download <emphasis>kie-server-&project.version;-ee7.war</emphasis> and place it
+              into <code>WILDFLY_HOME/standalone/deployments</code>. </para>
           </listitem>
           <listitem>
-            <para>Configure user(s) and role(s). Execute the following command
-              <code> WILDFLY_HOME/bin/add-user.[sh|bat] -a -u 'serveruser' -p 'my.s3cr3t.pass' -ro 'kie-server'</code>.
-              You can of course choose different username and password, just make sure that the user has role <code>kie-server</code>.
-            </para>
+            <para>Configure user(s) and role(s). Execute the following command <code>
+                WILDFLY_HOME/bin/add-user.[sh|bat] -a -u 'kieserver' -p 'kieserver1!' -ro
+                'kie-server'</code>. You can of course choose different username and password, just
+              make sure that the user has role <code>kie-server</code>. </para>
           </listitem>
           <listitem>
-            <para>Start the server by running <code>WILDFLY_HOME/bin/standalone.[sh|bat] -c standalone-full.xml</code>.
-              You can check out the standard output or WildFly logs in <code>WILDFLY_HOME/standalone/logs</code> to see if the application
-              deployed successfully.
-            </para>
+            <para>Start the server by running <code>WILDFLY_HOME/bin/standalone.[sh|bat] -c
+                standalone-full.xml &lt;bootstrap_switches></code>. You can check out the standard
+              output or WildFly logs in <code>WILDFLY_HOME/standalone/logs</code> to see if the
+              application deployed successfully. Please read the table above for the bootstrap
+              switches that can be used to properly configure the instance. For
+              instance:<programlisting>./standalone.sh  --server-config=standalone-full.xml 
+                 -Djboss.socket.binding.port-offset=150
+                 -Dorg.kie.server.id=first-kie-server 
+                 -Dorg.kie.server.location=http://localhost:8230/kie-server/services/rest/server</programlisting></para>
           </listitem>
           <listitem>
-            <para>Verify the server is running. Go to <code>http://SERVER:PORT/CONTEXT/services/rest/server/</code> and
-              type the specified username and password. You should see simple XML message with basic information about
-              the server.
-            </para>
+            <para>Verify the server is running. Go to
+                <code>http://SERVER:PORT/CONTEXT/services/rest/server/</code> and type the specified
+              username and password. You should see simple XML message with basic information about
+              the server. <screenshot>
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="shared/images/KieServer/kie-server-info.png"/>
+                  </imageobject>
+                </mediaobject>
+              </screenshot></para>
           </listitem>
         </orderedlist>
       </para>
     </section>
   </section>
-
-
 </section>
