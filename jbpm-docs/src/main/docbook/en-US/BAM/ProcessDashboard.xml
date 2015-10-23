@@ -15,531 +15,137 @@
     both belonging to the jBPM engine.
   </para>
 
-  <para>From the data provider perspective there exists 14 data providers in charge of retrieving
-    the data needed by all the key performance indicators of the jBPM Process Dashboard. These
-    data provides are all defined in the Dashbuilder tooling data provider management screen.
+  <para>Every time the jBPM runtime updates the information stored into such tables the data becomes automatically
+    available to the dashboard indicators. The following picture shows the main screen that users get when navigating
+    to the Process &amp; Task Dashboard.
   </para>
 
   <figure>
-    <title>jBPM Process Dashboard data providers</title>
+    <title>Processes dashboard</title>
     <screenshot>
       <mediaobject>
         <imageobject>
-          <imagedata fileref="images/BAM/jBPMDashboardDataProviders.png"/>
+          <imagedata fileref="images/BAM/ProcessesDashboard.png"/>
         </imageobject>
       </mediaobject>
     </screenshot>
   </figure>
-
-  <para>Below are the details of all the data providers used in the jBPM dashboard.</para>
-
-  <itemizedlist>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Count Processes:</emphasis>
-        Retrieves the total number of process instances per process and per process status.
-      </para>
-      <programlisting language="sql">
-        select processname,
-          ifnull(instances,0) total,
-          ifnull(instances_act,0) active,
-          ifnull(instances_compl,0) completed,
-          ifnull(instances_pend,0) pending,
-          ifnull(instances_susp,0) suspended,
-          ifnull(instances_abrt,0) aborted
-        from
-        (select processinstanceid, processname, count(*) as instances
-        from processinstancelog
-        where {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processinstanceid,processname) as total
-        left outer join
-        (select processinstanceid, count(*) as instances_act
-        from processinstancelog
-        where status=1
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processinstanceid) as active
-        on (total.processinstanceid=active.processinstanceid)
-        left outer join
-        (select processinstanceid, count(*) as instances_compl
-        from processinstancelog
-        where status=2
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processinstanceid) as completed
-        on (total.processinstanceid=completed.processinstanceid)
-        left outer join
-        (select processinstanceid, count(*) as instances_pend
-        from processinstancelog
-        where status=0
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processinstanceid) as pending
-        on (total.processinstanceid=pending.processinstanceid)
-        left outer join
-        (select processinstanceid, count(*) as instances_susp
-        from processinstancelog
-        where status=4
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processinstanceid) as suspended
-        on (total.processinstanceid=suspended.processinstanceid)
-        left outer join
-        (select processinstanceid, count(*) as instances_abrt
-        from processinstancelog
-        where status=3
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processinstanceid) as aborted
-        on (total.processinstanceid=aborted.processinstanceid)
-        order by processname
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process By Status:</emphasis>
-        Retrieves the number of process instances grouped by status.
-      </para>
-      <programlisting language="sql">
-        select status, count(processinstanceid)
-        from processinstancelog
-        where status is not null and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by status
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process By Version:</emphasis>
-        Retrieves the number of process instances grouped by version.
-      </para>
-      <programlisting language="sql">
-        select processVersion, count(processinstanceid)
-        from processinstancelog
-        where processVersion is not null
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processVersion
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process Completed By Date:</emphasis>
-        Retrieves the number of process instances completed grouped by date.
-      </para>
-      <programlisting language="sql">
-        select end_date, count(processinstanceid)
-        from processinstancelog
-        where end_date is not null
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by end_date
-        order by end_date asc
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process Duration:</emphasis>
-        Retrieves the number of instances and duration stats per process.
-      </para>
-      <programlisting language="sql">
-        select processname, count(processinstanceid), min(duration), avg(duration), max(duration)
-        from processinstancelog
-        where {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processname
-        order by processname asc
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process Instances:</emphasis>
-        Retrieves the number of instances per process.
-      </para>
-      <programlisting language="sql">
-        select processname, count(processinstanceid)
-        from processinstancelog
-        where {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by processname
-        order by processname asc
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process Instances By User:</emphasis>
-        Retrieves the number of process instances grouped by the user who initiates.
-      </para>
-      <programlisting language="sql">
-        select user_identity userid, count(processinstanceid)
-        from processinstancelog
-        where user_identity is not null
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by user_identity
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Process Started By Date:</emphasis>
-        Retrieves the number of process instances started on given date periods.
-      </para>
-      <programlisting language="sql">
-        select start_date, count(processinstanceid)
-        from processinstancelog
-        where start_date is not null
-          and {sql_condition, optional, processname, processname}
-          and {sql_condition, optional, user_identity, userid}
-          and {sql_condition, optional, status, status}
-          and {sql_condition, optional, start_date, start_date}
-          and {sql_condition, optional, end_date, end_date}
-          and {sql_condition, optional, processversion, processversion}
-        group by start_date
-        order by start_date asc
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Task Instances:</emphasis>
-        Retrieves the number of task instances per process.
-      </para>
-      <programlisting language="sql">
-        select ts.taskname, count(ts.taskid) taskid
-        from bamtasksummary ts left join processinstancelog ps on (ts.processinstanceid=ps.processinstanceid)
-        where {sql_condition, optional, ps.processname, processname}
-          and {sql_condition, optional, ps.status, status}
-          and {sql_condition, optional, ps.start_date, start_date}
-          and {sql_condition, optional, ps.end_date, end_date}
-          and {sql_condition, optional, ps.processversion, processversion}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ts.taskname, taskname}
-          and {sql_condition, optional, ts.createddate, createddate}
-          and {sql_condition, optional, ts.enddate, enddate}
-          and {sql_condition, optional, ts.status, status}
-        group by ts.taskname
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Tasks By Status:</emphasis>
-        Retrieves the number of task instances grouped by status.
-      </para>
-      <programlisting language="sql">
-        select ts.status as taskstatus, count(ts.taskid)
-        from bamtasksummary ts left join processinstancelog ps on (ts.processinstanceid=ps.processinstanceid)
-        where {sql_condition, optional, ps.processname, processname}
-          and {sql_condition, optional, ps.status, status}
-          and {sql_condition, optional, ps.start_date, start_date}
-          and {sql_condition, optional, ps.end_date, end_date}
-          and {sql_condition, optional, ps.processversion, processversion}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ts.taskname, taskname}
-          and {sql_condition, optional, ts.createddate, createddate}
-          and {sql_condition, optional, ts.enddate, enddate}
-          and {sql_condition, optional, ts.status, taskstatus}
-        group by ts.status
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Tasks By User:</emphasis>
-        Retrieves the number of task instances grouped by the user who holds it.
-      </para>
-      <programlisting language="sql">
-        select ts.userid, count(ts.taskid)
-        from bamtasksummary ts left join processinstancelog ps on (ts.processinstanceid=ps.processinstanceid)
-        where ts.userid is not null
-          and {sql_condition, optional, ps.processname, processname}
-          and {sql_condition, optional, ps.status, status}
-          and {sql_condition, optional, ps.start_date, start_date}
-          and {sql_condition, optional, ps.end_date, end_date}
-          and {sql_condition, optional, ps.processversion, processversion}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ts.taskname, taskname}
-          and {sql_condition, optional, ts.createddate, createddate}
-          and {sql_condition, optional, ts.enddate, enddate}
-          and {sql_condition, optional, ts.status, taskstatus}
-        group by ts.userid
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Tasks Completed By Date:</emphasis>
-        Retrieves the number of task instances completed grouped by date.
-      </para>
-      <programlisting language="sql">
-        select ts.enddate, count(ts.taskid)
-        from bamtasksummary ts left join processinstancelog ps on (ts.processinstanceid=ps.processinstanceid)
-        where ts.enddate is not null
-          and {sql_condition, optional, ps.processname, processname}
-          and {sql_condition, optional, ps.status, status}
-          and {sql_condition, optional, ps.start_date, start_date}
-          and {sql_condition, optional, ps.end_date, end_date}
-          and {sql_condition, optional, ps.processversion, processversion}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ts.taskname, taskname}
-          and {sql_condition, optional, ts.createddate, createddate}
-          and {sql_condition, optional, ts.enddate, enddate}
-          and {sql_condition, optional, ts.status, taskstatus}
-        group by ts.enddate
-        order by ts.enddate asc
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Tasks Duration:</emphasis>
-        Retrieves the number of instances and duration stats per task.
-      </para>
-      <programlisting language="sql">
-        select ts.taskname, count(ts.taskid), min(ts.duration), avg(ts.duration), max(ts.duration)
-        from bamtasksummary ts left join processinstancelog ps on (ts.processinstanceid=ps.processinstanceid)
-        where ts.duration is not null
-          and {sql_condition, optional, ps.processname, processname}
-          and {sql_condition, optional, ps.status, status}
-          and {sql_condition, optional, ps.start_date, start_date}
-          and {sql_condition, optional, ps.end_date, end_date}
-          and {sql_condition, optional, ps.processversion, processversion}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ts.taskname, taskname}
-          and {sql_condition, optional, ts.createddate, createddate}
-          and {sql_condition, optional, ts.enddate, enddate}
-          and {sql_condition, optional, ts.status, taskstatus}
-        group by ts.taskname
-        order by ts.taskname asc
-      </programlisting>
-    </listitem>
-    <listitem>
-      <para>
-        <emphasis role="bold">jBPM Tasks Started By Date:</emphasis>
-        Retrieves the number of task instances started on given date periods.
-      </para>
-      <programlisting language="sql">
-        select ts.createddate, count(ts.taskid)
-        from bamtasksummary ts left join processinstancelog ps on (ts.processinstanceid=ps.processinstanceid)
-        where ts.createddate is not null
-          and {sql_condition, optional, ps.processname, processname}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ps.status, status}
-          and {sql_condition, optional, ps.start_date, start_date}
-          and {sql_condition, optional, ps.end_date, end_date}
-          and {sql_condition, optional, ps.processversion, processversion}
-          and {sql_condition, optional, ts.userid, userid}
-          and {sql_condition, optional, ts.taskname, taskname}
-          and {sql_condition, optional, ts.createddate, createddate}
-          and {sql_condition, optional, ts.enddate, enddate}
-          and {sql_condition, optional, ts.status, taskstatus}
-        group by ts.createddate
-        order by ts.createddate asc
-      </programlisting>
-    </listitem>
-  </itemizedlist>
-
-  <para>As shown above, every SQL contains several <emphasis>{sql_condition}</emphasis> clauses. These are needed in order to support
-    filtering on the data displayed by the dashboard. Every time the user issues a filter request, the data providers
-    feeding the KPIs react by re-executing their SQL with the proper filter criteria. The {sql_condition} clauses not
-    satisfied are just ignored.</para>
-
-  <para>From the end user perspective, the jBPM Process Dashboard has been designed to consume the data from the data
-    providers defined above. It has been also designed has a panel fully integrated into the KIE Workbench environment
-    as shown in the next figure:
-  </para>
-
-  <figure>
-    <title>jBPM Process Dashboard populated with data coming from running process instances</title>
-    <screenshot>
-      <mediaobject>
-        <imageobject>
-          <imagedata fileref="images/BAM/KieWorkbenchProcessDashboard.png"/>
-        </imageobject>
-      </mediaobject>
-    </screenshot>
-  </figure>
-
-  <para>The dashboard itself is composed by two views or pages:</para>
-
-
-  <itemizedlist>
-    <listitem>
-      <para>Global main view: containing metrics about all the processes.
-      </para>
-
-      <para/>
-
-      <table frame="all">
-        <title>jBPM Process Dashboard: Global KPIs</title>
-
-        <tgroup align="left" cols="2" colsep="1" rowsep="1">
-          <thead>
-            <row>
-              <entry>Key Performance Indicator</entry>
-              <entry>Data provider</entry>
-            </row>
-          </thead>
-          <tbody>
-            <row>
-              <entry>Instances by process</entry>
-              <entry>jBPM Process Instances</entry>
-            </row>
-            <row>
-              <entry>Instances started by user</entry>
-              <entry>jBPM Process Instances By User</entry>
-            </row>
-            <row>
-              <entry>Number of tasks per user</entry>
-              <entry>jBPM Tasks By User</entry>
-            </row>
-            <row>
-              <entry>Tasks started by date</entry>
-              <entry>jBPM Tasks Started By Date</entry>
-            </row>
-            <row>
-              <entry>Tasks completed by date</entry>
-              <entry>jBPM Tasks Completed By Date</entry>
-            </row>
-            <row>
-              <entry>Tasks duration (average, min. and max.)</entry>
-              <entry>jBPM Tasks Duration</entry>
-            </row>
-            <row>
-              <entry>Tasks by status</entry>
-              <entry>jBPM Tasks By Status</entry>
-            </row>
-            <row>
-              <entry>Process instances by status</entry>
-              <entry>jBPM Process Count</entry>
-            </row>
-            <row>
-              <entry>Process initiated by date</entry>
-              <entry>jBPM Process Started By Date</entry>
-            </row>
-            <row>
-              <entry>Process completed by date</entry>
-              <entry>jBPM Process Completed By DateSummary</entry>
-            </row>
-            <row>
-              <entry>Process duration (average, min. and max.)</entry>
-              <entry>jBPM Process Duration</entry>
-            </row>
-          </tbody>
-        </tgroup>
-      </table>
-    </listitem>
-
-    <listitem>
-      <para>Process detailed view: containing metrics about an specific process.
-        To get into this view a process must be selected from the global view. Once a process is selected, a drill-down
-        request is carried out by the system and the process specific view is set as the current screen.
-      </para>
-
-      <para/>
-
-      <table frame="all">
-        <title>jBPM Process Dashboard: Process specific KPIs</title>
-
-        <tgroup align="left" cols="2" colsep="1" rowsep="1">
-          <thead>
-            <row>
-              <entry>Key Performance Indicator</entry>
-              <entry>Data provider</entry>
-            </row>
-          </thead>
-          <tbody>
-            <row>
-              <entry>Instances by status</entry>
-              <entry>jBPM Process By Status</entry>
-            </row>
-            <row>
-              <entry>By version</entry>
-              <entry>jBPM Process By Version</entry>
-            </row>
-            <row>
-              <entry>Users with tasks</entry>
-              <entry>jBPM Tasks By User</entry>
-            </row>
-            <row>
-              <entry>Number of task instances</entry>
-              <entry>jBPM Task Instances</entry>
-            </row>
-            <row>
-              <entry>Tasks started by date</entry>
-              <entry>jBPM Task Started By Date</entry>
-            </row>
-            <row>
-              <entry>Tasks completed by date</entry>
-              <entry>jBPM Tasks Completed By Date</entry>
-            </row>
-            <row>
-              <entry>Tasks duration (average, min. and max.)</entry>
-              <entry>jBPM Tasks Duration</entry>
-            </row>
-            <row>
-              <entry>Process instances by status</entry>
-              <entry>jBPM Process Count</entry>
-            </row>
-            <row>
-              <entry>Process initiated by date</entry>
-              <entry>jBPM Process Started By Date</entry>
-            </row>
-            <row>
-              <entry>Process completed by date</entry>
-              <entry>jBPM Process Completed By DateSummary</entry>
-            </row>
-            <row>
-              <entry>Process duration (average, min. and max.)</entry>
-              <entry>jBPM Process Duration</entry>
-            </row>          </tbody>
-        </tgroup>
-      </table>
-    </listitem>
-  </itemizedlist>
 
   <note>Notice, those are generic metrics not tied to any specific business process. Nonetheless, it's worth
     to mention that it would be very easy for customers to modify, extend or adapt this generic dashboard for custom needs.
     A customer could take the jBPM Process Dashboard as the base template for building a custom dashboard which mixes data
     coming from the jBPM engine plus data coming from its own business domain.
   </note>
+
+  <para>As you can see there exists two tabs in the top of the screen: Processes and Tasks. As their name indicates, every
+    tab contains only indicators related to either processes or tasks.</para>
+
+  <para>To filter through the data users can click on the charts in order to select, for instance, a given process,
+    a given status, etc... Every time a filter is applied, all the indicators are automatically
+    updated and synced according to the criteria set. The next picture shows, for instance, what happens when both the
+    process <emphasis>Sales</emphasis> and the status <emphasis>Active</emphasis> are selected.</para>
+
+  <figure>
+    <title>Active Process Filter</title>
+    <screenshot>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/BAM/ProcessesDashboardFilter.png"/>
+        </imageobject>
+      </mediaobject>
+    </screenshot>
+  </figure>
+
+  <para>Using the built-in filter features is a good way to select the process instances the users want to look into.
+    Additionally, at any time, no matter whether there is any active filter or not, users can also navigate to the actual
+    list of instances the dashboard indicators are showing. The <emphasis>Show Instances</emphasis> link at the top right
+    side on the screen can be used to display those instances. Once clicked, the view is switched to the screen shown in
+    the next picture:</para>
+
+  <figure>
+    <title>Process Instance List</title>
+    <screenshot>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/BAM/ProcessesDashboardInstanceList.png"/>
+        </imageobject>
+      </mediaobject>
+    </screenshot>
+  </figure>
+
+  <para>From this view, users can sort the instances just by clicking on any column. They can get a detailed view
+    of a particular instance just by clicking on the desired row as well. </para>
+
+  <figure>
+    <title>Process Instance Details</title>
+    <screenshot>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/BAM/ProcessesDashboardInstanceDetails.png"/>
+        </imageobject>
+      </mediaobject>
+    </screenshot>
+  </figure>
+
+  <para>The process instance details panel is shown on the right of the screen just after clicking on a row. Notice this is
+    a read only view, just for monitoring purposes. After identifying a target process instance the next step is to
+    use the <emphasis>jBPM Process Instance Console</emphasis> in case the user needs to manage such process instance.</para>
+
+  <section>
+    <title>Task Dashboard</title>
+
+    <para>To switch from the process view to the task view just click on the <emphasis>Tasks</emphasis> tab
+    at the top of the screen. </para>
+
+    <figure>
+      <title>Task Dashboard</title>
+      <screenshot>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/BAM/ProcessesDashboardInstanceDetails.png"/>
+          </imageobject>
+        </mediaobject>
+      </screenshot>
+    </figure>
+
+    <para>The task view only contains indicators related to tasks. It basically provides the same features
+      introduced above for process instances (filters, show instances, get details), this time related to tasks instead
+      of processes though.</para>
+
+    <figure>
+      <title>Task Instance List</title>
+      <screenshot>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/BAM/ProcessesDashboardInstanceDetails.png"/>
+          </imageobject>
+        </mediaobject>
+      </screenshot>
+    </figure>
+    <figure>
+      <title>Task Instance Details</title>
+      <screenshot>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/BAM/ProcessesDashboardInstanceDetails.png"/>
+          </imageobject>
+        </mediaobject>
+      </screenshot>
+    </figure>
+  </section>
+
+  <para>To sum up, the jBPM Process &amp; Task Dashboard let users:</para>
+
+  <itemizedlist>
+    <listitem>
+      <para>To monitor their processes and tasks</para>
+    </listitem>
+    <listitem>
+      <para>To apply the proper filters in order quickly identify problematic instances</para>
+    </listitem>
+    <listitem>
+      <para>To get the required information about a given instance in order to be able to fix any unexpected issue</para>
+    </listitem>
+  </itemizedlist>
 
 </section>
