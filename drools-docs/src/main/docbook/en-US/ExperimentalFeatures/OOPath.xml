@@ -47,14 +47,15 @@
 
   <para>Formally, the core grammar of an <literal>OOPath</literal> expression can be defined in EBNF notation in this way.</para>
 
-  <programlisting>OOPExpr = "/" OOPSegment { ( "/" | "." ) OOPSegment } ;
+  <programlisting>OOPExpr = ( "/" | "?/" ) OOPSegment { ( "/" | "?/" | "." ) OOPSegment } ;
     OOPSegment = [ID ( ":" | ":=" )] ID ["[" Number "]"] ["{" Constraints "}"];</programlisting>
 
   <para>In practice an <literal>OOPath</literal> expression has the following features.</para>
 
   <itemizedlist>
     <listitem>
-      <para>It has to start with <literal>/</literal>.</para>
+      <para>It has to start with <literal>/</literal> or with a <literal>?/</literal> in case of a completely
+        non-reactive OOPath (see below).</para>
     </listitem>
 
     <listitem>
@@ -71,7 +72,22 @@
         one or more constraints, written as predicate expressions between curly
         brackets like in:</para>
 
-      <programlisting>Student( $grade: /plan/exams{course == "Big Data"}/grades )</programlisting>
+      <programlisting>Student( $grade: /plan/exams{ course == "Big Data" }/grades )</programlisting>
+    </listitem>
+
+    <listitem>
+      <para>A constraint can also have a beckreference to an object of the graph traversed before the
+        currently iterated one. For example the following OOPath:</para>
+
+      <programlisting>Student( $grade: /plan/exams/grades{ result > ../averageResult } )</programlisting>
+
+      <para>will match only the grades having a result above the average for the passed exam.</para>
+    </listitem>
+
+    <listitem>
+      <para>A constraint can also recursively be another OOPath as it follows:</para>
+
+      <programlisting>Student( $exam: /plan/exams{ /grades{ result > 20 } } )</programlisting>
     </listitem>
 
     <listitem>
@@ -85,11 +101,11 @@
   </itemizedlist>
 
   <section>
-    <title>Reactive OOPath</title>
+    <title>Reactive and Non-Reactive OOPath</title>
 
-    <para>At the moment Drools is not able to react to updates involving a deeply nested traversed
+    <para>At the moment Drools is not able to react to updates involving a deeply nested object traversed
       during the evaluation of an <literal>OOPath</literal> expression. To make these objects reactive
-      to changes at the moment it is necessary to make them extend the class
+      to changes it is then necessary to make them extend the class
       <literal>org.drools.core.phreak.ReactiveObject</literal>. It is planned to overcome this
       limitation by implementing a mechanism that automatically instruments the classes belonging
       to a specific domain model.</para>
@@ -108,8 +124,29 @@
 
     </example>
 
-    <para>In this way if an exam is moved to a different course, the rule is
-      re-triggered and the list of grades matching the rule recomputed.</para>
+    <para>In this way when using an OOPath like the following:</para>
 
+    <programlisting>Student( $grade: /plan/exams{ course == "Big Data" }/grades )</programlisting>
+
+    <para>if an exam is moved to a different course, the rule is re-triggered and the list of grades
+      matching the rule recomputed.</para>
+
+    <para>It is also possible to have reactivity only in one subpart of the OOPath as in:</para>
+
+    <programlisting>Student( $grade: /plan/exams{ course == "Big Data" }?/grades )</programlisting>
+
+    <para>Here, using the <literal>?/</literal> separator instead of the <literal>/</literal> one, the engine will
+      react to a change made to an exam, or if an exam is added to the plan, but not if a new grade is added to an
+      existing exam. Of course if a OOPath chunk is not reactive, all remaining part of the OOPath from there till
+      the end of the expression will be non-reactive as well. For instance the following OOPath</para>
+
+    <programlisting>Student( $grade: ?/plan/exams{ course == "Big Data" }/grades )</programlisting>
+
+    <para>will be completely non-reactive. For this reason it is not allowed to use the
+      <literal>?/</literal> separator more than once in the same OOPath so an expression like:</para>
+
+    <programlisting>Student( $grade: /plan?/exams{ course == "Big Data" }?/grades )</programlisting>
+
+    <para>will cause a compile time error.</para>
   </section>
 </section>
