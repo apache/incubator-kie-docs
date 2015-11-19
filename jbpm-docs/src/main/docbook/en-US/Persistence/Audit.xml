@@ -350,5 +350,182 @@ ksession.addProcessEventListener(auditLogger);
       <para>
         This is just one of possible ways to configure JMS audit logger, see javadocs for AuditLoggerFactory for more details.
       </para>
-    </section>    
+    </section>
+  <section>
+    <title>Variables auditing</title>
+    <para>Process and task variables are stored in autdit tables by default although there are
+      stored in simplest possible way - by creating string representation of the variable -
+      variable.toString(). In many cases this is enough as even for custom classes used as variables
+      users can implement custom toString() method that produces expected "view" of the variable. </para>
+    <para>Though this might not cover all needs, especially when there is a need for efficient
+      queries by variables (both task and process). Let's take as an example a Person object that
+      has following structure:</para>
+    <para>
+      <programlisting>public class Person implements Serializable{
+
+    private static final long serialVersionUID = -5172443495317321032L;
+    private String name;
+    private int age;   
+    
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public int getAge() {
+        return age;
+    }
+    
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Person [name=" + name + ", age=" + age + "]";
+    }        
+}
+</programlisting>
+    </para>
+    <para>while at first look this seems to be sufficient as the toString() methods provide human
+      readable format it does not make it easy to be searched by. As searching through strings like
+      "Person [name="john", age="34"] to find people with age 34 would make data base query very
+      inefficient.</para>
+    <para>To solve the problem variable audit has been based on VariableIndexers that are
+      responsible for extracting relevant parts of the variable that will be stored in audit log.
+      <programlisting>
+/**
+ * Variable indexer that allows to transform variable instance into other representation (usually string)
+ * to be able to use it for queries.
+ *
+ * @param &lt;V> type of the object that will represent indexed variable
+ */
+public interface VariableIndexer&lt;V> {
+
+    /**
+     * Tests if given variable shall be indexed by this indexer
+     * 
+     * NOTE: only one indexer can be used for given variable
+     * 
+     * @param variable variable to be indexed
+     * @return true if variable should be indexed with this indexer
+     */
+    boolean accept(Object variable);
+    
+    /**
+     * Performs index/transform operation of the variable. Result of this operation can be
+     * either single value or list of values to support complex type separation.
+     * For example when variable is of type Person that has name, address phone indexer could 
+     * build three entries out of it to represent individual fields:
+     * person = person.name
+     * address = person.address.street
+     * phone = person.phone
+     * that will allow more advanced queries to be used to find relevant entries.
+     * @param name name of the variable
+     * @param variable actual variable value 
+     * @return
+     */
+    List&lt;V> index(String name, Object variable);
+}
+</programlisting></para>
+    <para>By default (indexer that takes the toString()) will prodce single audit entry for single
+      variable, so it's one to one relationship. But that's not the only option. Indexers (as can be
+      seen in the interface) returns list of objects that are the outcome of single variable
+      indexation. To make our person queries more efficient we could build custom indexer that would
+      take Person instance and index it into separate audit entries one representing name and the
+      other representing age.
+      <programlisting>
+public class PersonTaskVariablesIndexer implements TaskVariableIndexer {
+
+    @Override
+    public boolean accept(Object variable) {
+        if (variable instanceof Person) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public List&lt;TaskVariable> index(String name, Object variable) {
+        
+        Person person = (Person) variable;
+        List&lt;TaskVariable> indexed = new ArrayList&lt;TaskVariable>();
+        
+        TaskVariableImpl personNameVar = new TaskVariableImpl();
+        personNameVar.setName("person.name");
+        personNameVar.setValue(person.getName());
+        
+        indexed.add(personNameVar);
+        
+        TaskVariableImpl personAgeVar = new TaskVariableImpl();
+        personAgeVar.setName("person.age");
+        personAgeVar.setValue(person.getAge()+"");
+        
+        indexed.add(personAgeVar);
+        
+        return indexed;
+    }
+
+}
+</programlisting></para>
+    <para>That indexer will then be used to index Person class only and rest of variables will be
+      indexed with default (toString()) indexer. Now when we want to find process instances or tasks
+      that have person with age 34 we simple refer to it as<itemizedlist>
+        <listitem>
+          <para>variable name: person.age</para>
+        </listitem>
+        <listitem>
+          <para>variable value: 34</para>
+        </listitem>
+      </itemizedlist></para>
+    <para>there is not even need to use like based queries so data base can optimize the query and
+      make it efficient even with big set of data. </para>
+    <para><emphasis role="bold">Building and registering custom indexers</emphasis></para>
+    <para>Indexers are supported for both process and task variables. though they are supported by
+      different interfaces as they do produce different type of objects representing audit view of
+      the variable. Following are the interfaces to be implemented to build custom indexers:<itemizedlist>
+        <listitem>
+          <para>process variables: org.kie.internal.process.ProcessVariableIndexer</para>
+        </listitem>
+        <listitem>
+          <para>task variables: org.kie.internal.task.api.TaskVariableIndexer</para>
+        </listitem>
+      </itemizedlist></para>
+    <para>Implementation is rather simple, just two methods to be implemented<itemizedlist>
+        <listitem>
+          <para>accept - indicates what types are handled by given indexer - note that only one
+            indexer can index given variable - so the first that accepts it will perform the
+            work</para>
+        </listitem>
+        <listitem>
+          <para>index - actually does the work to index variables depending on custom
+            requirements</para>
+        </listitem>
+      </itemizedlist></para>
+    <para>Once the implementation is done, it should be packaged as jar file and following file
+      needs to be included:<itemizedlist>
+        <listitem>
+          <para>for process variables:
+            META-INF/services/org.kie.internal.process.ProcessVariableIndexer with list of FQCN that
+            represent the process variable indexers (single class name per line in that file)</para>
+        </listitem>
+        <listitem>
+          <para>for task variables: META-INF/services/org.kie.internal.task.api.TaskVariableIndexer
+            with list of FQCN that represent the task variable indexers (single class name per line
+            in that file)</para>
+        </listitem>
+      </itemizedlist></para>
+    <para>Indexers are discovered by ServiceLoader mechanism and thus the META-INF/services files
+      need. All found indexers will be examined whenever process or task variable is about to be
+      indexed. Only the default (toString() based) indexer is not discovered but added explicitly as
+      last indexer to allow custom ones to take the precedence over it.</para>
+  </section>    
 </section>
