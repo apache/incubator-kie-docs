@@ -96,10 +96,11 @@
                         <para>additional environment entries for knowledge session</para>
                     </listitem>
                     <listitem>
-                        <para>list of fully qualified class names that shall be added to remote
-                            services support - JAXBContent for marshal and unmarshal operations for
-                            custom types</para>
+                        <para>list of fully qualified class names that shall be added to the classes used for serialization by remote services</para>
                     </listitem>
+          <listitem>
+            <para>whether or not to limit the classes from the deployment used for serialization by the remote services</para>
+          </listitem>
                             </itemizedlist>
                      </para>
                      <para>Deployment descriptor is an xml file that is placed inside META-INF
@@ -122,6 +123,7 @@
     &lt;configurations/>
     &lt;required-roles/>
     &lt;remoteable-classes/>
+    &lt;limit-serialization-classes/>
 &lt;/deployment-descriptor>
 </programlisting>
                      </para>
@@ -556,16 +558,14 @@ descriptor.getBuilder()
 ...
 &lt;/deployment-descriptor>
 </programlisting>
-            <para><emphasis role="bold">Remote services support</emphasis></para>
+            <para><emphasis role="bold">Classes used for serialization in the remote services</emphasis></para>
             <para>When processes make use of custom types (or in general non promitive types) and
                 there is a use case to include remote api invocations (REST, SOAP, JMS) such types
                 must be available to the remote services marshalling mechanism that is based on JAXB
                 for XML type. By default all types defined in kjar will be automatically included in
                 JAXB context and therefore will be avialble for remote interaction. Though there
                 might be more classes (like from dependent model) that shall be included there too. </para>
-            <para>Upon deployment, jbpm will scan classpath of given kjar to automatically register
-                classes that might be needed for remote interaction. This is done based on following
-                rules:</para>
+            <para>Upon deployment, jBPM will scan classpath of given kjar to automatically register classes that might be needed for remote interaction. This is done based on following rules:</para>
             <para>
                 <itemizedlist>
                     <listitem>
@@ -594,8 +594,34 @@ descriptor.getBuilder()
 &lt;/remoteable-classes></programlisting>
             <para>With this all classes can be added to the JAXB context to properly marshal and
                 unmarshal data types when interacting with jBPM remotely.</para>
-              </section>
-       </section>
+            <para><emphasis role="bold">Limiting classes usd for serialization in the remote services</emphasis></para>
+            <para>When there are classes in the kjar project or in the dependencies of the kjar project that woudl cause problems when used for serialization, the <code>limit-serialization-classes</code> property can be used to limit which classes are used for serialization</para>
+            <programlisting>&lt;limit-serialization-classes&gt;true&lt;/limit-serialization-classes&gt;</programlisting>
+            <para>This property limits classes used for serialization to classes which fulfill both of the following "location" and "annotation" criteria: </para>
+      <para>Classes that: <orderedlist>
+          <listitem>
+            <para>are located in the kjar project</para>
+          </listitem>
+          <listitem>
+            <para>are in a direct dependency of the kjar project</para>
+          </listitem>
+          <listitem>
+            <para>are listed in the <code>remoteable-classes</code> element and are available on the classpath of the kjar</para>
+          </listitem>
+        </orderedlist> These classes must also be annotated with one of the following type annotations: <itemizedlist>
+          <listitem>
+            <para><code>javax.xml.bind.annotation.XmlRootElement</code></para>
+          </listitem>
+          <listitem>
+            <para><code>javax.xml.bind.annotation.XmlType</code></para>
+          </listitem>
+          <listitem>
+            <para><code>org.kie.api.remote.Remotable</code></para>
+          </listitem>
+        </itemizedlist>
+      Additionally, classes will be <emphasis>excluded</emphasis> if they are any of the following: interfaces, local classes, member classes or anonymous classes.</para>
+        </section>
+    </section>
     <section>
         <title>Process Deployments</title>
         <para>You can access to the Process Deployments List under the Deploy top level menu of the
