@@ -64,7 +64,7 @@
           </itemizedlist>
           <para>The following <code>job</code> calls are provided:</para>
           <variablelist>
-               <varlistentry>
+               <varlistentry xml:id="url-get-job">
                     <term>[GET] <command>/jobs/<emphasis>{jobID}</emphasis></command></term>
                     <listitem>
                          <para>Returns the job status</para>
@@ -81,7 +81,7 @@
                          </example>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-delete-job">
                     <term>[DELETE] <command>/jobs/<emphasis>{jobID}</emphasis></command></term>
                     <listitem>
                          <para>Removes the job: If the job is not yet being processed, this will
@@ -98,7 +98,7 @@
           <para>Repository calls are calls to the Knowledge Store that allow you to manage its Git repositories and their projects.</para>
           <para>The following <code>repositories</code> calls are provided:</para>
           <variablelist>
-               <varlistentry>
+               <varlistentry xml:id="url-get-repositories">
                     <term>[GET] <command>/repositories</command></term>
                     <listitem>
                          <para>Gets information about the repositories in the Knowledge Store</para>
@@ -129,7 +129,25 @@
                          </example>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-get-repository">
+                    <term>[GET] <command>/repositories/{repositoryName}</command></term>
+                    <listitem>
+                         <para>Gets information about a repository</para>
+                         <para>Returns a <code>Map&lt;String, String></code> or <code>RepositoryRequest</code> instance, depending on the JSON serialization library being used. The keys used in the <code>Map&lt;String, String&gt;</code> instance match the fields in the <code>RepositoryRequest</code> class</para>
+                         <example>
+                              <title>An example (formatted) response body to the get repository call</title>
+                              <programlisting>{
+  "name":"wb-assets",
+  "description":"generic assets",
+  "userName":null,
+  "password":null,
+  "requestType":null,
+  "gitURL":"git://bpms-assets"
+}</programlisting>
+                         </example>
+                    </listitem>
+               </varlistentry>
+               <varlistentry xml:id="url-create-repository">
                     <term>[POST] <command>/repositories</command></term>
                     <listitem>
                          <para>Creates a new empty repository or a new repository cloned from an existing (git) repository</para>
@@ -148,15 +166,14 @@
                          </example>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-delete-repository">
                     <term>[DELETE] <command>/repositories/<emphasis>{repositoryName}</emphasis></command></term>
                     <listitem>
                          <para>Removes the repository from the Knowledge Store</para>
                          <para>Returns a <code>RemoveRepositoryRequest</code> instance</para>
                     </listitem>
                </varlistentry>
-               
-               <varlistentry>
+               <varlistentry xml:id="url-create-project">
                     <term>[POST] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/</command></term>
                     <listitem>
                          <para>Creates a project in the repository</para>
@@ -171,15 +188,37 @@
                          </example>
                     </listitem>
                </varlistentry>
-               <!-- Not yet implemented
-               <varlistentry>
+               <varlistentry xml:id="url-delete-project">
                     <term>[DELETE] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/</command></term>
                     <listitem>
                          <para>Deletes the project in the repository</para>
-                         <para>Returns a <code>JobRequest</code> instance</para>
+                         <para>Returns a <code>DeleteProjectRequest</code> instance</para>
                     </listitem>
                </varlistentry>
-               -->
+              <varlistentry xml:id="url-get-projects">
+                <term>[GET] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/</command></term>
+                <listitem>
+                  <para>Gets information about the projects</para>
+                  <para>Returns a <code>Collection&lt;Map&lt;String, String&gt;&gt;</code> or <code>Collection&lt;ProjectResponse&gt;</code> instance, depending on the JSON serialization library being used. The keys used in the <code>Map&lt;String, String&gt;</code> instance match the fields in the <code>ProjectResponse</code> class</para>
+                  <example>
+                    <title>An example (formatted) response body to the get projects call</title>
+                    <programlisting>[
+  {
+    "name":"wb-assets",
+    "description":"generic assets",
+    "groupId":"org.test",
+    "version":"1.0"
+ },
+ {
+   "name":"loanProject",
+   "description":"Loan processes and rules",
+    "groupId":"com.bank",
+    "version":"3.7"
+ }
+]</programlisting>
+                  </example>
+                </listitem>
+              </varlistentry>
           </variablelist>
      </section>
      
@@ -190,7 +229,7 @@
           </para>
           <para>The following <code>organizationalUnits</code> calls are provided:</para>
           <variablelist>
-               <varlistentry>
+             <varlistentry xml:id="url-create-org-unit">
                     <term>[POST] <command>/organizationalunits</command></term>
                     <listitem>
                          <para>Creates an organizational unit in the Knowledge Store</para>
@@ -207,14 +246,55 @@
                          </example>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+            <varlistentry xml:id="url-get-org-unit">
+              <term>[GET] <command>/organizationalunits/{orgUnitName}</command></term>
+              <listitem>
+                <para>Creates an organizational unit</para>
+                <para>Consumes an <code>OrganizationalUnit</code> instance</para>
+                <para>Returns a <code>CreateOrganizationalUnitRequest</code> instance</para>
+                <example>
+                  <title>An example (formatted) request body defining a new organizational unit to be created</title>
+                  <programlisting>{
+  "name":"testgroup",
+  "description":"",
+  "owner":"tester",
+  "repositories":["testGroupRepository"]
+}</programlisting>
+                </example>
+              </listitem>
+            </varlistentry>
+            <varlistentry xml:id="url-update-org-unit">
+              <term>[POST] <command>/organizationalunits/{orgUnitName}</command></term>
+              <listitem>
+                <para>Creates an organizational unit in the Knowledge Store</para>
+                <para>Consumes an <code>UpdateOrganizationalUnit</code> instance</para>
+                <para>Returns a <code>UpdateOrganizationalUnitRequest</code> instance</para>
+                <example>
+                  <title>An example (formatted) request body defining a new organizational unit to be created</title>
+                  <programlisting>{
+  "name":"testgroup",
+  "description":"",
+  "owner":"tester",
+  "repositories":["testGroupRepository"]
+}</programlisting>
+                </example>
+              </listitem>
+            </varlistentry>
+            <varlistentry xml:id="url-remove-org-unit">
+              <term>[DELETE] <command>/organizationalunits/<emphasis>{organizationalUnitName}</emphasis></command></term>
+              <listitem>
+                <para>Deletes a organizational unit</para>
+                <para>Returns a <code>RemoveOrganizationalUnitRequest</code> instance</para>
+              </listitem>
+            </varlistentry>
+            <varlistentry xml:id="url-add-repo-to-org-unit">
                     <term>[POST] <command>/organizationalunits/<emphasis>{organizationalUnitName}</emphasis>/repositories/<emphasis>{repositoryName}</emphasis></command></term>
                     <listitem>
                          <para>Adds the repository to the organizational unit</para>
                          <para>Returns a <code>AddRepositoryToOrganizationalUnitRequest</code> instance</para>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-remove-repo-to-org-unit">
                     <term>[DELETE] <command>/organizationalunits/<emphasis>{organizationalUnitName}</emphasis>/repositories/<emphasis>{repositoryName}</emphasis></command></term>
                     <listitem>
                          <para>Removes the repository from the organizational unit</para>
@@ -230,7 +310,7 @@
           <para>Maven calls are calls to a Project in the Knowledge Store that allow you compile and deploy the Project resources.</para>
           <para>The following <code>maven</code> calls are provided:</para>
           <variablelist>
-               <varlistentry>
+               <varlistentry xml:id="url-compile-project">
                     <term> [POST] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/<emphasis>{projectName}</emphasis>/maven/compile</command></term>
                     <listitem>
                          <para>Compiles the project (equivalent to <code>mvn compile</code>)</para>
@@ -238,7 +318,7 @@
                          <para>Returns a <code>CompileProjectRequest</code> instance</para>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-install-project">
                     <term>[POST] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/<emphasis>{projectName}</emphasis>/maven/install</command></term>
                     <listitem>
                          <para>Installs the project (equivalent to <code>mvn install</code>)</para>
@@ -246,7 +326,7 @@
                          <para>Returns a <code>InstallProjectRequest</code> instance</para>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-test-project">
                     <term>[POST] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/<emphasis>{projectName}</emphasis>/maven/test</command></term>
                     <listitem>
                          <para>Compiles the project runs a test as part of compilation</para>
@@ -254,7 +334,7 @@
                          <para>Returns a <code>TestProjectRequest</code> instance</para>
                     </listitem>
                </varlistentry>
-               <varlistentry>
+               <varlistentry xml:id="url-deploy-project">
                     <term>[POST] <command>/repositories/<emphasis>{repositoryName}</emphasis>/projects/<emphasis>{projectName}</emphasis>/maven/deploy</command></term>
                     <listitem>
                          <para>Deploys the project (equivalent to  <code>mvn deploy</code>)</para>
