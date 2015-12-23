@@ -1039,8 +1039,24 @@ end
     <para>The rule templates rely on MVEL to do substitution using the syntax @{token_name}. There
       is currently one built-in expression, @{row.rowNumber} which gives a unique number for each
       row of data and enables you to generate unique rule names. For each row of data a rule will be
-      generated with the values in the data substituted for the tokens in the template. With the
-      example data above the following rule file would be generated:</para>
+      generated with the values in the data substituted for the tokens in the template.</para>
+
+    <para>A rule template has to be included in a file with extension .drt and associated to
+      the corresponding decision table when defining the kbase in the kmodule.xml file as in
+      the following example</para>
+
+    <programlisting language="xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;kmodule xmlns="http://drools.org/xsd/kmodule"&gt;
+  &lt;kbase name="TemplatesKB" packages="org.drools.examples.templates"&gt;
+    &lt;ruleTemplate dtable="org/drools/examples/templates/ExampleCheese.xls"
+                  template="org/drools/examples/templates/Cheese.drt"
+                  row="2" col="2"/&gt;
+      &lt;ksession name="TemplatesKS"/&gt;
+      &lt;/kbase&gt;
+&lt;/kmodule&gt;
+</programlisting>
+
+    <para>With the example data above the following rule file would be generated:</para>
 
     <programlisting>
 package org.drools.examples.templates;
@@ -1064,19 +1080,20 @@ then
 end
 </programlisting>
 
-    <para>The code to run this is simple:</para>
+    <para>At this point the <code>KieSession</code> named "TemplatesKS" and containing the rules
+      generated from the template can be simply created from the <code>KieContainer</code>
+      and used as any other <code>KieSession</code>.</para>
 
     <programlisting language="java">
-DecisionTableConfiguration dtableconfiguration =
-    KnowledgeBuilderFactory.newDecisionTableConfiguration();
-dtableconfiguration.setInputType( DecisionTableInputType.XLS );
+KieSession ksession = kc.newKieSession( "TemplatesKS" );
 
-KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
+//now create some test data
+ksession.insert( new Cheese( "stilton", 42 ) );
+ksession.insert( new Person( "michael", "stilton", 42 ) );
+final List&lt;String&gt; list = new ArrayList&lt;String&gt;();
+ksession.setGlobal( "list", list );
 
-kbuilder.add( ResourceFactory.newClassPathResource( getSpreadsheetName(),
-                                                    getClass() ),
-              ResourceType.DTABLE,
-              dtableconfiguration );
+ksession.fireAllRules();
 </programlisting>
   </section>
 </section>
