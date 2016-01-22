@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section version="5.0"
+         xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd"
+         xml:base="../../" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:xs="http://www.w3.org/2001/XMLSchema"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  
+  <title>Kie Server Java Client API</title>
+
+  <para>The Kie Server has a great Java API to wrap REST or JMS requests to be sent to the server. In this section we
+  will explore some of the possibilities of this API.</para>
+
+  <section>
+    <title>Maven Configuration</title>
+
+    <para>if you are a Maven user, make sure you have at least the following dependencies in the project's
+    <emphasis>pom.xml</emphasis></para>
+
+    <example>
+      <title>Maven Dependencies</title>
+
+      <para><programlisting>&lt;dependency&gt;
+  &lt;groupId&gt;org.drools&lt;/groupId&gt;
+  &lt;artifactId&gt;drools-compiler&lt;/artifactId&gt;
+  &lt;scope&gt;runtime&lt;/scope&gt;
+  &lt;version&gt;${kie.api.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.kie&lt;/groupId&gt;
+  &lt;artifactId&gt;kie-internal&lt;/artifactId&gt;
+  &lt;version&gt;${kie.api.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;org.kie.server&lt;/groupId&gt;
+  &lt;artifactId&gt;kie-server-client&lt;/artifactId&gt;
+  &lt;version&gt;${kie.api.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;ch.qos.logback&lt;/groupId&gt;
+  &lt;artifactId&gt;logback-classic&lt;/artifactId&gt;
+  &lt;version&gt;1.1.2&lt;/version&gt;
+&lt;/dependency&gt;</programlisting></para>
+    </example>
+
+    <para>The version <emphasis>kie.api.version </emphasis>depends on the Kie Server version you are using. For jBPM
+    6.3, for example, you can use 6.3.1-SNAPSHOT.</para>
+  </section>
+
+  <section>
+    <title>Client Configuration</title>
+
+    <para>The client requires a configuration object where you set most of the server communication aspects, such as the
+    protocol (REST and JMS) credentials and the payload format (XStream, JAXB and JSON are the supported formats at the
+    moment). The first thing to do is create your configuration then create the <emphasis
+    role="bold"><code>KieServicesClient</code></emphasis> object, the entry point for starting the server communication.
+    See the source below where we use a REST client configuration:</para>
+
+    <para><example>
+        <title>Client Configuration Example</title>
+
+        <para><programlisting language="java">import org.kie.server.api.marshalling.MarshallingFormat;  
+import org.kie.server.client.KieServicesClient;  
+import org.kie.server.client.KieServicesConfiguration;  
+import org.kie.server.client.KieServicesFactory;  
+  
+public class DecisionServerTest {  
+  
+    private static final String URL = "http://localhost:8080/kie-server/services/rest/server";  
+    private static final String USER = "kieserver";  
+    private static final String PASSWORD = "kieserver1!";  
+  
+    private static final MarshallingFormat FORMAT = MarshallingFormat.JSON;  
+  
+    private KieServicesConfiguration conf;  
+    private KieServicesClient kieServicesClient;  
+  
+    public void initialize() {  
+        conf = KieServicesFactory.newRestConfiguration(URL, USER, PASSWORD);  
+        conf.setMarshallingFormat(FORMAT);  
+        kieServicesClient = KieServicesFactory.newKieServicesClient(conf);  
+    }  </programlisting></para>
+      </example></para>
+  </section>
+
+  <section>
+    <title>Server Response</title>
+
+    <para>All the service responses are represented by the object
+    <code>org.kie.server.api.model.ServiceResponse&lt;T&gt;</code> where T is the type of the payload. It has the
+    following attributes:</para>
+
+    <para><emphasis role="bold">String msg: </emphasis>The response message; </para>
+
+    <para><code>org.kie.server.api.model.ServiceResponse.ResponseType</code><emphasis role="bold"> type:</emphasis> the
+    response type enum, which can be SUCCESS or FAILURE; </para>
+
+    <para><emphasis role="bold">T result: </emphasis>The actual payload of the response, the requested object. </para>
+
+    <para>Notice that this is the same object returned if you are using REST or JMS, in another words it is agnostic to
+    protocol.</para>
+  </section>
+
+  <section>
+    <title>Server Capabilities</title>
+
+    <para>Decision Server initially only supported rules execution, starting in version 6.3 it started supporting
+    business process execution. To know what exactly your server support, you can list the server capabilities by
+    accessing the object <code>org.kie.server.api.model.KieServerInfo</code><emphasis role="bold"> </emphasis>using the
+    client:</para>
+
+    <para><example>
+        <title>Listing Server capabilities</title>
+
+        <para><programlisting language="java">public void listCapabilities() {  
+    KieServerInfo serverInfo = kieServicesClient.getServerInfo().getResult();  
+    System.out.print("Server capabilities:");  
+    for(String capability: serverInfo.getCapabilities()) {  
+        System.out.print(" " + capability);  
+    }  
+    System.out.println();  
+}</programlisting></para>
+      </example>If the server supports rules and process, the following should be printed when you run the code
+    above:</para>
+
+    <para><emphasis>Server capabilities: BRM KieServer BPM</emphasis></para>
+  </section>
+
+  <section>
+    <title>Kie Containers</title>
+
+    <para>If you want to publish a kjar to receive requests, you must publish it in a container. The container is
+    represented in the client by the object <code>org.kie.server.api.model.KieContainerResource</code>, and a list of
+    resources is <code>org.kie.server.api.model.KieContainerResourceList</code>. Here's an example of how to print a
+    list of containers:<example>
+        <title>Listing Kie Containers</title>
+
+        <para><programlisting language="java">public void listContainers() {  
+    KieContainerResourceList containersList = kieServicesClient.listContainers().getResult();  
+    List&lt;KieContainerResource&gt; kieContainers = containersList.getContainers();  
+    System.out.println("Available containers: ");  
+    for (KieContainerResource container : kieContainers) {  
+        System.out.println("\t" + container.getContainerId() + " (" + container.getReleaseId() + ")");  
+    }  
+}</programlisting></para>
+      </example></para>
+  </section>
+
+  <section>
+    <title>Managing Containers</title>
+
+    <para>You can use the client to dispose and create containers. If you dispose a containers, a ServiceResponse will
+    be returned with Void payload(no payload) and if you create it, the KieContainerResource object itself will be
+    returned in the response. Sample code:<example>
+        <title>Disposing and creating containers</title>
+
+        <para><programlisting language="java">public void disposeAndCreateContainer() {  
+    System.out.println("== Disposing and creating containers ==");  
+    List&lt;KieContainerResource&gt; kieContainers = kieServicesClient.listContainers().getResult().getContainers();  
+    if (kieContainers.size() == 0) {  
+        System.out.println("No containers available...");  
+        return;  
+    }  
+    KieContainerResource container = kieContainers.get(0);  
+    String containerId = container.getContainerId();  
+    ServiceResponse&lt;Void&gt; responseDispose = kieServicesClient.disposeContainer(containerId);  
+    if (responseDispose.getType() == ResponseType.FAILURE) {  
+        System.out.println("Error disposing " + containerId + ". Message: ");  
+        System.out.println(responseDispose.getMsg());  
+        return;  
+    }  
+    System.out.println("Success Disposing container " + containerId);  
+    System.out.println("Trying to recreate the container...");  
+    ServiceResponse&lt;KieContainerResource&gt; createResponse = kieServicesClient.createContainer(containerId, container);  
+    if(createResponse.getType() == ResponseType.FAILURE) {  
+        System.out.println("Error creating " + containerId + ". Message: ");  
+        System.out.println(responseDispose.getMsg());  
+        return;  
+    }  
+     System.out.println("Container recreated with success!");  
+}</programlisting></para>
+      </example></para>
+  </section>
+
+  <section>
+    <title>Available Clients for the Decision Server</title>
+
+    <para>The KieServicesClient is also the entry point for others clients to perform specific operations, such as send
+    BRMS commands and manage processes. Currently from the KieServicesClient you can have access to the following
+    services available in <code>org.kie.server.client</code> package:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>JobServicesClient: This client allows you to schedule, cancel, requeue and get job requests;</para>
+      </listitem>
+
+      <listitem>
+        <para>ProcessServicesClient: Allows you to start, signal abort process; complete and abort work items among
+        other capabilities; </para>
+      </listitem>
+
+      <listitem>
+        <para>QueryServicesClient: The powerful query client allows you to query process, process nodes and process
+        variables; </para>
+      </listitem>
+
+      <listitem>
+        <para>RuleServicesClient: The simple, but powerful rules client can be used to send commands to the server to
+        perform rules related operations(insert objects in the working memory, fire rules, get globals...); </para>
+      </listitem>
+
+      <listitem>
+        <para>UserTaskServicesClient: Finally, the user tasks clients allows you to perform all operations with an user
+        tasks(start, claim, cancel, etc) and query tasks by certain fields(process instances id, user, etc).</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>For further information about these interfaces check github:
+    https://github.com/droolsjbpm/droolsjbpm-integration/tree/master/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client</para>
+
+    <para>You can have access to any of these clients using the method <code>getServicesClient</code> in the
+    KieServicesClient class. For example: <code>RuleServicesClient rulesClient =
+    kieServicesClient.getServicesClient(RuleServicesClient.class); </code></para>
+  </section>
+
+  <section>
+    <title>Sending commands to the server</title>
+
+    <para>To build commands to the server you must use the class org.kie.api.command.KieCommands, that can be created
+    using <code>org.kie.api.KieServices.get().getCommands()</code>. The command to be send must be a <emphasis
+    role="bold">BatchExecutionCommand</emphasis> or a single command(if a single command is sent, the server wraps it
+    into a BatchExecutionCommand):</para>
+
+    <para><example>
+        <title>Sending commands to a container</title>
+
+        <para><programlisting language="java">public void executeCommands() {  
+    System.out.println("== Sending commands to the server ==");  
+    RuleServicesClient rulesClient = kieServicesClient.getServicesClient(RuleServicesClient.class);  
+    KieCommands commandsFactory = KieServices.Factory.get().getCommands();  
+    Command&lt;?&gt; insert = commandsFactory.newInsert("Some String OBJ");  
+    Command&lt;?&gt; fireAllRules = commandsFactory.newFireAllRules();  
+    Command&lt;?&gt; batchCommand = commandsFactory.newBatchExecution(Arrays.asList(insert, fireAllRules));  
+    ServiceResponse&lt;String&gt; executeResponse = rulesClient.executeCommands("hello", batchCommand);  
+    if(executeResponse.getType() == ResponseType.SUCCESS) {  
+        System.out.println("Commands executed with success! Response: ");  
+        System.out.println(executeResponse.getResult());  
+    }  
+    else {  
+        System.out.println("Error executing rules. Message: ");  
+        System.out.println(executeResponse.getMsg());  
+    }  
+}  </programlisting>The result in this case is a String with the command execution result. In our case it will print the
+        following:</para>
+
+        <para><programlisting>    == Sending commands to the server ==  
+    Commands executed with success! Response:   
+    {  
+      "results" : [ ],  
+      "facts" : [ ]  
+    }  </programlisting><emphasis>* You must add <emphasis role="bold">org.drools:drools-compiler</emphasis> dependency
+        to have this part working</emphasis></para>
+      </example></para>
+  </section>
+
+  <section>
+    <title>Listing available business processes</title>
+
+    <para>To list process definitions we use the QueryClient. The methods of the QueryClient usually uses pagination,
+    which means that besides the query you are making, you must also provide the current page and the number of results
+    per page. In the code below the query for process definitions from the given container starts on page 0 and list
+    1000 results, in another words, the 1000 first results.</para>
+
+    <para><example>
+        <title>Listing Business Processes Definitions Example</title>
+
+        <para><programlisting language="java">public void listProcesses() {  
+    System.out.println("== Listing Business Processes ==");  
+    QueryServicesClient queryClient = kieServicesClient.getServicesClient(QueryServicesClient.class);  
+    List&lt;ProcessDefinition&gt; findProcessesByContainerId = queryClient.findProcessesByContainerId("rewards", 0, 1000);  
+    for (ProcessDefinition def : findProcessesByContainerId) {  
+        System.out.println(def.getName() + " - " + def.getId() + " v" + def.getVersion());  
+    }  
+} </programlisting></para>
+      </example></para>
+  </section>
+</section>
