@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.kie.api.command.Command;
 import org.kie.api.task.model.Task;
+import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 import org.kie.remote.client.documentation.objects.MyType;
 import org.kie.remote.client.jaxb.JaxbCommandsRequest;
 import org.kie.remote.client.jaxb.JaxbCommandsResponse;
@@ -34,7 +35,6 @@ import org.kie.remote.jaxb.gen.StartProcessCommand;
 import org.kie.remote.jaxb.gen.util.JaxbStringObjectPair;
 import org.kie.remote.services.ws.command.generated.CommandWebService;
 import org.kie.remote.services.ws.command.generated.CommandWebServiceException;
-import org.kie.services.client.api.RemoteRuntimeEngineFactory;
 import org.kie.services.client.serialization.jaxb.impl.JaxbCommandResponse;
 import org.kie.services.client.serialization.jaxb.impl.JaxbLongListResponse;
 import org.kie.services.client.serialization.jaxb.impl.process.JaxbProcessInstanceResponse;

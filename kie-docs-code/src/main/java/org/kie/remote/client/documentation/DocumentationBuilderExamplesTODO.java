@@ -19,7 +19,6 @@ import java.net.URL;
 
 import org.kie.api.runtime.manager.RuntimeEngine;
 import org.kie.remote.client.api.RemoteRestRuntimeEngineBuilder;
-import org.kie.remote.client.api.RemoteRestRuntimeEngineFactory;
 import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 
 //TODO: changed, add to documentation

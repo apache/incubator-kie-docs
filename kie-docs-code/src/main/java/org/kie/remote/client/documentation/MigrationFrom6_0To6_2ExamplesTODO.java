@@ -19,7 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.kie.api.runtime.manager.RuntimeEngine;
-import org.kie.remote.client.api.RemoteJmsRuntimeEngineFactory;
 import org.kie.remote.client.api.RemoteRuntimeEngineFactory;
 
 //TODO: changed, add to documentation
@@ -43,16 +42,6 @@ public class MigrationFrom6_0To6_2ExamplesTODO {
                 .addUserName(user)
                 .addPassword(password)
                 .build();
-        
-        // If you still want to use the factory to create multiple instances, you can always still do this: 
-        RemoteJmsRuntimeEngineFactory jmsRuntimeFactory = RemoteRuntimeEngineFactory.newJmsBuilder()
-                .addDeploymentId(deploymentId)
-                .addJbossServerHostName(serverUrl.getHost())
-                .addUserName(user)
-                .addPassword(password)
-                .buildFactory();
-       
-        engine = jmsRuntimeFactory.newRuntimeEngine();
     }
    
     /**
