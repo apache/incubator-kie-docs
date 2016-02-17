@@ -179,7 +179,7 @@
 
 &lt;bean id="BitronixTransactionManager" factory-method="getTransactionManager"
       class="bitronix.tm.TransactionManagerServices" depends-on="btmConfig" destroy-method="shutdown" />
-  
+
 &lt;bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
   &lt;property name="transactionManager" ref="BitronixTransactionManager" />
   &lt;property name="userTransaction" ref="BitronixTransactionManager" />
@@ -264,6 +264,32 @@
                                                  SharedEntityManager</para>
                                    </listitem>
                             </itemizedlist></para>
+
+<para> If your application is configured with Local Persistence Unit
+      and is also utilizing AuditService for querying jBPM history
+      related data, then it's necessary to add
+      <emphasis>org.kie.api.runtime.EnvironmentName.USE_LOCAL_TRANSACTIONS</emphasis> enrivonment
+      entry to the RuntimeEnvironment, for example:
+</para>
+<programlisting>
+&lt;bean id="runtimeEnvironment" class="org.kie.spring.factorybeans.RuntimeEnvironmentFactoryBean">
+...
+    &lt;property name="environmentEntries" ref="env" />
+  &lt;/bean>
+  ...
+
+  &lt;util:map id="env" key-type="java.lang.String" value-type="java.lang.Object">
+		&lt;entry>
+			&lt;key>
+				&lt;util:constant
+					static-field="org.kie.api.runtime.EnvironmentName.USE_LOCAL_TRANSACTIONS" />
+			&lt;/key>
+			&lt;value>true&lt;/value>
+		&lt;/entry>
+	&lt;/util:map>
+</programlisting>
+
+
                      <para>For more details about difference configuration options look at the
                             example <link
                                    xlink:href="https://github.com/droolsjbpm/droolsjbpm-integration/tree/master/kie-spring/src/test/resources/jbpm"
@@ -300,7 +326,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class SpringSecurityIdentityProvider implements IdentityProvider {
 
 	public String getName() {
-		
+
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth != null &amp;&amp; auth.isAuthenticated()) {
 			return auth.getName();
@@ -312,14 +338,14 @@ public class SpringSecurityIdentityProvider implements IdentityProvider {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		if (auth != null &amp;&amp; auth.isAuthenticated()) {
 			List&lt;String> roles = new ArrayList&lt;String>();
-			
+
 			for (GrantedAuthority ga : auth.getAuthorities()) {
 				roles.add(ga.getAuthority());
 			}
-			
+
 			return roles;
 		}
-		
+
 		return Collections.emptyList();
 	}
 
@@ -335,7 +361,7 @@ public class SpringSecurityIdentityProvider implements IdentityProvider {
                             configuration:<programlisting>
 &lt;context:annotation-config />
 &lt;tx:annotation-driven />
-&lt;tx:jta-transaction-manager />                
+&lt;tx:jta-transaction-manager />
 
 &lt;bean id="transactionManager" class="org.springframework.transaction.jta.JtaTransactionManager" />
 </programlisting></para>
@@ -348,7 +374,7 @@ public class SpringSecurityIdentityProvider implements IdentityProvider {
                      <para>Configure security and user/group information
                             providers<programlisting>
 &lt;util:properties id="roleProperties" location="classpath:/roles.properties" />
- 
+
 &lt;bean id="userGroupCallback" class="org.jbpm.services.task.identity.JBossUserGroupCallbackImpl">
   &lt;constructor-arg name="userGroups" ref="roleProperties">&lt;/constructor-arg>
 &lt;/bean>
@@ -432,5 +458,5 @@ public class SpringSecurityIdentityProvider implements IdentityProvider {
                                    >here</link>.</para>
               </section>
        </section>
-    
+
 </section>
