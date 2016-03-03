@@ -296,6 +296,53 @@ Person( name == ( processInstance.getVariable("name") ) )
         <listitem><para>Timers can be associated with a Sub-Process or tasks as a boundary event.
         </para></listitem>
       </itemizedlist>
+    <section>
+      <title>Update timer within running process instance</title>
+      <para>In some cases timer that has been already scheduled should be rescheduled to accomodate
+        new requirements (prolong or shorten timer expiration time, change delay, period or repeat
+        limit).</para>
+      <para>As this involves several low level steps, jBPM comes with a dedicated command to perform
+        these operations as atomic operation to make sure all is done within same transaction.
+        <programlisting>
+org.jbpm.process.instance.command.UpdateTimerCommand</programlisting></para>
+      <para>Following timer events are supported to be updated:<itemizedlist>
+          <listitem>
+            <para>boundary timer event</para>
+          </listitem>
+          <listitem>
+            <para>intermediate timer event</para>
+          </listitem>
+        </itemizedlist></para>
+      <para>Timers can be rescheduled by providing following information to the UpdateTimerCommand<itemizedlist>
+          <listitem>
+            <para>processInstanceId - mandatory</para>
+          </listitem>
+          <listitem>
+            <para>timer node name - mandatory</para>
+          </listitem>
+        </itemizedlist></para>
+      <para>Next one of following three parameters set needs to be used:<itemizedlist>
+          <listitem>
+            <para>delay</para>
+          </listitem>
+          <listitem>
+            <para>period and repeatLimit</para>
+          </listitem>
+          <listitem>
+            <para>delay, period and repeatLimit</para>
+          </listitem>
+        </itemizedlist></para>
+      <para>Example on how to updated timer event:</para>
+      <para>
+        <programlisting>// first start process instance and record its id
+long id = kieSession.startProcess(BOUNDARY_PROCESS_NAME).getId();
+
+//set timer delay to 3s
+kieSession.execute(new UpdateTimerCommand(id, BOUNDARY_TIMER_ATTACHED_TO_NAME, 3));</programlisting>
+      </para>
+      <para>Important is that the update command is executed via ksession executor to ensure it's
+        done in transaction (when persistence is used).</para>
+    </section>
   </section>
     
 </section>
