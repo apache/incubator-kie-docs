@@ -435,6 +435,327 @@ userTaskService.complete(taskId, "john", results);
               <para/>
        </section>
        <section>
+              <title>QueryService</title>
+              <para>QueryService provides advanced search capabilities that are based on Dashbuilder
+                     DataSets. The concept behind it is that users are given control over how to
+                     retrieve data from underlying data store. This includes complex joins with
+                     external tables such as JPA entities tables, custom systems data base tables
+                     etc.</para>
+              <para>QueryService is build around two parts:<itemizedlist>
+                            <listitem>
+                                   <para>Management operations<itemizedlist>
+                                                 <listitem>
+                                                  <para>register query definition</para>
+                                                 </listitem>
+                                                 <listitem>
+                                                  <para>replace query definition</para>
+                                                 </listitem>
+                                                 <listitem>
+                                                  <para>unregister (remove) query definition</para>
+                                                 </listitem>
+                                                 <listitem>
+                                                  <para>get query definition</para>
+                                                 </listitem>
+                                                 <listitem>
+                                                  <para>get all registered query definitions</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>Runtime operations<itemizedlist>
+                                                 <listitem>
+                                                  <para>query - with two flavors<itemizedlist>
+                                                  <listitem>
+                                                  <para>simple based on QueryParam as filter
+                                                  provider</para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>advanced based on QueryParamBuilder as
+                                                  filter provider</para>
+                                                  </listitem>
+                                                  </itemizedlist></para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                     </itemizedlist></para>
+              <para>DashBuilder DataSets provide support for multiple data sources (CSV, SQL,
+                     elastic search, etc) while jBPM - since its backend is RDBMS based - focuses on
+                     SQL based data sets. So jBPM QueryService is a subset of DashBuilder DataSets
+                     capabilities to allow efficient queries with simple API.</para>
+              <para><emphasis role="bold">Terminology</emphasis></para>
+              <para>
+                     <itemizedlist>
+                            <listitem>
+                                   <para>QueryDefinition - represents definion of the data set which
+                                          consists of unique name, sql expression (the query) and
+                                          source - JNDI name of the data source to use when
+                                          performing queries</para>
+                            </listitem>
+                            <listitem>
+                                   <para>QueryParam - basic structure that represents individual
+                                          query parameter - condition - that consists of: column
+                                          name, operator, expected value(s)</para>
+                            </listitem>
+                            <listitem>
+                                   <para>QueryResultMapper - responsible for mapping raw data set
+                                          data (rows and columns) into object reprosentation</para>
+                            </listitem>
+                            <listitem>
+                                   <para>QueryParamBuilder - responsible for building query filters
+                                          that will be applied on the query definition for given
+                                          query invocation</para>
+                            </listitem>
+                     </itemizedlist>
+              </para>
+              <para>While QueryDefinition and QueryParam is rather straight forward,
+                     QueryParamBuilder and QueryResultMapper is bit more advanced and require
+                     slightly more attention to make use of it in right way, and by that take
+                     advantage of their capabilities. </para>
+              <para/>
+              <para><emphasis role="bold">QueryResultMapper</emphasis></para>
+              <para>Mapper as the name suggest, maps data taken out from data base (from data set)
+                     into object representation. Much like ORM providers such as hibernate maps
+                     tables to entities. Obviously there might be many object types that could be
+                     used for representing data set results so it's almost impossible to provide
+                     them out of the box. Mappers are rather powerful and thus are pluggable, you
+                     can implement your own that will transform the result into whatever type you
+                     like. jBPM comes with following mappers out of the box:<itemizedlist>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.ProcessInstanceQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name -
+                                                  ProcessInstances</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.ProcessInstanceWithVarsQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name -
+                                                  ProcessInstancesWithVariables</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.ProcessInstanceWithCustomVarsQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name -
+                                                  ProcessInstancesWithCustomVariables</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.UserTaskInstanceQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name - UserTasks</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.UserTaskInstanceWithVarsQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name -
+                                                  UserTasksWithVariables</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.UserTaskInstanceWithCustomVarsQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name -
+                                                  UserTasksWithCustomVariables</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.TaskSummaryQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name - TaskSummaries</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>org.jbpm.kie.services.impl.query.mapper.RawListQueryMapper<itemizedlist>
+                                                 <listitem>
+                                                  <para>registered with name - RawList</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                     </itemizedlist></para>
+              <para>Each QueryResultMapper is registered under given name to allow simple look up by
+                     name instead of referencing its class name - especially important when using
+                     EJB remote flavor of services where we want to reduce number of dependencies
+                     and thus not relying on implementation on client side. So to be able to
+                     reference QueryResultMapper by name, NamedQueryMapper should be used which is
+                     part of jbpm-services-api. That acts as delegate (lazy delegate) as it will
+                     look up the actual mapper when the query is actually performed.</para>
+              <para>
+                     <programlisting>
+queryService.query("my query def", new NamedQueryMapper&lt;Collection&lt;ProcessInstanceDesc>>("ProcessInstances"), new QueryContext());</programlisting>
+              </para>
+              <para/>
+              <para><emphasis role="bold">QueryParamBuilder</emphasis></para>
+              <para>QueryParamBuilder that provides more advanced way of building filters for our
+                     data sets. By default when using query method of QueryService that accepts zero
+                     or more QueryParam instances (as we have seen in above examples) all of these
+                     params will be joined with AND operator meaning all of them must match. But
+                     that's not always the case so that's why QueryParamBuilder has been introduced
+                     for users to build their on builders which will provide filters at the time the
+                     query is issued.</para>
+              <para>There is one QueryParamBuilder available out of the box and it is used to cover
+                     default QueryParams that are based on so called core functions. These core
+                     functions are SQL based conditions and includes following<itemizedlist>
+                            <listitem>
+                                   <para>IS_NULL</para>
+                            </listitem>
+                            <listitem>
+                                   <para>NOT_NULL</para>
+                            </listitem>
+                            <listitem>
+                                   <para>EQUALS_TO</para>
+                            </listitem>
+                            <listitem>
+                                   <para>NOT_EQUALS_TO</para>
+                            </listitem>
+                            <listitem>
+                                   <para>LIKE_TO</para>
+                            </listitem>
+                            <listitem>
+                                   <para>GREATER_THAN</para>
+                            </listitem>
+                            <listitem>
+                                   <para>GREATER_OR_EQUALS_TO</para>
+                            </listitem>
+                            <listitem>
+                                   <para>LOWER_THAN</para>
+                            </listitem>
+                            <listitem>
+                                   <para>LOWER_OR_EQUALS_TO</para>
+                            </listitem>
+                            <listitem>
+                                   <para>BETWEEN</para>
+                            </listitem>
+                            <listitem>
+                                   <para>IN</para>
+                            </listitem>
+                            <listitem>
+                                   <para>NOT_IN</para>
+                            </listitem>
+                     </itemizedlist></para>
+              <para>QueryParamBuilder is simple interface that is invoked as long as its build
+                     method returns non null value before query is performed. So you can build up a
+                     complex filter options that could not be simply expressed by list of
+                     QueryParams. Here is basic implementation of QueryParamBuilder to give you a
+                     jump start to implement your own - note that it relies on DashBuilder Dataset
+                     API.</para>
+              <para>
+                     <programlisting>
+public class TestQueryParamBuilder implements QueryParamBuilder&lt;ColumnFilter> {
+ 
+    private Map&lt;String, Object> parameters;
+    private boolean built = false;
+    public TestQueryParamBuilder(Map&lt;String, Object> parameters) {
+        this.parameters = parameters;
+    }
+     
+    @Override
+    public ColumnFilter build() {
+        // return null if it was already invoked
+        if (built) {
+            return null;
+        }
+         
+        String columnName = "processInstanceId";
+         
+        ColumnFilter filter = FilterFactory.OR(
+                FilterFactory.greaterOrEqualsTo((Long)parameters.get("min")),
+                FilterFactory.lowerOrEqualsTo((Long)parameters.get("max")));
+        filter.setColumnId(columnName);
+        
+        built = true;
+        return filter;
+    }
+ 
+}
+</programlisting>
+              </para>
+              <para>Once you have query param builder implemented you simply use its instance when
+                     performing query via
+                     QueryService<programlisting>
+queryService.query("my query def", ProcessInstanceQueryMapper.get(), new QueryContext(), paramBuilder);</programlisting></para>
+              <para><emphasis role="bold">Typical usage scenario</emphasis></para>
+              <para>First thing user needs to do is to define data set - view of the data you want
+                     to work with - so called QueryDefinition in services api. </para>
+              <para>
+                     <programlisting>
+SqlQueryDefinition query = new SqlQueryDefinition("getAllProcessInstances", "java:jboss/datasources/ExampleDS");
+query.setExpression("select * from processinstancelog");
+       </programlisting>
+              </para>
+              <para>This is the simplest possible query definition as it can be:<itemizedlist>
+                            <listitem>
+                                   <para>constructor takes<itemizedlist>
+                                                 <listitem>
+                                                  <para>a unique name that identifies it on
+                                                  runtime</para>
+                                                 </listitem>
+                                                 <listitem>
+                                                  <para>data source JNDI name used when performing
+                                                  queries on this definition - in other words source
+                                                  of data</para>
+                                                 </listitem>
+                                          </itemizedlist></para>
+                            </listitem>
+                            <listitem>
+                                   <para>expression - the most important part - is the sql statement
+                                          that builds up the view to be filtered when performing
+                                          queries</para>
+                            </listitem>
+                     </itemizedlist></para>
+              <para>Once we have the sql query definition we can register it so it can be used later
+                     for actual queries.</para>
+              <para>
+                     <programlisting>
+queryService.registerQuery(query);</programlisting>
+              </para>
+              <para>From now on, this query definition can be used to perform actual queries (or
+                     data look ups to use terminology from data sets). Following is the basic one
+                     that collects data as is, without any filtering</para>
+              <para>
+                     <programlisting>
+Collection&lt;ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), new QueryContext());</programlisting>
+              </para>
+              <para>Above query was very simple and used defaults from QueryContext - paging and
+                     sorting. So let's take a look at one that changes the defaults of the paging
+                     and sorting</para>
+              <para>
+                     <programlisting>
+QueryContext ctx = new QueryContext(0, 100, "start_date", true);
+         
+Collection&lt;ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), ctx);</programlisting>
+              </para>
+              <para>Now let's take a look at how to do data filtering </para>
+              <para>
+                     <programlisting>
+// single filter param
+Collection&lt;ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), new QueryContext(), QueryParam.likeTo(COLUMN_PROCESSID, true, "org.jbpm%"));
+ 
+// multiple filter params (AND)
+Collection&lt;ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), new QueryContext(),
+ QueryParam.likeTo(COLUMN_PROCESSID, true, "org.jbpm%"),
+ QueryParam.in(COLUMN_STATUS, 1, 3));</programlisting>
+              </para>
+              <para>With that end user is put in driver seat to define what data and how they should
+                     be fetched. Not being limited by JPA provider nor anything else. Moreover this
+                     promotes use of tailored queries for your environment as in most of the case
+                     there will be single data base used and thus specific features of that data
+                     base can be used to increase performance.</para>
+              <para>Further examples can be found <link
+                            xlink:href="http://mswiderski.blogspot.com/2016/01/advanced-queries-in-jbpm-64.html"
+                            >here</link>.</para>
+              <para/>
+       </section>
+       <section>
               <title>Working with deployments</title>
               <para>Deployment Service provides convinient way to put business assets to an
                      execution environment but there are cases that requires some additional
