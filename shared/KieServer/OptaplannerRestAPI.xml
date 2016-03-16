@@ -4,23 +4,41 @@
          xml:base="../../" xmlns="http://docbook.org/ns/docbook" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns="http://docbook.org/ns/docbook">
-  <title>Optaplanner REST API</title>
+  <title>OptaPlanner REST API</title>
 
-  <para>When the BRP (Business Resource Planner) capability is enabled, the Kie Server supports the following additional
-  REST APIs. As usual, all these APIs are also available through JMS and the Java client API.</para>
-
-  <para>Please note the following before using these commands:</para>
+  <para>When the Planner capability is enabled, the Kie Server supports the following additional REST APIs. As usual,
+  all these APIs are also available through JMS and the Java client API. Please also note:</para>
 
   <para><itemizedlist>
       <listitem>
-        <para>The base URL for these will remain as the endpoint defined earlier (for example:
-        <code>http://SERVER:PORT/CONTEXT/services/rest/server/</code> )</para>
+        <para>The base URL for these will remain as the endpoint defined earlier (for example
+        <code>http://SERVER:PORT/CONTEXT/services/rest/server/</code> ).</para>
       </listitem>
 
       <listitem>
         <para>All requests require basic HTTP Authentication for the role kie-server as indicated earlier.</para>
       </listitem>
+
+      <listitem>
+        <para>To get a specific marshalling format, add the HTTP headers <literal>Content-Type</literal> and optional
+        <literal>X-KIE-ContentType</literal> in the HTTP request. For example:</para>
+
+        <programlisting>Content-Type: application/xml
+X-KIE-ContentType: xstream</programlisting>
+      </listitem>
     </itemizedlist></para>
+
+  <para>The example requests and responses used below presume that a kie container is build using the optacloud example
+  of OptaPlanner Workbench, by calling a <literal>PUT</literal> on
+  <literal>/services/rest/server/containers/optacloud-kiecontainer-1</literal> with this content:</para>
+
+  <programlisting language="xml">&lt;kie-container container-id="optacloud-kiecontainer-1"&gt;
+  &lt;release-id&gt;
+    &lt;group-id&gt;opta&lt;/group-id&gt;
+    &lt;artifact-id&gt;optacloud&lt;/artifact-id&gt; 
+    &lt;version&gt;1.0.0&lt;/version&gt; 
+  &lt;/release-id&gt; 
+&lt;/kie-container&gt;</programlisting>
 
   <section>
     <title>[GET] /containers/{containerId}/solvers</title>
@@ -30,21 +48,21 @@
     <example>
       <title>Example Server Response (XStream)</title>
 
-      <programlisting language="XML">&lt;org.kie.server.api.model.ServiceResponse&gt;
+      <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
   &lt;type&gt;SUCCESS&lt;/type&gt;
-  &lt;msg&gt;Solvers list successfully retrieved from container &amp;apos;cloud&amp;apos;&lt;/msg&gt;
+  &lt;msg&gt;Solvers list successfully retrieved from container 'optacloud-kiecontainer-1'&lt;/msg&gt;
   &lt;result class="org.kie.server.api.model.instance.SolverInstanceList"&gt;
     &lt;solvers&gt;
       &lt;solver-instance&gt;
-        &lt;container-id&gt;cloud&lt;/container-id&gt;
-        &lt;solver-id&gt;cloudsolver2&lt;/solver-id&gt;
-        &lt;solver-config-file&gt;META-INF/cloudbalance-solver.xml&lt;/solver-config-file&gt;
+        &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+        &lt;solver-id&gt;solver1&lt;/solver-id&gt;
+        &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
         &lt;status&gt;NOT_SOLVING&lt;/status&gt;
       &lt;/solver-instance&gt;
       &lt;solver-instance&gt;
-        &lt;container-id&gt;cloud&lt;/container-id&gt;
-        &lt;solver-id&gt;cloudsolver1&lt;/solver-id&gt;
-        &lt;solver-config-file&gt;META-INF/cloudbalance-solver.xml&lt;/solver-config-file&gt;
+        &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+        &lt;solver-id&gt;solver2&lt;/solver-id&gt;
+        &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
         &lt;status&gt;NOT_SOLVING&lt;/status&gt;
       &lt;/solver-instance&gt;
     &lt;/solvers&gt;
@@ -57,19 +75,19 @@
 
       <programlisting language="JSON">{
   "type" : "SUCCESS",
-  "msg" : "Solvers list successfully retrieved from container 'cloud'",
+  "msg" : "Solvers list successfully retrieved from container 'optacloud-kiecontainer-1'",
   "result" : {
     "solver-instance-list" : {
       "solver" : [ {
         "status" : "NOT_SOLVING",
-        "container-id" : "cloud",
-        "solver-id" : "cloudsolver2",
-        "solver-config-file" : "META-INF/cloudbalance-solver.xml"
+        "container-id" : "optacloud-kiecontainer-1",
+        "solver-id" : "solver1",
+        "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml"
       }, {
         "status" : "NOT_SOLVING",
-        "container-id" : "cloud",
-        "solver-id" : "cloudsolver1",
-        "solver-config-file" : "META-INF/cloudbalance-solver.xml"
+        "container-id" : "optacloud-kiecontainer-1",
+        "solver-id" : "solver2",
+        "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml"
       } ]
     }
   }
@@ -88,31 +106,31 @@
     <example>
       <title>Example Server Request (XStream)</title>
 
-      <programlisting language="XML">&lt;solver-instance&gt;
-  &lt;solver-config-file&gt;META-INF/cloudbalance-solver.xml&lt;/solver-config-file&gt;
-&lt;/solver-instance&gt;           </programlisting>
+      <programlisting language="xml">&lt;solver-instance&gt;
+  &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
+&lt;/solver-instance&gt;          </programlisting>
     </example>
 
     <example>
       <title>Example Server Response (XStream)</title>
 
-      <programlisting language="XML">&lt;org.kie.server.api.model.ServiceResponse&gt;
+      <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
   &lt;type&gt;SUCCESS&lt;/type&gt;
-  &lt;msg&gt;Solver 'cloudsolver' successfully created in container 'cloud'&lt;/msg&gt;
+  &lt;msg&gt;Solver 'solver1' successfully created in container 'optacloud-kiecontainer-1'&lt;/msg&gt;
   &lt;result class="solver-instance"&gt;
-    &lt;container-id&gt;cloud&lt;/container-id&gt;
-    &lt;solver-id&gt;cloudsolver&lt;/solver-id&gt;
-    &lt;solver-config-file&gt;META-INF/cloudbalance-solver.xml&lt;/solver-config-file&gt;
+    &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+    &lt;solver-id&gt;solver1&lt;/solver-id&gt;
+    &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
     &lt;status&gt;NOT_SOLVING&lt;/status&gt;
   &lt;/result&gt;
-&lt;/org.kie.server.api.model.ServiceResponse&gt;           </programlisting>
+&lt;/org.kie.server.api.model.ServiceResponse&gt;         </programlisting>
     </example>
 
     <example>
       <title>Example Server Request (JSON)</title>
 
       <programlisting language="JSON">{
-  "solver-config-file" : "META-INF/cloudbalance-solver.xml"
+  "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml"
 }           </programlisting>
     </example>
 
@@ -121,13 +139,13 @@
 
       <programlisting language="JSON">{
   "type" : "SUCCESS",
-  "msg" : "Solver 'cloudsolver' successfully created in container 'cloud'",
+  "msg" : "Solver 'solver1' successfully created in container 'optacloud-kiecontainer-1'",
   "result" : {
     "solver-instance" : {
-      "status" : "NOT_SOLVING",
-      "container-id" : "cloud",
-      "solver-id" : "cloudsolver",
-      "solver-config-file" : "META-INF/cloudbalance-solver.xml"
+      "container-id" : "optacloud-kiecontainer-1",
+      "solver-id" : "solver1",
+      "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml",
+      "status" : "NOT_SOLVING"
     }
   }
 }</programlisting>
@@ -143,18 +161,14 @@
     <example>
       <title>Example Server Response (XStream)</title>
 
-      <programlisting language="XML">&lt;org.kie.server.api.model.ServiceResponse&gt;
+      <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
   &lt;type&gt;SUCCESS&lt;/type&gt;
-  &lt;msg&gt;Solver &amp;apos;cloudsolver&amp;apos; state successfully retrieved from container &amp;apos;cloud&amp;apos;&lt;/msg&gt;
+  &lt;msg&gt;Solver 'solver1' state successfully retrieved from container 'optacloud-kiecontainer-1'&lt;/msg&gt;
   &lt;result class="solver-instance"&gt;
-    &lt;container-id&gt;cloud&lt;/container-id&gt;
-    &lt;solver-id&gt;cloudsolver&lt;/solver-id&gt;
-    &lt;solver-config-file&gt;META-INF/cloudbalance-solver.xml&lt;/solver-config-file&gt;
+    &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+    &lt;solver-id&gt;solver1&lt;/solver-id&gt;
+    &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
     &lt;status&gt;NOT_SOLVING&lt;/status&gt;
-    &lt;score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore"&gt;
-      &lt;hardScore&gt;0&lt;/hardScore&gt;
-      &lt;softScore&gt;-7410&lt;/softScore&gt;
-    &lt;/score&gt;
   &lt;/result&gt;
 &lt;/org.kie.server.api.model.ServiceResponse&gt;</programlisting>
     </example>
@@ -164,18 +178,13 @@
 
       <programlisting language="JSON">{
   "type" : "SUCCESS",
-  "msg" : "Solver 'cloudsolver' state successfully retrieved from container 'cloud'",
+  "msg" : "Solver 'solver1' state successfully retrieved from container 'optacloud-kiecontainer-1'",
   "result" : {
     "solver-instance" : {
-      "status" : "NOT_SOLVING",
-      "score" : {"org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore":{
-  "hardScore" : 0,
-  "softScore" : -7410,
-  "feasible" : true
-}},
-      "container-id" : "cloud",
-      "solver-id" : "cloudsolver",
-      "solver-config-file" : "META-INF/cloudbalance-solver.xml"
+      "container-id" : "optacloud-kiecontainer-1",
+      "solver-id" : "solver1",
+      "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml",
+      "status" : "NOT_SOLVING"
     }
   }
 }</programlisting>
@@ -183,16 +192,16 @@
   </section>
 
   <section>
-    <title>⁠[POST] /containers/{containerId}/solvers/{solverId}</title>
+    <title>[POST] /containers/{containerId}/solvers/{solverId}</title>
 
-    <para>Updates the state of the {solverId} in container {containerId}. The request's body is a marshalled
-    <code>SolverInstance</code> and can either request the solver to solve a planning problem or to stop solvind one.
-    The SolverInstance state determines which operation should be executed and can be set one of two possible
-    values:</para>
+    <para>Updates the state of the {solverId} in container {containerId}, most notably to start solving. The request's
+    body is a marshalled <code>SolverInstance</code> and can either request the solver to solve a planning problem or to
+    stop solving one. The SolverInstance state determines which operation should be executed and can be set one of two
+    possible values:</para>
 
     <itemizedlist>
       <listitem>
-        <para>SOLVING: starts the solver if it is not executing yet. The request's boty must also contain the problem's
+        <para>SOLVING: starts the solver if it is not executing yet. The request's body must also contain the problem's
         data to be solved.</para>
       </listitem>
 
@@ -202,34 +211,167 @@
       </listitem>
     </itemizedlist>
 
-    <example>
-      <title>Example Server Request (XStream)</title>
+    <section>
+      <title>Start solving</title>
 
-      <programlisting language="XML">
-                       
-                     </programlisting>
-    </example>
+      <para>For example, to solve an optacloud problem with 2 computers and 1 process:</para>
 
-    <example>
-      <title>Example Server Request (JSON)</title>
+      <example>
+        <title>Example Server Request (XStream)</title>
 
-      <programlisting language="JSON">
-                       
-                     </programlisting>
-    </example>
+        <programlisting language="xml">&lt;solver-instance&gt;
+  &lt;status&gt;SOLVING&lt;/status&gt;
+  &lt;planning-problem class="opta.optacloud.CloudSolution"&gt;
+    &lt;computerList&gt;
+      &lt;opta.optacloud.Computer&gt;
+        &lt;cpuPower&gt;10&lt;/cpuPower&gt;
+        &lt;memory&gt;4&lt;/memory&gt;
+        &lt;networkBandwidth&gt;100&lt;/networkBandwidth&gt;
+        &lt;cost&gt;1000&lt;/cost&gt;
+      &lt;/opta.optacloud.Computer&gt;
+      &lt;opta.optacloud.Computer&gt;
+        &lt;cpuPower&gt;20&lt;/cpuPower&gt;
+        &lt;memory&gt;8&lt;/memory&gt;
+        &lt;networkBandwidth&gt;100&lt;/networkBandwidth&gt;
+        &lt;cost&gt;3000&lt;/cost&gt;
+      &lt;/opta.optacloud.Computer&gt;
+    &lt;/computerList&gt;
+    &lt;processList&gt;
+      &lt;opta.optacloud.Process&gt;
+        &lt;requiredCpuPower&gt;1&lt;/requiredCpuPower&gt;
+        &lt;requiredMemory&gt;7&lt;/requiredMemory&gt;
+        &lt;requiredNetworkBandwidth&gt;1&lt;/requiredNetworkBandwidth&gt;
+      &lt;/opta.optacloud.Process&gt;
+    &lt;/processList&gt;
+  &lt;/planning-problem&gt;
+&lt;/solver-instance&gt;</programlisting>
+      </example>
+
+      <para>Notice that the response does not contain the best solution yet, because solving can take seconds, minutes,
+      days or hours and this would time out the HTTP request:</para>
+
+      <example>
+        <title>Example Server Response (XStream)</title>
+
+        <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
+  &lt;type&gt;SUCCESS&lt;/type&gt;
+  &lt;msg&gt;Solver 'solver1' from container 'optacloud-kiecontainer-1' successfully updated.&lt;/msg&gt;
+  &lt;result class="solver-instance"&gt;
+    &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+    &lt;solver-id&gt;solver1&lt;/solver-id&gt;
+    &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
+    &lt;status&gt;SOLVING&lt;/status&gt;
+  &lt;/result&gt;
+&lt;/org.kie.server.api.model.ServiceResponse&gt;</programlisting>
+      </example>
+
+      <para>Instead, it's solving asynchronously and you need to call the bestsolution URL to get the best
+      solution.</para>
+    </section>
+
+    <section>
+      <title>Terminate solving</title>
+
+      <para>For example, to terminate solving:</para>
+
+      <example>
+        <title>Example Server Request (XStream)</title>
+
+        <programlisting language="xml">&lt;solver-instance&gt;
+  &lt;status&gt;NOT_SOLVING&lt;/status&gt;
+&lt;/solver-instance&gt;</programlisting>
+      </example>
+
+      <example>
+        <title>Example Server Response (XStream)</title>
+
+        <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
+  &lt;type&gt;SUCCESS&lt;/type&gt;
+  &lt;msg&gt;Solver 'solver1' from container 'optacloud-kiecontainer-1' successfully updated.&lt;/msg&gt;
+  &lt;result class="solver-instance"&gt;
+    &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+    &lt;solver-id&gt;solver1&lt;/solver-id&gt;
+    &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
+    &lt;status&gt;TERMINATING_EARLY&lt;/status&gt;
+    &lt;score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore"&gt;
+      &lt;hardScore&gt;0&lt;/hardScore&gt;
+      &lt;softScore&gt;-3000&lt;/softScore&gt;
+    &lt;/score&gt;
+  &lt;/result&gt;
+&lt;/org.kie.server.api.model.ServiceResponse&gt;</programlisting>
+      </example>
+
+      <para>This doesn't delete the solver, the best solution can still be retrieved.</para>
+    </section>
+  </section>
+
+  <section>
+    <title>[GET] /containers/{containerId}/solvers/{solverId}/bestsolution</title>
+
+    <para>Returns the best solution found at the time the request is made. If the solver hasn't terminated yet (so the
+    <literal>status</literal> field is still <literal>SOLVING</literal>), it will return the best solution found up to
+    then, but later calls can return a better solution.⁠</para>
+
+    <para>For example, the problem submitted above would return this solution, with the process assigned to the second
+    computer (because the first one doesn't have enough memory).</para>
 
     <example>
       <title>Example Server Response (XStream)</title>
 
-      <programlisting language="XML">&lt;org.kie.server.api.model.ServiceResponse&gt;
+      <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
   &lt;type&gt;SUCCESS&lt;/type&gt;
-  &lt;msg&gt;Solver &amp;apos;cloudsolver&amp;apos; from container &amp;apos;cloud&amp;apos; successfully updated.&lt;/msg&gt;
-  &lt;result class="solver-instance"&gt;
-    &lt;container-id&gt;cloud&lt;/container-id&gt;
-    &lt;solver-id&gt;cloudsolver&lt;/solver-id&gt;
-    &lt;solver-config-file&gt;META-INF/cloudbalance-solver.xml&lt;/solver-config-file&gt;
+  &lt;msg&gt;Best computed solution for 'solver1' successfully retrieved from container 'optacloud-kiecontainer-1'&lt;/msg&gt;
+   &lt;result class="solver-instance"&gt;
+    &lt;container-id&gt;optacloud-kiecontainer-1&lt;/container-id&gt;
+    &lt;solver-id&gt;solver1&lt;/solver-id&gt;
+    &lt;solver-config-file&gt;opta/optacloud/cloudSolverConfig.solver.xml&lt;/solver-config-file&gt;
     &lt;status&gt;SOLVING&lt;/status&gt;
+    &lt;score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore"&gt;
+      &lt;hardScore&gt;0&lt;/hardScore&gt;
+      &lt;softScore&gt;-3000&lt;/softScore&gt;
+    &lt;/score&gt;
+    &lt;best-solution class="opta.optacloud.CloudSolution"&gt;
+      &lt;score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore" reference="../../score" /&gt;
+      &lt;computerList&gt;
+        &lt;opta.optacloud.Computer&gt;
+          &lt;cpuPower&gt;10&lt;/cpuPower&gt;
+          &lt;memory&gt;4&lt;/memory&gt;
+          &lt;networkBandwidth&gt;100&lt;/networkBandwidth&gt;
+          &lt;cost&gt;1000&lt;/cost&gt;
+        &lt;/opta.optacloud.Computer&gt;
+        &lt;opta.optacloud.Computer&gt;
+          &lt;cpuPower&gt;20&lt;/cpuPower&gt;
+          &lt;memory&gt;8&lt;/memory&gt;
+          &lt;networkBandwidth&gt;100&lt;/networkBandwidth&gt;
+          &lt;cost&gt;3000&lt;/cost&gt;
+        &lt;/opta.optacloud.Computer&gt;
+      &lt;/computerList&gt;
+      &lt;processList&gt;
+        &lt;opta.optacloud.Process&gt;
+          &lt;requiredCpuPower&gt;1&lt;/requiredCpuPower&gt;
+          &lt;requiredMemory&gt;7&lt;/requiredMemory&gt;
+          &lt;requiredNetworkBandwidth&gt;1&lt;/requiredNetworkBandwidth&gt;
+          &lt;computer reference="../../../computerList/opta.optacloud.Computer[2]" /&gt;
+        &lt;/opta.optacloud.Process&gt;
+      &lt;/processList&gt;
+    &lt;/best-solution&gt;
   &lt;/result&gt;
+&lt;/org.kie.server.api.model.ServiceResponse&gt;</programlisting>
+    </example>
+  </section>
+
+  <section>
+    <title>[DELETE] /containers/{containerId}/solvers/{solverId}</title>
+
+    <para>⁠Disposes the solver <code>{solverId}</code> in container <code>{containerId}</code>. If it hasn't terminated
+    yet, it terminates it first.</para>
+
+    <example>
+      <title>Example Server Response (XStream)</title>
+
+      <programlisting language="xml">&lt;org.kie.server.api.model.ServiceResponse&gt;
+  &lt;type&gt;SUCCESS&lt;/type&gt;
+  &lt;msg&gt;Solver 'solver1' successfully disposed from container 'optacloud-kiecontainer-1'&lt;/msg&gt;
 &lt;/org.kie.server.api.model.ServiceResponse&gt;</programlisting>
     </example>
 
@@ -238,61 +380,8 @@
 
       <programlisting language="JSON">{
   "type" : "SUCCESS",
-  "msg" : "Solver 'cloudsolver' from container 'cloud' successfully updated.",
-  "result" : {
-    "solver-instance" : {
-      "status" : "SOLVING",
-      "container-id" : "cloud",
-      "solver-id" : "cloudsolver",
-      "solver-config-file" : "META-INF/cloudbalance-solver.xml"
-    }
-  }
+  "msg" : "Solver 'solver1' successfully disposed from container 'optacloud-kiecontainer-1'"
 }</programlisting>
-    </example>
-  </section>
-
-  <section>
-    <title>⁠[GET] /containers/{containerId}/solvers/{solverId}/bestsolution</title>
-
-    <para>Returns the best calculated solution at the time the request is made.⁠</para>
-
-    <example>
-      <title>Example Server Response (XStream)</title>
-
-      <programlisting language="XML">
-                       
-                     </programlisting>
-    </example>
-
-    <example>
-      <title>Example Server Response (JSON)</title>
-
-      <programlisting language="JSON">                     </programlisting>
-    </example>
-  </section>
-
-  <section>
-    <title>[DELETE] /containers/{containerId}/solvers/{solverId}</title>
-
-    <para>⁠Disposes the solver <code>{solverId}</code> in container <code>{containerId}</code>.</para>
-
-    <example>
-      <title>Example Server Response (XStream)</title>
-
-      <programlisting language="XML">&lt;org.kie.server.api.model.ServiceResponse&gt;
-  &lt;type&gt;SUCCESS&lt;/type&gt;
-  &lt;msg&gt;Solver 'cloudsolver' successfully disposed from container 'cloud'&lt;/msg&gt;
-&lt;/org.kie.server.api.model.ServiceResponse&gt;                     </programlisting>
-    </example>
-
-    <example>
-      <title>Example Server Response (JSON)</title>
-
-      <programlisting language="JSON">{
-  "type" : "SUCCESS",
-  "msg" : "Solver 'cloudsolver' successfully disposed from container 'cloud'",
-  "result" : null
-}                     </programlisting>
     </example>
   </section>
 </section>
