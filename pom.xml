@@ -44,8 +44,48 @@
     <module>dashbuilder-docs</module>
   </modules>
 
+  <dependencies>
+    <dependency>
+      <!-- Neccessary because this is excluded by the maven-jdocbook-plugin, althoug we need it for conditional processing
+           See: https://github.com/pressgang/maven-jdocbook-plugin/blob/maven-jdocbook-plugin-2.3.9/pom.xml#L194-L208
+           See: https://github.com/pressgang/jdocbook-core/issues/13
+       -->
+      <groupId>net.sf.docbook</groupId>
+      <artifactId>docbook-xsl</artifactId>
+      <classifier>resources</classifier>
+      <type>zip</type>
+    </dependency>
+  </dependencies>
+  
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>unpack-xsl-sources</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>net.sf.docbook</groupId>
+                  <artifactId>docbook-xsl</artifactId>
+                  <classifier>resources</classifier>
+                  <type>zip</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}/xsl</outputDirectory>
+                  <includes>**/*.xsl</includes>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
       <plugin>
         <artifactId>maven-resources-plugin</artifactId>
         <executions>
@@ -64,6 +104,22 @@
                 </resource>
               </resources>
             </configuration>
+          </execution>
+          <execution>
+            <id>copy-xsl-to-docbook</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/docbook/staging/</outputDirectory>
+              <resources>          
+                <resource>
+                  <directory>${project.build.directory}/xsl/docbook/</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>              
+            </configuration>            
           </execution>
         </executions>
       </plugin>
@@ -97,7 +153,58 @@
         <version>${project.version}</version>
         <classifier>examples</classifier>
       </dependency>
+      <dependency>
+        <groupId>net.sf.docbook</groupId>
+        <artifactId>docbook-xsl</artifactId>
+        <version>1.76.1</version>
+        <classifier>resources</classifier>
+        <type>zip</type>
+      </dependency>
     </dependencies>
-  </dependencyManagement>
+  </dependencyManagement> 
 
+  <profiles>
+    <profile>
+      <id>community</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jboss.maven.plugins</groupId>
+            <artifactId>maven-jdocbook-plugin</artifactId>
+            <extensions>true</extensions>
+            <configuration>
+              <profiling>
+                <enabled>true</enabled>
+                <attributeName>condition</attributeName>
+                <attributeValue>COMMUNITY-ONLY</attributeValue>
+              </profiling>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    
+    <profile>
+      <id>productized</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jboss.maven.plugins</groupId>
+            <artifactId>maven-jdocbook-plugin</artifactId>
+            <extensions>true</extensions>
+            <configuration>
+              <profiling>
+                <enabled>true</enabled>
+                <attributeName>condition</attributeName>
+                <attributeValue>PRODUCT-ONLY</attributeValue>
+              </profiling>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
