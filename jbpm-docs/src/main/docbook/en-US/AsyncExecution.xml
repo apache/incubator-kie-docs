@@ -526,12 +526,39 @@ public interface Reoccurring {
         <programlisting>
  CommandContext ctx = new CommandContext();
  ctx.setData("some data", "data...");
- ctx.setData("Retries", 0);
- ctx.setData("Owner", ExecutorService.EXECUTOR_ID);
+ ctx.setData("retries", 0);
+ ctx.setData("owner", ExecutorService.EXECUTOR_ID);
 </programlisting>
         <para>That will ensure that only the isntance that scheduled the job will be the one which
           will execute it. Note that it might impact the time when the job is executed especially in
           cases where given cluster member will be unavailable.</para>
+      </section>
+      <section>
+        <title>Assign priority to jobs</title>
+        <para>Asynchronous jobs are by default executed based on their scheduled time thus in case
+          several jobs are scheduled to be executed at the same time there might be an issue with
+          which one will be executed first. To override default behavior priorities can be assigned
+          to individual jobs. Priority is given as integer from 0-9 range where 0 is the lowest
+          priority and 9 is the highest. This can be done:</para>
+        <para>
+          <itemizedlist>
+            <listitem>
+              <para>directly via CommandContext using <emphasis role="italic">priority</emphasis>
+                context data object where value is a valid integer from 0-9 range</para>
+            </listitem>
+            <listitem>
+              <para>via data inputs of Async task where data input property name is <emphasis
+                  role="italic">Priority</emphasis> and value is a valid integer from 0-9
+                range</para>
+            </listitem>
+          </itemizedlist>
+        </para>
+        <para>With assigned priority jBPM executor will pick the jobs based on the scheduled time
+          and their priority. In case there is no priority assigned jBPM executor will set it to 5
+          as default.</para>
+        <para>jBPM executor can utilize JMS broker for notifying about job to be executed (only jobs
+          to be executed immediately) and the priority then is also set on JMS message so the JMS
+          broker will take this into account on delivery.</para>
       </section>
     </section>
   </section>
