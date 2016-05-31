@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section version="5.0" xml:base="../../" xml:id="wb.UserAndGroupMgmt"
+  xsi:schemaLocation="http://docbook.org/ns/docbook http://www.docbook.org/xml/5.0/xsd/docbook.xsd http://www.w3.org/1999/xlink http://www.docbook.org/xml/5.0/xsd/xlink.xsd"
+  xmlns="http://docbook.org/ns/docbook" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns="http://docbook.org/ns/docbook">
+  <title>User and group management</title>
+  <section>
+    <title>Introduction</title>
+    <para>This section describes a feature that allows the administration of the application's users
+      and groups using an intuitive and friendly user interface that comes integrated in both jBPM
+      and Drools Workbenches.<figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/home.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+    <para>Before the installation, setup and usage of this feature, this section talks about some
+      previous concepts that need to be completely understood for the further usage:</para>
+    <itemizedlist>
+      <listitem>
+        <para>Security management providers and capabilities</para>
+      </listitem>
+      <listitem>
+        <para>Installation and setup</para>
+      </listitem>
+      <listitem>
+        <para>Usage</para>
+      </listitem>
+    </itemizedlist>
+  </section>
+  <section>
+    <title>Security management providers</title>
+    <para>A security environment is usually provided by the use of a <emphasis>realm</emphasis>.
+      Realms are used to restrict the access for the different application's resources. So realms
+      contains information about the users, groups, roles, permissions and and any other related
+      information.</para>
+    <para>In most of the typical scenarios the application's security is delegated to the
+      container's security mechanism, which consumes a given realm at same time. It's important to
+      consider that there exist several realm implementations, for example Wildfly provides a realm
+      based on the
+        <emphasis>application-users.properties</emphasis>/<emphasis>application-roles.properties</emphasis>
+      files, Tomcat provides a realm based on the <emphasis>tomcat-users.xml</emphasis> file, etc.
+      So keep in mind that there is no single security realm to rely on, it can be different in each
+      installation.</para>
+    <para>The jBPM and Drools workbenches are not an exception, they're build on top Uberfire
+      framework (aka UF), which delegates the authorization and authentication to the underlying
+      container's security environment as well, so the consumed realm is given by the concrete
+      deployment configuration.</para>
+    <section>
+      <title>Security management providers</title>
+      <para>Due to the potential different security environments that have to be supported, the
+        users and groups management provides a well defined management services API with some
+        default built-in security management providers. A <emphasis role="bold">security management
+          provider</emphasis> is the formal name given to a concrete user and group management
+        service implementation for a given realm.</para>
+      <para>At this moment, by default there are two security management providers available:<itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Wildfly / EAP security management provider</emphasis> - For
+              Wildfly or EAP realms based on properties files.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Tomcat security management provider</emphasis> - For Tomcat
+              realms based on XML files.</para>
+          </listitem>
+        </itemizedlist></para>
+      <para>If the built-in providers do not fit with the application's security realm, it is easy
+        to build and register your own security management provider.</para>
+    </section>
+    <section>
+      <title>Secutiry management provider capabilities</title>
+      <para>Each security realm can provide support different operations. For example consider the
+        use of a Wildfly's realm based on properties files, The contents for the
+        applications-users.properties is
+        like:<programlisting>admin=207b6e0cc556d7084b5e2db7d822555c
+salaboy=d4af256e7007fea2e581d539e05edd1b
+maciej=3c8609f5e0c908a8c361ca633ed23844
+kris=0bfd0f47d4817f2557c91cbab38bb92d
+katy=fd37b5d0b82ce027bfad677a54fbccee
+john=afda4373c6021f3f5841cd6c0a027244
+jack=984ba30e11dda7b9ed86ba7b73d01481
+director=6b7f87a92b62bedd0a5a94c98bd83e21
+user=c5568adea472163dfc00c19c6348a665
+guest=b5d048a237bfd2874b6928e1f37ee15e
+kiewb=78541b7b451d8012223f29ba5141bcc2
+kieserver=16c6511893651c9b4b57e0c027a96075</programlisting></para>
+      <para>Note that it's based on key-value pairs where the key is the
+          <emphasis>username</emphasis>, and the value is the hashed value for the user's
+          <emphasis>password</emphasis>. So a user is just defined by the key, by its username, it
+        does not have a name nor address or any other meta information.</para>
+      <para>On the other hand, consider the use of a realm provided by a Keycloak server. The
+        information for a user is composed by more user meta-data, such as surname, address, etc, as
+        in the following image:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/admin_user_view.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>So the different services and client side components from the users and group management
+        API are based on <emphasis>capabilities</emphasis>.<emphasis role="bold"
+          >Capabilities</emphasis> are used to expose or restrict the available functionality
+        provided by the different services and client side components. Examples of capabilities are:<itemizedlist>
+          <listitem>
+            <para>Create a user</para>
+          </listitem>
+          <listitem>
+            <para>Update a user</para>
+          </listitem>
+          <listitem>
+            <para>Delete a user</para>
+          </listitem>
+          <listitem>
+            <para>Update user's attributes</para>
+          </listitem>
+          <listitem>
+            <para>Create a group</para>
+          </listitem>
+          <listitem>
+            <para>Update a group</para>
+          </listitem>
+          <listitem>
+            <para>Assign groups to a user</para>
+          </listitem>
+          <listitem>
+            <para>Assign roles to a user</para>
+          </listitem>
+        </itemizedlist></para>
+      <para>Each security management provider must specify a set of capabilities supported. From the
+        previous examples you can note that the Wildfly security management provider does not
+        support the capability for the management of the attributes for a user - the user is only
+        composed by the user name. On the other hand the Keycloak provider does support this
+        capability.</para>
+      <para>The different views and user interface components rely on the capabilities supported by
+        each provider, so if a capability is not supported by the provider in use, the UI does not
+        provide the views for the management of that capability. As an example, consider that a
+        concrete provider does not support deleting users - the delete user button on the user
+        interface will be not available.</para>
+      <para>Please take a look at the concrete service provider documentation to check all the
+        supported capabilities for each one, the default ones can be found <link
+          xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+          >here</link>.</para>
+    </section>
+  </section>
+  <section>
+    <title>Installation and setup</title>
+    <para>Before considering the installation and setup steps please note the following Drools and
+      jBPM distributions come with built-in, pre-installed security management providers by default:<itemizedlist>
+        <listitem>
+          <para><emphasis role="bold">Wildfly / EAP distribution</emphasis> - Both distributions use
+            the <link
+              xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management/uberfire-security-management-wildfly"
+              >Wildfly security management provider</link> configured for the use of the default
+            realm files <emphasis role="italic">application-users.properties</emphasis> and
+              <emphasis role="italic">application-roles.properties</emphasis></para>
+        </listitem>
+        <listitem>
+          <para><emphasis role="bold">Tomcat distribution</emphasis> - It uses the <link
+              xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management/uberfire-security-management-tomcat"
+              >Tomcat security management provider</link> configured for the use of the default
+            realm file <emphasis role="italic">tomcat-users.xml</emphasis></para>
+        </listitem>
+      </itemizedlist></para>
+    <para>Please read each <link
+        xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+        >provider's documentation</link> in order to apply the concrete settings for the target
+      deployment environment.</para>
+    <para>On the other hand, if using a custom security management provider or need to include it on
+      an existing application, consider the following installation options:<itemizedlist>
+        <listitem>
+          <para>Enable the security management feature on an existing WAR distribution</para>
+        </listitem>
+        <listitem>
+          <para>Setup and installation in an existing or new project</para>
+        </listitem>
+      </itemizedlist></para>
+    <para><emphasis>NOTE</emphasis>: If no security management provider is installed in the
+      application, there will be no available user interface for managing the security realm. Once a
+      security management provider is installed and setup, the user and group management user
+      interfaces are automatically enabled and accessible from the main menu.</para>
+    <section>
+      <title>Enable the security management feature on an existing WAR distribution</title>
+      <para>Given an existing WAR distribution of either Drools and jBPM workbenches, follow these
+        steps in order to install and enable the user management feature:<itemizedlist>
+          <listitem>
+            <para>Ensure the following libraries are present on <emphasis role="italic"
+                >WEB-INF/lib</emphasis>:<itemizedlist>
+                <listitem>
+                  <para>WEB-INF/lib/uberfire-security-management-api-6.4.0.Final..jar</para>
+                </listitem>
+                <listitem>
+                  <para>WEB-INF/lib/uberfire-security-management-backend-6.4.0.Final..jar</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+          <listitem>
+            <para>Add the concrete library for the security management provider to use in <emphasis
+                role="italic">WEB-INF/lib</emphasis>:<itemizedlist>
+                <listitem>
+                  <para>Eg: WEB-INF/lib/uberfire-security-management-wildfly-6.4.0.Final..jar</para>
+                </listitem>
+                <listitem>
+                  <para>If the concrete provider you're using requires more libraries, add those as
+                    well. Please read each <link
+                      xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+                      >provider's documentation</link> for more information</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+          <listitem>
+            <para>Replace the whole content for file <emphasis role="italic"
+                >WEB-INF/classes/security-management.properties</emphasis>, or if not present,
+              create it. The settings present on this file depend on the concrete implementation
+              you're using. Please read each <link
+                xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+                >provider's documentation</link> for more information.</para>
+          </listitem>
+          <listitem>
+            <para>If you're deploying on Wildfly or EAP, please check if the <emphasis role="italic"
+                >WEB-INF/jboss-deployment-structure.xml </emphasis>requires any update. Please read
+              each <link
+                xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+                >provider's documentation</link> for more information.</para>
+          </listitem>
+        </itemizedlist></para>
+    </section>
+    <section>
+      <title>Setup and installation in an existing or new project</title>
+      <para>If you're building an <link xlink:href="http://uberfireframework.org/">Uberfire</link>
+        based web application and you want to include the user and group management feature, please
+        read <link
+          xlink:href="https://github.com/uberfire/uberfire-extensions/blob/master/uberfire-security/uberfire-security-management/uberfire-security-management-client-wb/README.md"
+          >this instructions</link>.</para>
+    </section>
+    <section>
+      <title>Disabling the security management feature</title>
+      <para>The security management feature can be disabled, and thus no services or user interface
+        will be available, by any of:<itemizedlist>
+          <listitem>
+            <para>Uninstalling the security management provider from the application</para>
+            <para>When no concrete security management provider installed on the application, the
+              user and group management feature will be disabled and no services or user interface
+              will be presented to the user.</para>
+          </listitem>
+          <listitem>
+            <para>Removing or commenting the security management configuration file</para>
+            <para>Removing or commenting all the lines in the configuration file located at<emphasis
+                role="italic"> WEB-INF/classes/security-management.properties</emphasis> will
+              disable the user and group management feature and no services or user interface will
+              be presented to the user.</para>
+          </listitem>
+        </itemizedlist></para>
+    </section>
+  </section>
+  <section>
+    <title>Usage</title>
+    <para>The user and group management feature is presented using two different perspectives that
+      are available from the main <emphasis role="italic">Home </emphasis>menu (considering that the
+      feature is enabled) as:</para>
+    <figure>
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/Workbench/UserAndGroupManagement/main_menu.png"/>
+        </imageobject>
+      </mediaobject>
+    </figure>
+    <para>Read the following sections for using both user and group management perspectives.</para>
+    <section>
+      <title>User management</title>
+      <para>The user management interface is available from the <emphasis role="italic">User
+          management</emphasis> menu entry in the <emphasis role="italic">Home</emphasis>
+        menu.</para>
+      <para>The interface is presented using two main panels: the users explorer on the west panel
+        and the user editor on the center one:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/users_perspective.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>The <emphasis role="bold">users explorer</emphasis>, on west panel, lists by default all
+        the users present on the application's security realm:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/users_explorer.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>In addition to listing all users, the users explorer allows:<itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Searching for users</emphasis></para>
+            <para>When specifying the search pattern in the search box the users list will be
+              reduced and will display only the users that matches the search pattern.</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata
+                    fileref="images/Workbench/UserAndGroupManagement/users_explorer_search.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+            <para>Search patterns depend on the concrete security management provider being used by
+              the application's. Please read each <link
+                xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+                >provider's documentation</link> for more information.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Creating new users</emphasis></para>
+            <para>By clicking on the <emphasis role="italic">Create new user </emphasis>button, a
+              new screen will be presented on the center panel to perform a new user
+              creation.</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/Workbench/UserAndGroupManagement/create_new_user.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </itemizedlist></para>
+      <para>The <emphasis role="bold">user editor</emphasis>, on the center panel, is used to
+        create, view, update or delete users. Once creating a new user o clicking an existing user
+        on the users explorer, the user editor screen is opened.</para>
+      <para>To <emphasis role="bold">view an existing user</emphasis>,  click on an existing user in
+        the Users Explorer to open the User Editor screen. For example, viewing the <emphasis
+          role="italic">admin</emphasis> user when using the Wildfly security management provider
+        results in this screen:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/admin_user_view_wf.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>Same admin user view operation but when using the Keycloak security management provider,
+        instead of the Wildfly's one, results in this screen:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/admin_user_view.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>Note that the user editor, when using the Keycloak sec. management provider, includes
+        the user attributes management section, but it's not present when using the Wildfly's one.
+        So remember that the information and actions available on the user interface depends on each
+        provider's capabilities (as explained in previous sections).</para>
+      <para>Viewing a user in the user editor provides the following information (if provider
+        supports it):<itemizedlist>
+          <listitem>
+            <para>The user name</para>
+          </listitem>
+          <listitem>
+            <para>The user's attributes</para>
+          </listitem>
+          <listitem>
+            <para>The assigned groups</para>
+          </listitem>
+          <listitem>
+            <para>The assigned roles</para>
+          </listitem>
+        </itemizedlist></para>
+      <para>In order to <emphasis role="bold">update or delete an existing user</emphasis>, click on
+        the <emphasis role="italic">Edit</emphasis> button present near to the username in the user
+        editor screen:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/admin_user_edit.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>Once the user editor presented in edit mode, different operations can be done (if the
+        security management provider in use supports it):<itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Update the user's attributes</emphasis></para>
+            <para>A group selection popup is presented when clicking on <emphasis role="italic">Add
+                to groups</emphasis> button:</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata
+                    fileref="images/Workbench/UserAndGroupManagement/kc_user_attributes.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+            <para>This popup screen allows the user to search and select or deselect the groups
+              assigned for the user currently being edited.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Update assigned groups</emphasis></para>
+            <para>A group selection popup is presented when clicking on <emphasis role="italic">Add
+                to groups</emphasis> button:</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/Workbench/UserAndGroupManagement/groups_selection.png"
+                  />
+                </imageobject>
+              </mediaobject>
+            </figure>
+            <para>This popup screen allows the user to search and select or deselect the groups
+              assigned for the user currently being edited.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Update assigned roles</emphasis></para>
+            <para>A role selection popup is presented when clicking on <emphasis role="italic">Add
+                to roles</emphasis> button:</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/Workbench/UserAndGroupManagement/roles_selection.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+            <para>This popup screen allows the user to search and select or deselect the roles
+              assigned for the user currently being edited.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Change user's password</emphasis></para>
+            <para>A change password popup screen is presented when clicking on the <emphasis
+                role="italic">Change password</emphasis> button:</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/Workbench/UserAndGroupManagement/change_password.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Delete user</emphasis></para>
+            <para>The user currently being edited can be deleted from the realm by clicking on the
+                <emphasis role="italic">Delete</emphasis> button.</para>
+          </listitem>
+        </itemizedlist></para>
+    </section>
+    <section>
+      <title>Group management</title>
+      <para>The group management interface is available from the <emphasis role="italic">Group
+          management</emphasis> menu entry in the <emphasis role="italic">Home</emphasis>
+        menu.</para>
+      <para>The interface is presented using two main panels: the groups explorer on the west panel
+        and the group editor on the center one:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata
+              fileref="images/Workbench/UserAndGroupManagement/group_management_perspective.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>The <emphasis role="bold">groups explorer</emphasis>, on west panel, lists by default
+        all the groups present on the application's security realm:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/groups_explorer.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>In addition to listing all groups, the groups explorer allows:<itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Searching for groups</emphasis></para>
+            <para>When specifying the search pattern in the search box the users list will be
+              reduced and will display only the users that matches the search pattern.</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata
+                    fileref="images/Workbench/UserAndGroupManagement/groups_explorer_search.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+            <para>Search patterns depend on the concrete security management provider being used by
+              the application's. Please read each <link
+                xlink:href="https://github.com/uberfire/uberfire-extensions/tree/master/uberfire-security/uberfire-security-management"
+                >provider's documentation</link> for more information.</para>
+          </listitem>
+          <listitem>
+            <para><emphasis role="bold">Create new groups</emphasis></para>
+            <para>By clicking on the <emphasis role="italic">Create new group </emphasis>button, a
+              new screen will be presented on the center panel to perform a new group creation. Once
+              the new group has been created, it allows to assign users to it:</para>
+            <figure>
+              <mediaobject>
+                <imageobject>
+                  <imagedata
+                    fileref="images/Workbench/UserAndGroupManagement/new_group_assign_users.png"/>
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </itemizedlist></para>
+      <para>The <emphasis role="bold">group editor</emphasis>, on the center panel, is used to
+        create, view or delete groups. Once creating a new group o clicking an existing group on the
+        groups explorer, the group editor screen is opened. </para>
+      <para>To <emphasis role="bold">view an existing group</emphasis>, click on an existing user in
+        the Groups Explorer to open the Group Editor screen. For example, viewing the <emphasis
+          role="italic">sales</emphasis> group results in this screen:</para>
+      <figure>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Workbench/UserAndGroupManagement/group_view.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+      <para>To <emphasis role="bold">delete an existing group</emphasis> just click on the <emphasis
+          role="italic">Delete</emphasis> button.</para>
+    </section>
+  </section>
+</section>

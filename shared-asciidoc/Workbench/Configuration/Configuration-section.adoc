@@ -1,0 +1,199 @@
+:experimental:
+
+
+[[_wb.configuration]]
+== Configuration
+
+[[_wb.usermanagement]]
+=== Basic user management
+
+
+The workbench authenticates its users against the application server's authentication and authorization (JAAS).
+
+On JBoss EAP and WildFly, add a user with the script `$JBOSS_HOME/bin/add-user.sh` (or ``$$.$$bat``):
+
+[source]
+----
+$ ./add-user.sh
+// Type: Application User
+// Realm: empty (defaults to ApplicationRealm)
+// Role: admin
+----
+
+
+There is no need to restart the application server.
+
+[[_wb.roles]]
+=== Roles
+
+
+The Workbench uses the following roles:
+
+* admin
+* analyst
+* developer
+* manager
+* user
+
+
+==== Admin
+
+
+Administrates the BPMS system.
+
+* Manages users
+* Manages VFS Repositories
+* Has full access to make any changes necessary
+
+
+==== Developer
+
+
+Developer can do almost everything admin can do, except clone repositories.
+
+* Manages rules, models, process flows, forms and dashboards
+* Manages the asset repository
+* Can create, build and deploy projects
+* Can use the JBDS connection to view processes
+
+
+==== Analyst
+
+
+Analyst is a weaker version of developer and does not have access to the asset repository or the ability to deploy projects.
+
+==== Business user
+
+
+Daily user of the system to take actions on business tasks that are required for the processes to continue forward.
+Works primarily with the task lists.
+
+* Does process management
+* Handles tasks and dashboards
+
+
+==== Manager/Viewer-only User
+
+
+Viewer of the system that is interested in statistics around the business processes and their performance, business indicators, and other reporting of the system and people who interact with the system.
+
+* Only has access to dashboards
+
+
+[[_wb.restrictedaccess]]
+=== Restricting access to repositories 
+
+
+It is possible to restrict access to repositories using roles and organizational groups.
+To let an user access a repository. 
+
+The user either has to belong into a role that has access to the repository or to a role that belongs into an orgazinational group that has access to the repository.
+These restrictions can be managed with the command line config tool.
+
+[[_wb.commandlineconfig]]
+=== Command line config tool
+
+
+Provides capabilities to manage the system repository from command line.
+System repository contains the data about general workbench settings: how editors behave, organizational groups, security and other settings that are not editable by the user.
+System repository exists in the .niogit folder, next to all the repositories that have been created or cloned into the workbench.
+
+==== Config Tool Modes
+
+* Online (default and recommended) - Connects to the Git repository on startup, using Git server provided by the KIE Workbench. All changes are made locally and published to upstream when:
+** "push-changes" command is explicitly executed
+** "exit" is used to close the tool
+* Offline - Creates and manipulates system repository directly on the server (no discard option)
+
+
+==== Available Commands
+
+.Available Commands
+[cols="1,1", frame="all"]
+|===
+|exit
+|Publishes local changes, cleans up temporary directories and quits the command line tool
+
+|discard
+|Discards local changes without publishing them, cleans up temporary directories and quits the command
+                line tool
+
+|help
+|Prints a list of available commands
+
+|list-repo
+|List available repositories
+
+|list-org-units
+|List available organizational units
+
+|list-deployment
+|List available deployments
+
+|create-org-unit
+|Creates new organizational unit
+
+|remove-org-unit
+|Removes existing organizational unit
+
+|add-deployment
+|Adds new deployment unit
+
+|remove-deployment
+|Removes existing deployment
+
+|create-repo
+|Creates new git repository
+
+|remove-repo
+|Removes existing repository ( only from config )
+
+|add-repo-org-unit
+|Adds repository to the organizational unit
+
+|remove-repo-org-unit
+|Removes repository from the organizational unit
+
+|add-role-repo
+|Adds role(s) to repository
+
+|remove-role-repo
+|Removes role(s) from repository
+
+|add-role-org-unit
+|Adds role(s) to organizational unit
+
+|remove-role-org-unit
+|Removes role(s) from organizational unit
+
+|add-role-project
+|Adds role(s) to project
+
+|remove-role-project
+|Removes role(s) from project
+
+|push-changes
+|Pushes changes to upstream repository (only in online mode)
+|===
+
+==== How to use
+
+
+The tool can be found from kie-config-cli-${version}-dist.zip.
+Execute the kie-config-cli.sh script and by default it will start in online mode asking for a Git url to connect to ( the default value is ssh://localhost/system ). To connect to a remote server, replace the host and port with appropriate values, e.g.
+ssh://kie-wb-host/system.
+
+[source]
+----
+./kie-config-cli.sh
+----
+
+
+To operate in offline mode, append the offline parameter to the kie-config-cli.sh command.
+This will change the behaviour and ask for a folder where the .niogit (system repository) is.
+If .niogit does not yet exist, the folder value can be left empty and a brand new setup is created. 
+
+[source]
+----
+./kie-config-cli.sh offline
+----
