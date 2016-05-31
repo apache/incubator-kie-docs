@@ -1,0 +1,229 @@
+:experimental:
+
+
+[[_sect_formmodeler_usingformsclient]]
+== Using forms on client applications
+
+
+This chapter intends to describe how you can embed process forms and interact with them on another webapp including the new Javascript API provided by the platform. 
+
+You can find the library inside the `kie-wb-*.war` on the js file located on ``js/jbpm-forms-rest-integration.js``. 
+
+=== What does the API provides?
+
+
+This JavaScript API tries to be a simple mechanism to use forms on remote applications allowing to load the forms from different KIE Workbench instances, submit them, launch processes/tasks and execute callback functions when the actions are done. 
+
+The basic methods are: 
+
+**`showStartProcessForm(hostUrl, deploymentId, processId, divId, onsuccessCallback, onerrorCallback)`**: 
+Makes a call to the REST endpoint to obtain the form URL and if it gets a valid response will embed 
+the process start form on the given div. 
+The parameteres needed are:::
+
+* __hostURL__: the URL of the KIE Workbench instance that holds the deployments.
+* __deploymentId__: the deployment identifier that contains the process to run.
+* __processId__: the identifier of the process to run.
+* __divId__: the identifier of the div that has to contain the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed if the form is 
+  going to be rendered. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to render the form. This function will receive the server response as a 
+  parameter
+
+**`startProcess(divId, onsuccessCallback, onerrorCallback)`**: Submits the form loaded on the given div 
+and starts the process. The parameters needed are::
+
+* __divId__: the identifier of the div that to contains the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed after the process 
+  is started. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to start the process. This function will receive the server response as a 
+  parameter
+
+**`showTaskForm(hostUrl, taskId, divId, onsuccessCallback, onerrorCallback)`**: Makes a call to the 
+REST endpoint to obtain the form URL and if it gets a valid response will embed the task form on the 
+given div. The parameteres needed are::
+
+* __hostURL__: the URL of the KIE Workbench instance that holds the deployments.
+* __taskId__: the identifier of the task to show the form.
+* __divId__: the identifier of the div that has to contain the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed if the form is 
+  going to be rendered. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to render the form. This function will receive the server response as a 
+  parameter
+
+**`claimTask(divId, onsuccessCallback, onerrorCallback)`**: Claims the task whose form is being 
+rendered::
+
+* __divId__: the identifier of the div that contains the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed after the task is 
+  claimed. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to claim the task. This function will receive the server response as a 
+  parameter
+
+**`startTask(divId, onsuccessCallback, onerrorCallback)`**: Starts the task whose form is being 
+rendered::
+
+* __divId__: the identifier of the div that contains the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed after the task is 
+  started. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to start the task. This function will receive the server response as a 
+  parameter
+
+**`releaseTask(divId, onsuccessCallback, onerrorCallback)`**: Releases the task whose form is being 
+rendered::
+
+* __divId__: the identifier of the div that contains the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed after the task is 
+  released. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to release the task. This function will receive the server response as a 
+  parameter
+
+**`saveTask(divId, onsuccessCallback, onerrorCallback)`**: Submits the form and saves the state of the 
+task whose form is being rendered::
+
+* __divId__: the identifier of the div that contains the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed after the task is 
+  saved. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to save the task. This function will receive the server response as a 
+  parameter
+
+**`completeTask(divId, onsuccessCallback, onerrorCallback)`**: Submits the form and completes task 
+whose form is being rendered::
+
+* __divId__: the identifier of the div that contains the form.
+* __onsuccessCallback (optional)__: a javascript function that will be executed after the task is 
+  completed. This function will receive the server response as a parameter
+* __onerrorCallback (optional)__: a javascript function that will be executed if any error occurs 
+  and it is impossible to complete the task. This function will receive the server response as a 
+  parameter
+
+
+**`clearContainer(divId)`**: Cleans the div content and the related data stored on the 
+component.::
+
+* __divId__: the identifier of the div that contains the form.
+
+=== Sample usage
+
+Now let's see an example how you can use the library to load the HR process form and start a new process instance.
+We are going to define a HTML page that will contain very simple components: 
+
+* _"Show Process Form"_ BUTTON: The button that is going to make a call to a _showProcessForm()_ function to embedd the process form.
+* _"myform"_ DIV: the div that will containt the form
+* _"Start Process"_ BUTTON: the button that will call the _startProcess()_ function that submits the form and start a new process instance. At the begining it will be hidden and only will be displayed when the form is going to be rendered.
+
+First we are look at the HTML code: 
+
+[source,html]
+----
+
+<head>
+  <script src="js/jbpm-forms-rest-integration.js"></script>
+  <script>
+      var formsAPI = new jBPMFormsAPI();
+  </script>
+</head>
+<body>
+  <input type="button" id="showformButton"
+      value="Show Process Form" onclick="showProcessForm()">
+  <p/>
+  <div id="myform" style="border: solid black 1px; width: 500px; height: 200px;">
+  </div>
+  <p/>
+  <input type="button" id="startprocessButton"
+      style="display: none;" value="Start Process" onclick="startProcess()">
+</body>
+----
+
+
+Notice that in first place we have added the js library and created an instance of the jBPMFormsAPI object that will manage the form rendering. 
+
+Now let's see how the `showProcessForm()` function looks like: 
+
+[source,javascript]
+----
+
+function showProcessForm() {
+  var onsuccessCallback = function(response) {
+    document.getElementById("showformButton").style.display = "none";
+    document.getElementById("startprocessButton").style.display = "block";
+  }
+
+  var onerrorCallback = function(errorMessage) {
+    alert("Unable to load the form, something wrong happened: " + errorMessage);
+    formsAPI.clearContainer("myform");
+  }
+  formsAPI.showStartProcessForm("http://localhost:8080/kie-wb/", "org.jbpm:HR:1.0", "hiring", "myform", onsuccessCallback, onerrorCallback);
+}
+----
+
+
+As you can see, first we are defining the callback functions: 
+
+**`onsuccessCallback`**:
+            This function is going to be called when the call to the REST endpoint and the form is going to be rendered.
+            On this example we simply hide the _"Show Process Form"_ button and show the
+            _"Start Process"_ button in  order to allow to submit the form and start the process.
+            This function takes as a parameter the response of the REST call to inform the user that everything gone well.
+          ::
+
+**`onerrorCallback`**:
+            This function is going to be called if any error occurs (e.g. any communication error with the REST endpoint or unexpected js errors)
+            On this example we simply show an alert showing the error message received and clear the _"myform"_ DIV status.
+          ::
+ Once we defined the callback function we proceed to call the `formsAPI.showStartProcessForm(...)` that is going make the REST call and embedd the form inside the specified div.
+Notice that we are providing a bunch of information in order to load the form, the URL where the KIE-Workbench is running (in this example "http://localhost:8080/kie-wb/"), the deployment where the process is located ("org.jbpm:HR:1.0"), the process id ("hiring"), the DIV id that is going to contain the form ("myform") and the callback functions (onsuccessCallback and onerrorCallback). 
+
+Now let's take a look at the _startProcess()_ that is the one that is going to submit the form and start the process: 
+
+[source,javascript]
+----
+
+function startProcess() {
+  var onsuccessCallback = function(response) {
+    document.getElementById("showformButton").style.display = "block";
+    document.getElementById("startprocessButton").style.display = "none";
+    formsAPI.clearContainer("myform");
+    alert(response);
+  }
+
+  var onerrorCallback = function(response) {
+    document.getElementById("showformButton").style.display = "block";
+    document.getElementById("startprocessButton").style.display = "none";
+    formsAPI.clearContainer("myform");
+    alert("Unable to start the process, something wrong happened: " + response);
+  }
+  formsAPI.startProcess("myform", onsuccessCallback, onerrorCallback);
+}
+----
+
+
+As **`showProcessForm()`**, first we are defining the callback functions.
+Both are doing basically the same: 
+
+* Show the _"Show Process Form"_ button and hide the _"Start Process"_ button to allow start another process instance.
+* Clear the _"myform"_ DIV status
+* Show an alert with the response notifying that the process has started well or if an error occured
+
+Once that is done we just do the call to the `formsAPI.startProcess(...)` that will send a message to the component that renders the form inside the _"myform"_ DIV and will exectue the callback functions when the action is done.
+Notice that we don't need the provide any other information than the DIV that contains the form and optionally the callback functions. 
+
+With a simple code like this you'll be able to run process/task forms that are located on different Kie-Workbench instances from any other application. 
+
+.Using forms on client applications I: Before showing the form
+image::FormModeler/43_embed_form.png[]
+
+
+.Using forms on client applications II: Showing the process form
+image::FormModeler/44_embed_form.png[]
+
+
+.Using forms on client applications III: After process started
+image::FormModeler/45_embed_form.png[]
