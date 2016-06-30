@@ -1,0 +1,395 @@
+= Backward-Chaining
+
+
+A backward-chaining rule system is goal-driven.
+This means the system starts with a conclusion which the engine tries to satisfy.
+If it cannot do so it searches for sub-goals, that is, conclusions that will complete part of the current goal.
+It continues this process until either the initial conclusion is satisfied or there are no more unsatisfied sub-goals. *Prolog* is an example of a backward-chaining engine. 
+
+.Backward Chaining Chart
+image::Examples/BackwardChaining/BackwardChainingChart.png[align="center"]
+
+
+== Backward-Chaining Systems
+
+
+Backward-Chaining is a feature recently added to the JBoss Rules Engine.
+This process is often referred to as derivation queries, and it is not as common compared to reactive systems since JBoss Rules is primarily reactive forward chaining.
+That is, it responds to changes in your data.
+The backward-chaining added to the engine is for product-like derivations. 
+
+== Cloning Transitive Closures
+
+.Reasoning Graph
+image::Examples/BackwardChaining/ReasoningGraph.png[align="center"]
+
+
+The previous chart demonstrates a House example of transitive items.
+A similar reasoning chart can be created by implementing the following rules: 
+
+1.
+First, create some java rules to develop reasoning for transitive items.
+It inserts each of the locations.
+
+2.
+Next, create the *Location* class; it has the item and where it is located. 
+
+3.
+Type the rules for the House example as depicted below: 
+
+[source,java]
+----
+ksession.insert( new Location("office", "house") );
+ksession.insert( new Location("kitchen", "house") );
+ksession.insert( new Location("knife", "kitchen") );
+ksession.insert( new Location("cheese", "kitchen") );
+ksession.insert( new Location("desk", "office") );
+ksession.insert( new Location("chair", "office") );
+ksession.insert( new Location("computer", "desk") );
+ksession.insert( new Location("drawer", "desk") );
+----
+
+
+4.
+A transitive design is created in which the item is in its designated location such as a "desk" located in an "office." 
+
+.Transitive Reasoning Graph of a House
+image::Examples/BackwardChaining/TransitiveReasoningGraph.png[align="center"]
+
+
+== Defining a Query
+
+
+1.
+Create a query to look at the data inserted into the rules engine: 
+
+[source]
+----
+query isContainedIn( String x, String y )
+  Location( x, y; )
+  or
+  ( Location( z, y; ) and isContainedIn( x, z; ) )
+end
+----
+
+
+Notice how the query is recursive and is calling "isContainedIn." 
+
+2.
+Create a rule to print out every string inserted into the system to see how things are implemented.
+The rule should resemble the following format: 
+
+[source]
+----
+rule "go" salience 10
+when
+  $s : String( )
+then
+  System.out.println( $s );
+end
+----
+
+
+3.
+Using Step 2 as a model, create a rule that calls upon the Step 1 query "isContainedIn." 
+
+[source]
+----
+rule "go1"
+when
+  String( this == "go1" )
+  isContainedIn("office", "house"; )
+then
+  System.out.println( "office is in the house" );
+end
+----
+
+
+The "go1" rule will fire when the first string is inserted into the engine.
+That is, it asks if the item "office" is in the location "house." Therefore, the Step 1 query is evoked by the previous rule when the "go1" String is inserted. 
+
+4.
+Create the "go1," insert it into the engine, and call the fireAllRules.
+ 
+
+[source]
+----
+         ksession.insert( "go1" );
+ksession.fireAllRules();
+---
+go1
+office is in the house
+----
+
+
+The --- line indicates the separation of the output of the engine from the firing of the "go" rule and the "go1" rule. 
+
+== Transitive Closure Example
+
+
+1.
+Create a Transitive Closure by implementing the following rule: 
+
+[source]
+----
+rule "go2"
+when
+  String( this == "go2" )
+  isContainedIn("drawer", "house"; )
+then
+  System.out.println( "Drawer in the House" );
+end
+----
+
+
+2.
+Recall from the Cloning Transitive Closure's topic, there was no instance of "drawer" in "house." "drawer" was located in "desk." 
+
+.Transitive Reasoning Graph of a Drawer
+image::Examples/BackwardChaining/TransitiveReasoningGraph2.png[align="center"]
+
+
+3.
+Use the previous query for this recursive information. 
+
+[source]
+----
+query isContainedIn( String x, String y )
+  Location( x, y; )
+  or
+  ( Location( z, y; ) and isContainedIn( x, z; ) )
+end
+----
+
+
+4.
+Create the "go2," insert it into the engine, and call the fireAllRules. 
+
+[source]
+----
+ksession.insert( "go2" );
+ksession.fireAllRules();
+---
+go2
+Drawer in the House
+----
+
+
+When the rule is fired, it correctly tells you "go2" has been inserted and that the "drawer" is in the "house." 
+
+5.
+Check how the engine determined this outcome  
+
+* The query has to recurse down several levels to determine this.
+* Instead of using **Location( x, y; )**, The query uses the value of *(z, y; )* since "drawer" is not in "house." 
+* The *z* is currently unbound which means it has no value and will return everything that is in the argument. 
+* *y* is currently bound to "house," so *z* will return "office" and "kitchen." 
+* Information is gathered from "office" and checks recursively if the "drawer" is in the "office." The following query line is being called for these parameters: *isContainedIn (x ,z; )*
+
+
+There is no instance of "drawer" in "office;" therefore, it does not match.
+With z being unbound, it will return data that is within the "office," and it will gather that **z == desk**. 
+
+[source]
+----
+isContainedIn(x==drawer, z==desk)
+----
+
+
+isContainedIn recurses three times.
+On the final recurse, an instance triggers of "drawer" in the "desk." 
+
+[source]
+----
+ Location(x==drawer, y==desk)
+----
+
+
+This matches on the first location and recurses back up, so we know that "drawer" is in the "desk," the "desk" is in the "office," and the "office" is in the "house;" therefore, the "drawer" is in the "house" and returns true. 
+
+== Reactive Transitive Queries
+
+
+1.
+Create a Reactive Transitive Query by implementing the following rule: 
+
+[source]
+----
+rule "go3"
+when
+  String( this == "go3" )
+  isContainedIn("key", "office"; )
+then
+  System.out.println( "Key in the Office" );
+end
+----
+
+
+Reactive Transitive Queries can ask a question even if the answer can not be satisfied.
+Later, if it is satisfied, it will return an answer. 
+
+2.
+Use the same query for this reactive information. 
+
+[source]
+----
+query isContainedIn( String x, String y )
+  Location( x, y; )
+  or
+  ( Location( z, y; ) and isContainedIn( x, z; ) )
+end
+----
+
+
+3.
+Create the "go3," insert it into the engine, and call the fireAllRules. 
+
+[source]
+----
+ksession.insert( "go3" );
+ksession.fireAllRules();
+---
+go3
+----
+
+
+The first rule that matches any String returns "go3" but nothing else is returned because there is no answer; however, while "go3" is inserted in the system, it will continuously wait until it is satisfied. 
+
+4.
+Insert a new location of "key" in the "drawer":  
+
+[source]
+----
+ksession.insert( new Location("key", "drawer") );
+ksession.fireAllRules();
+---
+Key in the Office
+----
+
+
+This new location satisfies the transitive closure because it is monitoring the entire graph.
+In addition, this process now has four recursive levels in which it goes through to match and fire the rule. 
+
+== Queries with Unbound Arguments
+
+
+1.
+Create a Query with Unbound Arguments by implementing the following rule:
+
+[source]
+----
+rule "go4"
+when
+  String( this == "go4" )
+  isContainedIn(thing, "office"; )
+then
+  System.out.println( "thing" + thing + "is in the Office" );
+end
+----
+
+
+This rule is asking for everything in the "office," and it will tell everything in all the rows below.
+The unbound argument (out variable thing) in this example will return every possible value; accordingly, it is very similar to the z value used in the Reactive Transitive Query example. 
+
+2.
+Use the query for the unbound arguments. 
+
+[source]
+----
+query isContainedIn( String x, String y )
+  Location( x, y; )
+  or
+  ( Location( z, y; ) and isContainedIn( x, z; ) )
+end
+----
+
+
+3.
+Create the "go4," insert it into the engine, and call the fireAllRules. 
+
+[source]
+----
+ksession.insert( "go4" );
+ksession.fireAllRules();
+---
+go4
+thing Key is in the Office
+thing Computer is in the Office
+thing Drawer is in the Office
+thing Desk is in the Office
+thing Chair is in the Office
+----
+
+
+When "go4" is inserted, it returns all the previous information that is transitively below "Office." 
+
+== Multiple Unbound Arguments
+
+
+1.
+Create a query with Mulitple Unbound Arguments by implementing the following rule:
+
+[source]
+----
+rule "go5"
+when
+  String( this == "go5" )
+  isContainedIn(thing, location; )
+then
+  System.out.println( "thing" + thing + "is in" + location );
+end
+----
+
+
+This rule is asking for everything in the "office," and it will tell everything in all the rows below.
+The unbound argument (out variable thing) in this example will return every possible value; accordingly, it is very similar to the z value used in the Reactive Transitive Query example. 
+
+Both *thing* and *location* are unbound out variables, and without bound arguments, everything is called upon. 
+
+2.
+Use the query for multiple unbound arguments. 
+
+[source]
+----
+query isContainedIn( String x, String y )
+  Location( x, y; )
+  or
+  ( Location( z, y; ) and isContainedIn( x, z; ) )
+end
+----
+
+
+3.
+Create the "go5," insert it into the engine, and call the fireAllRules. 
+
+[source]
+----
+ksession.insert( "go5" );
+ksession.fireAllRules();
+---
+go5
+thing Knife is in House
+thing Cheese is in House
+thing Key is in House
+thing Computer is in House
+thing Drawer is in House
+thing Desk is in House
+thing Chair is in House
+thing Key is in Office
+thing Computer is in Office
+thing Drawer is in Office
+thing Key is in Desk
+thing Office is in House
+thing Computer is in Desk
+thing Knife is in Kitchen
+thing Cheese is in Kitchen
+thing Kitchen is in House
+thing Key is in Drawer
+thing Drawer is in Desk
+thing Desk is in Office
+thing Chair is in Office
+----
+
+
+When "go5" is called, it returns everything within everything. 
+

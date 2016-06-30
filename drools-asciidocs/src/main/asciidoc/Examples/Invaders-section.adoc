@@ -1,0 +1,186 @@
+= Invaders
+
+
+A simplifed version of the Space Invaders game.
+Use the keys Z and K, to move left and right and M to fire a misile.
+The example is built up over 6 projects, each adding slightly more complexity to the last.
+
+[source]
+----
+Name: Example Invaders
+Main class: org.drools.games.invaders.Invaders1Main
+Main class: org.drools.games.invaders.Invaders2Main
+Main class: org.drools.games.invaders.Invaders3Main
+Main class: org.drools.games.invaders.Invaders4Main
+Main class: org.drools.games.invaders.Invaders5Main
+Main class: org.drools.games.invaders.Invaders6Main
+----
+
+.Pong Screenshot
+image::Examples/Invaders/invaders.png[align="center"]
+
+
+== Invaders1Main
+
+
+Invaders1Main creates the frame and attaches the KeyListener, feeding key events into the engine.
+It also sets up the main game loop which can be found in "Main.drl".  The typical convention used through out the example is to have one agenda group per file, and all rules in that file in the same agenda group.
+
+The Run fact is used to drive the repeat of the Game loop.
+Initially there are only one groups that is evaluated, Keys.
+The "keys.drl" file is shared by several examples, and illustrates rule re-use across multipel projects.
+
+.Game Loop
+====
+[source,drl]
+----
+
+rule "init" when
+then
+    insert( new Run() );
+    setFocus( "Init" );
+end
+
+rule GameLoop when
+    r : Run()
+then
+    setFocus( "Keys" );
+end
+
+
+rule Draw when
+    r : Run()
+then
+    ui.show();
+    modify( r ) {} // force loop
+end
+----
+====
+
+== Invaders2Main
+
+
+Invaders2Main adds the "Draw" stage to the game loop and draws the SpaceShip
+
+.Game Loop
+====
+[source,drl]
+----
+
+rule GameLoop when
+    r : Run()
+then
+    setFocus( "Draw" );
+    setFocus( "Keys" );
+end
+----
+====
+
+== Invaders3Main
+
+
+Invaders3Main adds move controls to the spaceship, notice the ship moves out of the boundaries of the screen.
+KeyPressed is detected and that sets a delta of dx on the ship direction.
+That delta is then repeated applied to the x position of the ship
+
+.Move Ship
+====
+[source,drl]
+----
+
+rule ShipDeltaMoveLeft agenda-group "Move" when
+    s : Ship()
+        KeyPressed( keyText == "Z" )
+then
+    modify( s ) { dx = 0 - s.speed }
+end
+
+rule ShipDeltaStopLeft agenda-group "Move" when
+    s : Ship()
+        not KeyPressed( keyText == "Z" )
+then
+    modify( s ) { dx = 0 }
+end
+
+rule ShipMove agenda-group "Move" when
+    s : Ship( dx != 0 )
+    Run()
+then
+    modify( s ) { x = s.x + s.dx }
+end
+----
+====
+
+== Invaders4Main
+
+
+Invaders4Main adds boundari control to the ShipMove rule, so it doesn't move off the screen.
+Notice the use of "@watch( !x )", this ensures that while the rule wil modify the x property, it will not react to changes to x, which avoids recursion issues.
+
+.Move Ship with Boundaries
+====
+[source,drl]
+----
+
+rule ShipMove agenda-group "Move" when
+    s : Ship( dx != 0, x + dx > 0,  x + dx + width < conf.windowWidth ) @watch( !x )
+    Run()
+then
+    modify( s ) { x = s.x + s.dx }
+end
+----
+====
+
+== Invaders5Main
+
+
+Invaders5Main updates the "Draw" group to draw 5 Invaders.
+
+== Invaders6Main
+
+
+Invaders6Main adds a lot more meat.
+Pressing the "M" key fires a missile that travels up the screen, while moving collision between the missile and the invader is checked.
+
+== Invaders4Main
+
+
+Invaders4Main adds boundari control to the ShipMove rule, so it doesn't move off the screen.
+Notice the use of "@watch( !x )", this ensures that while the rule wil modify the x property, it will not react to changes to x, which avoids recursion issues.
+
+.Fire Missile
+====
+[source,drl]
+----
+
+rule InsertBullet agenda-group "Bullet" when
+        KeyPressed( keyText == "M" )
+    s : Ship()
+    not Bullet()
+then
+    b = new Bullet();
+    b.x = s.x + (s.width/2) - (b.width/2);
+    b.y = s.y - s.height - b.height;
+    b.width = conf.bulletWidth;
+    b.height = conf.bulletHeight;
+    b.dy = 0 - conf.bulletSpeed;
+    insert( b );
+end
+
+
+rule BulletMove agenda-group "Bullet" when
+    b : Bullet( y > 0 ) @watch( !y )
+    Run()
+then
+    modify( b ) { y = b.y + b.dy }
+end
+
+rule Collision agenda-group "Bullet" when
+    b : Bullet( ) @watch( y )
+    i : Invader( x < b.x, x + width > b.x, y > b.y)
+    Run()
+then
+    modify( i ) { alive = false }
+end
+----
+====
