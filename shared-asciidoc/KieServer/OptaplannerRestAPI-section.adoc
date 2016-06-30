@@ -1,0 +1,389 @@
+
+= OptaPlanner REST API
+
+
+When the Planner capability is enabled, the Kie Server supports the following additional REST APIs.
+As usual, all these APIs are also available through JMS and the Java client API.
+Please also note:
+
+
+
+* The base URL for these will remain as the endpoint defined earlier (for example `http://SERVER:PORT/CONTEXT/services/rest/server/` ).
+* All requests require basic HTTP Authentication for the role kie-server as indicated earlier.
+* To get a specific marshalling format, add the HTTP headers `Content-Type` and optional `X-KIE-ContentType` in the HTTP request. For example:
++
+
+[source]
+----
+Content-Type: application/xml
+X-KIE-ContentType: xstream
+----
+
+The example requests and responses used below presume that a kie container is built using the optacloud example of OptaPlanner Workbench, by calling a `PUT` on `/services/rest/server/containers/optacloud-kiecontainer-1` with this content:
+
+[source,xml]
+----
+<kie-container container-id="optacloud-kiecontainer-1">
+  <release-id>
+    <group-id>opta</group-id>
+    <artifact-id>optacloud</artifact-id>
+    <version>1.0.0</version>
+  </release-id>
+</kie-container>
+----
+
+== [GET] /containers/{containerId}/solvers
+
+
+Returns the list of solvers created in the container.
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Solvers list successfully retrieved from container 'optacloud-kiecontainer-1'</msg>
+  <result class="org.kie.server.api.model.instance.SolverInstanceList">
+    <solvers>
+      <solver-instance>
+        <container-id>optacloud-kiecontainer-1</container-id>
+        <solver-id>solver1</solver-id>
+        <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+        <status>NOT_SOLVING</status>
+      </solver-instance>
+      <solver-instance>
+        <container-id>optacloud-kiecontainer-1</container-id>
+        <solver-id>solver2</solver-id>
+        <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+        <status>NOT_SOLVING</status>
+      </solver-instance>
+    </solvers>
+  </result>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+.Example Server Response (JSON)
+====
+[source,json]
+----
+{
+  "type" : "SUCCESS",
+  "msg" : "Solvers list successfully retrieved from container 'optacloud-kiecontainer-1'",
+  "result" : {
+    "solver-instance-list" : {
+      "solver" : [ {
+        "status" : "NOT_SOLVING",
+        "container-id" : "optacloud-kiecontainer-1",
+        "solver-id" : "solver1",
+        "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml"
+      }, {
+        "status" : "NOT_SOLVING",
+        "container-id" : "optacloud-kiecontainer-1",
+        "solver-id" : "solver2",
+        "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml"
+      } ]
+    }
+  }
+}
+----
+====
+
+== [PUT] /containers/{containerId}/solvers/{solverId}
+
+
+Creates a new solver with the given `{solverId}` in the container ``{containerId}``.
+The request's body is a marshalled SolverInstance entity that must specify the solver configuration file.
+
+The following is an example of the request and the corresponding response.
+
+.Example Server Request (XStream)
+====
+[source,xml]
+----
+<solver-instance>
+  <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+</solver-instance>
+----
+====
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Solver 'solver1' successfully created in container 'optacloud-kiecontainer-1'</msg>
+  <result class="solver-instance">
+    <container-id>optacloud-kiecontainer-1</container-id>
+    <solver-id>solver1</solver-id>
+    <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+    <status>NOT_SOLVING</status>
+  </result>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+.Example Server Request (JSON)
+====
+[source,json]
+----
+{
+  "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml"
+}
+----
+====
+
+.Example Server Response (JSON)
+====
+[source,json]
+----
+{
+  "type" : "SUCCESS",
+  "msg" : "Solver 'solver1' successfully created in container 'optacloud-kiecontainer-1'",
+  "result" : {
+    "solver-instance" : {
+      "container-id" : "optacloud-kiecontainer-1",
+      "solver-id" : "solver1",
+      "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml",
+      "status" : "NOT_SOLVING"
+    }
+  }
+}
+----
+====
+
+== [GET] /containers/{containerId}/solvers/{solverId}
+
+
+Returns the current state of the solver `{solverId}` in container ``{containerId}``.
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Solver 'solver1' state successfully retrieved from container 'optacloud-kiecontainer-1'</msg>
+  <result class="solver-instance">
+    <container-id>optacloud-kiecontainer-1</container-id>
+    <solver-id>solver1</solver-id>
+    <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+    <status>NOT_SOLVING</status>
+  </result>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+.Example Server Response (JSON)
+====
+[source,json]
+----
+{
+  "type" : "SUCCESS",
+  "msg" : "Solver 'solver1' state successfully retrieved from container 'optacloud-kiecontainer-1'",
+  "result" : {
+    "solver-instance" : {
+      "container-id" : "optacloud-kiecontainer-1",
+      "solver-id" : "solver1",
+      "solver-config-file" : "opta/optacloud/cloudSolverConfig.solver.xml",
+      "status" : "NOT_SOLVING"
+    }
+  }
+}
+----
+====
+
+== [POST] /containers/{containerId}/solvers/{solverId}
+
+
+Updates the state of the {solverId} in container {containerId}, most notably to start solving.
+The request's body is a marshalled `SolverInstance` and can either request the solver to solve a planning problem or to stop solving one.
+The SolverInstance state determines which operation should be executed and can be set one of two possible values:
+
+* SOLVING: starts the solver if it is not executing yet. The request's body must also contain the problem's data to be solved.
+* NOT_SOLVING: requests the solver to terminate early, if it is running. All other attributes are ignored.
+
+
+=== Start solving
+
+
+Here is an example to solve an optacloud problem with 2 computers and 1 process:
+
+.Example Server Request (XStream)
+====
+[source,xml]
+----
+<solver-instance>
+  <status>SOLVING</status>
+  <planning-problem class="opta.optacloud.CloudSolution">
+    <computerList>
+      <opta.optacloud.Computer>
+        <cpuPower>10</cpuPower>
+        <memory>4</memory>
+        <networkBandwidth>100</networkBandwidth>
+        <cost>1000</cost>
+      </opta.optacloud.Computer>
+      <opta.optacloud.Computer>
+        <cpuPower>20</cpuPower>
+        <memory>8</memory>
+        <networkBandwidth>100</networkBandwidth>
+        <cost>3000</cost>
+      </opta.optacloud.Computer>
+    </computerList>
+    <processList>
+      <opta.optacloud.Process>
+        <requiredCpuPower>1</requiredCpuPower>
+        <requiredMemory>7</requiredMemory>
+        <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+      </opta.optacloud.Process>
+    </processList>
+  </planning-problem>
+</solver-instance>
+----
+====
+
+
+Notice that the response does not contain the best solution yet, because solving can take seconds, minutes, hours or days and this would time out the HTTP request:
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Solver 'solver1' from container 'optacloud-kiecontainer-1' successfully updated.</msg>
+  <result class="solver-instance">
+    <container-id>optacloud-kiecontainer-1</container-id>
+    <solver-id>solver1</solver-id>
+    <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+    <status>SOLVING</status>
+  </result>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+
+Instead, it's solving asynchronously and you need to call the bestsolution URL to get the best solution.
+
+=== Terminate solving
+
+
+For example, to terminate solving:
+
+.Example Server Request (XStream)
+====
+[source,xml]
+----
+<solver-instance>
+  <status>NOT_SOLVING</status>
+</solver-instance>
+----
+====
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Solver 'solver1' from container 'optacloud-kiecontainer-1' successfully updated.</msg>
+  <result class="solver-instance">
+    <container-id>optacloud-kiecontainer-1</container-id>
+    <solver-id>solver1</solver-id>
+    <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+    <status>TERMINATING_EARLY</status>
+    <score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore">
+      <hardScore>0</hardScore>
+      <softScore>-3000</softScore>
+    </score>
+  </result>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+
+This doesn't delete the solver, the best solution can still be retrieved.
+
+== [GET] /containers/{containerId}/solvers/{solverId}/bestsolution
+
+
+Returns the best solution found at the time the request is made.
+If the solver hasn't terminated yet (so the `status` field is still ``SOLVING``), it will return the best solution found up to then, but later calls can return a better solution.⁠
+
+For example, the problem submitted above would return this solution, with the process assigned to the second computer (because the first one doesn't have enough memory).
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Best computed solution for 'solver1' successfully retrieved from container 'optacloud-kiecontainer-1'</msg>
+   <result class="solver-instance">
+    <container-id>optacloud-kiecontainer-1</container-id>
+    <solver-id>solver1</solver-id>
+    <solver-config-file>opta/optacloud/cloudSolverConfig.solver.xml</solver-config-file>
+    <status>SOLVING</status>
+    <score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore">
+      <hardScore>0</hardScore>
+      <softScore>-3000</softScore>
+    </score>
+    <best-solution class="opta.optacloud.CloudSolution">
+      <score class="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore" reference="../../score" />
+      <computerList>
+        <opta.optacloud.Computer>
+          <cpuPower>10</cpuPower>
+          <memory>4</memory>
+          <networkBandwidth>100</networkBandwidth>
+          <cost>1000</cost>
+        </opta.optacloud.Computer>
+        <opta.optacloud.Computer>
+          <cpuPower>20</cpuPower>
+          <memory>8</memory>
+          <networkBandwidth>100</networkBandwidth>
+          <cost>3000</cost>
+        </opta.optacloud.Computer>
+      </computerList>
+      <processList>
+        <opta.optacloud.Process>
+          <requiredCpuPower>1</requiredCpuPower>
+          <requiredMemory>7</requiredMemory>
+          <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+          <computer reference="../../../computerList/opta.optacloud.Computer[2]" />
+        </opta.optacloud.Process>
+      </processList>
+    </best-solution>
+  </result>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+== [DELETE] /containers/{containerId}/solvers/{solverId}
+
+
+⁠Disposes the solver `{solverId}` in container ``{containerId}``.
+If it hasn't terminated yet, it terminates it first.
+
+.Example Server Response (XStream)
+====
+[source,xml]
+----
+<org.kie.server.api.model.ServiceResponse>
+  <type>SUCCESS</type>
+  <msg>Solver 'solver1' successfully disposed from container 'optacloud-kiecontainer-1'</msg>
+</org.kie.server.api.model.ServiceResponse>
+----
+====
+
+.Example Server Response (JSON)
+====
+[source,json]
+----
+{
+  "type" : "SUCCESS",
+  "msg" : "Solver 'solver1' successfully disposed from container 'optacloud-kiecontainer-1'"
+}
+----
+====
