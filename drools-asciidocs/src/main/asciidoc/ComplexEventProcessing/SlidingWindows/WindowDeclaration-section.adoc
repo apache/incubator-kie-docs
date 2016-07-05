@@ -1,0 +1,44 @@
+= Window Declaration
+
+
+The engine also supports the declaration of Windows.
+This promotes a clear separation between what are the filters applied to the window and what are the constraints applied to the result of window.
+It also allows easy reuse of windows among multiple rules.
+
+Another benefit is a new implementation of the basic window support in the engine, increasing the overall performance of the rules that use sliding windows.
+
+The simplified EBNF to declare a window is:
+
+[source]
+----
+windowDeclaration := DECLARE WINDOW ID annotation* lhsPatternBind END
+----
+
+
+For example a window containing only the last 10 stock ticks from a given source can be defined like:
+
+[source]
+----
+declare window Ticks
+    StockTick( source == "NYSE" )
+        over window:length( 10 )
+        from entry-point STStream
+end
+----
+
+
+Rules can then use this declared window by using it as a source for a FROM as in:
+
+[source]
+----
+rule "RHT ticks in the window"
+    when
+        accumulate( StockTick( company == "RHT" ) from window Ticks,
+                    $cnt : count(1) )
+    then
+        // there has been $cnt RHT ticks over the last 10 ticks
+end
+----
+
+
+Note that this example also demonstrates how the window declaration allows to separate the constraints applied to the window (only the StockTicks having "NYSE" as source are among the 10 events included into window) and the constraints applied to the window result (among the last 10 events having "NYSE" as source only the ones with company equal to "RHT" are selected).

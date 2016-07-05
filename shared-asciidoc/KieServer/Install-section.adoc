@@ -1,0 +1,260 @@
+
+= Installing the KIE Server
+
+
+The KIE Server is distributed as a web application archive (WAR) file.
+The WAR file comes in three different packagings: 
+
+* _webc_ - WAR for ordinary Web (Servlet) containers like Tomcat
+* _ee6_ - WAR for JavaEE 6 containers like JBoss EAP 6.x
+* _ee7_ - WAR for JavaEE 7 containers like WildFly 8.x
+
+To install the KIE Execution Server and verify it is running, complete the following steps:
+
+
+
+. Deploy the WAR file into your web container.
+. Create a user with the role of `kie-server` on the container.
+. Test that you can access the execution engine by navigating to the endpoint in a browser window: ``http://SERVER:PORT/CONTEXT/services/rest/server/``.
+. When prompted for username/password, type in the username and password that you created in step 2.
+. Once authenticated, you will see an XML response in the form of engine status, similar to this:
++
+
+.Sample handshaking server response
+====
+[source,xml]
+----
+<response type="SUCCESS" msg="KIE Server info">
+  <kie-server-info>  
+    <version>&project.version;&lt;/version>
+  </kie-server-info>
+</response>
+----
+====
+
+
+== Bootstrap switches
+
+
+The Kie Server accepts a number of bootstrap switches (system properties) to configure the behaviour of the server.
+The following is a table of all the supported switches.
+
+
+
+.Kie Server bootstrap switches
+[cols="1,1,1,1", frame="all", options="header"]
+|===
+| Property
+| Value
+| Description
+| Required
+
+|**org.drools.server.ext.disabled**
+|boolean (default is "false")
+|If true, disables the BRM support (i.e. rules support).
+|No
+
+|**org.jbpm.server.ext.disabled**
+|boolean (default is "false")
+|If true, disables the BPM support (i.e. processes support)
+|No
+
+|**org.kie.server.id**
+|string
+|An arbitrary ID to be assigned to this server. If a remote controller is
+                configured, this is the ID under which the server will connect to the controller to
+                fetch the kie container configurations.
+|No. If not provided, an ID is automatically generated.
+
+|**org.kie.server.user**
+|string (default is "kieserver")
+|User name used to connect with the kieserver from the controller, required when
+                running in managed mode
+|No
+
+|**org.kie.server.pwd**
+|string (default is "kieserver1!")
+|Password used to connect with the kieserver from the controller, required when
+                running in managed mode
+|No
+
+|**org.kie.server.controller**
+|comma separated list of urls
+|List of urls to controller REST endpoint. E.g.:
+                  `http://localhost:8080/kie-wb/rest/controller`
+|Yes when using a controller
+
+|**org.kie.server.controller.user**
+|string (default is "kieserver")
+|Username used to connect to the controller REST api
+|Yes when using a controller
+
+|**org.kie.server.controller.pwd**
+|string (default is "kieserver1!")
+|Password used to connect to the controller REST api
+|Yes when using a controller
+
+|**org.kie.server.location**
+|URL location of kie server instance
+|The URL used by the controller to call back on this server. E.g.:
+                  `http://localhost:8230/kie-server/services/rest/server`
+|Yes when using a controller
+
+|**org.kie.server.domain**
+|string
+|JAAS LoginContext domain that shall be used to authenticate users when using
+                JMS
+|No
+
+|**org.kie.server.bypass.auth.user**
+|boolean (default is "false")
+|Allows to bypass the authenticated user for task related operations e.g.
+                queries
+|No
+
+|**org.kie.server.repo**
+|valid file system path (default is ".")
+|Location on local file system where kie server state files will be
+                stored
+|No
+
+|**org.kie.server.persistence.ds**
+|string
+|Datasource JNDI name
+|Yes when BPM support enabled
+
+|**org.kie.server.persistence.tm**
+|string
+|Transaction manager platform for Hibernate properties set
+|Yes when BPM support enabled
+
+|**org.kie.server.persistence.dialect**
+|string
+|Hibernate dialect to be used
+|Yes when BPM support enabled
+
+|**org.jbpm.ht.callback**
+|string
+|One of supported callbacks for Task Service (default jaas)
+|No
+
+|**org.jbpm.ht.custom.callback**
+|string
+|Custom implementation of UserGroupCallback in case org.jbpm.ht.callback was set
+                to '`custom`'
+|No
+
+|**kie.maven.settings.custom**
+|valid file system path 
+|Location of custom settings.xml for maven configuration
+|No
+
+|**org.kie.executor.interval**
+|integer (default is 3)
+|Number of time units between polls by executor
+|No
+
+|**org.kie.executor.pool.size**
+|integer (default is 1)
+|Number of threads in the pool for async work
+|No
+
+|**org.kie.executor.retry.count**
+|integer (default is 3)
+|Number of retries to handle errors
+|No
+
+|**org.kie.executor.timeunit**
+|TimeUnit (default is "SECONDS")
+|TimeUnit representing interval
+|No
+
+|**org.kie.executor.disabled**
+|boolean (default is "false")
+|Disables executor completely
+|No
+
+|**kie.server.jms.queues.response**
+|string (default is "queue/KIE.SERVER.RESPONSE")
+|JNDI name of response queue for JMS
+|No
+
+|**org.kie.server.controller.connect**
+|long (default is 10000)
+|Waiting time in milliseconds between repeated attempts to connect kie server to
+                controller when kie server starts up
+|No
+
+|**org.drools.server.filter.classes**
+|boolean (default is "false")
+|If true, accept only classes which are annotated with @org.kie.api.remote.Remotable
+                or @javax.xml.bind.annotation.XmlRootElement as extra JAXB classes
+|No
+
+|
+|
+|
+|
+|===
+
+[IMPORTANT]
+====
+If you are running both KIE Server and KIE Workbench you must configure KIE Server to use a different Data Source to KIE Workbench using the  *org.kie.server.persistence.ds* property.
+KIE Workbench uses a jBPM Executor Service that can conflict with  KIE Server if they share the same Data Source.
+====
+
+== Installation details for different containers
+
+=== Tomcat 7.x/8.x
+
+
+
+. Download and unzip the Tomcat distribution. Let's call the root of the distribution ``TOMCAT_HOME``. This directory is named after the Tomcat version, so for example ``apache-tomcat-7.0.55``.
+. Download _kie-server- -webc.war_ and place it into ``TOMCAT_HOME/webapps``.
+. Configure user(s) and role(s). Make sure that file `TOMCAT_HOME/conf/tomcat-users.xml` contains the following username and role definition. You can of course choose different username and password, just make sure that the user has role ``kie-server``: 
++
+
+.Username and role definition for Tomcat
+====
+[source,xml]
+----
+<role rolename="kie-server"/>
+<user username="serveruser" password="my.s3cr3t.pass" roles="kie-server"/>
+----
+====
+. Start the server by running ``TOMCAT_HOME/bin/startup.[sh|bat]``. You can check out the Tomcat logs in `TOMCAT_HOME/logs` to see if the application deployed successfully. Please read the table above for the bootstrap switches that can be used to properly configure the instance. For instance:
++
+[source]
+----
+./startup.sh -Dorg.kie.server.id=first-kie-server 
+             -Dorg.kie.server.location=http://localhost:8080/kie-server/services/rest/server
+----
+. Verify the server is running. Go to `http://SERVER:PORT/CONTEXT/services/rest/server/` and type the specified username and password. You should see simple XML message with basic information about the server.
+
+
+[IMPORTANT]
+====
+You can not leverage the JMS interface when running on Tomcat, or any other Web
+container. The Web container version of the WAR contains only the REST interface.
+====
+
+=== WildFly 8.x
+
+
+
+. Download and unzip the WildFly distribution. Let's call the root of the distribution ``WILDFLY_HOME``. This directory is named after the WildFly version, so for example ``wildfly-8.2.0.Final``. 
+. Download _kie-server- -ee7.war_ and place it into ``WILDFLY_HOME/standalone/deployments``. 
+. Configure user(s) and role(s). Execute the following command `` WILDFLY_HOME/bin/add-user.[sh|bat] -a -u 'kieserver' -p 'kieserver1!' -ro 'kie-server'``. You can of course choose different username and password, just make sure that the user has role ``kie-server``. 
+. Start the server by running ``WILDFLY_HOME/bin/standalone.[sh|bat] -c standalone-full.xml <bootstrap_switches>``. You can check out the standard output or WildFly logs in `WILDFLY_HOME/standalone/logs` to see if the application deployed successfully. Please read the table above for the bootstrap switches that can be used to properly configure the instance. For instance:
++
+[source]
+----
+./standalone.sh  --server-config=standalone-full.xml 
+                 -Djboss.socket.binding.port-offset=150
+                 -Dorg.kie.server.id=first-kie-server 
+                 -Dorg.kie.server.location=http://localhost:8230/kie-server/services/rest/server
+----
+. Verify the server is running. Go to `http://SERVER:PORT/CONTEXT/services/rest/server/` and type the specified username and password. You should see simple XML message with basic information about the server. 
++
+image::shared/KieServer/kie-server-info.png[]
+

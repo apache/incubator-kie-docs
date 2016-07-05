@@ -1,0 +1,208 @@
+= Hello World
+
+----
+Name: Hello World
+Main class: org.drools.examples.helloworld.HelloWorldExample
+Module: drools-examples
+Type: Java application
+Rules file: HelloWorld.drl
+Objective: demonstrate basic rules in use
+----
+
+
+The "Hello World" example shows a simple application using rules, written both using the MVEL and the Java dialects.
+
+This example demonstrates how to create and use a ``KieSession``.
+Also, audit logging and debug outputs are shown, which is omitted from other examples as it's all very similar. 
+
+The following code snippet shows how the session is created with only 3 lines of code. 
+
+.HelloWorld: Creating the KieSession
+====
+[source,java]
+----
+        KieServices ks = KieServices.Factory.get(); // <1>
+        KieContainer kc = ks.getKieClasspathContainer(); // <2>
+        KieSession ksession = kc.newKieSession("HelloWorldKS"); // <3>
+----
+<1> Obtains the KieServices factory. This is the main interface applications use to interact with 
+    the engine.
+<2> Creates a KieContainer from the project classpath. This will look for a */META-INF/kmodule.xml* 
+    file to configure and instantiate the KieModule into the KieContainer.
+<3> Creates a session based on the named "HelloWorldKS" session configuration.
+====
+
+Drools has an event model that exposes much of what's happening internally.
+Two default debug listeners are supplied, `DebugAgendaEventListener` and `DebugWorkingMemoryEventListener` which print out debug event information to the `System.err` stream displayed in the Console window.
+Adding listeners to a Session is trivial, as shown in the next snippet.
+The `KieRuntimeLogger` provides execution auditing, the result of which can be viewed in a graphical viewer.
+The logger is actually a specialised implementation built on the `Agenda` and `RuleRuntime` listeners.
+When the engine has finished executing, `logger.close()` must be called.
+
+Most of the examples use the Audit logging features of Drools to record execution flow for later inspection.
+
+.HelloWorld: Event logging and Auditing
+====
+[source,java]
+----
+        // The application can also setup listeners
+        ksession.addEventListener( new DebugAgendaEventListener() );
+        ksession.addEventListener( new DebugRuleRuntimeEventListener() );
+
+        // To setup a file based audit logger, uncomment the next line 
+        // KieRuntimeLogger logger = ks.getLoggers().newFileLogger( ksession, "./helloworld" );
+        
+        // To setup a ThreadedFileLogger, so that the audit view reflects events whilst debugging,
+        // uncomment the next line
+        // KieRuntimeLogger logger = ks.getLoggers().newThreadedFileLogger( ksession, "./helloworld", 1000 );
+----
+====
+
+
+The single class used in this example is very simple.
+It has two fields: the message, which is a `String` and the status which can be one of the two integers `HELLO` or ``GOODBYE``.
+
+.HelloWorld example: Message Class
+====
+[source,java]
+----
+public static class Message {
+    public static final int HELLO   = 0;
+    public static final int GOODBYE = 1;
+
+    private String          message;
+    private int             status; 
+    ...
+}
+----
+====
+
+
+A single `Message` object is created with the message text "Hello World" and the status `HELLO` and then inserted into the engine, at which point `fireAllRules()` is executed. 
+
+.HelloWorld: Execution
+====
+[source,java]
+----
+        // The application can insert facts into the session
+        final Message message = new Message();
+        message.setMessage( "Hello World" );
+        message.setStatus( Message.HELLO );
+        ksession.insert( message );
+
+        // and fire the rules
+        ksession.fireAllRules();
+----
+====
+
+
+To execute the example as a Java application:
+
+. Open the class `org.drools.examples.helloworld.HelloWorldExample` in your Eclipse IDE
+. Right-click the class and select "Run as..." and then "Java application"
+
+
+If we put a breakpoint on the `fireAllRules()` method and select the `ksession` variable, we can see that the "Hello World" rule is already activate on the Agenda.
+
+.Hello World: fireAllRules Agenda View
+image::Examples/HelloWorldExample/helloworld_agenda1.png[align="center"]
+
+
+The application print outs go to to `System.out` while the debug listener print outs go to ``System.err``.
+
+.HelloWorld: System.out in the Console window
+====
+[source]
+----
+Hello World
+Goodbye cruel world
+----
+====
+
+.HelloWorld: System.err in the Console window
+====
+[source]
+----
+==>[ActivationCreated(0): rule=Hello World; 
+                   tuple=[fid:1:1:org.drools.examples.helloworld.HelloWorldExample$Message@17cec96]]
+[ObjectInserted: handle=[fid:1:1:org.drools.examples.helloworld.HelloWorldExample$Message@17cec96];
+                 object=org.drools.examples.helloworld.HelloWorldExample$Message@17cec96]
+[BeforeActivationFired: rule=Hello World; 
+                   tuple=[fid:1:1:org.drools.examples.helloworld.HelloWorldExample$Message@17cec96]]
+==>[ActivationCreated(4): rule=Good Bye; 
+                   tuple=[fid:1:2:org.drools.examples.helloworld.HelloWorldExample$Message@17cec96]]
+[ObjectUpdated: handle=[fid:1:2:org.drools.examples.helloworld.HelloWorldExample$Message@17cec96];
+                old_object=org.drools.examples.helloworld.HelloWorldExample$Message@17cec96;
+                new_object=org.drools.examples.helloworld.HelloWorldExample$Message@17cec96]
+[AfterActivationFired(0): rule=Hello World]
+[BeforeActivationFired: rule=Good Bye; 
+                   tuple=[fid:1:2:org.drools.examples.helloworld.HelloWorldExample$Message@17cec96]]
+[AfterActivationFired(4): rule=Good Bye]
+----
+====
+
+
+The actual rules are inside the file [path]_src/main/resources/org/drools/examples/helloworld/HelloWorld.drl_
+:
+
+.HelloWorld: rule "Hello World"
+====
+[source]
+----
+rule "Hello World"
+      dialect "mvel"
+  when
+      m : Message( status == Message.HELLO, message : message )
+  then
+      System.out.println( message ); 
+      modify ( m ) { message = "Goodbye cruel world",
+                     status = Message.GOODBYE };
+end
+----
+====
+
+
+The LHS (after ``when``) section of the rule states that it will be activated for each `Message` object inserted into the Rule Runtime whose status is ``Message.HELLO``.
+Besides that, two variable bindings are created: the variable `message` is bound to the `message` attribute and the variable `m` is bound to the matched `Message` object itself.
+
+The RHS (after ``then``) or consequence part of the rule is written using the MVEL expression language, as declared by the rule's attribute ``dialect``.
+After printing the content of the bound variable `message` to ``System.out``, the rule changes the values of the `message` and `status` attributes of the `Message` object bound to ``m``.
+This is done using MVEL's `modify` statement, which allows you to apply a block of assignments in one statement, with the engine being automatically notified of the changes at the end of the block.
+
+It is possible to set a breakpoint into the DRL, on the `modify` call, and inspect the Agenda view again during the execution of the rule's consequence.
+This time we start the execution via "Debug As" and "Drools application" and not by running a "Java application":
+
+. Open the class `org.drools.examples.HelloWorld` in your Eclipse IDE.
+. Right-click the class and select "Debug as..." and then "Drools application".
+
+
+Now we can see that the other rule ``"Good Bye"``, which uses the Java dialect, is activated and placed on the Agenda.
+
+.Hello World: rule "Hello World" Agenda View
+image::Examples/HelloWorldExample/helloworld_agenda2.png[align="center"]
+
+
+The "Good Bye" rule, which specifies the "java" dialect, is similar to the "Hello World" rule except that it matches `Message` objects whose  status is ``Message.GOODBYE``.
+
+.HelloWorld: rule "Good Bye"
+====
+[source]
+----
+rule "Good Bye"
+      dialect "java"
+  when
+      Message( status == Message.GOODBYE, message : message )
+  then
+      System.out.println( message ); 
+end
+----
+====
+
+
+The Java code that instantiates the `KieRuntimeLogger` creates an audit log file that can be loaded into the Audit view.
+The Audit view is used in many of the examples to demonstrate the example execution flow.
+In the view screen shot below we can see that the object is inserted, which creates an activation for the "Hello World" rule; the activation is then executed which updates the `Message` object causing the "Good Bye" rule to activate; finally the "Good Bye" rule also executes.
+Selecting an event in the Audit view highlights the origin event in green; therefore the "Activation created" event is highlighted in green as the origin of the "Activation executed" event.
+
+.Hello World: Audit View
+image::Examples/HelloWorldExample/helloworld_auditview1.png[align="center"]

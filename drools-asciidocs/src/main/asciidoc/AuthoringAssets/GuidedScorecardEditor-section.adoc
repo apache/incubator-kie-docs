@@ -1,0 +1,178 @@
+[[_drools.guidedscorecardeditor]]
+= Scorecards
+
+
+A scorecard is a graphical representation of a formula used to calculate an overall score.
+A scorecard can be used to predict the likelihood or probability of a certain outcome.
+Drools now supports additive scorecards.
+An additive scorecard calculates an overall score by adding all partial scores assigned to individual rule conditions. 
+
+Additionally, Drools Scorecards will allows for reason codes to be set, which help in identifying the specific rules (buckets) that have contributed to the overall score.
+Drools Scorecards will be based on the PMML 4.1 Standard. 
+
+The New Item menu now allows for creation of scorecard assets.
+
+.Scorecard Asset - Guided Editor
+image::Workbench/AuthoringAssets/scorecard_asset_webeditor.png[align="center"]
+
+
+The above image shows a scorecard with one characteristic.
+Each scorecard consists of two sections (a) Setup Parameters (b) Characteristic Section 
+
+[[_drools.guidedscorecardeditorsetupparameters]]
+== (a) Setup Parameters
+
+
+The setup section consits of parameters that define the overall behaviour of this scorecard. 
+
+. Facts: This dropdown shows a list of facts that are visible for this asset. 
+. Resultant Score Field: Shows a list of fields from the selected fact. Only fields of type 'double' are shown. If this dropdown is empty double check your fact model. The final calculated score will be stored in this field. 
+. Initial Score: Numeric Text Field to capture the initial score. The generated rules will initialize the 'Resultant Score Field' with this score and then is added to the overall score whenever partial scores are summed up. 
+. Use Reason Codes: Boolean indicator to compute reason codes along with the final score. Selecting Yes/No in this field will enable/disable the 'Resultant Reason Codes Field', 'Reason Code Algorithm' and the 'Baseline Score' field. 
+. Resultant Reason Codes Field: Shows a list of fields from the selected fact. Only fields of type 'java.util.List' are shown. This collection will hold the reason codes selected by this scorecard. 
+. Reason Code Algorithm: May be "none", "pointsAbove" or "pointsBelow", describing how reason codes shall be ranked, relative to the baseline score of each Characteristic, or as set at the top-level scorecard. 
+. Baseline Score: A single value to use as the baseline comparison score for all characteristics, when determining reason code ranking. Alternatively, unique baseline scores may be set for each individual Characteristic as shown below. This value is required only when UseReasonCodes is "true" and baselineScore is not given for each Characteristic. 
+
+
+[NOTE]
+====
+If UseReasonCodes is "true", then BaselineScore must be defined at the Scorecard level or for each Characteristic, and ReasonCode must be provided for each Characteristic or for each of its input Attributes.
+If UseReasonCodes is "false", then baselineScore and reasonCode are not required. 
+====
+
+[[_drools.guidedscorecardeditorcharacteristics]]
+== (b) Characteristics
+
+
+On Clicking the 'New Characteristic' button, a new empty characteristic editor is added to the scorecard.
+Defines the point allocation strategy for each scorecard characteristic (numeric or categorical). Each scorecard characteristic is assigned a single partial score which is used to compute the overall score.
+The overall score is simply the sum of all partial scores.
+Partial scores are assumed to be continuous values of type "double". 
+
+[[_drools.guidedscorecardeditorcreatingcharacteristics]]
+=== Creating Characterstics
+
+
+Every scorecard must have at least one characteristic
+
+.New Characteristic
+image::Workbench/AuthoringAssets/scorecards_new_characteristic.png[align="center"]
+
+
+. Name: Descriptive name for this characteristic. For informational reasons only. 
+. Remove Charteristic: Will remove this characteristic from the scorecard after a confirmation dialog is shown. 
+. Add Attribute: Will add a line entry for an attribute (bin). 
+. Fact: Select the class which will be evaluated for calculating the partial score. 
+. Characteristic: Shows the list of fields from the selected Fact. Only fields of type "String", "int", "double", "boolean" are shown. 
+. Baseline Score: Sets the characteristic's baseline score against which to compare the actual partial score when determining the ranking of reason codes. This value is required when useReasonCodes attribute is "true" and baselineScore is not defined in element Scorecard. Whenever baselineScore is defined for a Characteristic, it takes precedence over the baselineScore value defined in element Scorecard. 
+. Reason Code: Contains the characteristic's reason code, usually associated with an adverse decision. 
+
+
+[[_drools.guidedscorecardeditorcreatingattributes]]
+=== Creating Attributes
+
+
+On Clicking the 'New Attribute' button, a new empty attribute editor.
+In scorecard models, all the elements defining the Attributes for a particular Characteristic must all reference a single field. 
+
+.New Attribute
+image::Workbench/AuthoringAssets/scorecards_new_attribute.png[align="center"]
+
+
+. Operator: The condition upon which the mapping between input attribute and partial score takes place. The operator dropdown will show different values depending on the datatype of the selected Field. 
++
+.. DataType Strings: "=", "in". 
+.. DataType Integers: "=", ">", "<", ">=", "<=", ">..<", ">=..<", ">=..<=", ">..<=". 
+.. DataType Boolean: "true", "false". 
+
++
+Refer to the next sub-section (values) for more details. 
+
+. Value: Basis the operator selected the value specified can either be a single value or a set of values separated by comma (","). The value field is disabled for operator type boolean. 
++
+{empty}
++
+.Operators / Values
+[cols="1,1,1,1"]
+|===
+|Data Type
+|Operator
+|Value
+|Remarks
+
+|String
+|=
+|Single Value
+|will look for an exact match
+
+|String
+|in
+|Comma Separated Values (a,b,c,...)
+|The operator 'in' indicates an evaluation to TRUE if the field value is contained in the comma separated list of values
+
+|Boolean
+|is true
+|N/A
+|Value Field is uneditable (readonly)
+
+|Boolean
+|is false
+|N/A
+|Value Field is uneditable (readonly)
+
+|Numeric
+|=
+|Single Value
+|Equals Operator
+
+|Numeric
+|&gt;
+|Single Value
+|Greator Than Operator
+
+|Numeric
+|&lt;
+|Single Value
+|Less Than Operator
+
+|Numeric
+|&gt;=
+|Single Value
+|Greater than or equal To
+
+|Numeric
+|&lt;=
+|Single Value
+|Less than or equal To
+
+|Numeric
+|&gt;..&lt;
+|Comma Separated Values (a,b)
+|(Greater than Value 'a') and (less than value 'b')
+
+|Numeric
+|&gt;=..&lt;
+|Comma Separated Values (a,b)
+|(Greater than or equal to Value 'a') and (less than value 'b')
+
+|Numeric
+|&gt;=..&lt;=
+|Comma Separated Values (a,b)
+|(Greater than or equal to Value 'a') and (less than or equal to value 'b')
+
+|Numeric
+|&gt;..&lt;=
+|Comma Separated Values (a,b)
+|(Greater than Value 'a') and (less than or equal to value 'b')
+|===
+
+. Partial Score: Defines the score points awarded to the Attribute. 
+. Reason Code: Defines the attribute's reason code. If the reasonCode attribute is used in this level, it takes precedence over the ReasonCode associated with the Characteristic element. 
+. Actions: Delete this attribute. Prompts the user for confirmation. 
+
+
+[NOTE]
+====
+If Use Reason Codes is "true", then Baseline Score must be defined at the Scorecard level or for each Characteristic, and Reason Code must be provided for each Characteristic or for each of its input Attributes.
+If Use Reason Codes is "false", then BaselineScore and ReasonCode are not required. 
+====
