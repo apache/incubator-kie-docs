@@ -14,7 +14,7 @@
   <artifactId>optaplanner-wb-es-asciidocs</artifactId>
   <packaging>jar</packaging>
 
-  <name>KIE :: Documentation :: OptaPlanner Workbench and Execution Server AsciiDocs</name>
+  <name>KIE :: Documentation :: OptaPlanner Workbench and Execution Server AsciiDoc</name>
   <description>OptaPlanner Workbench and Execution Server Documentation</description>
 
   <dependencies>
@@ -42,7 +42,7 @@
               <goal>copy-resources</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/generated-docs/single/images</outputDirectory>
+              <outputDirectory>${project.build.directory}/generated-docs/html_single/images</outputDirectory>
               <resources>
                 <resource>
                   <directory>${basedir}/../shared-asciidoc/images/</directory>
@@ -51,6 +51,32 @@
               </resources>
             </configuration>
           </execution>
+          <!-- PDF generation requires only having JPG files: add back in when all PNG have been converted to JPG.
+               prawn  (Ruby library used by asciidoctor-pdf) does not support all PNG formats
+               See: https://github.com/asciidoctor/asciidoctor-pdf/blob/master/Gemfile#L3
+                    https://github.com/prawnpdf/prawn/blob/89c95e07ca1563713bf3f44db466b51770ddca1e/lib/prawn/images/png.rb#L140
+                    http://stackoverflow.com/questions/13741110/add-image-using-prawn-got-error-prawnerrorsunsupportedimagetype-png-uses
+
+          <execution>
+            <id>copy-shared-asciidoc-images-for-pdf-generation</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/src/main/asciidoc/images</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${basedir}/../shared-asciidoc/images/</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+           -->
+
+          <!-- Add when chunked HTML is available
+               See: https://github.com/asciidoctor/asciidoctor-maven-plugin/issues/135
           <execution>
             <id>copy-shared-asciidoc-images-to-multiple</id>
             <phase>generate-sources</phase>
@@ -67,6 +93,7 @@
               </resources>
             </configuration>
           </execution>
+           -->
         </executions>
       </plugin>
 
@@ -84,7 +111,7 @@
             <codeDir>${project.build.directory}/code</codeDir>
             <COMMUNITY-ONLY />
             <project-version>${project.version}</project-version>
-            <shared-dir>${basedir}/../shared-asciidoc/</shared-dir>
+            <shared-dir>${project.basedir}/../shared-asciidoc/</shared-dir>
           </attributes>
         </configuration>
         <dependencies>
@@ -105,9 +132,10 @@
           </dependency>
         </dependencies>
         <executions>
-          <!--
+          <!-- Chunked HTML generation not yet available (AsciiDoctor issue)
+               See: https://github.com/asciidoctor/asciidoctor-maven-plugin/issues/135
           <execution>
-            <id>generate-html</id>
+            <id>generate-multiple-html</id>
             <phase>process-sources</phase>
             <goals>
               <goal>process-asciidoc</goal>
@@ -131,7 +159,7 @@
               <backend>html5</backend>
               <sourceDirectory>src/main/asciidoc</sourceDirectory>
               <sourceDocumentName>index.adoc</sourceDocumentName>
-              <outputDirectory>${project.build.directory}/generated-docs/single</outputDirectory>
+              <outputDirectory>${project.build.directory}/generated-docs/html_single</outputDirectory>
             </configuration>
           </execution>
           <!-- PDF generation doesn't work yet
@@ -153,6 +181,31 @@
           -->
         </executions>
       </plugin>
+      
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>pack-generated-docs</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <finalName>drools-docs-${project.version}</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
+          <descriptors>
+            <descriptor>src/main/assembly/generated-docs-zip.xml</descriptor>
+          </descriptors>
+          <archive>
+            <addMavenDescriptor>true</addMavenDescriptor>
+          </archive>
+        </configuration>
+      </plugin>
+
     </plugins>
   </build>
 </project>
