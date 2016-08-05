@@ -2616,7 +2616,7 @@ when
              from accumulate( OrderItem( order == $order, $value : value ),
                               sum( $value ) )
 then
-    # apply discount to $order
+    // apply discount to $order
 end</programlisting>
 
           <para>In the above example, the accumulate element is using only one
@@ -2626,6 +2626,52 @@ end</programlisting>
           syntax over the compact syntax presented before, except that is is a
           bit more verbose. Also note that it is not allowed to use both the
           return type and the functions binding in the same accumulate statement.</para>
+          
+          <para>Compile-time checks are performed in order to ensure the pattern
+          used with the "from" keyword is assignable from the result of the
+          accumulate function used.</para>
+          
+          <note>
+           <para>With this syntax, the "<code>from</code>" binds to the single
+           result returned by the accumulate function, and it does not iterate.
+           </para>
+	      </note>
+	      
+           <para>In the above example, "<code>$total</code>" is bound to the
+           result returned by the accumulate <code>sum()</code> function.</para>
+           
+           <para>As another example however, if the result of the accumulate 
+           function is a collection, "<code>from</code>" still binds to the
+           single result and it does not iterate:
+           <programlisting>rule "Person names"
+when
+  $x : Object() from accumulate(MyPerson( $val : name ); 
+                                collectList( $val ) )
+then
+  // $x is a List
+end</programlisting>
+           The binded "<code>$x : Object()</code>" is the List itself,
+           returned by the <code>collectList</code> accumulate function used.
+           </para>
+            
+           <para>This is an important distinction to highlight, as the<code>from</code>
+           keyword can also be used separately of <code>accumulate</code>, to 
+           iterate over the elements of a collection:
+           <programlisting>rule "Iterate the numbers"
+when
+    $xs : List()
+    $x : Integer() from $xs
+then
+  // $x matches and binds to each Integer in the collection
+end</programlisting>
+           </para>
+           
+           <para>While this syntax is still supported for backward compatibility purposes,
+           for this and other reasons we encourage rule authors to make use instead of the
+           Accumulate CE preferred syntax (described in the previous chapter),
+           so to avoid any potential pitfalls, as described by these examples.
+           </para>
+
         </section>
 
         <section>
@@ -2720,7 +2766,7 @@ when
                               reverse( total -= $value; ),
                               result( total ) )
 then
-    # apply discount to $order
+    // apply discount to $order
 end</programlisting>
 
           <para>In the above example, for each <code>Order</code> in the
