@@ -2340,7 +2340,7 @@ when
              from accumulate( OrderItem( order == $order, $value : value ),
                               sum( $value ) )
 then
-    # apply discount to $order
+    // apply discount to $order
 end
 ----
 
@@ -2348,6 +2348,45 @@ end
 In the above example, the accumulate element is using only one function (sum), and so, the rules author opted to explicitly write a pattern for the result type of the accumulate function (Number) and write the constraints inside it.
 There are no problems in using this syntax over the compact syntax presented before, except that is is a bit more verbose.
 Also note that it is not allowed to use both the return type and the functions binding in the same accumulate statement.
+
+Compile-time checks are performed in order to ensure the pattern used with the $$"$$``from``$$"$$ keyword is  assignable from the result of the accumulate function used.
+
+[NOTE]
+====
+With this syntax, the $$"$$``from``$$"$$ binds to the single result returned by the accumulate function, and it does not iterate.
+====
+
+In the above example, $$"$$``$total``$$"$$ is bound to the result returned by the accumulate sum() function.
+
+As another example however, if the result of the accumulate function is a collection, $$"$$``from``$$"$$ still binds to the single result and it does not iterate:
+
+[source]
+----
+rule "Person names"
+when
+  $x : Object() from accumulate(MyPerson( $val : name );
+                                collectList( $val ) )
+then
+  // $x is a List
+end
+----
+
+The binded $$"$$``$x : Object()``$$"$$ is the List itself, returned by the collectList accumulate function used.
+
+This is an important distinction to highlight, as the $$"$$``from``$$"$$ keyword can also be used separately of accumulate, to iterate over the elements of a collection:
+
+[source]
+----
+rule "Iterate the numbers"
+when
+    $xs : List()
+    $x : Integer() from $xs
+then
+  // $x matches and binds to each Integer in the collection
+end
+----
+
+While this syntax is still supported for backward compatibility purposes, for this and other reasons we encourage rule authors to make use instead of the Accumulate CE preferred syntax (described in the previous chapter), so to avoid any potential pitfalls, as described by these examples.
 
 ==== Accumulate with inline custom code
 
@@ -2398,7 +2437,7 @@ when
                               reverse( total -= $value; ),
                               result( total ) )
 then
-    # apply discount to $order
+    // apply discount to $order
 end
 ----
 
