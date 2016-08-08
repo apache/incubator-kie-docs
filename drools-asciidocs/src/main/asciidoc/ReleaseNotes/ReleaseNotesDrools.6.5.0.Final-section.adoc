@@ -1,0 +1,48 @@
+[[_drools.releasenotesdrools.6.5.0]]
+= What is New and Noteworthy in Drools 6.5.0
+
+== Configurable ThreadFactory
+
+
+Some runtime environments (like for example Google App Engine) don't allow to directly create new Threads.
+For this reason it is now possible to plug your own ThreadFactory implementation by setting the system property **drools.threadFactory** with its class name.
+For instance if you implemented your Google App Engine compatible ThreadFactory with the class ``com.user.project.GoogleAppEngineThreadFactory`` you can make Drools to use it by setting:
+
+[source]
+----
+drools.threadFactory = com.user.project.GoogleAppEngineThreadFactory
+----
+
+== Use of any expressions as input for a query
+
+
+It is now possible to use as input argument for a query both the field of a fact as in:
+
+[source]
+----
+query contains(String $s, String $c)
+    $s := String( this.contains( $c ) )
+end
+
+rule PersonNamesWithA when
+    $p : Person()
+    contains( $p.name, "a"; )
+then
+end
+----
+
+and more in general any kind of valid expression like in:
+
+[source]
+----
+query checkLength(String $s, int $l)
+    $s := String( length == $l )
+end
+
+rule CheckPersonNameLength when
+    $i : Integer()
+    $p : Person()
+    checkLength( $p.name, 1 + $i + $p.age; )
+then
+end
+----
