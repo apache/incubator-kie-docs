@@ -73,18 +73,54 @@ import org.drools.core.process.core.datatype.impl.type.StringDataType;
 ----
 
 
-
+* The name property is the unique name for your service
+* The parameres property defines the service data inputs giving them a name and a type
+* You can similarly to input parameters also define the "results" property for service data ouputs (same structure applies)
 * The icon property should refer to a file with the given file name in the same folder as
   the extended configuration file (so it can be downloaded by the import wizard and used in the process
   diagrams).  Icons should be 16x16 GIF files.
 * The category property defines the category this service should be placed under when
   browsing the repository.
-* The defaultHandler property defines the default handler implementation (i.e. the Java class that implements the `WorkItemHandler` interface and can be used to execute the service).  This can automatically be registered as the handler for that service when importing the service from the repository.
+* The defaultHandler property defines the default handler implementation (i.e. the Java class that implements the `WorkItemHandler` interface and can be used to execute the service).  This can automatically be registered as the handler for that service when importing the service from the repository. You can also use mvel to resolve the default handler expression which has the additional benefit of being able to resolve the handlers parameters, for example:
+[source]
+----
+"defaultHandler" : "mvel: new org.jbpm.process.workitem.twitter.TwitterHandler(ksession)",
+----
+Some of the available named parameters you can use are:
+[source]
+----
+ksession
+taskService
+runtimeManager
+classLoader
+entityManagerFactory
+----
 * The documentation property defines a documentation file that describes what the service does and how it works. This property should refer to a HTML file with the given name in the same folder as the extended configuration file (so it can be shown by the import wizard when browsing the repository).
-* The dependencies property defines additional dependencies that are necessary to execute this service. This usually includes the handler implementation JAR, but could also include additional external dependencies. These dependencies should also be located on the repository on the given location (relative to the folder where the extended configuration file is located), so they can be downloaded by the import wizard when importing the service.
+* The dependencies property defines additional dependencies that are necessary to execute this service. This usually includes the handler implementation JAR, but could also include additional external dependencies. These dependencies should also be located on the repository on the given location (relative to the folder where the extended configuration file is located), so they can be downloaded by the import wizard when importing the service. In the necessary dependencies are located in a maven repostory you can defined them via the mavenDependencies property, for example:
+[source]
+----
+"mavenDependencies" : [
+  "org.jbpm:jbpm-twitter:1.0",
+  "org.twitter4j:twitter4j-core:2.2.2"
+]
+----
 
+The root of your repository should also contain an [path]_index.conf_ file that references all the folders that should be processed when searching for services on the repository. This file could look as follows:
+[source]
+----
+Email
+FileSystem
+ESB
+FTP
+Google
+Java
+Jabber
+Rest
+RSS
+Transform
+Twitter
+----
 
-The root of your repository should also contain an [path]_index.conf_ file that references all the folders that should be processed when searching for services on the repository.
 Each of those folders should then contain: 
 
 * An extended configuration file with the same name as the folder (e.g. [path]_Twitter.conf_)
@@ -94,3 +130,58 @@ Each of those folders should then contain:
 * The dependencies as references in the configuration file (for example in a lib folder)
 You can create your own hierarchical structure, because if one of those folders also contains an [path]_index.conf_ file, that will be used to scan additional sub-folders.
 Note that the hierarchical structure of the repository is not shown when browsing the repository using the import wizard, as the category property in the configuration file is used for that.
+
+== Programatically interacting with the service repository
+jBPM provides classes in the org.jbpm.process.workitem package which allows you to connect and retrieve your service information. For example:
+[source]
+----
+Map<String, WorkDefinitionImpl> workitemsFromRepo =
+  WorkItemRepository.getWorkDefinitions("http://docs.jboss.org/jbpm/v6.0/repository/");
+----
+This will provide you with all serviced defined in the repository (and declared in your index.conf file). You can then get more detailed information about each of services in the repository using their name as deflared in the service wid file, for example when using the twitter wid configuration from above we could do:
+[source]
+----
+workitemsFromRepo.get( "Twitter" ).getName();                 // "Twitter"
+workitemsFromRepo.get( "Twitter" ).getDescription();          // "Send a Twitter message"
+workitemsFromRepo.get( "Twitter" ).getDefaultHandler();       // "org.jbpm.process.workitem.twitter.TwitterHandler"
+workitemsFromRepo.get( "Twitter" ).getDependencies();         // String["file:./lib/jbpm-twitter.jar","file:./lib/twitter4j-core-2.2.2.jar"]
+...
+----
+or you could for example check if the correct version of the service you need is contained in the repository:
+[source]
+----
+if( workitemsFromRepo.containsKey( "Twitter" ) && workitemsFromRepo.get( "Twitter" ).getVersion().equals( "1.0" )) {
+  // do something
+}
+----
+Currently all operations are read-only. There isn't a way to update the service repository automatically.
+
+== Defining extended service configuration with JSON
+The previous extended configuration example for the Twitter service was defined with the default mvel configuration. It is also possible to do this with JSON and the Twitter example would look like this:
+[source]
+----
+[
+  [
+    "java.util.HashMap",
+    {
+      "name":"TestServiceFour",
+      "displayName":"Twitter",
+      "description":"Send a Twitter message",
+      "parameters":[
+        "java.util.HashMap",
+        {
+          "Message":["org.drools.core.process.core.datatype.impl.type.StringDataType", {}]
+        }
+      ],
+      "eclipse:customEditor":"org.drools.eclipse.flow.common.editor.editpart.work.SampleCustomEditor",
+      "defaultHandler" : "org.jbpm.process.workitem.twitter.TwitterHandler",
+      "documentation" : "index.html",
+      "dependencies":[
+        "java.util.ArrayList", ["file:./lib/jbpm-twitter.jar", "file:./lib/twitter4j-core-2.2.2.jar"]
+      ]
+    }
+  ]
+]
+----
+In your service repository you can define the extended configuration of your services with mvel or JSON (or have some defined in one way and some in the other as well).
+Defining the extended configuration with JSON might have some benefits if being red by custom web-based clients for example.
