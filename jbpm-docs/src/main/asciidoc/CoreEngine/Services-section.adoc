@@ -624,6 +624,168 @@ Moreover this promotes use of tailored queries for your environment as in most o
 
 Further examples can be found http://mswiderski.blogspot.com/2016/01/advanced-queries-in-jbpm-64.html[here].
 
+== ProcessInstanceMigrationService
+
+ProcessInstanceMigrationService provides administrative utility to move given process instance(s) from one deployment to another or one process definition to another. It's main responsibility is to allow basic upgrade of process definition behind given process instance. That might include mapping of currently active nodes to other nodes in new definition.
+
+Migration does not deal with process or task variables, they are not affected by migration. Essentially process instance migration means a change of underlying process definition process engine uses to move on with process instance.
+
+Even though process instance migration is available it's recommended to let active process instances finish and then start new instances with new version whenever possible. In case that approach can't be used, migration of active process instance needs to be carefully planned before its execution as it might lead to unexpected issues.Most important to take into account is:
+
+
+* is new process definition backward compatible?
+* are there any data changes (variables that could affect process instance decisions after migration)?
+* is there need for node mapping?
+
+Answers to these question might save a lot of headache and production problems after migration. Best is to always stick with backward compatible processes - like extending process definition rather than removing nodes. Though that's not always possible and in some cases there is a need to remove certain nodes from process definition. In that situation, migration needs to be instructed how to map nodes that were removed in new definition in case active process instance is at the moment in such a node.
+
+
+Node mapping is given as a map of node ids (UniqueIds that are set in the definition) where key is the source node id (from process definition used by process instance) to target node id (in new process definition).
+
+[NOTE]
+
+Node mapping can only be used to map same type of nodes e.g. user task to user task.
+
+Again, process or task variables are not affected by process instance migration at the moment.
+
+ProcessInstanceMigrationService comes with several flavors of migrate operation:
+
+[source,java]
+
+ProcessInstanceMigrationService
+----
+public interface ProcessInstanceMigrationService {
+ /**
+ * Migrates given process instance that belongs to source deployment, into target process id that belongs to target deployment.
+ * Following rules are enforced:
+ * <ul>
+ * <li>source deployment id must be there</li>
+ * <li>process instance id must point to existing and active process instance</li>
+ * <li>target deployment must exist</li>
+ * <li>target process id must exist in target deployment</li>
+ * </ul>
+ * Migration returns migration report regardless of migration being successful or not that needs to be examined for migration outcome.
+ * @param sourceDeploymentId deployment that process instance to be migrated belongs to
+ * @param processInstanceId id of the process instance to be migrated
+ * @param targetDeploymentId id of deployment that target process belongs to
+ * @param targetProcessId id of the process process instance should be migrated to
+ * @return returns complete migration report
+ */
+ MigrationReport migrate(String sourceDeploymentId, Long processInstanceId, String targetDeploymentId, String targetProcessId);
+ /**
+ * Migrates given process instance (with node mapping) that belongs to source deployment, into target process id that belongs to target deployment.
+ * Following rules are enforced:
+ * <ul>
+ * <li>source deployment id must be there</li>
+ * <li>process instance id must point to existing and active process instance</li>
+ * <li>target deployment must exist</li>
+ * <li>target process id must exist in target deployment</li>
+ * </ul>
+ * Migration returns migration report regardless of migration being successful or not that needs to be examined for migration outcome.
+ * @param sourceDeploymentId deployment that process instance to be migrated belongs to
+ * @param processInstanceId id of the process instance to be migrated
+ * @param targetDeploymentId id of deployment that target process belongs to
+ * @param targetProcessId id of the process process instance should be migrated to
+ * @param nodeMapping node mapping - source and target unique ids of nodes to be mapped - from process instance active nodes to new process nodes
+ * @return returns complete migration report
+ */
+ MigrationReport migrate(String sourceDeploymentId, Long processInstanceId, String targetDeploymentId, String targetProcessId, Map<String, String> nodeMapping);
+ /**
+ * Migrates given process instances that belong to source deployment, into target process id that belongs to target deployment.
+ * Following rules are enforced:
+ * <ul>
+ * <li>source deployment id must be there</li>
+ * <li>process instance id must point to existing and active process instance</li>
+ * <li>target deployment must exist</li>
+ * <li>target process id must exist in target deployment</li>
+ * </ul>
+ * Migration returns list of migration report - one per process instance, regardless of migration being successful or not that needs to be examined for migration outcome.
+ * @param sourceDeploymentId deployment that process instance to be migrated belongs to
+ * @param processInstanceIds list of process instance id to be migrated
+ * @param targetDeploymentId id of deployment that target process belongs to
+ * @param targetProcessId id of the process process instance should be migrated to
+ * @return returns complete migration report
+ */
+ List<MigrationReport> migrate(String sourceDeploymentId, List<Long> processInstanceIds, String targetDeploymentId, String targetProcessId);
+ /**
+ * Migrates given process instances (with node mapping) that belong to source deployment, into target process id that belongs to target deployment.
+ * Following rules are enforced:
+ * <ul>
+ * <li>source deployment id must be there</li>
+ * <li>process instance id must point to existing and active process instance</li>
+ * <li>target deployment must exist</li>
+ * <li>target process id must exist in target deployment</li>
+ * </ul>
+ * Migration returns list of migration report - one per process instance, regardless of migration being successful or not that needs to be examined for migration outcome.
+ * @param sourceDeploymentId deployment that process instance to be migrated belongs to
+ * @param processInstanceIds list of process instance id to be migrated
+ * @param targetDeploymentId id of deployment that target process belongs to
+ * @param targetProcessId id of the process process instance should be migrated to
+ * @param nodeMapping node mapping - source and target unique ids of nodes to be mapped - from process instance active nodes to new process nodes
+ * @return returns list of migration reports one per each process instance
+ */
+ List<MigrationReport> migrate(String sourceDeploymentId, List<Long> processInstanceIds, String targetDeploymentId, String targetProcessId, Map<String, String> nodeMapping);
+}
+----
+
+Migration can either be performed for single process instance or multiple process instances at the same time. Multiple process instances migration is a utility method on top of single instance, instead of calling it multiple times, users call it once and then service will take care of the migration of individual process instances.
+
+[NOTE]
+
+Multi instance migration does migrate each instance in separation (transaction) to secure that one won't affect the other and then produces dedicated migration reports for each process instance
+
+
+=== Migration report
+
+Migration is always comcluded with migration report that is per each process instance. That migration report provides following information:
+
+* start and end date of the migration
+
+* outcome of the migration - success or failure
+
+* complete log entry - all steps performed during migration, entry can be INFO, WARN or ERROR - in case of ERROR there will be at most one as they are causing migration to be immedietely terminated.
+
+=== Example
+
+Following is an example of how to invoke the migration
+
+
+[source, java]
+
+ protected static final String MIGRATION_ARTIFACT_ID = "test-migration";
+ protected static final String MIGRATION_GROUP_ID = "org.jbpm.test";
+ protected static final String MIGRATION_VERSION_V1 = "1.0.0";
+ protected static final String MIGRATION_VERSION_V2 = "2.0.0";
+ // first deploy both versions
+ deploymentUnitV1 = new KModuleDeploymentUnit(MIGRATION_GROUP_ID, MIGRATION_ARTIFACT_ID, MIGRATION_VERSION_V1);
+ deploymentService.deploy(deploymentUnitV1);
+ // ... version 2
+ deploymentUnitV2 = new KModuleDeploymentUnit(MIGRATION_GROUP_ID, MIGRATION_ARTIFACT_ID, MIGRATION_VERSION_V2);
+ deploymentService.deploy(deploymentUnitV2);
+ // next start process instance in version 1
+ long processInstanceId = processService.startProcess(deploymentUnitV1.getIdentifier(), "processID-V1");
+// and once the instance is active it can be migrated
+MigrationReport report = migrationService.migrate(deploymentUnitV1.getIdentifier(), processInstanceId, deploymentUnitV2.getIdentifier(), "processID-V2");
+// as last step check if the migration finished successfully
+report.isSuccessful()
+
+
+=== Known limitations
+
+
+* When a new or modified task requires inputs which are not available in the migrated v2 process instance.
+
+* Modifying the tasks prior to the active task where the changes have an impact on the further processing.
+
+* Removing a human task which is currently active (can only be replaced - requires to be mapped to another human task)
+
+* Adding a new task parallel to the single active task (all branches in AND gateway are not activated - process will stuck)
+
+* Changing or removing the active recurring timer events (won’t be changed in DB)
+
+* Fixing or updating inputs and outputs in an active task (task data aren’t migrated)
+
+* Node mapping updates only the task node name and description! (other task fields won’t be mapped including the TaskName variable)
 
 
 == Working with deployments

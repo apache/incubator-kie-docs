@@ -75,6 +75,60 @@ public class DecisionServerTest {
     }
 ----
 
+=== JMS interaction patterns
+
+In version 6.5 KIE Server Client JMS integration has been enhanced with possibility to use various interaction patterns. Currently available are:
+
+* request reply (which is the default) - that makes the JMS integration synchronous - it blocks client until it gets the response back - not suited for JMS transactional use case
+* fire and forget - makes the integration one way only, suitable for notification like integration with kie server - makes perfect fit for transactional JMS delivery - deliver message to kie server only if transaction that ckie server client was invoked in was committed successfully
+* async with callback - allows to not block a client after sending message to kie server and receive response asynchronously - can be integrated with transactional JMS delivery
+
+
+Response handlers can be either set globally - when KieServicesConfiguration is created or it can be changed on runtime on individual client instances (like RuleServiceClient, ProcessServicesClient, etc)
+
+
+While 'fire and forget' and 'request reply' patterns do not require any additional configuration 'async with callback' does. And the main thing is actually the callback. KIE Server CLient comes with one out of the box - `BlockingResponseCallback` that provides basic support backed by blocking queue internally. Size of the queue is confgurable and thus allow receiving multiple messages, though intention of this callback is that it will only receive one message at a time - so it's like one message (request) and then one response per client interaction.
+
+[NOTE]
+
+Kie Server Client when switching response handler is not thread safe, meaning change of the handler will affect all threads using same client instance. So in case of dynamic changes of the handler it's recommended to use separate client instances. A good approach is to maintain set of clients that use dedicated response handler and then use these clients dependeing on which handler is required.
+
+Example:
+
+client 1 will use fire and forget while client 2 will use request reply. So client 1 can be used to start processes and client 2 can be used to query for user tasks.
+
+Users can provide their own callbacks by implementing `org.kie.server.client.jms.ResponseCallback` interface.
+
+*Configuration*
+
+[example]
+
+[source,java]
+
+Global JMS configuration
+----
+InitialContext context = ...;
+Queue requestQueue = (Queue) context.lookup("jms/queue/KIE.SERVER.REQUEST"));
+Queue responseQueue = (Queue) context.lookup("jms/queue/KIE.SERVER.RESPONSE");
+ConnectionFactory connectionFactory = (ConnectionFactory) context.lookup("jms/RemoteConnectionFactory");
+KieServicesConfiguration jmsConfiguration = KieServicesFactory.newJMSConfiguration( connectionFactory, requestQueue, responseQueue, "user", "password");
+// here you set response handler globally
+jmsConfiguration.setResponseHandler(new FireAndForgetResponseHandler());
+----
+
+Alternatively, might be actually more common, is to set the handler on individual clients before they are used
+
+[example]
+
+[source,java]
+
+Per client configuration
+----
+ProcessServiceClient processClient = client.getServicesClient(ProcessServicesClient.class);
+// change response handler for processClient others are not affected
+processClient.setResponseHandler(new FireAndForgetResponseHandler());
+---
+
 == Server Response
 
 
