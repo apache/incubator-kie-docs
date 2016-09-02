@@ -1,0 +1,66 @@
+= Rule Execution Modes
+
+
+Drools provides two modes for rule execution.
+
+Typical CEP application, especially if making use of the Real Time Clock, should preference Active Mode. Passive Mode is more effective for CEP application having custom Clock implementations, or especially if making use of the Pseudo Clock.
+
+
+== Active Mode
+
+
+Drools offers a `fireUntilHalt()` method, that starts the engine in Active Mode, where rules will be continually fired, until a `halt()` call is made. This is specially useful for CEP scenarios that require what is commonly known as "active queries".
+
+Please note calling `fireUntilHalt()` blocks the thread until the `halt()` call is made.
+
+An example outline of Drools code making use of Active Mode:
+[source,java]
+----
+
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("realtime") );
+KieSession session = kbase.newKieSession( conf, null );
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+session.insert( tick1 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick2 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick3 );
+
+----
+
+
+== Passive Mode
+
+
+Passive mode is applied when calling the usual `fireAllRules()`, as also described besides of the CEP, for the Rule Engine API.
+
+An example outline of Drools code making use of Passive Mode:
+[source,java]
+----
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("pseudo") );
+KieSession session = kbase.newKieSession( conf, null );
+
+session.insert( tick1 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick2 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick3 );
+session.fireAllRules();
+----
