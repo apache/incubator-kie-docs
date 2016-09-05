@@ -510,6 +510,121 @@ To turn it on, either call ``RuleBaseConfiguration.setSequential(true)``, or set
 Sequential mode can fall back to a dynamic agenda by calling `setSequentialAgenda` with ``SequentialAgenda.DYNAMIC``.
 You may also set the "drools.sequential.agenda" property to "sequential" or "dynamic".
 
+
+== Rule Execution Modes
+
+
+Drools provides two modes for rule execution.
+
+As a general guideline, Passive Mode is most suitable for Rule Engine applications which need to explicitly control when the engine shall evaluate the rules, or for CEP applications having custom Clock implementations - especially if making use of the Pseudo Clock. Active Mode is most effective for Rule Engine applications which opt to completely delegate to the engine when the rules shall be evaluated, or for typical CEP application making use of the Real Time Clock.
+
+
+=== Passive Mode
+
+
+Passive mode is applied when calling the usual `fireAllRules()`. The application has full control when to perform operations on the KieSession, for example to insert new Facts into the session, and when to let the engine evaluate the rules by calling explicitly `fireAllRules()` on the KieSession.
+
+An example outline of Drools code for a CEP application making use of Passive Mode:
+[source,java]
+----
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("pseudo") );
+KieSession session = kbase.newKieSession( conf, null );
+
+session.insert( tick1 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick2 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick3 );
+session.fireAllRules();
+
+session.dispose();
+----
+
+
+=== Active Mode
+
+
+Drools offers a `fireUntilHalt()` method, that starts the engine in Active Mode, where rules will be continually fired, until a `halt()` call is made.
+
+This is specially useful for CEP scenarios that require what is commonly known as "active queries".
+
+Please note calling `fireUntilHalt()` blocks the current thread, until the `halt()` is called on the KieSession. It is suggested therefore to call `fireUntilHalt()` from a dedicated thread, so the current thread does not get blocked indefinitely; this also enable the current thread to call `halt()` at a later stage, ref. examples below.
+
+An example outline of Drools code for a CEP application making use of Active Mode:
+[source,java]
+----
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("realtime") );
+KieSession session = kbase.newKieSession( conf, null );
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+session.insert( tick1 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick2 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick3 );
+
+session.halt();
+session.dispose();
+----
+
+
+==== Performing KieSession operations atomically when in Active Mode
+
+
+When in Active Mode, the Drools engine is in control of when the rule shall be evaluated; from a client-side perspective however, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
+
+Drools offers a `submit()` method to group several operations on the KieSession as an atomic action while in Active Mode.
+
+An example outline of Drools code to perform KieSession operations atomically when in Active Mode:
+[source,java]
+----
+KieSession session = ...;
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+session.insert( fact_a );
+
+... Thread.sleep( 1000L ); ...
+
+session.submit( new KieSession.AtomicAction() {
+  @Override
+  public void execute( KieSession kieSession ) {
+    kieSession.insert(fact_1);
+    kieSession.insert(fact_2);
+    kieSession.insert(fact_3);
+  }
+} );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( fact_z );
+
+session.halt();
+session.dispose();
+----
+
+
 == Propagation modes
 
 
