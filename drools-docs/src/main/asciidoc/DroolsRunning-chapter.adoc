@@ -603,16 +603,18 @@ new Thread( new Runnable() {
   }
 } ).start();
 
-session.insert( fact_a );
+final FactHandle fh = session.insert( fact_a );
 
 ... Thread.sleep( 1000L ); ...
 
 session.submit( new KieSession.AtomicAction() {
   @Override
   public void execute( KieSession kieSession ) {
-    kieSession.insert(fact_1);
-    kieSession.insert(fact_2);
-    kieSession.insert(fact_3);
+    fact_a.setField("value");
+    kieSession.update( fh, fact_a );
+    kieSession.insert( fact_1 );
+    kieSession.insert( fact_2 );
+    kieSession.insert( fact_3 );
   }
 } );
 
