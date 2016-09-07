@@ -514,15 +514,15 @@ You may also set the "drools.sequential.agenda" property to "sequential" or "dyn
 == Rule Execution Modes
 
 
-Drools provides two modes for rule execution.
+Drools provides two modes for rule execution - passive and active.
 
-As a general guideline, Passive Mode is most suitable for Rule Engine applications which need to explicitly control when the engine shall evaluate the rules, or for CEP applications having custom Clock implementations - especially if making use of the Pseudo Clock. Active Mode is most effective for Rule Engine applications which opt to completely delegate to the engine when the rules shall be evaluated, or for typical CEP application making use of the Real Time Clock.
+As a general guideline, Passive Mode is most suitable for Rule Engine applications which need to explicitly control when the engine shall evaluate and fire the rules, or for CEP applications making use of the Pseudo Clock. Active Mode is most effective for Rule Engine applications which delegate control of when rules are evaluated and fired to the engine, or for typical CEP application making use of the Real Time Clock.
 
 
 === Passive Mode
 
 
-Passive mode is applied when calling the usual `fireAllRules()`. The application has full control when to perform operations on the KieSession, for example to insert new Facts into the session, and when to let the engine evaluate the rules by calling explicitly `fireAllRules()` on the KieSession.
+With Passive mode not only is the user responsible for working memory operations, such as `insert()`, but also for when the rules are to evaluate the data and fire the resulting rule instantiations - using `fireAllRules()`  .
 
 An example outline of Drools code for a CEP application making use of Passive Mode:
 [source,java]
@@ -530,6 +530,7 @@ An example outline of Drools code for a CEP application making use of Passive Mo
 KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
 config.setOption( ClockTypeOption.get("pseudo") );
 KieSession session = kbase.newKieSession( conf, null );
+SessionPseudoClock clock = session.getSessionClock();
 
 session.insert( tick1 );
 session.fireAllRules();
@@ -549,11 +550,11 @@ session.dispose();
 === Active Mode
 
 
-Drools offers a `fireUntilHalt()` method, that starts the engine in Active Mode, where rules will be continually fired, until a `halt()` call is made.
+Drools offers a `fireUntilHalt()` method, that starts the engine in Active Mode, which is asynchronous in behavior, where rules will be continually evaluated and fired, until a `halt()` call is made.
 
 This is specially useful for CEP scenarios that require what is commonly known as "active queries".
 
-Please note calling `fireUntilHalt()` blocks the current thread, until the `halt()` is called on the KieSession. It is suggested therefore to call `fireUntilHalt()` from a dedicated thread, so the current thread does not get blocked indefinitely; this also enable the current thread to call `halt()` at a later stage, ref. examples below.
+Please note calling `fireUntilHalt()` blocks the current thread, while the engine will start and continue running asynchronously until the `halt()` is called on the KieSession. It is suggested therefore to call `fireUntilHalt()` from a dedicated thread, so the current thread does not get blocked indefinitely; this also enable the current thread to call `halt()` at a later stage, ref. examples below.
 
 An example outline of Drools code for a CEP application making use of Active Mode:
 [source,java]
@@ -583,11 +584,13 @@ session.halt();
 session.dispose();
 ----
 
+NOTE: Generally, it is not recommended mixing `fireAllRules()` and `fireUntilHalt()`, especially from different threads. However the engine is able to handle such situations safely, thanks to the internal state machine. If `fireAllRules()` is running and a call `fireUntilHalt()` is made, the engine will wait until the `fireAllRules()` is finished and then start `fireUntilHalt()`. However if `fireUntilHalt()` is running and `fireAllRules()` is called, the later is ignored and will just return directly. For more details about thread-safety and the internal state machine, reference section "Improved multi-threading behaviour".
+
 
 ==== Performing KieSession operations atomically when in Active Mode
 
 
-When in Active Mode, the Drools engine is in control of when the rule shall be evaluated; from a client-side perspective however, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
+When in Active Mode, the Drools engine is in control of when the rule shall be evaluated and fired; from a client-side perspective however, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
 
 Drools offers a `submit()` method to group several operations on the KieSession as an atomic action while in Active Mode.
 
