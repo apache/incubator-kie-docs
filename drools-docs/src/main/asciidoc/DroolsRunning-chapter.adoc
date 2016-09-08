@@ -590,9 +590,9 @@ NOTE: Generally, it is not recommended mixing `fireAllRules()` and `fireUntilHal
 ==== Performing KieSession operations atomically when in Active Mode
 
 
-When in Active Mode, the Drools engine is in control of when the rule shall be evaluated and fired; from a client-side perspective however, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
+When in Active Mode, the Drools engine is in control of when the rule shall be evaluated and fired; therefore it is important that operations on the KieSession are performed in a thread-safe manner. Additionally, from a client-side perspective, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
 
-Drools offers a `submit()` method to group several operations on the KieSession as an atomic action while in Active Mode.
+Drools offers a `submit()` method to group and perform operations on the KieSession as a thread-safe atomic action, while in Active Mode.
 
 An example outline of Drools code to perform KieSession operations atomically when in Active Mode:
 [source,java]
@@ -627,6 +627,29 @@ session.insert( fact_z );
 
 session.halt();
 session.dispose();
+----
+
+As a reminder example, the fact handle could also be retrieved from the KieSession:
+[source,java]
+----
+...
+session.insert( fact_a );
+
+... Thread.sleep( 1000L ); ...
+
+session.submit( new KieSession.AtomicAction() {
+  @Override
+  public void execute( KieSession kieSession ) {
+    final FactHandle fh = kieSession.getFactHandle( fact_a );
+    fact_a.setField("value");
+    kieSession.update( fh, fact_a );
+    kieSession.insert( fact_1 );
+    kieSession.insert( fact_2 );
+    kieSession.insert( fact_3 );
+  }
+} );
+
+...
 ----
 
 
