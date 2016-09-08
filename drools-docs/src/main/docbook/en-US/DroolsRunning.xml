@@ -833,7 +833,163 @@ results.getValue( "Get People" );</programlisting>
       "drools.sequential.agenda" property to "sequential" or "dynamic".</para>
     </section>
   </section>
+  
+  <section>
+    <title>Rule Execution Modes</title>
 
+    <para>Drools provides two modes for rule execution - passive and active.</para>
+
+    <para>As a general guideline, Passive Mode is most suitable for Rule Engine applications which need to
+    explicitly control when the engine shall evaluate and fire the rules, or for CEP applications making use
+    of the Pseudo Clock. Active Mode is most effective for Rule Engine applications which delegate control
+    of when rules are evaluated and fired to the engine, or for typical CEP application making use of the
+    Real Time Clock.</para>
+    <section>
+      <title>Passive Mode</title>
+  
+      <para>With Passive mode not only is the user responsible for working memory operations, such as <code>insert()</code>,
+      but also for when the rules are to evaluate the data and fire the resulting rule instantiations -
+      using <code>fireAllRules()</code></para>
+
+      <para>An example outline of Drools code for a CEP application making use of Passive Mode:</para>
+      <programlisting language="java">KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("pseudo") );
+KieSession session = kbase.newKieSession( conf, null );
+SessionPseudoClock clock = session.getSessionClock();
+
+session.insert( tick1 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick2 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick3 );
+session.fireAllRules();
+
+session.dispose();</programlisting>
+
+    </section> <!-- /Passive Mode  -->
+
+    <section>
+      <title>Active Mode</title>
+  
+      <para>Drools offers a <code>fireUntilHalt()</code> method, that starts the engine in Active Mode, which is
+      asynchronous in behavior, where rules will be continually evaluated and fired, until a
+      <code>halt()</code> call is made. </para>
+
+      <para>This is specially useful for CEP scenarios that require what is commonly known as "active queries".</para>
+
+      <para>Please note calling <code>fireUntilHalt()</code> blocks the current thread, while the engine will
+      start and continue running asynchronously until the <code>halt()</code> is called on the KieSession. It is
+      suggested therefore to call <code>fireUntilHalt()</code> from a dedicated thread, so the current thread does
+      not get blocked indefinitely; this also enable the current thread to call <code>halt()</code> at a later
+      stage, ref. examples below.</para>
+
+      <para>An example outline of Drools code for a CEP application making use of Active Mode:</para>
+      <programlisting language="java">KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("realtime") );
+KieSession session = kbase.newKieSession( conf, null );
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+session.insert( tick1 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick2 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick3 );
+
+session.halt();
+session.dispose();</programlisting>
+
+        <note><para>Generally, it is not recommended mixing <code>fireAllRules()</code> and
+        <code>fireUntilHalt()</code> , especially from different threads. However the engine is able to handle
+        such situations safely, thanks to the internal state machine. If <code>fireAllRules()</code> is
+        running and a call <code>fireUntilHalt()</code> is made, the engine will wait until the
+        <code>fireAllRules()</code> is finished and then start <code>fireUntilHalt()</code> . However if
+        <code>fireUntilHalt()</code> is running and <code>fireAllRules()</code> is called, the later is
+        ignored and will just return directly. For more details about thread-safety and the internal state
+        machine, reference section "Improved multi-threading behaviour".</para>
+        </note>
+        
+        <section>
+          <title>Performing KieSession operations atomically when in Active Mode</title>
+          
+          <para>When in Active Mode, the Drools engine is in control of when the rule shall be evaluated and
+          fired; therefore it is important that operations on the KieSession are performed in a thread-safe manner.
+          Additionally, from a client-side perspective, there might be the need for more than one operations to be
+          called on the KieSession in between rule evaluations, but for engine to consider these as an atomic
+          operation: for example, inserting more than one Fact at a given time, but for the engine to await until
+          all the inserts are done, before evaluating the rules again.</para>
+
+          <para>Drools offers a submit() method to group and perform operations on the KieSession as a thread-safe
+          atomic action, while in Active Mode.</para>
+
+          <para>An example outline of Drools code to perform KieSession operations atomically when in Active Mode:</para>
+          <programlisting language="java">KieSession session = ...;
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+final FactHandle fh = session.insert( fact_a );
+
+... Thread.sleep( 1000L ); ...
+
+session.submit( new KieSession.AtomicAction() {
+  @Override
+  public void execute( KieSession kieSession ) {
+    fact_a.setField("value");
+    kieSession.update( fh, fact_a );
+    kieSession.insert( fact_1 );
+    kieSession.insert( fact_2 );
+    kieSession.insert( fact_3 );
+  }
+} );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( fact_z );
+
+session.halt();
+session.dispose();</programlisting>
+
+          <para>As a reminder example, the fact handle could also be retrieved from the KieSession:</para>
+          <programlisting language="java">...
+session.insert( fact_a );
+
+... Thread.sleep( 1000L ); ...
+
+session.submit( new KieSession.AtomicAction() {
+  @Override
+  public void execute( KieSession kieSession ) {
+    final FactHandle fh = kieSession.getFactHandle( fact_a );
+    fact_a.setField("value");
+    kieSession.update( fh, fact_a );
+    kieSession.insert( fact_1 );
+    kieSession.insert( fact_2 );
+    kieSession.insert( fact_3 );
+  }
+} );
+
+...</programlisting>
+        </section> <!-- /Performing KieSession operations atomically when in Active Mode -->
+    </section> <!-- /Active Mode -->
+  </section> <!-- /Rule Execution Modes -->
+  
   <section>
     <title>Propagation modes</title>
 
