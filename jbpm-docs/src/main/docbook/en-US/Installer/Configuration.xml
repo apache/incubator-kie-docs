@@ -28,24 +28,40 @@
     <section>
       <title>Workbench Authentication</title>
       
-      <para>The workbench web application is using the "default" security domain for authenticating
-      and authorizing users (as specified in the WEB-INF/jboss-web.xml inside the WARs).</para>
+      <para>The workbench web application is using the pre-installed <code>other</code> security domain for authenticating
+      and authorizing users (as specified in the <code>WEB-INF/jboss-web.xml</code> inside the WARs).</para>
       
-      <para>The application server is configured by default to use properties files for specifying
-      users.  Note that this is for demo purposes only (as passwords and roles are stored in simple
-      property files).  The security domain is configured in the standalone.xml configuration file
-      as follows:</para>
-      
-      <programlisting>&lt;security-domain name="other" cache-type="default"&gt;
-  &lt;authentication&gt;
-    &lt;login-module code="UsersRoles" flag="required"&gt;
-      &lt;module-option name="usersProperties" value="${jboss.server.config.dir}/users.properties"/&gt;
-      &lt;module-option name="rolesProperties" value="${jboss.server.config.dir}/roles.properties"/&gt;
-    &lt;/login-module&gt;
-  &lt;/authentication&gt;
-&lt;/security-domain&gt;</programlisting>
+      <para>The application server uses by default property files based realms - Please note that this configuration is
+        intended only for demo purposes (users, roles and passwords are stored in simple property files on the filesystem).</para>
 
-  <para>By default, these configuration files contain the following users:</para>
+      <para>Authentication is configured in the <code>standalone.xml</code> file as follows:</para>
+
+      <programlisting>
+    &lt;security-domain name="other" cache-type="default"&gt;
+      &lt;authentication&gt;
+        &lt;login-module code="Remoting" flag="optional"&gt;
+          &lt;module-option name="password-stacking" value="useFirstPass"/&gt;
+        &lt;/login-module&gt;
+        &lt;login-module code="RealmDirect" flag="required"&gt;
+          &lt;module-option name="password-stacking" value="useFirstPass"/&gt;
+        &lt;/login-module&gt;
+      &lt;/authentication&gt;
+    &lt;/security-domain&gt;
+      </programlisting>
+
+      <programlisting>
+    &lt;security-realm name="ApplicationRealm"&gt;
+      &lt;authentication&gt;
+        &lt;local default-user="$local" allowed-users="*" skip-group-loading="true"/&gt;
+        &lt;properties path="users.properties" relative-to="jboss.server.config.dir"/&gt;
+      &lt;/authentication&gt;
+      &lt;authorization&gt;
+        &lt;properties path="roles.properties" relative-to="jboss.server.config.dir"/&gt;
+      &lt;/authorization&gt;
+    &lt;/security-realm&gt;
+      </programlisting>
+
+  <para>These are the default users:</para>
       
   <table>
     <title>Default users</title>
@@ -122,13 +138,36 @@
             <entry>IT,HR,Accounting</entry>
           </row>
         </tbody>
+        <tbody>
+          <row>
+            <entry>kieserver</entry>
+            <entry>kieserver1!</entry>
+            <entry>kie-server</entry>
+            <entry></entry>
+          </row>
+        </tbody>
       </tgroup>
     </table>
     
-    <para>Authentication can be customized by editing the authentication and configuration files in the
-    jbpm-installer/auth folder and/or by changing the standalone-*.xml files in the jbpm-installer folder.  Note
-    that you need to rerun the installer to make sure the modified files are copied and picked correctly.</para>
-      
+    <para>Authentication can be customized by using any of the following options:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para>The users and groups management screens on the workbench web application.</para>
+        <para>Navigate into the workbench web application and use the
+          menu <code>Home</code> -> <code>User management</code> / <code>Group management</code>
+          entries.</para>
+      </listitem>
+      <listitem>
+        <para>The <code>add-user</code> script that comes by default on Wildfly/EAP.</para>
+        <para>Example for Linux platforms - run the following command and follow the script instructions:</para>
+        <programlisting>/bin/sh $JBOSS_HOME/bin/add-user.sh
+          --user-properties $JBOSS_HOME/standalone/configuration/users.properties
+          --group-properties $JBOSS_HOME/standalone/configuration/roles.properties
+          --realm ApplicationRealm</programlisting>
+      </listitem>
+    </itemizedlist>
+
   </section>
   
   <section>
