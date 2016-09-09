@@ -20,26 +20,41 @@ To be able to start modeling processes, the following elements need to be create
 
 == Workbench Authentication
 
+The workbench web application is using the pre-installed _other_ security domain for authenticating and authorizing users (as specified in the _WEB-INF/jboss-web.xml_ inside the WARs).
 
-The workbench web application is using the "default" security domain for authenticating and authorizing users (as specified in the WEB-INF/jboss-web.xml inside the WARs).
+The application server uses by default property files based realms - Please note that this configuration is intended only for demo purposes (users, roles and passwords are stored in simple property files on the filesystem).
 
-The application server is configured by default to use properties files for specifying users.
-Note that this is for demo purposes only (as passwords and roles are stored in simple property files).  The security domain is configured in the standalone.xml configuration file as follows:
+Authentication is configured in the _standalone.xml_ file as follows:
 
 [source,xml]
 ----
 <security-domain name="other" cache-type="default">
-  <authentication>
-    <login-module code="UsersRoles" flag="required">
-      <module-option name="usersProperties" value="${jboss.server.config.dir}/users.properties"/>
-      <module-option name="rolesProperties" value="${jboss.server.config.dir}/roles.properties"/>
-    </login-module>
-  </authentication>
+    <authentication>
+        <login-module code="Remoting" flag="optional">
+            <module-option name="password-stacking" value="useFirstPass"/>
+        </login-module>
+        <login-module code="RealmDirect" flag="required">
+            <module-option name="password-stacking" value="useFirstPass"/>
+        </login-module>
+        <login-module code="org.kie.security.jaas.KieLoginModule" flag="optional" module="deployment.jbpm-console.war"/>
+    </authentication>
 </security-domain>
 ----
 
+[source,xml]
+----
+<security-realm name="ApplicationRealm">
+    <authentication>
+        <local default-user="$local" allowed-users="*" skip-group-loading="true"/>
+        <properties path="users.properties" relative-to="jboss.server.config.dir"/>
+    </authentication>
+    <authorization>
+        <properties path="roles.properties" relative-to="jboss.server.config.dir"/>
+    </authorization>
+</security-realm>
+----
 
-By default, these configuration files contain the following users:
+These are the default users:
 
 .Default users
 [cols="1,1,1,1", options="header"]
@@ -88,11 +103,30 @@ By default, these configuration files contain the following users:
 |salaboy
 |admin,analyst
 |IT,HR,Accounting
+
+|kieserver
+|kieserver1!
+|kie-server
+|
 |===
 
+Authentication can be customized by using any of the following options:
 
-Authentication can be customized by editing the authentication and configuration files in the jbpm-installer/auth folder and/or by changing the standalone-*.xml files in the jbpm-installer folder.
-Note that you need to rerun the installer to make sure the modified files are copied and picked correctly.
+* The users and groups management screens on the workbench web application.
+
+Navigate into the workbench web application and click on the menu _Home_ -> _Security_.
+
+* The _add-user_ script that comes by default on Wildfly/EAP.
+
+Example for Linux platforms - run the following command and follow the script instructions:
+
+[source,shell]
+----
+/bin/sh $JBOSS_HOME/bin/add-user.sh
+  --user-properties $JBOSS_HOME/standalone/configuration/users.properties
+  --group-properties $JBOSS_HOME/standalone/configuration/roles.properties
+  --realm ApplicationRealm
+----
 
 == Using your own database with the jBPM installer
 
