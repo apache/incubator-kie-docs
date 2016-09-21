@@ -46,7 +46,7 @@
       <listitem>
         <para><emphasis role="bold">Consuming remote services</emphasis></para>
         <para>This section describes how a third party clients can consume the remote service
-          endpoints provided by both Workbench and Execution Server.</para>
+          endpoints provided by both Workbench and Execution Server, such as the REST API or remote file system services.</para>
       </listitem>
     </itemizedlist></para>
   <section>
@@ -393,6 +393,75 @@ cd $JBPM_HOME/bin
       services must be member of role <emphasis role="italic">rest-all</emphasis>. As on described
       previous steps, the <emphasis role="italic">admin</emphasis> user in this example it's already
       a member of the <emphasis role="italic">rest-all </emphasis>role.</para>
+  </section>
+  <section>
+    <title>Securing workbench's file system services via Keycloak</title>
+    <para>In order to consume other remote services such as the file system ones (e.g. remote GIT), a specific <emphasis role="bold">Keycloak login module must be used</emphasis>
+      for the application's security domain in the <emphasis role="italic">$JBPM_HOME/standalone/configuration/standalone-full.xml</emphasis>
+      file. By default the workbench uses the <emphasis role="italic">other</emphasis> security domain, so
+      the resulting  configuration on the <emphasis role="italic">$JBPM_HOME/standalone/configuration/standalone-full.xml</emphasis> should be such as:</para>
+    <programlisting>
+      &lt;security-domain name="other" cache-type="default"&gt;
+        &lt;authentication&gt;
+          &lt;login-module code="org.keycloak.adapters.jaas.DirectAccessGrantsLoginModule" flag="required"&gt;
+            &lt;!-- Parameter value can be a file system absolute path or a classpath (e.g. "classpath:/some-path/kie-git.json")--&gt;
+            &lt;module-option name="keycloak-config-file" value="$JBPM_HOME/kie-git.json"/&gt;
+          &lt;/login-module&gt;
+        &lt;/authentication&gt;
+      &lt;/security-domain&gt;
+    </programlisting>
+    <para>Note that:</para>
+    <itemizedlist>
+      <listitem>
+        <para>The login modules on the <emphasis role="italic">other</emphasis> security domain in the
+          <emphasis role="italic">$JBPM_HOME/standalone/configuration/standalone-full.xml</emphasis> file must be REPLACED by the above given one.</para>
+      </listitem>
+      <listitem>
+        <para>Replace <emphasis role="italic">$JBPM_HOME/kie-git.json</emphasis> by the path (on file system) or the classpath (e.g.
+           <emphasis role="italic">classpath:/some-path/kie-git.json</emphasis>) for the json configuration file used for the
+        remote services client. Please continue reading in order to create this Keycloak client and how to obtain this json file.</para>
+      </listitem>
+    </itemizedlist>
+    <para>At this point, remote services that use JAAS for the authentication process, such as the file system ones ( e.g. GIT ), are
+      secured by Keycloak using the client specified in the above json configuration file. So let's create this client on Keycloak and
+      generate the required JSON file:</para>
+    <itemizedlist>
+      <listitem>
+        <para>Navigate to the <link xlink:href="http://localhost:8180/auth/admin">KC administration console</link> and create a new
+          client for the <emphasis role="italic">demo</emphasis> realm using <emphasis role="italic">kie-git</emphasis> as name.</para>
+      </listitem>
+      <listitem>
+        <para>Enable
+          <emphasis role="italic">Direct Access Grants Enabled</emphasis> option, disable
+          <emphasis role="italic">Standard Flow Enabled</emphasis> and use a
+          <emphasis role="italic">confidential</emphasis> access type for this client. See below image as example:</para>
+        <figure>
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/Workbench/KeycloakSSOIntegration/kie_git_client_settings.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </listitem>
+      <listitem>
+        <para>Go to the <emphasis role="italic">Installation</emphasis> tab in same <emphasis role="italic">kie-git</emphasis> client
+        configuration screen and export using the <emphasis role="italic">Keycloak OIDC JSON</emphasis> type.</para>
+      </listitem>
+      <listitem>
+        <para>Finally copy this generated JSON file into an accessible directory on the server's file system or add it in the application's
+        classpath. Use this path value as the <emphasis role="italic">keycloak-config-file</emphasis> argument for the
+          above configuration of the <emphasis role="italic">org.keycloak.adapters.jaas.DirectAccessGrantsLoginModule</emphasis> login
+          module.
+        </para>
+      </listitem>
+      <listitem>
+        <para>More information about Keycloak JAAS Login modules can be found <link
+                xlink:href="https://keycloak.gitbooks.io/securing-client-applications-guide/content/v/2.2/topics/oidc/java/jaas.html">here</link>.</para>
+      </listitem>
+    </itemizedlist>
+    <para>At this point, the internal Git repositories can be cloned by all users authenticated via the Keycloak server.
+      Command example: <programlisting>git clone ssh://admin@localhost:8001/system</programlisting>
+    </para>
   </section>
   <section>
     <title>Execution server</title>
