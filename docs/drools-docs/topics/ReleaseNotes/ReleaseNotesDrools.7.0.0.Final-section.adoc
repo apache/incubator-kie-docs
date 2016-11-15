@@ -1,0 +1,53 @@
+[[_drools.releasenotesdrools.7.0.0]]
+= What is New and Noteworthy in Drools 7.0.0
+
+== Multithreaded rule engine
+
+Historically Rete has always been a sequential algorithm and even if Phreak, its evolution introduced in Drools 6, allowed
+some degree of parallelization, this possibility wasn't concretely leveraged yet. In Drools 7 is finally possible to make
+the engine to evaluate more rules in parallel. This is achieved by partitioning the Rete/Phreak in independent partitions
+and evaluating them in parallel.
+
+This feature is off by default, but it's possible to create a parallel KieBase by enabling it via the ``KieBaseConfiguration`` as it follows:
+
+[source]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(MultithreadEvaluationOption.YES);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+
+or alternatively through the system property:
+
+[source]
+----
+drools.multithreadEvaluation = true
+----
+
+[WARNING]
+====
+Rules using salience or agenda-group are currently not supported by the parallel engine. In case they are present inside
+the rule base and compiler emits a warning and automatically switches back using the single threaded implementation.
+====
+
+== Type preserving accumulate functions
+
+In Drools 6 when using the ``sum`` function inside an accumulate pattern the result was always a Double regardless of the
+field type on which the sum was performed. This caused the following 3 problems:
+
+* Loss of precision: the sum of a long `1881617265586265321L` will incorrectly return `1.88161726558626534E18`.
+The BigDecimal sum of `0.09` and `0.01` will also be incorrect.
+
+* Loss of performance: summing with a Double total is significantly slower than summing with a Long or an Integer.
+
+* Leaked complexity: it enforced the user to pattern matching on Dobule, or more generically (suggested choice) on Number,
+while it may be expected that the result of summing on a field of type Integer would be an Integer as well.
+
+Conversely Drools 7 preserves the type of the expression on which the sum is executed, so it will be possible to directly
+match on that type as in:
+
+[source]
+----
+Long(...) from accumulate(..., sum($p.getLongWeight()))
+----
