@@ -64,7 +64,26 @@ In Drools 7.0.0 the support for standard Java Collection has been enhanced, with
 as specialized `ReactiveList` and `ReactiveSet`. This also includes out of the box reactive support when performing mutable 
 operations through their `Iterator` and `ListIterator`.
 
-*** EXAMPLE
+.Example:
+[source,java]
+----
+public class School extends AbstractReactiveObject {
+    private String name;
+    private final List<Child> children = new ReactiveList<Child>(); // <1>
+
+    public void setName(String name) {
+        this.name = name;
+        notifyModification(); // <2>
+    }
+    
+    public void addChild(Child child) {
+        children.add(child); // <3>
+        // no need to call notifyModification() here 
+    }
+----
+<1> Using specialized `ReactiveList` for reactive support over standard Java `List`.
+<2> Usually `notifyModification()` is required to be called when a field is changed for reactive support
+<3> but in the case of `ReactiveList` this is handled automatically, like every other mutating operations performed over the field `children`.
 
 === OOPath Maven plug-in
 
@@ -105,7 +124,7 @@ configuration `instrument-packages` settings list.
 <1> Limit scope of instrumentation specifically to `to.instrument` package only.
 <2> Limit scope of instrumentation to `org.drools.compiler.xpath.tobeinstrumented` and its children packages.
 
-The plug-in will instrument bytecode for the following standard cases:
-field assignment
-wrap List
-wrap Set
+The plug-in will instrument bytecode for the following standard cases: 
+- a field assignment will also trigger `notifyModification()`
+- wrap any field defined as List with a `ReactiveList`
+- wrap any field defined as Set with a `ReactiveSet`
