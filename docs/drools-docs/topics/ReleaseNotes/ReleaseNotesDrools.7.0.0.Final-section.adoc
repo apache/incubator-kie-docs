@@ -78,7 +78,7 @@ public class School extends AbstractReactiveObject {
     
     public void addChild(Child child) {
         children.add(child); // <3>
-        // no need to call notifyModification() here 
+        // no need to call notifyModification() here.
     }
 ----
 <1> Using specialized `ReactiveList` for reactive support over standard Java `List`.
@@ -124,7 +124,91 @@ configuration `instrument-packages` settings list.
 <1> Limit scope of instrumentation specifically to `to.instrument` package only.
 <2> Limit scope of instrumentation to `org.drools.compiler.xpath.tobeinstrumented` and its children packages.
 
-The plug-in will instrument bytecode for the following standard cases: 
+The plug-in will instrument bytecode for every field assignment under the following standard cases: 
 - a field assignment will also trigger `notifyModification()`
 - wrap any field defined as List with a `ReactiveList`
 - wrap any field defined as Set with a `ReactiveSet`
+
+The following section present detailed examples of the plug-in instrumentation.
+
+==== Instrumentation of field assignments
+
+A field assignment like in the following example:
+
+.Original:
+[source,java]
+----
+public class Toy {
+    private String owner;
+    ...
+    
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+}
+----
+
+will be instrumented by intercepting the field assignment and triggering the `notifyModification()`:
+
+.Result:
+[source,java]
+----
+public class Toy implements ReactiveObject {
+    private String owner;
+    ...
+
+    public void setOwner(final String owner) {
+        this.$$_drools_write_owner(owner);
+    }
+
+    public void $$_drools_write_owner(final String owner) {
+        this.owner = owner;
+        ReactiveObjectUtil.notifyModification((ReactiveObject) this);
+    }
+}
+----
+
+Please notice this instrumentation applies only if the field is not a `Collection`.
+
+In the case the field assignment is referring a `List` or a `Set`, the instrumentation will wrap the assignment with a `ReactiveList` or ``ReactiveSet` accordingly; for example:
+
+.Original:
+[source,java]
+----
+public class School {
+    private final String name;
+    private final List<Child> children = new ArrayList<Child>();
+    ...
+
+    public School(String name) {
+        this.name = name;
+    }
+
+    public List<Child> getChildren() {
+        return children;
+    }
+}
+----
+
+will be instrumented by intercepting and wrapping with `ReactiveList`:
+
+.Result:
+[source,java]
+----
+public class School implements ReactiveObject {
+    private final String name;
+    private final List<Child> children;
+
+    public School(final String name) {
+        this.$$_drools_write_children(new ArrayList());
+        this.name = name;
+    }
+
+    public List<Child> getChildren() {
+        return this.children;
+    }
+    
+    public void $$_drools_write_children(final List list) {
+        this.children = (List<Child>) new ReactiveList(list);
+    } 
+----
