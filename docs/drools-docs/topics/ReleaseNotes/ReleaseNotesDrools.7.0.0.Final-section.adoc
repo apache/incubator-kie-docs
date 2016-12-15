@@ -51,3 +51,174 @@ match on that type as in:
 ----
 Long(...) from accumulate(..., sum($p.getLongWeight()))
 ----
+
+== OOPath improvements
+
+[WARNING]
+====
+This feature is experimental
+====
+
+OOPath has been introduced with Drools 6.3.0.
+In Drools 7.0.0 the support for standard Java Collection has been enhanced, with a dedicated implementation for `List` and `Set`,
+as specialized `ReactiveList` and `ReactiveSet`; a `ReactiveCollection` is also available.
+This also includes out of the box reactive support when performing mutable operations through their `Iterator` and `ListIterator`.
+
+.Example:
+[source,java]
+----
+public class School extends AbstractReactiveObject {
+    private String name;
+    private final List<Child> children = new ReactiveList<Child>(); // <1>
+
+    public void setName(String name) {
+        this.name = name;
+        notifyModification(); // <2>
+    }
+    
+    public void addChild(Child child) {
+        children.add(child); // <3>
+        // no need to call notifyModification() here.
+    }
+----
+<1> Using specialized `ReactiveList` for reactive support over standard Java `List`.
+<2> Usually `notifyModification()` is required to be called when a field is changed for reactive support
+<3> but in the case of `ReactiveList` this is handled automatically, like every other mutating operations performed over the field `children`.
+
+TIP: As a best-practice, it is recommended to declare reactive collection fields `final` as per the example shown.
+
+=== OOPath Maven plug-in
+
+The Kie Maven plug-in offers a new goal `injectreactive` to instrument bytecode and automatically inject reactivity support for standard cases.
+
+The `injectreactive` goal is disabled by default, and can be enabled via Maven plug-in configuration `instrument-enabled` settings.
+
+.Example:
+[source,xml]
+----
+<groupId>org.kie</groupId>
+<artifactId>kie-maven-plugin</artifactId>
+<extensions>true</extensions>
+<configuration>
+    <instrument-enabled>true</instrument-enabled> <!--1-->
+</configuration>
+----
+<1> Enable the `injectreactive` goal.
+
+The `injectreactive` goal will instrument bytecode pertaining to the Maven project build's output directory `${project.build.outputDirectory}`.
+
+It is possible to limit the scope of the goal to a specific package or hierarchy of packages via Maven plug-in 
+configuration `instrument-packages` settings list.
+.Example:
+[source,xml]
+----
+<groupId>org.kie</groupId>
+<artifactId>kie-maven-plugin</artifactId>
+<extensions>true</extensions>
+<configuration>
+    <instrument-enabled>true</instrument-enabled> 
+    <instrument-packages>
+        <instrumentPackage>to.instrument</instrumentPackage> <!--1-->
+        <instrumentPackage>org.drools.compiler.xpath.tobeinstrumented.*</instrumentPackage> <!--2-->
+    </instrument-packages>
+</configuration>
+----
+<1> Limit scope of instrumentation specifically to `to.instrument` package only.
+<2> Limit scope of instrumentation to `org.drools.compiler.xpath.tobeinstrumented` and its children packages.
+
+The plug-in will instrument bytecode for every field assignment under the following standard cases: 
+
+* a field assignment will also trigger `notifyModification()`
+* wrap any field defined as List with a `ReactiveList`
+* wrap any field defined as Set with a `ReactiveSet`
+* wrap any field defined as Collection with a `ReactiveCollection`
+
+NOTE: In order for a field of type List/Set to be wrapped correctly, the field member of the java class must be declared specifically using either 
+`java.util.Collection`, `java.util.List` or `java.util.Set`
+(declaring for instance a field as `java.util.ArrayList` will not be instrumented with the specialized reactive collections).
+
+WARNING: It is not recommended to mix manual support for reactivity (implemented manually) and the bytecode instrumentation Maven plug-in; it is better envisaged to keep the two scopes distinct, for instance by making use of the plug-in configuration to instrument only specific packages as documented above.
+
+The following section present detailed examples of the plug-in instrumentation.
+
+==== Instrumentation of field assignments
+
+A field assignment like in the following example:
+
+.Original:
+[source,java]
+----
+public class Toy {
+    private String owner;
+    ...
+    
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+}
+----
+
+will be instrumented by intercepting the field assignment and triggering the `notifyModification()`:
+
+.Result:
+[source,java]
+----
+public class Toy implements ReactiveObject {
+    private String owner;
+    ...
+
+    public void setOwner(final String owner) {
+        this.$$_drools_write_owner(owner);
+    }
+
+    public void $$_drools_write_owner(final String owner) {
+        this.owner = owner;
+        ReactiveObjectUtil.notifyModification((ReactiveObject) this);
+    }
+}
+----
+
+Please notice this instrumentation applies only if the field is not a `Collection`.
+
+In the case the field assignment is referring a `List` or a `Set`, the instrumentation will wrap the assignment with a `ReactiveList` or ``ReactiveSet` accordingly; for example:
+
+.Original:
+[source,java]
+----
+public class School {
+    private final String name;
+    private final List<Child> children = new ArrayList<Child>();
+    ...
+
+    public School(String name) {
+        this.name = name;
+    }
+
+    public List<Child> getChildren() {
+        return children;
+    }
+}
+----
+
+will be instrumented by intercepting and wrapping with `ReactiveList`:
+
+.Result:
+[source,java]
+----
+public class School implements ReactiveObject {
+    private final String name;
+    private final List<Child> children;
+
+    public School(final String name) {
+        this.$$_drools_write_children(new ArrayList());
+        this.name = name;
+    }
+
+    public List<Child> getChildren() {
+        return this.children;
+    }
+    
+    public void $$_drools_write_children(final List list) {
+        this.children = (List<Child>) new ReactiveList(list);
+    } 
+----
