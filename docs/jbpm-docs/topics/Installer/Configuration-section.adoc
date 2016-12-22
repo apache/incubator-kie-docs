@@ -479,6 +479,22 @@ See the section on timers for additional details.
 
 This can be used to initially create the database schema, but it can also serve as the basis for any\ optimization that needs to be applied - such as indexes, etc.
 
+[NOTE]
+====
+If you use PostgreSQL with jBPM, you also need to run jbpm-installer/db/ddl-scripts/postgresql/postgresql-jbpm-lo-trigger-clob.sql
+
+This script creates triggers for jBPM tables to protect CLOB references of large objects. Without the triggers, vacuumlo tool (https://www.postgresql.org/docs/9.4/static/vacuumlo.html) deletes active large objects so causes an issue to jBPM. If you are already running jBPM without the triggers, you also need to run the following SQLs after applying the triggers to protect existing CLOB.
+[source,xml]
+----
+insert into jbpm_active_clob ( loid ) select cast(expression as oid) from booleanexpression where expression is not null;
+insert into jbpm_active_clob ( loid ) select cast(body as oid) from email_header where body is not null;
+insert into jbpm_active_clob ( loid ) select cast(text as oid) from i18ntext where text is not null;
+insert into jbpm_active_clob ( loid ) select cast(text as oid) from task_comment where text is not null;
+insert into jbpm_active_clob ( loid ) select cast(qexpression as oid) from querydefinitionstore where qexpression is not null;
+insert into jbpm_active_clob ( loid ) select cast(deploymentunit as oid) from deploymentstore where deploymentunit is not null;
+----
+====
+
 == jBPM installer script
 
 
