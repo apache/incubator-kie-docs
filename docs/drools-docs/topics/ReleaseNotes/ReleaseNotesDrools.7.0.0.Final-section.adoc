@@ -269,10 +269,10 @@ public static class AdultUnit implements RuleUnit {
 }
 ----
 
-Here ``persons`` is a source of facts of type Person that will populate the working memory when the rule unit is evaluated,
-while ``adultAge`` is a global variable accessible from all the rules belonging to this rule unit. The last 2 methods are
-part of the rule unit's life cycle and are invoked by the engine. More in general the lifecycle of a RuleUnit can be
-monitored overriding the following methods:
+Here ``persons`` is a source of facts of type Person representing the part of working memory related to that specific
+entry-point used when the rule unit is evaluated, while ``adultAge`` is a global variable accessible from all the rules
+belonging to this rule unit. The last 2 methods are part of the rule unit's life cycle and are invoked by the engine.
+More in general the lifecycle of a RuleUnit can be monitored overriding the following methods:
 
 [cols="2", options="header"]
 .Rule Unit life cycle methods
@@ -310,6 +310,11 @@ then
 end
 ----
 
+[WARNING]
+====
+It is not allowed to mix rules with and without a rule unit in the same KieBase.
+====
+
 It is also possible to rewrite the same pattern in a more convenient way using the oopath notation introduced in drools 6
 as it follows:
 
@@ -345,10 +350,6 @@ KieBase kbase = kieContainer.getKieBase();
 RuleUnitExecutor executor = RuleUnitExecutor.create().bind( kbase );
 ----
 
-[WARNING]
-====
-It is not allowed to mix rules with and without a rule unit in the same KieBase.
-====
 
 At this point it is possible to create the ``AdultUnit`` by passing to it the persons ``DataSource`` and run it on the ``RuleUnitExecutor``
 
@@ -380,11 +381,12 @@ executor.bindVariable( "persons", persons );
 executor.run( AdultUnit.class );
 ----
 
-The way in which the variables are bound to a newly created rule unit is by following a simple naming convention. In fact
-in the former example the ``RuleUnitExecutor`` injects into the new rule unit the data source formerly bound to the "persons"
-name and the value 18 bound to the String "adultAge" to the fields with the corresponding names inside the ``AdultUnit`` class.
-It is possible to override this default and explictly define a logical binding name for each field of the rule unit class using
-the ``@UnitVar`` annotation, so for instance you could redefine the ``AdultUnit`` as it follows:
+The name passed to the ``RuleUnitExecutor.bindVariable()`` method is used at runtime to bind said variable to the field of the
+RuleUnit class having the same name. For instance in the former example the ``RuleUnitExecutor`` injects into the new rule unit
+the data source formerly bound to the "persons" name and the value 18 bound to the String "adultAge" to the fields with the
+corresponding names inside the ``AdultUnit`` class. It is possible to override this default and explictly define a logical
+binding name for each field of the rule unit class using the ``@UnitVar`` annotation. For example, the field binding in the
+following class can be redefined with alternative names:
 
 [source,java]
 ----
@@ -399,7 +401,7 @@ public static class AdultUnit implements RuleUnit {
 }
 ----
 
-and then bind the variables to the executor using those alternative names and run the unit
+and then binding the variables to the executor using those alternative names and run the unit
 
 [source,java]
 ----
@@ -410,7 +412,7 @@ executor.run( AdultUnit.class );
 
 A rule unit can be executed in passive mode as shown above (corresponding to invoking ``fireAllRules`` on a whole session)
 or in active mode using the ``runUntilHalt`` that is equivalent to the session's ``fireUntilHalt``. As for the fireUntilHalt,
-the runUntilHalt is blocking and then has to be issued on a separated thread like in:
+the runUntilHalt is blocking and therefore has to be issued on a separated thread like in:
 
 [source,java]
 ----
@@ -445,7 +447,7 @@ to each DataSource declared inside a rule unit corresponds a different entry-poi
 can be shared by different units, but in this case there will be many different entry-points, one for each unit, through which
 the same objects will be inserted.
 
-In other terms the ``DataSource`` represents the entry-point of the rule unit, so you can insert a new fact into it
+In other terms the ``DataSource`` represents the entry-point of the rule unit, so it is possible to insert a new fact into it:
 
 [source,java]
 ----
@@ -470,8 +472,8 @@ persons.delete( marioFh );
 
 ==== Imperatively running and declaratively guarding a RuleUnit
 
-As anticipated you can have multiple rule units inside your knowledge base and these units can work in a coordinate way
-by invoking or guarding the execution of each other. To demonstrate this let's Suppose of having the following 2 rules
+As anticipated, multiple rule units can be defined in the same knowledge base and these units can work in a coordinate way
+by invoking or guarding the execution of each other. To demonstrate this let's suppose having the following 2 rules
 each of them belonging to a distinct rule unit.
 
 [source]
@@ -560,8 +562,8 @@ public class BoxOfficeUnit implements RuleUnit {
 }
 ----
 
-You may want to keep selling tickets for your event as long as there is at least one opened box office. To achieve this let's
-define a second unit with a ``DataSource`` of person and a second one of tickets.
+We introduce now the requirement to keep selling tickets for the event as long as there is at least one opened box office.
+To achieve this let's define a second unit with a ``DataSource`` of person and a second one of tickets.
 
 [source,java]
 ----
@@ -682,8 +684,8 @@ assertEquals( 0, list.size() );
 ==== RuleUnit identity
 
 Since a rule can guard multiple rule units and at the same time a unit can be guarded and then activated by multiple rules,
-it is necessary to clearly define what is the identity of a given unit. By the defualt the identity of a unit is simply the
-rule unit class. This is encoded in the ``getUnitIdentity()`` defualt method of the ``RuleUnit`` interface
+it is necessary to clearly define what is the identity of a given unit. By the default the identity of a unit is simply the
+rule unit class. This is encoded in the ``getUnitIdentity()`` default method of the ``RuleUnit`` interface
 
 [source,java]
 ----
