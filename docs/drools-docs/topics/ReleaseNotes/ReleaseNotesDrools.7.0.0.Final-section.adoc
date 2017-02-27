@@ -1,6 +1,49 @@
 [[_drools.releasenotesdrools.7.0.0]]
 = What is New and Noteworthy in Drools 7.0.0
 
+== Breaking changes
+
+=== Type preserving accumulate functions
+
+In Drools 6 when using the ``sum`` function inside an accumulate pattern the result was always a Double regardless of the
+field type on which the sum was performed. This caused the following 3 problems:
+
+* Loss of precision: the sum of a long `1881617265586265321L` will incorrectly return `1.88161726558626534E18`.
+The BigDecimal sum of `0.09` and `0.01` will also be incorrect.
+
+* Loss of performance: summing with a Double total is significantly slower than summing with a Long or an Integer.
+
+* Leaked complexity: it enforced the user to pattern matching on Double, or more generically (suggested choice) on Number,
+while it may be expected that the result of summing on a field of type Integer would be an Integer as well.
+
+Conversely Drools 7 preserves the type of the expression on which the sum is executed, so it will be possible to directly
+match on that type as in:
+
+=== Fix typo in TimedRuleExecutionOption
+
+The KieSession option to control when timed rules have to be automatically executed has been renamed into `TimedRuleExecutionOption` fixing a typing mistake in its name which affected previous releases; the property has been aligned into `drools.timedRuleExecution`.
+
+[cols="3", options="header"]
+.Name changes
+|===
+|
+|previous releases
+|version `7.0.0.Final`
+
+|KieSession option
+|`TimedRuleExectionOption`
+|`TimedRuleExecutionOption`
+
+|property
+|`drools.timedRuleExection`
+|`drools.timedRuleExecution`
+|===
+
+[source]
+----
+Long(...) from accumulate(..., sum($p.getLongWeight()))
+----
+
 == Multithreaded rule engine
 
 Historically Rete has always been a sequential algorithm and even if Phreak, its evolution introduced in Drools 6, allowed
@@ -30,27 +73,6 @@ drools.multithreadEvaluation = true
 Rules using salience or agenda-group are currently not supported by the parallel engine. In case they are present inside
 the rule base and compiler emits a warning and automatically switches back using the single threaded implementation.
 ====
-
-== Type preserving accumulate functions
-
-In Drools 6 when using the ``sum`` function inside an accumulate pattern the result was always a Double regardless of the
-field type on which the sum was performed. This caused the following 3 problems:
-
-* Loss of precision: the sum of a long `1881617265586265321L` will incorrectly return `1.88161726558626534E18`.
-The BigDecimal sum of `0.09` and `0.01` will also be incorrect.
-
-* Loss of performance: summing with a Double total is significantly slower than summing with a Long or an Integer.
-
-* Leaked complexity: it enforced the user to pattern matching on Double, or more generically (suggested choice) on Number,
-while it may be expected that the result of summing on a field of type Integer would be an Integer as well.
-
-Conversely Drools 7 preserves the type of the expression on which the sum is executed, so it will be possible to directly
-match on that type as in:
-
-[source]
-----
-Long(...) from accumulate(..., sum($p.getLongWeight()))
-----
 
 == OOPath improvements
 
@@ -223,7 +245,7 @@ public class School implements ReactiveObject {
     } 
 ----
 
-=== Rule Units
+== Rule Units
 
 [WARNING]
 ====
@@ -436,7 +458,7 @@ the runUntilHalt is blocking and therefore has to be issued on a separated threa
 new Thread( () -> executor.runUntilHalt( adultUnit ) ).start();
 ----
 
-==== Data sources
+=== Data sources
 
 A ``DataSource`` is a source of the data processed by a given rule unit. A rule unit can have zero or more data sources and
 to each DataSource declared inside a rule unit corresponds a different entry-point into the rule unit executor. A DataSource
@@ -466,7 +488,7 @@ or delete it
 persons.delete( marioFh );
 ----
 
-==== Imperatively running and declaratively guarding a RuleUnit
+=== Imperatively running and declaratively guarding a RuleUnit
 
 As anticipated, multiple rule units can be defined in the same knowledge base and these units can work in a coordinate way
 by invoking or guarding the execution of each other. To demonstrate this let's suppose having the following 2 drl files
@@ -686,7 +708,7 @@ executor.run(BoxOfficeUnit.class); // no fire
 assertEquals( 0, list.size() );
 ----
 
-==== RuleUnit identity
+=== RuleUnit identity
 
 Since a rule can guard multiple rule units and at the same time a unit can be guarded and then activated by multiple rules,
 it is necessary to clearly define what is the identity of a given unit. By the default the identity of a unit is simply the
@@ -831,23 +853,3 @@ the former example the result list will now contain
 ----
 [Mario>4, Sofia>3, Mario>3]
 ----
-
-== Breaking changes
-
-The KieSession option to control when timed rules have to be automatically executed has been renamed into `TimedRuleExecutionOption` fixing a typing mistake in its name which affected previous releases; the property has been aligned into `drools.timedRuleExecution`.
-
-[cols="3", options="header"]
-.Name changes
-|===
-|
-|previous releases
-|version `7.0.0.Final`
-
-|KieSession option
-|`TimedRuleExectionOption`
-|`TimedRuleExecutionOption`
-
-|property
-|`drools.timedRuleExection`
-|`drools.timedRuleExecution`
-|===
