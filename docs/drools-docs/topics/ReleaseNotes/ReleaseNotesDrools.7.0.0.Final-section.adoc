@@ -62,6 +62,11 @@ The KieSession option to control when timed rules have to be automatically execu
 
 == Multithreaded rule engine
 
+[WARNING]
+====
+This feature is experimental
+====
+
 Historically Rete has always been a sequential algorithm and even if Phreak, its evolution introduced in Drools 6, allowed
 some degree of parallelization, this possibility wasn't concretely leveraged yet. In Drools 7 is finally possible to make
 the engine to evaluate more rules in parallel. This is achieved by partitioning the Rete/Phreak in independent partitions
@@ -86,8 +91,12 @@ drools.multithreadEvaluation = true
 
 [WARNING]
 ====
-Rules using salience or agenda-group are currently not supported by the parallel engine. In case they are present inside
-the rule base and compiler emits a warning and automatically switches back using the single threaded implementation.
+Rules using queries, salience or agenda-group are currently not supported by the parallel engine. In case they are present inside
+the rule base the compiler emits a warning and automatically switches back using the single threaded implementation. There are
+other cases where using the multithreaded rule engine is not correct and leads to wrong results even if the engine may be not
+able to automatically detect them and then will not fallback to the single thread mode, e.g. rules rely on implicit salience
+given by rule ordering inside the drl file. For this reason particular attention must be paid when enabling this option.
+Finally at the moment session serialization and incremental compilation are not supported.
 ====
 
 == OOPath improvements
