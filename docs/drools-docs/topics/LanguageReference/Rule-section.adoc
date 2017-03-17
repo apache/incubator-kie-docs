@@ -1360,17 +1360,17 @@ When you call modify() (see the modify statement section) on a given object it w
 This can can lead to unwanted and useless evaluations and in the worst cases to infinite recursions.
 The only workaround to avoid it was to split up your objects into smaller ones having a 1 to 1 relationship with the original object.
 
-This feature allows the pattern matching to only react to modification of properties actually constrained or bound inside of a given pattern.
+This  has been introduced to provide an easier and more consistent way to overcome this problem.
+In fact it allows the pattern matching to only react to modification of properties actually constrained or bound inside of a given pattern.
 That will help with performance and recursion and avoid artificial object splitting.
 
-By default this feature is off in order to make the behavior of the rule engine backward compatible with the former releases.
-When you want to activate it on a specific bean you have to annotate it with @propertyReactive.
+This feature is enabled by default, but in case you need or want to dectivate it on a specific bean you can annotate it with @classReactive.
 This annotation works both on DRL type declarations:
 
 [source]
 ----
 declare Person
-@propertyReactive
+@classReactive
     firstName : String
     lastName : String
 end
@@ -1381,7 +1381,7 @@ and on Java classes:
 
 [source]
 ----
-@PropertyReactive
+@ClassReactive
     public static class Person {
     private String firstName;
     private String lastName;
@@ -1389,7 +1389,7 @@ and on Java classes:
 ----
 
 
-In this way, for instance, if you have a rule like the following:
+By using this feature, for instance, if you have a rule like the following:
 
 [source]
 ----
@@ -1489,32 +1489,48 @@ Person( firstName == $expectedFirstName ) @watch( *, !age )
 ----
 
 
-Since doesn't make sense to use this annotation on a pattern using a type not annotated with @PropertyReactive the rule compiler will raise a compilation error if you try to do so.
+Since it doesn't make sense to use this annotation on a pattern using a type annotated with @ClassReactive the rule compiler will raise a compilation error if you try to do so.
 Also the duplicated usage of the same property in @watch (for example like in: @watch( firstName, ! firstName ) ) will end up in a compilation error.
 In a next release we will make the automatic detection of the properties to be listened smarter by doing analysis even outside of the pattern.
 
-It also possible to enable this feature by default on all the types of your model or to completely disallow it by using on option of the KnowledgeBuilderConfiguration.
+It is also possible to enable this feature only on specific types of your model or to completely disallow it by using on option of the KnowledgeBuilderConfiguration.
 In particular this new PropertySpecificOption can have one of the following 3 values:
 
 [source]
 ----
 - DISABLED => the feature is turned off and all the other related annotations are just ignored
-- ALLOWED => this is the default behavior: types are not property reactive unless they are not annotated with @PropertySpecific
-- ALWAYS => all types are property reactive by default
+- ALLOWED => types are not property reactive unless they are not annotated with @PropertyReactive (which is the dual of @ClassReactive)
+- ALWAYS => all types are property reactive. This is the default behavior
 ----
 
 
-So, for example, to have a KnowledgeBuilder generating property reactive types by default you could do:
+So, for example, to have a KnowledgeBuilder for which property reactivity is disabled by default:
 
 [source]
 ----
 KnowledgeBuilderConfiguration config = KnowledgeBuilderFactory.newKnowledgeBuilderConfiguration();
-config.setOption(PropertySpecificOption.ALWAYS);
+config.setOption(PropertySpecificOption.ALLOWED);
 KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder(config);
 ----
 
 
-In this last case it will be possible to disable the property reactivity feature on a specific type by annotating it with @ClassReactive.
+In this last case it will be possible to reenable the property reactivity feature on a specific type by annotating it with @PropertyReactive.
+
+It is important to notice that property reactivity is automatically available only for modifications performed inside the consequence of a rule.
+Conversely a programmatic update is unaware of the object's properties that have been changed, so it is unable of using this feature.
+
+To workaround this limitation it is possible to optionally specify in an update statement the names of the properties that
+have been changed in the modified object as in the following example:
+
+[source]
+----
+Person me = new Person("me", 40);
+FactHandle meHandle = ksession.insert( me );
+
+me.setAge(41);
+me.setAddress("California Avenue");
+ksession.update( meHandle, me, "age", "address" );
+----
 
 === Basic conditional elements
 
