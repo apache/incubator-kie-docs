@@ -270,6 +270,35 @@ public class School implements ReactiveObject {
     } 
 ----
 
+== Soft expiration for events
+
+When explicitly defining an event expiration in Drools 6.x, it is always considered an hard expiration, meaning that it always
+takes precedence on any other expiration implicitly calculated on temporal windows and constraints where the event is involved.
+Drools 7 also allows to specify a soft expiration for events that can be used if the inferred expiration offset is infinite.
+In this way it is possible to have a guaranteed expiration that is either the inferred one or the specified one if the other
+is missing. Moreover this implies that rule authors are not required to include a temporal constraint in all rules and then
+event classes can be designed even if the rules are not yet known.
+
+By default event expiration is considered to be hard, but it is possible to change the expiration policy and define a soft
+expiration either annotating the event's class as it follows:
+
+[source,java]
+----
+@Role(Role.Type.EVENT)
+@Expires( value = "30s", policy = TIME_SOFT )
+public class MyEvent { ... }
+----
+
+or using a type declaration:
+
+[source]
+----
+declare MyEvent
+  @role( event )
+  @expires(value = 30s, policy = TIME_SOFT)
+end
+----
+
 == Rule Units
 
 [WARNING]
