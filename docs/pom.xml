@@ -25,8 +25,8 @@
   </parent>
 
   <artifactId>kie-docs-guides</artifactId>
-
   <packaging>pom</packaging>
+
   <name>KIE :: Documentation Guides</name>
   <description>KIE Documentation Guides</description>
 
@@ -39,37 +39,6 @@
   <build>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <!--
-            TODO DROOLS-1311 Remove the resources plugin config (asciidoctor-maven-plugin copies the images itself)
-            and use resources configuration to include shared images dir
-            This will fix images in the PDF generation and enable better reuse of sections in html guides too.
-            If we revert back to the maven directory structure, this is easy.
-          -->
-          <artifactId>maven-resources-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>copy-shared-images-to-single</id>
-              <phase>generate-sources</phase>
-              <goals>
-                <goal>copy-resources</goal>
-              </goals>
-              <configuration>
-                <outputDirectory>${project.build.directory}/generated-docs/html_single/images</outputDirectory>
-                <resources>
-                  <resource>
-                    <directory>${project.basedir}/../shared/images/</directory>
-                    <filtering>false</filtering>
-                  </resource>
-                  <resource>
-                    <directory>${project.basedir}/topics/images/</directory>
-                    <filtering>false</filtering>
-                  </resource>
-                </resources>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
         <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
@@ -87,26 +56,21 @@
             </dependency>
           </dependencies>
           <configuration>
+            <imagesDir>.</imagesDir>
+            <resources>
+              <resource>
+                <directory>src/main/asciidoc</directory>
+              </resource>
+              <resource>
+                <directory>${project.basedir}/../shared-kie-docs/src/main/asciidoc</directory>
+              </resource>
+            </resources>
             <attributes>
               <revnumber>${project.version}</revnumber>
               <!-- Custom attributes -->
               <codeDir>${project.build.directory}/code</codeDir>
               <COMMUNITY-ONLY/>
-              <shared-dir>${project.basedir}/../shared/</shared-dir>
-              <!--
-                TODO DROOLS-1311 Remove the resources plugin config (asciidoctor-maven-plugincopies the images itself)
-                and use resources configuration to include shared images dir
-                This will fix images in the PDF generation and enable better reuse of sections in html guides too.
-                If we revert back to the maven directory structure, this is easy.
-              -->
-              <!--<resources>-->
-                <!--<resource>-->
-                  <!--<directory>src/main/asciidoc</directory>-->
-                <!--</resource>-->
-                <!--<resource>-->
-                  <!--<directory>${project.basedir}/../shared/</directory>-->
-                <!--</resource>-->
-              <!--</resources>-->
+              <shared-dir>${project.basedir}/../shared-kie-docs/src/main/asciidoc/</shared-dir>
             </attributes>
           </configuration>
           <executions>
@@ -117,7 +81,6 @@
                 <goal>process-asciidoc</goal>
               </goals>
               <configuration>
-                <sourceDirectory>${project.basedir}/community</sourceDirectory>
                 <!-- Needs to be duplicated to avoid rendering each adoc separately -->
                 <sourceDocumentName>index.adoc</sourceDocumentName>
                 <backend>html5</backend>
@@ -126,10 +89,9 @@
               </configuration>
             </execution>
             <!--
-                TODO DROOLS-1311 Remove the resources plugin config (asciidoctor-maven-plugincopies the images itself)
-                and use resources configuration to include shared images dir
-                This will fix images in the PDF generation and enable better reuse of sections in html guides too.
-                If we revert back to the maven directory structure, this is easy.
+              TODO Enable PDF output when https://github.com/asciidoctor/asciidoctor-maven-plugin/issues/291 is fixed.
+              The images are recognized, so it's better than with the maven-resources-plugin hack,
+               but there's still a problem for the shared-kie-docs images (not the book specific images).
             -->
             <!--<execution>-->
               <!--<id>generate-pdf</id>-->
@@ -160,7 +122,7 @@
               <configuration>
                 <appendAssemblyId>false</appendAssemblyId>
                 <descriptors>
-                  <descriptor>maven/generated-docs-zip.xml</descriptor>
+                  <descriptor>src/main/assembly/generated-docs-zip.xml</descriptor>
                 </descriptors>
                 <archive>
                   <addMavenDescriptor>true</addMavenDescriptor>
