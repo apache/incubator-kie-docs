@@ -82,11 +82,11 @@ The second step consists of setting up logical structures required to create a n
 image::Workbench/Quickstart/org_unit_repository.png[align="center"]
 
 === Create Project
-* Select `Authoring -> Project Authoring -> New item -> Project`
+* Select `Authoring -> Project Authoring -> New Project -> Advanced setup`
 ** Project Name: cloudbalancing
 ** Project Description: Assign processes to computers based on available CPU power, memory, network bandwidth and cost
 ** Group ID: clouddepartment
-** Artifact ID: cloudbalance
+** Artifact ID: cloudbalancing
 ** Version: 1.0
 
 == Data Model
@@ -94,7 +94,7 @@ image::Workbench/Quickstart/org_unit_repository.png[align="center"]
 This step consists of creating data model for the Cloud Balancing problem. Data objects and their attributes are defined.
 
 === Create Data Object
-* Select `Authoring -> Project Authoring -> New item -> Data Object`
+* Select `Create New Asset -> Data Object`
 ** Data Object: CloudComputer
 ** Package: clouddepartment.cloudbalancing
 
@@ -107,6 +107,8 @@ Add multiple fields of given types.
 ** memory: int
 ** networkBandwith: int
 ** cost: int
+* Click `Save`
+* Click `Close` icon
 
 image::Workbench/Quickstart/data_object.png[align="center"]
 
@@ -144,6 +146,7 @@ image::Workbench/Quickstart/planning_solution.png[align="center"]
 ** Open `OptaPlanner` dock
 ** Check `Planning Entity Collection`
 * Click `Save`
+* Click `Close` icon
 
 === CloudProcess
 * Select `CloudProcess`
@@ -154,13 +157,14 @@ image::Workbench/Quickstart/planning_solution.png[align="center"]
 ** Check `Planning Variable`
 ** Set `valueRangeId` to `computerRange`
 * Click `Save`
+* Click `Close` icon
 
 == Drools Rules
 This section contains constraint definitions for the CloudBalancing problem using two different approaches -
 _Free-form DRL Editor_ and _Guided Rule Editor_.
 
 === Free-form DRL Editor
-* Select `Authoring -> Project Authoring -> New Item -> DRL file`
+* Select `Create New Asset -> DRL file`
 ** DRL file: cloudBalancingScoreRules
 ** Package: clouddepartment.cloudbalancing
 +
@@ -173,8 +177,6 @@ import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder;
 import clouddepartment.cloudbalancing.CloudBalance;
 import clouddepartment.cloudbalancing.CloudComputer;
 import clouddepartment.cloudbalancing.CloudProcess;
-
-global HardSoftScoreHolder scoreHolder;
 
 rule "requiredCpuPowerTotal"
     when
@@ -219,28 +221,31 @@ rule "requiredNetworkBandwidthTotal"
 end
 ----
 * Click `Save`
+* Click `Close` icon
 
 === Guided Rule Editor
-* Select `Authoring -> Project Authoring -> New Item -> Guided Rule`
-** Guided Rule: requiredCpuPowerTotal
+* Select `Create New Asset -> Guided Rule`
+** Guided Rule: computerCost
 ** Package: clouddepartment.cloudbalancing
 
 image::Workbench/Quickstart/guided_rule.png[align="center"]
 
 * Click `Save`
+* Click `Close` icon
 
 == Solver Configuration
 
 The following task is to create OptaPlanner Solver configuration to tweak engine parameters.
 
 === Create Solver Configuration
-* Select `Authoring -> Project Authoring -> New Item -> Solver configuration`
+* Select `Create New Asset -> Solver configuration`
 ** Solver configuration: Cloud Balancing Solver Configuration
 ** Package: clouddepartment.cloudbalancing
 ** Navigate to `Termination`
 *** Click `Add` and select `Time spent`
 *** Set `Seconds` to `30` to stop the solving process after 30 seconds
 * Click `Save`
+* Click `Close` icon
 
 image::Workbench/Quickstart/solver_config.png[align="center"]
 
@@ -254,10 +259,11 @@ image::Workbench/Quickstart/solver_config.png[align="center"]
 ** Version: 1.0
 
 === Build Project
-* Select `Authoring -> Project Authoring -> Open Project Editor -> Build -> Build & Deploy`
+* Navigate to `Authoring -> Project Authoring -> cloudbalancing` and click `Build & Deploy`
 
 === Start Container
-* Select container `cloudbalancing` and click `Start`
+* Navigate to `Deploy -> Execution Servers`
+** Select container `cloudbalancing` and click `Start`
 
 image::Workbench/Quickstart/container.png[align="center"]
 
@@ -289,73 +295,70 @@ Request body
 
 === Submit Solution
 
-* `POST http://localhost:8080/kie-server/services/rest/server/containers/cloudbalancing/solvers/cloudBalancingSolver`
+* `POST http://localhost:8080/kie-server/services/rest/server/containers/cloudbalancing/solvers/cloudBalancingSolver/state/solving`
 
 +
 Request body
 +
 [source,xml]
 ----
-<solver-instance>
-  <status>SOLVING</status>
-  <planning-problem class="clouddepartment.cloudbalancing.CloudBalance">
-    <id>0</id>
-    <computerList>
-      <clouddepartment.cloudbalancing.CloudComputer>
-        <id>0</id>
-        <cpuPower>24</cpuPower>
-        <memory>96</memory>
-        <networkBandwidth>16</networkBandwidth>
-        <cost>4800</cost>
-      </clouddepartment.cloudbalancing.CloudComputer>
-      <clouddepartment.cloudbalancing.CloudComputer>
-        <id>1</id>
-        <cpuPower>6</cpuPower>
-        <memory>4</memory>
-        <networkBandwidth>6</networkBandwidth>
-        <cost>660</cost>
-      </clouddepartment.cloudbalancing.CloudComputer>
-      </computerList>
-    <processList>
-      <clouddepartment.cloudbalancing.CloudProcess>
-        <id>0</id>
-        <requiredCpuPower>1</requiredCpuPower>
-        <requiredMemory>1</requiredMemory>
-        <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
-      </clouddepartment.cloudbalancing.CloudProcess>
-      <clouddepartment.cloudbalancing.CloudProcess>
-        <id>1</id>
-        <requiredCpuPower>3</requiredCpuPower>
-        <requiredMemory>6</requiredMemory>
-        <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
-      </clouddepartment.cloudbalancing.CloudProcess>
-      <clouddepartment.cloudbalancing.CloudProcess>
-        <id>2</id>
-        <requiredCpuPower>1</requiredCpuPower>
-        <requiredMemory>1</requiredMemory>
-        <requiredNetworkBandwidth>3</requiredNetworkBandwidth>
-      </clouddepartment.cloudbalancing.CloudProcess>
-      <clouddepartment.cloudbalancing.CloudProcess>
-        <id>3</id>
-        <requiredCpuPower>1</requiredCpuPower>
-        <requiredMemory>2</requiredMemory>
-        <requiredNetworkBandwidth>11</requiredNetworkBandwidth>
-      </clouddepartment.cloudbalancing.CloudProcess>
-      <clouddepartment.cloudbalancing.CloudProcess>
-        <id>4</id>
-        <requiredCpuPower>1</requiredCpuPower>
-        <requiredMemory>1</requiredMemory>
-        <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
-      </clouddepartment.cloudbalancing.CloudProcess>
-      <clouddepartment.cloudbalancing.CloudProcess>
-        <id>5</id>
-        <requiredCpuPower>1</requiredCpuPower>
-        <requiredMemory>1</requiredMemory>
-        <requiredNetworkBandwidth>5</requiredNetworkBandwidth>
-      </clouddepartment.cloudbalancing.CloudProcess>
-    </processList>
-  </planning-problem>
-</solver-instance>
+<planning-problem class="clouddepartment.cloudbalancing.CloudBalance" id="1">
+  <id>0</id>
+  <computerList id="2">
+    <clouddepartment.cloudbalancing.CloudComputer id="3">
+      <id>0</id>
+      <cpuPower>24</cpuPower>
+      <memory>96</memory>
+      <networkBandwidth>16</networkBandwidth>
+      <cost>4800</cost>
+    </clouddepartment.cloudbalancing.CloudComputer>
+    <clouddepartment.cloudbalancing.CloudComputer id="4">
+      <id>1</id>
+      <cpuPower>6</cpuPower>
+      <memory>4</memory>
+      <networkBandwidth>6</networkBandwidth>
+      <cost>660</cost>
+    </clouddepartment.cloudbalancing.CloudComputer>
+  </computerList>
+  <processList id="5">
+    <clouddepartment.cloudbalancing.CloudProcess id="6">
+      <id>0</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="7">
+      <id>1</id>
+      <requiredCpuPower>3</requiredCpuPower>
+      <requiredMemory>6</requiredMemory>
+      <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="8">
+      <id>2</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>3</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="9">
+      <id>3</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>2</requiredMemory>
+      <requiredNetworkBandwidth>11</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="10">
+      <id>4</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="11">
+      <id>5</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>5</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+  </processList>
+</planning-problem>
 ----
 
 === Query Best Solution
