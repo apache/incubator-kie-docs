@@ -30,7 +30,7 @@ Using this notation the former example can be rewritten as it follows:
 [source]
 ----
 rule "Find all grades for Big Data exam" when
-      Student( $grade: /plan/exams{course == "Big Data"}/grades )
+      Student( $grade: /plan/exams[course == "Big Data"]/grades )
       then /* RHS */ end
 ----
 ====
@@ -41,7 +41,7 @@ Formally, the core grammar of an `OOPath` expression can be defined in EBNF nota
 [source]
 ----
 OOPExpr = ( "/" | "?/" ) OOPSegment { ( "/" | "?/" | "." ) OOPSegment } ;
-    OOPSegment = [ID ( ":" | ":=" )] ID ["[" Number "]"] ["{" Constraints "}"];
+OOPSegment = [ID ( ":" | ":=" )] ID ["#" ID] ["[" ( Number | Constraints "]"]
 ----
 
 
@@ -50,19 +50,28 @@ In practice an `OOPath` expression has the following features.
 * It has to start with `/` or with a `?/` in case of a completely non-reactive OOPath (see below).
 * It can dereference a single property of an object with the `$$.$$` operator
 * It can dereference a multiple property of an object using the `/` operator. If a collection is returned, it will iterate over the values in the collection
-* While traversing referenced objects it can filter away those not satisfying one or more constraints, written as predicate expressions between curly brackets like in:
+* While traversing referenced objects it can filter away those not satisfying one or more constraints, written as predicate expressions between square brackets like in:
 +
 
 [source]
 ----
-Student( $grade: /plan/exams{ course == "Big Data" }/grades )
+Student( $grade: /plan/exams[ course == "Big Data" ]/grades )
 ----
+* During oopath traversal it is also possible to downcast the traversed object to a subclass of the class declared in the generic
+collection. In this way subsequent constraints can also safely access to properties declared only in that subclass like in:
++
+
+[source]
+----
+Student( $grade: /plan/exams#AdvancedExam[ course == "Big Data", level > 3 ]/grades )
+----
+Objects that are not instances of the class specificed in this inline cast will be automatically filtered away.
 * A constraint can also have a beckreference to an object of the graph traversed before the currently iterated one. For example the following OOPath:
 +
 
 [source]
 ----
-Student( $grade: /plan/exams/grades{ result > ../averageResult } )
+Student( $grade: /plan/exams/grades[ result > ../averageResult ] )
 ----
 +
 will match only the grades having a result above the average for the passed exam.
@@ -71,7 +80,7 @@ will match only the grades having a result above the average for the passed exam
 
 [source]
 ----
-Student( $exam: /plan/exams{ /grades{ result > 20 } } )
+Student( $exam: /plan/exams[ /grades[ result > 20 ] ] )
 ----
 * Items can also be accessed by their index by putting it between square brackets like in:
 +
@@ -109,7 +118,7 @@ In this way when using an OOPath like the following:
 
 [source]
 ----
-Student( $grade: /plan/exams{ course == "Big Data" }/grades )
+Student( $grade: /plan/exams[ course == "Big Data" ]/grades )
 ----
 
 
@@ -119,7 +128,7 @@ It is also possible to have reactivity only in one subpart of the OOPath as in:
 
 [source]
 ----
-Student( $grade: /plan/exams{ course == "Big Data" }?/grades )
+Student( $grade: /plan/exams[ course == "Big Data" ]?/grades )
 ----
 
 
@@ -129,7 +138,7 @@ For instance the following OOPath
 
 [source]
 ----
-Student( $grade: ?/plan/exams{ course == "Big Data" }/grades )
+Student( $grade: ?/plan/exams[ course == "Big Data" ]/grades )
 ----
 
 
@@ -138,7 +147,7 @@ For this reason it is not allowed to use the `?/` separator more than once in th
 
 [source]
 ----
-Student( $grade: /plan?/exams{ course == "Big Data" }?/grades )
+Student( $grade: /plan?/exams[ course == "Big Data" ]?/grades )
 ----
 
 
