@@ -1,76 +1,11 @@
 [[_drools.releasenotesdrools.7.0.0]]
 
-= Breaking changes in Drools 7.0 from 6.x
-:imagesdir: ..
-
-== Property reactivity enabled by default
-
-Property reactivity has been introduced in Drools 5.4 but users had to explicitly enable it on a class by class basis through
-the `@PropertyReactive` annotation or on the whole knowledge base using the `PropertySpecificOption.ALWAYS` builder option.
-However, since using this feature is considered a good practice both under correctness and performance points of view, it has
-been enabled by default in Drools 7.0. If required it is possible to disable property reactivity and reconfigure Drools 7.0
-to work exactly as it did in version 6.x by adding the following configuration to the kmodule.xml file.
-
-[source]
-----
-<configuration>
-  <property key="drools.propertySpecific" value="ALLOWED"/>
-</configuration>
-----
-
-== Type preserving accumulate functions
-
-In Drools 6 when using the ``sum`` function inside an accumulate pattern the result was always a Double regardless of the
-field type on which the sum was performed. This caused the following 3 problems:
-
-* Loss of precision: the sum of a long `1881617265586265321L` will incorrectly return `1.88161726558626534E18`.
-The BigDecimal sum of `0.09` and `0.01` will also be incorrect.
-
-* Loss of performance: summing with a Double total is significantly slower than summing with a Long or an Integer.
-
-* Leaked complexity: it enforced the user to pattern matching on Double, or more generically (suggested choice) on Number,
-while it may be expected that the result of summing on a field of type Integer would be an Integer as well.
-
-Conversely Drools 7 preserves the type of the expression on which the sum is executed, so it will be possible to directly
-match on that type as in:
-
-[source]
-----
-Long(...) from accumulate(..., sum($p.getLongWeight()))
-----
-
-== Renaming TimedRuleExecutionOption
-
-The KieSession option to control when timed rules have to be automatically executed has been renamed into `TimedRuleExecutionOption` fixing a typing mistake in its name which affected previous releases; the property has been aligned into `drools.timedRuleExecution`.
-
-[cols="3", options="header"]
-.Name changes
-|===
-|
-|previous releases
-|version `7.0.0.Final`
-
-|KieSession option
-|`TimedRuleExectionOption`
-|`TimedRuleExecutionOption`
-
-|property
-|`drools.timedRuleExection`
-|`drools.timedRuleExecution`
-|===
-
-== Renaming and unification of configuration files
-
-In Drools 6.x default Drools configuration properties were spread in 2 distinct files: `drools.default.rulebase.conf` which
-was in the META-INF folder of drools-core and `drools.default.packagebuilder.conf` stored in the same folder but in drools-compiler.
-These 2 files are now unified in a single one named `kie.default.properties.conf` contained in the META-INF folder of drools-core.
-If you want to override the default values of those properties or add your own you can put them in a file called `kie.properties.conf`
-placed in the META-INF folder of your project.
-
 = What is New and Noteworthy in Drools 7.0
 :imagesdir: ..
 
-== Multithreaded rule engine
+== Core Engine
+
+=== Multithreaded rule engine
 
 [WARNING]
 ====
@@ -109,7 +44,7 @@ given by rule ordering inside the drl file. For this reason particular attention
 Finally at the moment session serialization and incremental compilation are not supported.
 ====
 
-== OOPath improvements
+=== OOPath improvements
 
 [WARNING]
 ====
@@ -159,7 +94,7 @@ public class School extends AbstractReactiveObject {
 
 TIP: As a best-practice, it is recommended to declare reactive collection fields `final` as per the example shown.
 
-=== OOPath Maven plug-in
+==== OOPath Maven plug-in
 
 The Kie Maven plug-in offers a new goal `injectreactive` to instrument bytecode and automatically inject reactivity support for standard cases.
 
@@ -213,7 +148,7 @@ WARNING: It is not recommended to mix manual support for reactivity (implemented
 
 The following section present detailed examples of the plug-in instrumentation.
 
-==== Instrumentation of field assignments
+===== Instrumentation of field assignments
 
 A field assignment like in the following example:
 
@@ -295,7 +230,7 @@ public class School implements ReactiveObject {
     } 
 ----
 
-== Soft expiration for events
+=== Soft expiration for events
 
 When explicitly defining an event expiration in Drools 6.x, it is always considered an hard expiration, meaning that it always
 takes precedence on any other expiration implicitly calculated on temporal windows and constraints where the event is involved.
@@ -324,7 +259,7 @@ declare MyEvent
 end
 ----
 
-== Rule Units
+=== Rule Units
 
 [WARNING]
 ====
@@ -537,7 +472,7 @@ the runUntilHalt is blocking and therefore has to be issued on a separated threa
 new Thread( () -> executor.runUntilHalt( adultUnit ) ).start();
 ----
 
-=== Data sources
+==== Data sources
 
 A ``DataSource`` is a source of the data processed by a given rule unit. A rule unit can have zero or more data sources and
 to each DataSource declared inside a rule unit corresponds a different entry-point into the rule unit executor. A DataSource
@@ -567,7 +502,7 @@ or delete it
 persons.delete( marioFh );
 ----
 
-=== Imperatively running and declaratively guarding a RuleUnit
+==== Imperatively running and declaratively guarding a RuleUnit
 
 As anticipated, multiple rule units can be defined in the same knowledge base and these units can work in a coordinate way
 by invoking or guarding the execution of each other. To demonstrate this let's suppose having the following 2 drl files
@@ -787,7 +722,7 @@ executor.run(BoxOfficeUnit.class); // no fire
 assertEquals( 0, list.size() );
 ----
 
-=== RuleUnit identity
+==== RuleUnit identity
 
 Since a rule can guard multiple rule units and at the same time a unit can be guarded and then activated by multiple rules,
 it is necessary to clearly define what is the identity of a given unit. By the default the identity of a unit is simply the
@@ -932,3 +867,142 @@ the former example the result list will now contain
 ----
 [Mario>4, Sofia>3, Mario>3]
 ----
+
+== Workbench
+
+Apart from the generic improvements to the workbench (listed below in a separate section), there are also some Drools-specific enhancements in the workbench.
+
+=== DMN style hit policies for Decision Tables
+
+With each Hit Policy, by default a row has priority over each row below it.
+
+* Unique Hit
+With unique hit policy each row has to be unique meaning there can be no overlap. There can never be a situation where two rows can fire, if there is the Verification feature warns about this on development time.
+* First Hit
+First hit fires only one row, the one that is satisfied first from top to bottom.
+* Resolved Hit
+Similar to First Hit, but you can for example give row 10 priority over row 5. This means you can keep the order of the rows you want for visual readability, but specify priority exceptions.
+* Rule Order
+Multiple rows can fire and Verification does not report about conflicts between the rows since they are expected to happen.
+* None
+This is the normal hit mode. Old decision tables will use this by default, but since 7.0 uses PHREAK the row order now matters. There is no migration tooling needed for the old tables. Multiple rows can fire. Verification warns about rows that conflict.
+
+=== Guided Rule Editor : Support formulae in composite field constraints
+
+Composite field constraints now support use of formulae.
+
+When adding constraints to a Pattern the "Multiple Field Constraint" selection ("All of (and)" and "Any of (or)") supports use of formulae in addition to expressions.
+
+.Composite field constraint - Select formula
+image::Workbench/ReleaseNotes/composite-field-constraint-formulae1.png[]
+
+.Composite field constraint - Formula editor
+image::Workbench/ReleaseNotes/composite-field-constraint-formulae2.png[]
+
+=== Guided Decision Table Editor : New editor
+
+The Guided Decision Table Editor has been extensively rewritten to support editing of multiple tables in the same editor. Tables that share an association are visibly linked making it easier to visualise relationships. Associations are infered from Actions that create or update a Fact consumed by the Conditions of another table.
+
+Highlights include:-
+
+- A new look and feel
+- Resizable columns
+- Reordering of columns by dragging and dropping "in table"
+- Reordering of rows by dragging and dropping "in table"
+- Repositioning of tables with drag and drop
+- Panning of view to scroll content
+- Zoomable view, so you can zoom "out" to see more content at once
+- File locks and Version History per Decision Table
+
+.New editor
+image::Workbench/ReleaseNotes/dtables-new-editor.png[]
+
+.New editor - multiple open tables
+image::Workbench/ReleaseNotes/dtables-new-editor-multiple.png[]
+
+=== Guided Decision Table Editor : Caching of enumeration lookups
+
+The Guided Decision Table Editor has long been capable of using enumeration definitions. However since a table can contain many cells performance of enumerations could sometimes be less than ideal if the definition required a server round-trip to retrieve the lookups from a helper class. 
+
+Results from server round-trips are now cached in the client hence removing the need for successive network calls when cells are modified. The cache is initialised when the editor is opened and populated on demand.
+
+=== Guided Decision Table Editor : Verification and Validation
+
+==== System Property
+It is possible to disable the Verification & Validation with the system property **``**org.kie.verification.disable-dtable-realtime-verification**``**. This can be useful for large decision tables or if the users want to ignore V&V.
+
+==== Range Checks
+
+The verification takes the first steps towards helping you to make complete decision tables. In the next release we add the support for checking if all the ranges are covered for boolean, numeric and date values. This means if your table has a check for if an Application is approved the verification report will remind you to make sure you also handle situations where the Application was not approved.
+
+==== Unique Single Hit
+
+In the past verification and validation has raised an issue if rows subsume each other. If a row subsumes another, then the conditions can be satisfied with the same set of facts. Meaning two rows from the same table can fire at the same time. In some cases subsumption does not matter, but in other cases you want to have a table where only one rule fires at the time. The table is then a single hit decision table. To help the making of single hit tables where only one row can fire, the verification keeps an eye on the conditions. Reporting situations when single hit is broken.
+
+
+= Breaking changes in Drools 7.0 from 6.x
+:imagesdir: ..
+
+== Property reactivity enabled by default
+
+Property reactivity has been introduced in Drools 5.4 but users had to explicitly enable it on a class by class basis through
+the `@PropertyReactive` annotation or on the whole knowledge base using the `PropertySpecificOption.ALWAYS` builder option.
+However, since using this feature is considered a good practice both under correctness and performance points of view, it has
+been enabled by default in Drools 7.0. If required it is possible to disable property reactivity and reconfigure Drools 7.0
+to work exactly as it did in version 6.x by adding the following configuration to the kmodule.xml file.
+
+[source]
+----
+<configuration>
+  <property key="drools.propertySpecific" value="ALLOWED"/>
+</configuration>
+----
+
+== Type preserving accumulate functions
+
+In Drools 6 when using the ``sum`` function inside an accumulate pattern the result was always a Double regardless of the
+field type on which the sum was performed. This caused the following 3 problems:
+
+* Loss of precision: the sum of a long `1881617265586265321L` will incorrectly return `1.88161726558626534E18`.
+The BigDecimal sum of `0.09` and `0.01` will also be incorrect.
+
+* Loss of performance: summing with a Double total is significantly slower than summing with a Long or an Integer.
+
+* Leaked complexity: it enforced the user to pattern matching on Double, or more generically (suggested choice) on Number,
+while it may be expected that the result of summing on a field of type Integer would be an Integer as well.
+
+Conversely Drools 7 preserves the type of the expression on which the sum is executed, so it will be possible to directly
+match on that type as in:
+
+[source]
+----
+Long(...) from accumulate(..., sum($p.getLongWeight()))
+----
+
+== Renaming TimedRuleExecutionOption
+
+The KieSession option to control when timed rules have to be automatically executed has been renamed into `TimedRuleExecutionOption` fixing a typing mistake in its name which affected previous releases; the property has been aligned into `drools.timedRuleExecution`.
+
+[cols="3", options="header"]
+.Name changes
+|===
+|
+|previous releases
+|version `7.0.0.Final`
+
+|KieSession option
+|`TimedRuleExectionOption`
+|`TimedRuleExecutionOption`
+
+|property
+|`drools.timedRuleExection`
+|`drools.timedRuleExecution`
+|===
+
+== Renaming and unification of configuration files
+
+In Drools 6.x default Drools configuration properties were spread in 2 distinct files: `drools.default.rulebase.conf` which
+was in the META-INF folder of drools-core and `drools.default.packagebuilder.conf` stored in the same folder but in drools-compiler.
+These 2 files are now unified in a single one named `kie.default.properties.conf` contained in the META-INF folder of drools-core.
+If you want to override the default values of those properties or add your own you can put them in a file called `kie.properties.conf`
+placed in the META-INF folder of your project.
