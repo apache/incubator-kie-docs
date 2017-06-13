@@ -1,24 +1,6 @@
 = Configuration
 :imagesdir: ..
 
-== Playgrounds
-
-
-The workbench by default brings two sample playground repositories (by cloning the jbpm-playground repository hosted on GitHub). In cases where this is not wanted (access to Internet might not be available or there might be a need to start with a completely clean installation of the workbench) this default behavior can be turned off.
-To do so, change the following system property in the start.jboss target to false in the build.xml: 
-[source,shell]
-----
--Dorg.kie.demo=false
-----
-
-Note that this will create a completely empty version of the workbench.
-To be able to start modeling processes, the following elements need to be created first: 
-
-* Organizational unit
-* Repository (new or clone existing one)
-* Project
-
-
 == Workbench Authentication
 
 The workbench web application is using the pre-installed _other_ security domain for authenticating and authorizing users (as specified in the _WEB-INF/jboss-web.xml_ inside the WARs).
@@ -67,42 +49,42 @@ These are the default users:
 
 |admin
 |admin
-|admin,analyst
+|admin,analyst,kiemgmt,rest-all,kie-server
 |
 
 |krisv
 |krisv
-|admin,analyst
+|admin,analyst,rest-all,kie-server
 |
 
 |john
 |john
-|analyst
+|analyst,kie-server
 |Accounting,PM
 
 |mary
 |mary
-|analyst
+|analyst,kie-server
 |HR
 
 |sales-rep
 |sales-rep
-|analyst
+|analyst,kie-server
 |sales
 
 |jack
 |jack
-|analyst
+|analyst,kie-server
 |IT
 
 |katy
 |katy
-|analyst
+|analyst,kie-server
 |HR
 
 |salaboy
 |salaboy
-|admin,analyst
+|admin,analyst,rest-all,kie-server
 |IT,HR,Accounting
 
 |kieserver
@@ -115,7 +97,7 @@ Authentication can be customized by using any of the following options:
 
 * The users and groups management screens on the workbench web application.
 
-Navigate into the workbench web application and click on the menu _Home_ -> _Security_.
+Navigate into the workbench web application and click on the menu _Home_ -> _Admin_ and selecting _Users_.
 
 * The _add-user_ script that comes by default on Wildfly/EAP.
 
@@ -136,9 +118,9 @@ Example for Linux platforms - run the following command and follow the script in
 
 jBPM uses the Java Persistence API specification (v2) to allow users to configure whatever datasource they want to use to persist runtime data.
 As a result, the instructions below describe how you should configure a datasource when using JPA on JBoss application server (e.g.
-AS7, EAP6 or Wildfly8) using a [path]_persistence.xml_
+EAP7 or Wildfly10) using a [path]_persistence.xml_
  file and configuring your datasource and driver in your application server's [path]_standalone.xml_
-, similar to how you would configure any other application using JPA on JBoss application server.
+, similar to how you would configure any other application using JPA on the application server.
 The installer automates some of this (like copying the right files to the right location after installation).
 
 By default, the jbpm-installer uses an H2 database for persisting runtime data.
@@ -172,8 +154,8 @@ The following files define the persistence settings for the jbpm-installer demo:
 
 [TIP]
 ====
-There are multiple standalone.xml files available (depending on whether you are using JBoss AS7, JBoss EAP6 or Wildfly8 and whether you are running the normal or full profile).  The full profile is required to use the JMS component for remote integration, so will be used by default by the installer.
-Best practice is to update all standalone.xml files to have consistent setup but most important is to have standalone-full-wildfly-8.1.0.Final.xml properly configured as this is used by default by the installer.
+There are multiple standalone.xml files available (depending on whether you are using JBoss EAP or Wildfly and whether you are running the normal or full profile).  The full profile is required to use the JMS component for remote integration, so will be used by default by the installer.
+Best practice is to update all standalone.xml files to have consistent setup but most important is to have standalone-full-wildfly-{version}.xml properly configured as this is used by default by the installer.
 ====
 
 
@@ -219,15 +201,15 @@ In the case of a MySQL database, you need to change it to:
 <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
 ----
 +
-For those of you who decided to use another database, a list of the available  hibernate dialect classes can be found https://docs.jboss.org/hibernate/core/3.3/reference/en-US/html/session-configuration.html#configuration-optional-dialects[
+For those of you who decided to use another database, a list of the available hibernate dialect classes can be found https://docs.jboss.org/hibernate/core/3.3/reference/en-US/html/session-configuration.html#configuration-optional-dialects[
 here].
-* [path]_standalone-full-wildfly-8.1.0.Final.xml_ :
+* [path]_standalone-full-wildfly-{version}.xml_ :
 + 
 [path]_Standalone.xml_
 and [path]_standalone-full.xml_
-are the  configuration for the standalone JBoss application server.
-When the installer installs the demo, it copies these files to the `standalone/configuration` directory in the JBoss server  directory.
-Since the installer uses Wildfly8 by default as application server, you probably need to change [path]_standalone-full-wildfly-8.1.0.Final.xml_
+are the configuration for the standalone JBoss application server.
+When the installer installs the demo, it copies these files to the `standalone/configuration` directory in the JBoss server directory.
+Since the installer uses Wildfly by default as application server, you probably need to change [path]_standalone-full-wildfly-{version}.xml_
 .
 + 
 We need to change the datasource configuration in `standalone-full.xml` so that the jBPM process engine can use our MySQL database.
@@ -274,7 +256,7 @@ and add an additional driver configuration:
     <xa-datasource-class>com.mysql.jdbc.jdbc2.optional.MysqlXADataSource</xa-datasource-class>
 </driver>
 ----
-* To install driver jars in JBoss application server (Wildfly8, EAP6, etc.), it is recommended to install the driver jar as a module. The installer already takes care of this mostly: it will  copy the driver jar (you specified in the [path]_build.properties_ ) to the right folder inside the modules directory of your server and put a matching module.xml next to it. For MySQL, this file is called [path]_db/mysql_module.xml_ . Open this file and make sure that the file name of the driver jar listed there is identical the driver jar name you specified in the [path]_build.properties_ (including the version).  Note that, even if you simply uncommented the default MySQL configuration, you will still need to add the right version here.
+* To install driver jars in JBoss application server (Wildfly, EAP, etc.), it is recommended to install the driver jar as a module. The installer already takes care of this mostly: it will  copy the driver jar (you specified in the [path]_build.properties_ ) to the right folder inside the modules directory of your server and put a matching module.xml next to it. For MySQL, this file is called [path]_db/mysql_module.xml_ . Open this file and make sure that the file name of the driver jar listed there is identical the driver jar name you specified in the [path]_build.properties_ (including the version).  Note that, even if you simply uncommented the default MySQL configuration, you will still need to add the right version here.
 * *Starting the demo*
 +
 We've modified all the necessary files at this point.
@@ -378,8 +360,7 @@ For example:
 
 * In order to make sure your driver will be correctly installed in the JBoss application server, 
   there are typically multiple options, like install as a module or as a deployment. It is 
-  recommended to install the driver as a module for AS7, EAP6 and Wildfly8. For example, for AS7 
-  both ways are explained  https://community.jboss.org/wiki/DataSourceConfigurationinAS7[here]. 
+  recommended to install the driver as a module for EAP and Wildfly. 
 +
 ** https://community.jboss.org/wiki/DataSourceConfigurationinAS7#Installing_a_JDBC_driver_as_a_module[Install] 
    the driver JAR as a __module__, which is what the install script does.
@@ -472,6 +453,9 @@ This might not always be welcomed (by your database administrator), and thus the
 
 |sqlserver2008
 |jbpm-installer/db/ddl-scripts/sqlserver2008
+
+|sybase
+|jbpm-installer/db/ddl-scripts/sybase
 |===
 
 
@@ -528,9 +512,6 @@ jBPM installer ant script performs most of the work automatically and usually do
 |clean.jboss.repository
 |removes repository content for demo setup (guvnor Maven repo, niogit, etc)
 
-|download.dashboard
-|downloads jBPM dashboard component (BAM)
-
 |download.db.driver
 |downloads DB driver configured in build.properties
 
@@ -543,17 +524,23 @@ jBPM installer ant script performs most of the work automatically and usually do
 |download.eclipse
 |downloads Eclipse distribution
 
+|download.eclipse.gef
+|downloads Eclipse GEF feature
+
 |download.jboss
 |downloads JBoss Application Server
 
 |download.jBPM.bin
 |downloads jBPM binary distribution (jBPM libs and its dependencies)
 
-|download.jBPM.console
-|downloads jBPM console for JBoss AS
+|download.jBPM.casemgmt
+|downloads jBPM case management console
 
-|install.dashboard.into.jboss
-|installs jBPM dashboard into JBoss AS
+|download.jBPM.console
+|downloads jBPM process management console
+
+|download.kie.server
+|downloads jBPM process execution server
 
 |install.db.files
 |installs DB driver as JBoss module
@@ -567,9 +554,6 @@ jBPM installer ant script performs most of the work automatically and usually do
 |install.demo.noeclipse
 |similar to install.demo but skips Eclipse installation
 
-|install.dependencies
-|installs custom libraries (such as work item handlers, etc) into the jBPM console
-
 |install.droolsjbpm-eclipse.into.eclipse
 |installs droolsjbpm Eclipse plugin into Eclipse
 
@@ -579,7 +563,13 @@ jBPM installer ant script performs most of the work automatically and usually do
 |install.jboss
 |installs JBoss AS
 
+|install.jBPM-casemgmt.into.jboss
+|installs jBPM case management application
+
 |install.jBPM-console.into.jboss
-|installs jBPM console application into JBoss AS
+|installs jBPM process management console
+
+|install.kie-server.into.jboss
+|installs jBPM process execution server
 |===
 
