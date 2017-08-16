@@ -1,0 +1,350 @@
+= Deploying Red Hat JBoss BPM Suite to Amazon EC2 Web Service
+
+Amazon Elastic Compute Cloud (hereinafter referred to as Amazon EC2) is a web service providing a computing environment in the Amazon Web Services (AWS) cloud. Deploying Red Hat JBoss BPM Suite to Amazon EC2 has been supported since version 6.2.
+
+Amazon EC2 can be used to create a virtual machine and its computing environments called instances. Templates for this instances are then known as Amazon Machine Images or AMIs. The service allows you to modify the instance to use a required configuration of CPU, memory, storage, and other properties. The cost of the service is calculated based on the used compute capacity.
+
+For more information about Amazon EC2 and all the provided features, see the official http://aws.amazon.com/documentation/[AWS Documentation].
+
+
+== Getting Started with Amazon EC2
+
+.Logging into AWS
+. Go to the https://aws.amazon.com/[Amazon Web Services] main page, click *Sign in to the Console* and enter your user credentials.
+. On the AWS home page that opens, choose *EC2 Virtual Servers in the Cloud* in the left hand corner.
++
+You are redirected to the *EC2 Dashboard*.
++
+.Amazon EC2 Dashboard
+image::ec2dashboard.png[]
+
+*EC2 Dashboard* provides an overview of your AWS account as well as the information about the overall service health and scheduled events. The *Resources* section of the dashboard contains links to all running instances, created key pairs, security groups, and more. To launch a virtual server, click the *Launch Instance* quick link in the *Create Instance* section. The main menu on the left side of the page contains links necessary for configuring instances and images, setting up networks and controlling security issues.
+
+[IMPORTANT]
+====
+Note that login information in Amazon EC2 is encrypted. Before creating or starting an instance, you need to import your public key to AWS in order to be able to connect to the instance.
+====
+
+.Importing Public Key
+. In the main menu on the left, click *Key Pairs* under the *NETWORK & SECURITY* drop-down menu.
+. Click *Import Key Pair* at the top of the page.
++
+The *Import Key Pair* dialog window opens.
+
+. Define the name of the key pair and either upload the public key from file, or copy and paste the content of your public key into the *Public key contents* text field.
+. Click *Import*.
++
+The imported key pair appears in the displayed list of key pairs.
+
+Alternatively, you can create your own key pair using Amazon EC2. For more information, see the http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html[Amazon EC2 Key Pairs] chapter in the _AWS Documentation_.
+
+
+[[_creating_and_starting_virtual_machine_instances]]
+== Creating and Starting Virtual Machine Instances
+
+To deploy Red Hat JBoss BPM Suite to Amazon EC2, you must have a valid membership in the JBoss Cloud Access program. The program provides a number of supported AMIs created by Red Hat, while each of them has Red Hat Enterprise Linux 6 and Red Hat JBoss EAP 6 (together with other required software) pre-installed.
+
+For further information about supported Amazon EC2 instance types, see the https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html-single/Administration_and_Configuration_Guide/index.html#chap-Deploy_JBoss_EAP_6_on_Amazon_EC2[Deploy JBoss EAP 6 on Amazon EC2] chapter of _Red Hat JBoss Enterprise Application Platform 6.4 Administration and Configuration Guide_.
+
+To create a virtual machine instance, do the following:
+
+.Creating Virtual Machine Instance
+. In the main menu, click *AMIs* under the *IMAGES* drop-down menu.
+. Choose one of the supported AMIs.
++
+For example `RHEL-6.7_HVM_GA-JBEAP-6.4.7-20160421-x86_64-1-Access2-GP2 (ami-50bba23a)`.
+
+. Click *Launch.*
++
+The *Choose an Instance Type* window opens. An _instance type_ is a custom configuration of CPU, memory, storage, and networking capacity of your virtual machine instance.
+
+. Choose one of the listed instance types.
++
+--
+Instance type depends on the needs of your application.
+KIE Server and Business Central are usually two separated instances in AWS and each of them requires different settings.
+However, at least 2 vCPUs (the number of virtual CPUs) and 7.5 GiB of memory is recommended.
+
+It is possible to launch the instance directly from here by clicking *Review and Launch*. If you want to change additional settings, see the following steps.
+--
++
+
+. Click *Next: Configure Instance Details*.
++
+In this step, you can choose a number of launched instances, network (either EC2-Classic or VPC, the Amazon Virtual Private Cloud), or enable detailed monitoring.
+If you want to keep the default settings, continue to the next tab.
+
+. Click *Next: Add Storage*.
++
+This screen allows you to add more Amazon Elastic Block Store (Amazon EBS) volumes and modify the settings of the root volume. The minimum recommended size of the root volume is `30 GiB`.
++
+[IMPORTANT]
+====
+Make sure that the set volume size is greater than the size of the used snapshot.
+====
+
+. Click *Next: Tag Instance* and specify the tags for the instance that can help you search and filter the instances later. For example, the key `Name` can indicate a logical name of the instance in the instance list.
+. Click *Next: Configure Security Group*.
++
+--
+A _security group_ is a virtual firewall containing a number of firewall rules that control the traffic for your instance. Each instance can have one or more security groups assigned and these groups can be modified at any time.
+
+You need to create a new security group in order to be able to deploy Red Hat JBoss BPM Suite:
+
+.Creating New Security Group
+. If not already selected, select the *Create a new security group* check box.
+. Fill in the *Security group name* and *Description*.
+. Keep the default SSH type TCP protocol rule.
+. Define three new firewall rules by clicking *Add Rule*:
++
+* Default SSH access to Business Central:
++
+** *Type*: Custom TCP Rule
+** *Protocol*: TCP
+** *Port Range*: 8001
++
+* Default HTTP port of Red Hat JBoss EAP:
++
+** *Type*: Custom TCP Rule
+** *Protocol*: TCP
+** *Port Range*: 8080
++
+* Default Git port:
++
+** *Type*: Custom TCP Rule
+** *Protocol*: TCP
+** *Port Range*: 9418
+
++
+image::secgroup.png[]
+
+[WARNING]
+====
+All the configured ports must be allowed in the `PORTS_ALLOWED` property of user data.
+For more information, see <<_configuring_user_data>>.
+====
+--
++
+. Click *Review and Launch*.
+. Review your instance details and if you want to launch the instance, click *Launch*.
+
+
+A list of all created instances can be found under the *Instances* option in the main menu on the left. You can filter, search and launch the instances as well as view the instance description and edit the settings.
+
+.List of Instances Searched by Name
+image::instancelist.png[]
+
+In case you created a custom security group and defined new firewall rules with specific ports, you have to allow these ports in user data for the new virtual machine instance.
+
+[[_configuring_user_data]]
+.Configuring User Data
+. In the main menu, go to *INSTANCES* -> *Instances*.
+. In the list of instances, find and select the instance you want to configure.
+. Click *Actions* -> *Instance Settings* -> *View/Change User Data*.
++
+image::viewuserdata.png[]
+. In the *View/Change User Data* dialog window that opens, define the `PORTS_ALLOWED` property. For example:
++
+--
+[source]
+----
+PORTS_ALLOWED="8001 8080 9418"
+----
+
+image::ports-allowed.png[]
+--
++
+
+. Click *Save*.
+
+To start the created instance, do the following:
+
+.Starting Virtual Machine Instance
+. In the main menu, go to *INSTANCES* -> *Instances*.
+. Select the instance from the list and click *Actions* -> *Instance State* -> *Start*.
++
+image::startinginstance.png[]
+. In the *Start Instances* dialog window that opens, click *Yes, Start* to confirm that you want to start the instance.
+. Wait until the result of a status check changes to `2/2 checks passed`.
+
+
+[NOTE]
+====
+Do not forget to stop your instance after you no longer need it.
+====
+
+
+[[_installing_bpms_on_virtual_machine_instance]]
+== Installing Red Hat JBoss BPM Suite on Virtual Machine Instance
+
+First, follow the steps below to connect to your instance:
+
+.Connecting to Instance
+. Start the instance.
+. Click *Connect* to view details required for accessing your instance.
++
+The *Connect To Your Instance* pop-up window opens.
+. Copy the public DNS address.
+. Execute the following command:
++
+----
+~]$ ssh ec2-user@PUBLIC_DNS_ADDRESS
+----
+
+. Enter `yes` to confirm that you want to connect to your instance.
+
+.Installing Red Hat JBoss BPM Suite on VM Instance
+. Connect to the instance on which you want to install Red Hat JBoss BPM Suite.
+. Update your instance in order to get the latest version of Red Hat JBoss EAP 6._x_ by executing the following command:
++
+[source]
+----
+~]$ sudo yum -y update
+----
+
+. Switch to root:
++
+[source]
+----
+~]$ sudo su
+----
+
+. Copy the following configuration files to `/etc/jbossas/standalone/` and `/etc/jbossas/domain/`:
++
+--
+* `standalone.xml`
+* `standalone-full.xml`
+* `standalone-full-ha.xml`
+* `standalone-ha.xml`
+* `standalone-osgi.xml`
+
+Follow the instructions:
+
+.. Download Red Hat JBoss BPM Suite 6.3.0 Deployable for EAP 6 from https://access.redhat.com/[Customer Portal].
+.. Change directory to the location of the downloaded zip file.
+.. Copy the zip file into the `/tmp/` directory of your virtual machine instance:
++
+----
+~]$ scp jboss-bpmsuite-6.3.0.GA-deployable-eap6.x.zip ec2-user@PUBLIC_DNS_ADDRESS:/tmp
+----
+
+.. Go to the `/tmp/` directory of your VM instance and unzip the file:
++
+[source]
+----
+~]# unzip jboss-bpmsuite-6.3.0.GA-deployable-eap6.x.zip
+----
+
+.. Change directory to `jboss-eap-6.4/standalone/configuration/` and copy all the configuration files listed above into `/etc/jbossas/standalone/` and `/etc/jbossas/domain/`, for example:
++
+[source]
+----
+~]# cp standalone.xml /etc/jbossas/standalone/
+----
++
+Enter `y` to overwrite the file.
+
+.. Make sure that the files were overwritten: `standalone.xml` should contain the following:
++
+[source,xml]
+----
+<system-properties>
+  <property name="org.kie.example" value="true"/>
+  <property name="org.jbpm.designer.perspective" value="full"/>
+  <property name="designerdataobjects" value="false"/>
+</system-properties>
+----
+--
++
+
+. Copy the required applications (for example Business Central) to `/usr/share/jbossas/standalone/deployments/`:
+.. Change directory to `/tmp/jboss-eap-6.4/standalone/deployments/`.
+.. Copy Business Central:
++
+--
+[source]
+----
+~]# cp -r business-central.war /usr/share/jbossas/standalone/deployments/
+----
+
+[source]
+----
+~]# cp -r business-central.war.dodeploy /usr/share/jbossas/standalone/deployments/
+----
+--
++
+
+. Set the proper Red Hat JBoss EAP binding address.
++
+--
+Each virtual machine has private and public IP addresses. The public IP address can be accessed outside the AWS, while the private IP address is accessible only inside the virtual network of your Amazon EC2 account.
+
+[IMPORTANT]
+====
+Every time you start the instance, the addresses change.  Refer to the https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html/Administration_and_Configuration_Guide/index.html[Red Hat JBoss Enterprise Application Platform 6.4 Administration and Configuration Guide] for more information.
+====
+
+One way to set the address is by doing the following:
+
+.. Run `ifconfig` and copy the `inet addr` address (for example `10.233.159.148`).
+.. Open `/etc/jbossas/standalone/standalone.xml` and set the proper binding address:
++
+[source,xml]
+----
+<interfaces>
+  ...
+  <interface name="public">
+    <inet-address value="10.233.159.148"/>
+  </interface>
+  ...
+</interfaces>
+----
+--
++
+
+. Enable Git and SSH access to Business Central: add the following system properties (with _your_ private IP address) into `/etc/jbossas/standalone/standalone.xml`.
++
+[source,xml]
+----
+<property name="org.uberfire.nio.git.daemon.host" value="10.233.159.148"/>
+<property name="org.uberfire.nio.git.ssh.host" value="10.233.159.148"/>
+----
+
+
+Once the setup has been done, you can create a new AMI from your instance.
+
+.Creating new AMI from Configured Instance
+. In the main menu, go to *INSTANCES* -> *Instances*.
+. Locate your configured instance and click *Actions* -> *Image* -> *Create Image*.
++
+image::create-image.png[]
+
+. In the *Create Image* dialog window, specify the image details and click *Create Image*.
+
+
+[[_running_bpms_on_vm_instance]]
+== Running Red Hat JBoss BPM Suite on Virtual Machine Instance
+
+.Running Red Hat JBoss BPM Suite on VM Instance
+. Start Red Hat JBoss EAP by executing the command:
++
+--
+[source]
+----
+~]# /etc/init.d/jbossas start
+----
+
+Alternatively, you can use the command with option `stop` (or ``restart``) to stop (or restart) the Red Hat JBoss EAP.
+
+The following message appears:
+
+[source]
+----
+Starting jbossas:                                          [  OK  ]
+----
+
+If the deployment finished successfully, the `business-central.war.dodeploy` file in `/usr/share/jbossas/standalone/deployments/` changes to `business-central.war.deployed`.
+--
++
+
+. To log in to Business Central, navigate to `http://_PUBLIC_DNS_ADDRESS_:8080/business-central` in a web browser.

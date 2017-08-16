@@ -403,6 +403,52 @@ The most important thing when working with services is that there is no more nee
 Services make use of RuntimeManager API best practices and thus eliminate various risks when working with that API.
 ====
 
+== Quartz-based Timer Service
+
+jBPM provides a cluster-ready timer service via Quartz, allowing you to dispose or load your knowledge session at any time.  In order to fire each timer appropriately, this service can be utilized to manage how long a kie session should be active.  
+
+A base Quartz configuration file in the case of a clustered environment is provided as an example below:
+
+[source,xml]
+----
+#============================================================================
+# Configure Main Scheduler Properties  
+#============================================================================
+
+org.quartz.scheduler.instanceName = jBPMClusteredScheduler
+org.quartz.scheduler.instanceId = AUTO
+
+#============================================================================
+# Configure ThreadPool  
+#============================================================================
+
+org.quartz.threadPool.class = org.quartz.simpl.SimpleThreadPool
+org.quartz.threadPool.threadCount = 5
+org.quartz.threadPool.threadPriority = 5
+
+#============================================================================
+# Configure JobStore  
+#============================================================================
+
+org.quartz.jobStore.misfireThreshold = 60000
+
+org.quartz.jobStore.class=org.quartz.impl.jdbcjobstore.JobStoreCMT
+org.quartz.jobStore.driverDelegateClass=org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+org.quartz.jobStore.useProperties=false
+org.quartz.jobStore.dataSource=managedDS
+org.quartz.jobStore.nonManagedTXDataSource=nonManagedDS
+org.quartz.jobStore.tablePrefix=QRTZ_
+org.quartz.jobStore.isClustered=true
+org.quartz.jobStore.clusterCheckinInterval = 20000
+
+#============================================================================
+# TODO: Configure Datasources
+#============================================================================
+#org.quartz.dataSource.managedDS.jndiURL=
+#org.quartz.dataSource.nonManagedDS.jndiURL=
+----
+
+For more information on configuring a Quartz scheduler, please see the documentation for the 1.8.5 distribution archive.
 
 
 == QueryService
