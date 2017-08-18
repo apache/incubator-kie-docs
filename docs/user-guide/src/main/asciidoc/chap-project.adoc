@@ -1,0 +1,600 @@
+[[_chap_project]]
+= Projects
+ifdef::BRMS;BRMS-EAP[]
+
+
+A project is a container for asset packages (rules, decision tables, fact models, data models, and DSLs) that lives in the Knowledge Repository.
+It is this container that defines the properties of the KIE Base and KIE Session that are applied to its content.
+In the GUI, you can edit these entities in the Project Editor.
+endif::BRMS;BRMS-EAP[]
+ifdef::BPMS[]
+
+A project is a container for asset packages (business processes, rules, work definitions, decision tables, fact models, data models, and DSLs) that lives in the Knowledge Repository.
+It is this container that defines the properties of the KIE Base and KIE Session that are applied to its content.
+In the GUI, you can edit these entities in the Project Editor.
+endif::BPMS[]
+
+As a project is a Maven project, it contains the Project Object Model file (`pom.xml`) with information on how to build the output artifact.
+It also contains the Module Descriptor file, `kmodule.xml`, that contains the KIE Base and KIE Session configuration for the assets in the project.
+
+
+== Creating an Organizational Unit
+
+
+It is possible to create an organizational unit in the *Administration* perspective of Business Central, using the `kie-config-cli` tool, or the REST API calls.
+
+[float]
+==== ⁠Creating an Organizational Unit in Business Central
+
+[IMPORTANT]
+====
+Note that only users with the `admin` role in Business Central can create organizational units.
+====
+
+.Procedure: Using Business Central to Create an Organizational Unit
+. In Business Central, go to *Authoring* -> *Administration*.
+. On the perspective menu, click *Organizational Units* -> *Manage Organizational Units*.
+. In the *Organization Unit Manager* view, click *Add*.
++
+The *Add New Organizational Unit*
+dialog window opens.
++
+
+.Add New Organizational Unit Dialog Window
+image::user-guide-add-new-organizational-unit.png[A screenshot of the Add New Organizational Unit dialog window.]
+. Enter the two mandatory parameters (`name` and `default group ID`) and click *Ok*.
+
+
+[float]
+==== ⁠Creating an Organizational Unit Using the kie-config-cli Tool
+
+
+Organizational units can be created using the `kie-config-cli` tool as well. To do so, run the `create-org-unit` command.
+The tool then guides you through the entire process of creating an organizational unit by asking for other required parameters.
+Type `help` for a list of all commands.
+
+For more information about the `kie-config-cli` tool, see the Command Line Configuration chapter of the _{ADMIN_GUIDE}_.
+
+[float]
+==== ⁠⁠Creating an Organizational Unit Using the REST API
+
+[IMPORTANT]
+====
+Note that only users with the `rest-all` role can create organizational units.
+====
+
+
+To create an organizational unit in Knowledge Store, issue the `POST` REST API call.
+Details of the organizational unit are defined by the JSON entity.
+
+Input parameter of the call is an `OrganizationalUnit` instance.
+The call returns a `CreateOrganizationalUnitRequest` instance.
+
+.Creating an Organizational Unit Using the Curl Utility
+====
+Example JSON entity containing details of an organizational unit to be created:
+
+[source]
+----
+
+{
+	"name"         : "helloWorldUnit",
+	"owner"        : "tester",
+	"description"  :  null,
+	"repositories" :  []
+}
+----
+
+Execute the following command:
+
+[source]
+----
+curl -X POST 'localhost:8080/business-central/rest/organizationalunits/' -u USERNAME:PASSWORD -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"name":"helloWorldUnit","owner":"tester","description":null,"repositories":[]}'
+----
+====
+
+
+For further information, see the _{DEVELOPMENT_GUIDE}_, chapter _Knowledge Store REST API_, section _Organizational Unit Calls_.
+
+[[_creating_a_repository2]]
+== Creating a Repository
+
+////
+(Moved this from intro. Tweak and re-purpose. -Stetson)
+Artifact repository (Knowledge Store) is the set of data over which Business Central operates.
+It provides a centralized store for your business knowledge, which can consist of multiple repositories with business assets and resources.
+
+Apart from the project assets,  you can also manage your pom artifacts (such as parent `pom.xml` files for kjars) from Business Central's *Artifact repository*, in case you do not have a separate repository to manage your artifacts.
+You can further create a child project to extend the uploaded pom artifact by adding the <parent>PARENT_GAV</parent> tag to `pom.xml`
+of the given child project.
+Here, [parameter]``PARENT_GAV`` denotes group, artifact and version of the previously uploaded pom artifact.
+////
+
+There are three ways to create a repository: using the *Administration*
+ perspective of Business Central, the `kie-config-cli` tool, or the REST API calls.
+
+
+[float]
+==== ⁠Creating a Repository in Business Central
+
+[IMPORTANT]
+====
+Note that only users with the `admin` role in Business Central can create repositories.
+====
+
+.Procedure: Using Business Central to Create a Repository
+. In Business Central, go to *Authoring* -> *Administration*.
+. On the perspective menu, click *Repositories* -> *New repository*.
++
+The *New Repository* pop-up window is displayed.
++
+.*New Repository*Dialog Window
+image::user-guide-new-repository.png[A screenshot of the New Repository dialog window.]
+. Specify the two mandatory parameters:
+* repository name
++
+
+[NOTE]
+====
+Make sure that the repository name is a valid file name.
+Avoid using a space or any special character that might lead to an invalid name.
+====
+* organizational unit: specifies the location of the newly created repository.
+. Click *Finish*.
+
+
+You can view the newly created repository either in the *File Explorer* or the *Project Explorer*.
+
+[float]
+==== ⁠Creating a Repository Using the kie-config-cli Tool
+
+
+To create a new Git repository using the `kie-config-cli` tool, run the `create-repo` command.
+The tool then guides you through the entire process of creating a repository by asking for other required parameters.
+Type `help` for a list of all commands.
+
+For more information about the `kie-config-cli` tool, see the _{ADMIN_GUIDE}_.
+
+[float]
+==== ⁠⁠Creating a Repository Using the REST API
+
+[IMPORTANT]
+====
+Note that only users with the `rest-all` role can create repositories.
+====
+
+
+To create a repository in the Knowledge Store, issue the `POST` REST API call.
+Details of the repository are defined by the JSON entity.
+Make sure you established an authenticated HTTP session before executing this call.
+
+Input parameter of the call is a `RepositoryRequest` instance.
+The call returns a `CreateOrCloneRepositoryRequest` instance.
+
+.Creating a Repository Using the Curl Utility
+====
+Example JSON entity containing details of a repository to be created:
+
+[source]
+----
+
+{
+	"name"                   : "newRepository",
+	"description"            :  null,
+	"gitURL"                 :  null,
+	"requestType"            : "new",
+	"organizationalUnitName" : "helloWorldUnit"
+}
+----
+
+Execute the following command:
+
+[source]
+----
+curl -X POST 'localhost:8080/business-central/rest/repositories/' -u USERNAME:PASSWORD -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"name":"newRepository","description":null,"requestType":"new","gitURL":null,"organizationalUnitName":"helloWorldUnit"}'
+----
+====
+
+
+For further information, see the _{DEVELOPMENT_GUIDE}_, chapter _Knowledge Store REST API_, section _Repository Calls_.
+
+[[_cloning_a_repository]]
+== Cloning a Repository
+
+
+It is possible to clone a repository either in Business Central or using the REST API calls.
+The `kie-config-cli` tool cannot be used to clone arbitrary repositories - run `git clone` or use one of the following options instead.
+
+[float]
+==== Cloning a Repository in Business Central
+
+[IMPORTANT]
+====
+Note that only users with the `admin` role in Business Central can clone repositories.
+====
+
+.Procedure: Using Business Central to Clone a Repository
+. In Business Central, go to *Authoring* -> *Administration*.
+. On the perspective menu, choose *Repositories* -> *Clone repository*.
++
+The *Clone Repository*
+pop-up window is displayed.
++
+.*Clone Repository*Dialog Window
+image::user-guide-clone-repository.png[A screenshot of the Clone Repository dialog window.]
+. In the *Clone Repository* dialog window, enter the repository details:
++
+.. Enter the *Repository Name* to be used as the repository identifier in the Asset repository and select the *Organizational Unit* it should be added to.
+.. Enter the URL of the Git repository:
+* for a local repository, use ``file:///_PATH_TO_REPOSITORY_/_REPOSITORY_NAME_``;
++
+[NOTE]
+====
+The file protocol is only supported for READ operations.
+WRITE operations are _not_ supported.
+====
+* for a remote or preexisting repository, use `https://github.com/_USERNAME_/_REPOSITORY_NAME_.git` or ``git://_HOST_NAME_/_REPOSITORY_NAME_``.
++
+[IMPORTANT]
+====
+It is important to use the HTTPS or Git protocol instead of a SCP-style SSH URL.
+Business Central does not support the basic SSH URL and fails with __Invalid URL format__.
+====
+.. If applicable, enter the *User Name* and *Password* of your Git account to be used for authentication.
+. Click *Clone*.
++
+A confirmation prompt with the notification that the repository was created successfully is displayed.
+. Click *Ok*.
++
+The repository is now being indexed.
+Some workbench features may be unavailable until the indexing has completed.
+
+
+You can view the cloned repository either in the *File Explorer* or the *Project Explorer*.
+
+[float]
+==== Cloning a Repository Using the REST API
+
+[IMPORTANT]
+====
+Note that only users with the `rest-all` role can clone repositories.
+====
+
+
+To clone a repository, issue the `POST` REST API call.
+This call creates or clones (according to the value of the `requestType` parameter) the repository defined by the JSON entity.
+
+Input parameter of the call is a `RepositoryRequest` instance.
+The call returns a `CreateOrCloneRepositoryRequest` instance.
+
+.Cloning a Repository Using the Curl Utility
+====
+Example JSON entity containing details of a repository to be cloned:
+
+[source]
+----
+
+{
+	"name"                   : "clonedRepository",
+	"description"            :  null,
+	"requestType"            : "clone",
+	"gitURL"                 : "git://localhost:9418/newRepository",
+	"organizationalUnitName" : "helloWorldUnit"
+}
+----
+
+Execute the following command:
+
+[source]
+----
+curl -X POST 'localhost:8080/business-central/rest/repositories/' -u USERNAME:PASSWORD -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"name":"clonedRepository","description":null,"requestType":"clone","gitURL":"git://localhost:9418/newRepository","organizationalUnitName":"helloWorldUnit"}'
+----
+====
+
+
+For further information, see the _{DEVELOPMENT_GUIDE}_, chapter _Knowledge Store REST API_, section _Repository Calls_.
+
+
+[[_creating_a_project2]]
+== Creating a Project
+
+
+It is possible to create a project either in the *Project Authoring*
+ perspective of Business Central or using the REST API calls.
+
+[float]
+==== Creating a Project in Business Central
+
+[IMPORTANT]
+====
+Note that only users with the `admin` role in Business Central can create projects.
+====
+
+.Procedure: Using Business Central to Create a Project
+. In Business Central, go to *Authoring* -> *Project Authoring*.
+. In the *Project Explorer*, select the organizational unit and the repository in which you want to create the project.
+. On the perspective menu, click *New Item* -> *Project*.
++
+The *New Project*
+dialog window opens.
++
+image::user-guide-6648.png[]
++
+. Define the *Project General Settings* and *Group artifact version* details of the new project. These parameters are stored in the `pom.xml` Maven configuration file.
++
+See the detailed description of the parameters:
+
+* *Project Name*: name of the project (for example ``MortgageProject``).
+* *Project Description*: description of the project, which may be useful for the project documentation purposes.
+* *Group ID*: group ID of the project (for example ``org.mycompany.commons``).
+* *Artifact ID*: artifact ID unique in the group (for example ``myframework``). Avoid using a space or any other special character that might lead to an invalid name.
+* *Version*: version of the project (for example ``2.1.1``).
+. Click *Finish*.
++
+The project screen view is updated with the new project details as defined in the `pom.xml` file.
+You can switch between project descriptor files and edit their content by clicking the *Project Settings: Project General Settings* button at the top of the project screen view.
+
+
+[float]
+==== ⁠⁠Creating a Project Using the REST API
+
+[IMPORTANT]
+====
+Note that only users with the `rest-all` or `rest-project` role can create projects.
+====
+
+
+To create a project in the repository, issue the `POST` REST API call.
+Details of the project are defined by the corresponding JSON entity.
+
+Input parameter of the call is an `Entity` instance.
+The call returns a `CreateProjectRequest` instance.
+
+.Creating a Project Using the Curl Utility
+====
+Example JSON entity containing details of a project to be created:
+
+[source]
+----
+
+{
+	"name"        : "MortgageProject",
+	"description" :  null,
+	"groupId"     : "org.mycompany.commons",
+	"version"     : "2.1.1"
+}
+----
+
+Execute the following command:
+
+[source]
+----
+curl -X POST 'localhost:8080/business-central/rest/repositories/REPOSITORY_NAME/projects/' -u USERNAME:PASSWORD -H 'Accept: application/json' -H 'Content-Type: application/json' -d '{"name":"MortgageProject","description":null,"groupId":"org.mycompany.commons","version":"2.1.1"}'
+----
+====
+
+
+For further information, see the _Repository Calls_ section of the _Knowledge Store REST API_ chapter in the _{DEVELOPMENT_GUIDE}_.
+
+
+[[_adding_dependencies1]]
+== Adding Dependencies
+
+
+To add dependencies to your project, do the following:
+
+. Open the Project Editor for the given project:
++
+.. In the *Project Explorer* view of the *Project Authoring* perspective, open the project directory.
+.. Click *Open Project Editor* to open the project view.
+. In the *Project Screen* view, select in the *Project Settings* drop-down box the *Dependencies* item.
+. On the updated *Project Screen*, click the *Add* button to add a maven dependency or click the *Add from repository* button to add a dependency from the Knowledge Store (Artifact repository):
+.. When adding a maven dependency, a user has to define the *Group ID*, *Artifact ID*, and the *Version ID* in the *Dependency* dialogue window.
+.. When adding a dependency from the Knowledge Store, select the dependency in the displayed dialog box: the dependency will be added to the dependency table.
+. To apply the various changes, the dependencies must be saved.
+
+
+Additionally, you can use the *Package white list* when working with dependencies. When you add a repository, you can click the gear icon and select *Add all* or *Add none*, which results in including all or none of the packages from the added dependency.
+
+[WARNING]
+====
+If working with modified artifacts, do not re-upload modified non-snapshot artifacts as Maven will not know these artifacts have been updated, and it will not work if it is deployed in this manner.
+====
+
+[[_defining_knowledge_base]]
+== Defining KIE Bases and Sessions
+
+A _KIE base_ is a repository of the application's knowledge definitions. It contains rules, processes, functions, and type models. A KIE base does not contain runtime data, instead sessions are created from the KIE base into which data can be inserted and process instances started.
+
+A _KIE session_ stores runtime data created from a KIE base. For more information, see the {URL_DEVELOPMENT_GUIDE}#sect_kie_sessions[KIE Sessions] chapter of the _{DEVELOPMENT_GUIDE}_.
+
+You can create KIE bases and sessions by editing the `kmodule.xml` project descriptor file of your project.
+You can do so through Business Central or by editing `kmodule.xml` in the `src/main/resources/META-INF/` folder by navigating through the `Repository` view.
+
+[float]
+=== Defining KIE Bases and Sessions in the Project Editor
+
+
+To define a KIE base or session in Business Central, do the following:
+
+. Click *Authoring* -> *Project Authoring* and navigate to your project.
+. In the *Project Explorer* window, click *Open Project Editor*.
+. Click *Project Settings: Project General Settings* -> *Knowledge bases and sessions*. This view provides a user interface for changing `kmodule.xml`.
+. Click *Add* to define and add your bases.
+.. After you enter a name for your Knowledge Base, add Packages. For including all packages, click *Add* below *Packages* and enter asterisk `*`.
+. Below *Knowledge Sessions*, click *Add* and enter the name of your session.
+. Mark it `Default` and select appropriate state. For Red Hat JBoss BPM Suite, use `stateful` sessions.
+. Click *Save* in the top right corner once you are done.
+
+
+[float]
+=== Defining KIE Bases and Sessions in kmodule.xml
+
+
+To define a KIE base or session by editing `kmodule.xml`, do the following:
+
+. Open the repository view for your project.
++
+
+.Changing to Repository View
+image::5191.png[]
+. Navigate to `/src/main/resources/META-INF`. Click on `kmodule.xml` to edit the file directly.
+. Define your `kbases` and ``ksessions``. For example:
++
+[source,xml]
+----
+<kmodule xmlns="http://www.drools.org/xsd/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <kbase name="myBase" default="true" eventProcessingMode="stream" equalsBehavior="identity" packages="*">
+    <ksession name="mySession" type="stateless" default="true" clockType="realtime"/>
+  </kbase>
+</kmodule>
+----
+. Click *Save* in the top right corner.
+
+
+You can switch between the Project Editor view and the Repository view to look at the changes you make in each view.
+To do so, close and reopen the view each time a change is made.
+
+[NOTE]
+====
+If you have more than one knowledge base, one of them must be marked __default__.
+You also must define one default stateful knowledge session amongst all the bases and sessions.
+Alternatively, you can define no knowledge bases.
+====
+
+[[_creating_a_resource]]
+== Creating a Resource
+
+
+A Project may contain an arbitrary number of packages, which contain files with resources, such as Process definition, Work Item definition, Form definition, Business Rule definition, etc.
+
+To create a resource, select the Project and the package in the *Project Explorer*
+ and click menu:New Item[]
+ on the perspective menu and select the resource you want to create.
+
+.Creating packages
+[NOTE]
+====
+It is recommended to create your resources, such as Process definitions, Work Item definitions, Data Models, etc., inside a package of a Project to allow importing of resources and referencing their content.
+
+To create a package, do the following:
+
+. In the *Repository* view of the Project Explorer, navigate to the `REPOSITORY/PROJECT/src/main/resources/` directory.
+. Go to *New Item* -> *Package*.
+. In the *New resource* dialog, define the package name and check the location of the package in the repository.
+
+====
+
+[[_sect_process_definition]]
+== Process Definition
+
+
+A Process definition is a BPMN 2.0-compliant file that serves as container for a Process and its BPMN Diagram.
+A Process definition itself defines the [property]``import`` entry, imported Processes, which can be used by the Process in the Process definition, and [property]``relationship`` entries.
+We refer to a Process definition as a business process.
+
+.BPMN2 source of a Process definition
+====
+[source]
+----
+<definitions id="Definition"
+               targetNamespace="http://www.jboss.org/drools"
+               typeLanguage="http://www.java.com/javaTypes"
+               expressionLanguage="http://www.mvel.org/2.0"
+               xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"Rule Task
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"
+               xmlns:g="http://www.jboss.org/drools/flow/gpd"
+               xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+               xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+               xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+               xmlns:tns="http://www.jboss.org/drools">
+
+    <process>
+      PROCESS
+    </process>
+
+    <bpmndi:BPMNDiagram>
+     BPMN DIAGRAM DEFINITION
+    </bpmndi:BPMNDiagram>
+
+    </definitions>
+----
+====
+
+[[_creating_a_process]]
+=== Creating a Process Definition
+
+
+Make sure you have logged in to JBoss BPM Suite or you are in JBoss{nbsp}Developer{nbsp}Studio
+ with the repository connected.
+
+
+To create a Process, do the following:
+
+. Open the Project Authoring perspective (*Authoring* -> *Project Authoring*).
+. In *Project Explorer* (*Project Authoring* -> *Project Explorer*), navigate to the project where you want to create the Process definition (in the *Project* view, select the respective repository and project in the drop-down lists; in the *Repository* view, navigate to `REPOSITORY/PROJECT/src/main/resources/` directory).
++
+
+.Creating packages
+[NOTE]
+====
+It is recommended to create your resources, including your Process definitions, in a package of a Project to allow importing of resources and their referencing.
+To create a package, do the following:
+
+. In the *Repository* view of the Project Explorer, navigate to the `REPOSITORY/PROJECT/src/main/resources/` directory.
+. Go to *New Item* -> *Package*.
+. In the *New resource* dialog, define the package name and check the location of the package in the repository.
+
+====
++
+. From the perspective menu, go to *New Item* -> *Business Process*.
+. In the *New Processes* dialog box, enter the Process name and click *OK*. Wait until the Process Editor with the Process diagram appears.
++
+
+
+[[_importing_a_process_definition]]
+=== Importing a Process Definition
+
+
+To import an existing BPMN2 or JSON definition, do the following:
+
+. In the *Project Explorer*, select a Project and the respective package to which you want to import the Process definition.
+. Create a new Business Process to work in by going to *New Item* -> *Business Process*.
+. In the Process Designer toolbar, click the *Import* image:5209.png[] icon in the editor toolbar and pick the format of the imported process definition. Note that you have to choose to overwrite the existing process definition in order to import.
+. From the *Import* window, locate the Process file and click *Import*.
++
+
+.Import Window
+image::user-guide-5212.png[Import window for Business Process Editor displaying imports from BPMN2.]
+
+
+Whenever a process definition is imported, the existing imported definition is overwritten.
+Make sure you are not overwriting a process definition you have edited so as not to lose any changes.
+
+A process can also be imported to the git repository in the filesystem by cloning the repository, adding the process files, and pushing the changes back to git.
+In addition to alternative import methods, you can copy and paste a process or just open a file in the import dialog.
+
+When importing processes, the Process Designer provides visual support for Process elements and therefore requires information on element positions on the canvas.
+If the information is not provided in the imported Process, you need to add it manually.
+
+[[_importing_jpdl_3.2_to_bpmn2]]
+=== Importing jPDL 3.2 to BPMN2
+
+
+To migrate and import a jPDL definition to BPMN2, in the Process Designer, click on the import button then scroll down and select *Migrate jPDL 3.2 to BPMN2*.
+
+.Migrate jPDL 3.2 to BPMN2
+image::user-guide-5213.png[Image of selecting the Migrate jPDL 3.2 to BPMN2 button]
+
+
+In the *Migrate to BPMN2* dialog box, select the process definition file and the name of the *gpd* file. Confirm by clicking the *Migrate* button.
+
+.Migrate to BPMN2 dialog box
+image::user-guide-5214.png[Window displayed for migrating definition files to BPMN2.]
+
+
+[IMPORTANT]
+====
+The migration tool for jPDL 3.2 to BPMN2 is a technical preview feature, and therefore not currently supported in {PRODUCT}.
+====
