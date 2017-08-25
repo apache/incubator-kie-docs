@@ -77,6 +77,137 @@ BRP::
 Provides the {PLANNER} capability. 
 --
 
+== Extending {KIE_SERVER} Extensions
+
+{PRODUCT} enables you to extend the REST and JMS API functionality of each extension. You can extend the following extensions:
+
+* `KieServer` - equivalent to the `KieServer` capability.
+* `Drools` - equivalent to the `BRM` capability.
+* `jBPM` - equivalent to the `BPM` capability.
+* `jBPM-UI` - equivalent to the `BPM-UI` capability.
+* `jBPMSearch` - equivalent to the `BPMQueries` capability.
+* `Case-Mgmt` - equivalent to the `CaseMgmt` capability.
+* `OptaPlanner` - equivalent to the `BRP` capability.
+* `DMN` - equivalent to the `DMN` capability. 
+
+To extend {A_KIE_SERVER} extension, implement the following steps:
+
+. Implement the `org.kie.server.services.api.KieServerApplicationComponentsService` interface.
+. Implement the custom resource logic.
+. Make your custom extension discoverable.
+
+[float]
+== Hello World {KIE_SERVER} Extension 
+
+See the following steps to implement a hello world example custom {KIE_SERVER} extension:
+
+. Create an empty Maven project with the following dependencies.
++
+[source,xml]
+----
+<properties>
+  <version.org.kie>7.1.0.Final</version.org.kie>
+</properties>
+<dependencies>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-rest-common</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  
+  <!-- Replace with logger of your choice -->
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.2</version>
+  </dependency>
+</dependencies>
+----
+
+. Implement the `KieServerApplicationComponentsService` interface.
++
+[source,java]
+----
+package brq.redhat.documentation;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import org.kie.server.services.api.KieServerApplicationComponentsService;
+import org.kie.server.services.api.SupportedTransports;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+public class CustomKieServerApplicationComponentsService implements KieServerApplicationComponentsService {
+
+    private static final String OWNER_EXTENSION = "Drools";
+    private static final Logger logger = LoggerFactory.getLogger(CustomKieServerApplicationComponentsService.class);
+
+    
+    public Collection<Object> getAppComponents(String extension, SupportedTransports type, Object... services) {
+        // Skip calls from extensions other than the one you want to extend
+        if ( !OWNER_EXTENSION.equals(extension) ) {
+            return Collections.emptyList();
+        }
+        
+        List<Object> components = new ArrayList<Object>(1);
+        if( SupportedTransports.REST.equals(type) ) {
+            components.add(new CustomResource());
+            logger.warn("Extended the {} extension",extension);
+        }
+        return components;
+    }
+}
+----
++
+Note that each extension enabled on your {KIE_SERVER} instance calls the `getAppComponents` method. That is why the `if(!OWNER_EXTENSION.equals(extension))` call checks for equality on the component name, and returns an empty collection for extensions that you do not want to extend.
+
+. Implement the resource class, which is the `CustomResource` class. In this example, it is a dummy implementation that contains one `GET` endpoint and returns a simple message.
++
+[source,java]
+----
+package brq.redhat.documentation;
+
+import static org.kie.server.remote.rest.common.util.RestUtils.createResponse;
+import static org.kie.server.remote.rest.common.util.RestUtils.getVariant;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Variant;
+
+@Path("server/helloworld")
+public class CustomResource {    
+    
+    @GET()
+    @Produces(MediaType.APPLICATION_XML)
+    public Response testMe(@Context HttpHeaders headers) {
+    	String result = new String("<message>Hello from a Custom Resource</message>");
+    	Variant v = getVariant(headers);
+    	return createResponse(result, v, Response.Status.OK);
+    }
+}
+----
+
+. Make the `CustomKieServerApplicationComponentsService` class discoverable by the {KIE_SERVER}. To do so, create the `META-INF/services/org.kie.server.services.api.KieServerApplicationComponentsService` file with the fully qualified class name of the  `KieServerApplicationComponentsService` implementation class. For example:
++
+[source]
+----
+brq.redhat.documentation.CustomKieServerApplicationComponentsService
+----
+
+. Package the class into the `JAR` format, and copy the resulting `JAR` file into the `kie-server.war/WEB-INF/lib` directory. For example, on {EAP}, the path is `_EAP_HOME_/standalone/deployments/kie-server.war/WEB-INF/lib`.
+
+When you start the {KIE_SERVER}, the `server/helloworld` endpoint becomes available, for example `http://localhost:8080/kie-server/services/rest/server/helloworld`. 
+
 [[_realtime_decision_server]]
 = The REST API for {KIE_SERVER} Execution
 
@@ -2013,6 +2144,68 @@ An example response:
 ----
 ====
 endif::BPMS[]
+
+[[sect-job-filtering]]
+== Advanced Search Filtering of Jobs
+
+Users with administrator or process administrator permissions can filter jobs using the *Search* tab in the *Jobs* perspective.
+
+Access the *Jobs* list by clicking *Deploy* -> *Jobs*.
+
+.Filtering Jobs - Default View
+image::JobSearchSmall.png[Filtering Jobs - Default View]
+
+Jobs can be filtered on the following attributes:
+
+Process Instance Id:: Filter by process instance ID.
++
+Input: `Numeric`
+
+Business Key:: Filter by business key. The business key is defined when a job is created, usually relating in some way to the business process. 
++
+Input: `String`
+
+Type:: Filter by class name. The type is the class to be executed as part of the job request.
++
+Input: 'String' 
+
+Process Description:: Filter by process description. 
++
+Input: `String`
+
+Status::
++
+Filter by job status. Only one status filter can be applied to the search results at a time. Selecting a different status overwrites the current status filter. Removing the status filter displays all processes, regardless of status.
++
+In the *Request List* perspective, *All*, *Queued*, *Running*, *Retry*, *Error*, and *Completed* tabs display a list of all jobs with these statuses, however the filtering cannot be performed on these tabs. The following filter states are available:
++
+** Canceled
+** Completed
+** Error
+** Queued
+** Retrying
+** Running
+
+Process Name:: Filter by process name.
+
+Due On:: Filtering by the date or time the job is due.
++
+This filter has the following quick filter options:
+
+** Last Hour
+** Today
+** Last 24 Hours
+** Last 7 Days
+** Last 30 Days
+** Custom
++
+Selecting *Custom* date and time filtering opens a calendar tool for selecting a date and time range.
++
+.Search by Date
+image::DateRangeSearch.png[Search by Date Range]
+
+For more information about advanced search filtering, see {URL_USER_GUIDE}#chap-process-admin-quick-filtering[Process Administration Advanced Search Filtering] in the {USER_GUIDE}.
+
 
 == Managing Documents
 
@@ -4532,7 +4725,11 @@ Following services are available in the `org.kie.server.client` package:
 * https://github.com/droolsjbpm/droolsjbpm-integration/blob/6.5.x/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/RuleServicesClient.java[RuleServicesClient] is used to send commands to the server to perform rule-related operations (for example insert objects into the working memory, fire rules, ...).
 * https://github.com/droolsjbpm/droolsjbpm-integration/blob/6.5.x/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/UserTaskServicesClient.java[UserTaskServicesClient] is used to perform all user-task operations (start, claim, cancel a task) and query tasks by specified field (process instances id, user, ...)
 * https://github.com/droolsjbpm/droolsjbpm-integration/blob/6.5.x/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/UIServicesClient.java[UIServicesClient] is used to get String representation of forms (XML or JSON) and of the process image (SVG).
-* https://github.com/droolsjbpm/droolsjbpm-integration/blob/master/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/SolverServicesClient.java[SolverServicesClient] is used to perform all {PLANNER} operations, such as getting the solver state and the best solution, or disposing of a solver. 
+* https://github.com/droolsjbpm/droolsjbpm-integration/blob/6.5.x/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/SolverServicesClient.java[SolverServicesClient] is used to perform all {PLANNER} operations, such as getting the solver state and the best solution, or disposing of a solver. 
+
+* https://github.com/kiegroup/droolsjbpm-integration/blob/7.3.x/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/admin/ProcessAdminServicesClient.java[ProcessAdminServicesClient] and https://github.com/kiegroup/droolsjbpm-integration/blob/7.3.x/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client/admin/UserTaskAdminServicesClient.java[UserTaskAdminServicesClient]. For more information about the `ProcessAdminServicesClient` and `UserTaskAdminServicesClient` clients, see <<_administration_service_interface>>.
+
+
 
 The `getServicesClient` method provides access to any of these clients:
 
