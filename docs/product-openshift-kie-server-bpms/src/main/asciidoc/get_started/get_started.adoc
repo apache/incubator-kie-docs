@@ -6,7 +6,7 @@ of OpenShift along with the other default image streams and templates.
 = Deployment Considerations for {xpaasproduct-shortname}
 
 == Creating the Service Account
-{xpaasproduct-shortname} requires a service account for deployments. For multiple node deployments, the service account must have the *view* role enabled so that it can manage the various pods in the cluster. In addition, you will need to configure SSL to enable connections to Intelligent Process Server from outside of the OpenShift instance.
+{xpaasproduct-shortname} requires a service account for deployments. For multiple node deployments, the service account must have the *view* role enabled so that it can manage the various pods in the cluster. In addition, you will need to configure SSL to enable connections to {KIE_SERVER} from outside of the OpenShift instance.
 
 . Create the service account:
 +
@@ -60,7 +60,7 @@ After the secret has been generated, it can be associated with a service account
 
 The service account allows users to associate certain secrets and roles with applications in a project namespace. This provides the application with the necessary authorization to run with all required privileges.
 
-. Create a service account to be used for the Intelligent Process Server deployment:
+. Create a service account to be used for the {KIE_SERVER} deployment:
 +
 [subs="verbatim,macros"]
 ----
@@ -164,12 +164,12 @@ This sends the contents of the Git repository directly to OpenShift. If https://
 
 == Recreate Update Strategy
 
-Use the https://docs.openshift.com/enterprise/3.2/dev_guide/deployments.html#recreate-strategy[Recreate Update Strategy] for the Intelligent Process Server deployment. This update strategy automatically scales down the old deployment to 0 and deploys the new version. After the new version is validated, the new deployment is automatically scaled up to the replica size of the old deployment.
+Use the https://docs.openshift.com/enterprise/3.2/dev_guide/deployments.html#recreate-strategy[Recreate Update Strategy] for the {KIE_SERVER} deployment. This update strategy automatically scales down the old deployment to 0 and deploys the new version. After the new version is validated, the new deployment is automatically scaled up to the replica size of the old deployment.
 
-The Recreate update strategy supports https://docs.openshift.com/enterprise/3.2/dev_guide/deployments.html#lifecycle-hooks[Lifecycle Hooks] and is set as the default update strategy in the Intelligent Process Server application templates.
+The Recreate update strategy supports https://docs.openshift.com/enterprise/3.2/dev_guide/deployments.html#lifecycle-hooks[Lifecycle Hooks] and is set as the default update strategy in the {KIE_SERVER} application templates.
 
 [NOTE]
-The Intelligent Process Server will be inactive during the Recreate update process, until the new deployment has been validated and scaled. During this period, REST clients may return *503 service unavailable* errors and A-MQ clients may experience *timeouts*.
+The {KIE_SERVER} will be inactive during the Recreate update process, until the new deployment has been validated and scaled. During this period, REST clients may return *503 service unavailable* errors and A-MQ clients may experience *timeouts*.
 
 [IMPORTANT]
 The https://docs.openshift.com/enterprise/3.2/dev_guide/deployments.html#rolling-strategy[Rolling Update Strategy] is not supported for {xpaasproduct-shortname}. Although multiple concurrent versions of an application are supported in a deployment, a cluster can only support valid routing to pods of the same version.
@@ -307,7 +307,7 @@ Multiple clients can be used to invoke the server, depending on the client inter
 |*KIE interaction*
 |org.kie.server.client.KieServicesClient
 
-|*Intelligent Process Server interaction*
+|*{KIE_SERVER} interaction*
 |org.kie.server.client.ProcessServicesClient +
 org.kie.server.client.JobServicesClient +
 org.kie.server.client.QueryServicesClient +
@@ -341,21 +341,21 @@ Due to a bug in the KIE client, client classes do not share the conversation ID 
 
 The final stage in the process hierarchy is the default container ID. If a specific container ID cannot be resolved, the default container ID is determined as the application with the latest version (based on _<alias>=<group_id>:<artifact_id>:<version>_).
 
-= Running and Configuring the Intelligent Process Server xPaas Image
+= Running and Configuring the {KIE_SERVER} xPaas Image
 
-You can make changes to the Intelligent Process Server configuration in the xPaaS image using either the S2I templates, or by using a modified Intelligent Process Server image.
+You can make changes to the {KIE_SERVER} configuration in the xPaaS image using either the S2I templates, or by using a modified {KIE_SERVER} image.
 
-== Using the Intelligent Process Server xPaaS Image Source-to-Image (S2I) Process
+== Using the {KIE_SERVER} xPaaS Image Source-to-Image (S2I) Process
 
-The recommended method to run and configure the OpenShift Intelligent Process Server xPaaS image is to use the OpenShift S2I process together with the application template parameters and environment variables.
+The recommended method to run and configure the OpenShift {KIE_SERVER} xPaaS image is to use the OpenShift S2I process together with the application template parameters and environment variables.
 
-The S2I process for the Intelligent Process Server xPaaS image works as follows:
+The S2I process for the {KIE_SERVER} xPaaS image works as follows:
 
 . If there is a *_pom.xml_* file in the source repository, a Maven build is triggered with the contents of `*$MAVEN_ARGS*` environment variable.
 
 * By default, the `package` goal is used with the `openshift` profile, including the system properties for skipping tests (`*-DskipTests*`) and enabling the Red Hat GA repository (`*-Dcom.redhat.xpaas.repo.redhatga*`).
 
-. The results of a successful Maven build are installed into the local Maven repository, *_/home/jboss/.m2/repository/_*, along with all dependencies for offline usage.  The Intelligent Process Server xPaaS Image will load the created kjars from this local repository.
+. The results of a successful Maven build are installed into the local Maven repository, *_/home/jboss/.m2/repository/_*, along with all dependencies for offline usage.  The {KIE_SERVER} xPaaS Image will load the created kjars from this local repository.
 
 * In addition to kjars resulting from the Maven build, any kjars found in the deployments source directory will also be installed into the local Maven repository.  Kjars do not end up in the *_EAP_HOME/standalone/deployments/_* directory.
 
