@@ -20,7 +20,7 @@ if test -z "$new_string"; then
 	exit 3
 fi
 
-for filename in $(grep -rlI "$old_string" ../docs); do
+for filename in $(grep -rlI "$old_string" ../docs/product-openshift-kie-server-b[p,r]ms); do
 	echo $filename | grep -q '\.adoc$' || continue
 
 	echo -en '\e[1m'
