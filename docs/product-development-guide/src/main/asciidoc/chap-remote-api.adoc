@@ -2387,7 +2387,7 @@ public class DocumentationJmsExamples {
           connection = factory.createConnection();
         }
 
-        session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        session = connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
         producer = session.createProducer(sendQueue);
         consumer = session.createConsumer(responseQueue, selector);
 
@@ -2395,6 +2395,7 @@ public class DocumentationJmsExamples {
       } catch (JMSException jmse) {
         throw new RemoteCommunicationException("Unable to setup a JMS connection.", jmse);
       }
+      // 7
 
       JaxbSerializationProvider serializationProvider = new JaxbSerializationProvider();
       // If necessary, add user-created classes here:
@@ -2521,10 +2522,34 @@ A deployment ID is required for command request messages that deal with business
 5. To match the response, use the `index` field of the returned `JaxbCommandResponse` instances. This `index` field will match the index of the initial command. Because not all commands will return a result, it is possible to send three commands with a command request message, and then receive a command response message that only includes one `JaxbCommandResponse` message with an `index` value `1`. This value then identifies it as the response to the second command.
 
 6. Since many of the results returned by various commands are not serializable, the JMS API of Business Central converts these results into JAXB equivalents, all of which implement the `JaxbCommandResponse` interface. The `JaxbCommandResponse.getResult()` method then returns the JAXB equivalent to the actual result, which will conform to the interface of the result.
-
++
 For example, in the code above, the `StartProcessCommand` returns `ProcessInstance`. To return this object to the requester, the `ProcessInstance` is converted to `JaxbProcessInstanceResponse` and then added as `JaxbCommandResponse` to the command response message. The same applies to `List<TaskSummary>` that is returned by `GetTaskAssignedAsPotentialOwnerCommand`.
-
++
 However, not all methods that can be called on `ProcessInstance` can be called on the `JaxbProcessInstanceResponse` because `JaxbProcessInstanceResponse` is simply a representation of a `ProcessInstance` object. This applies to various other command response as well. In particular, methods which require an active (backing) `KieSession`, such as `ProcessInstance.getProcess()` or `ProcessInstance.signalEvent(String type, Object event)`, will throw `UnsupportedOperationException`.
+
+7. By default, a session is created in `kieServerMDB` with the acknowledge mode set to `Session.AUTO_ACKNOWLEDGE` and the transacted value set to `false`, resulting in the following response as shown in the example:
++
+[source,java]
+----
+session = connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
+----
++
+If a generic resource adapter is used with JMS, this session setting can generate a null pointer error. You can either temporarily work around this issue or resolve it going forward:
+
+* To work around this issue when a generic resource adapter is used, set the transacted value to `true` and set the session type to `SESSION_TRANSACTED`:
++
+[source,java]
+----
+session = connection.createSession(true, Session.SESSION_TRANSACTED);
+----
+
+* To resolve this issue when a generic resource adapter is used, add the following under `<system properties>` in the `standalone.xml` file of {EAP}:
++
+[source,java]
+----
+org.kie.server.jms.session.tx=true  // If not set, defaults to `false`.
+org.kie.server.jms.session.ack=$INTEGER  // Integer value matching one of the javax.jms.Session constants that represent `ack` mode.
+----
 
 [[_soap_api]]
 == SOAP API
