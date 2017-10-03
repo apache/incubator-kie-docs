@@ -1,316 +1,19 @@
-[[_chap_writing_rules]]
-= Writing rules
 
-[[_creating_a_rule]]
-== Creating a rule
+include::rules-con.adoc[]
 
-.Procedure: Creating a new rule
-. In the *Project Explorer* view, do the following:
-+
-.. If in the Project view of Project Explorer, select the organizational unit, repository and the project where you want to create the rule.
-.. If in the Repository view of Project Explorer, navigate to `src/main/resources/` and the `SUBFOLDER/PACKAGE` where you want to create the project folder for the rule template.
-. In the perspective menu, go to *New Item* -> *Guided Rule*.
-. In the *Create new Guided Rule* dialog window, define the package details:
-* In the *Guided Rule* text box, enter the name of the rule, and click *OK*. You can check *Use Domain Specific Language (DSL)* to use DSL. For more information, see <<_the_domain_specific_language_editor>>.
-. The new Guided Rule is now created under the selected project.
+include::guided-rules-con.adoc[leveloffset=+1]
 
+include::guided-rules-create-proc.adoc[leveloffset=+2]
 
-[[_sect_the_asset_editor]]
-== Editing Rules
+include::rules-facts-proc.adoc[leveloffset=+2]
 
-[[_the_asset_editor1]]
-=== Editing Rules Using the Asset Editor
+include::rules-drl-con.adoc[leveloffset=+2]
 
+include::decision-tables-con.adoc[leveloffset=+1]
 
-The asset editor provides access to information about assets and gives users the ability to edit assets.
+include::decision-tables-upload-proc.adoc[leveloffset=+2]
 
-The editor contains *Editor*, *Overview*, *Source*, and *Data Objects* tabs.
-
-.Editor Tab
-The *Editor* tab is where assets can be edited.
-The available options in the edit tab will depend on the type of asset being edited.
-
-.The Guided Decision Table - Editor Tab
-image::3281.png[A screen shot of the asset editor - edit tab]
-
-.Overview Tab
-The Overview screen displays the generic data and version history of an asset.
-It allows a user to edit other metadata details, add descriptions and discussions which are specific to a selected asset.
-
-.The Guided Decision Table - Overview Tab
-image::3449.png[A screen shot of the asset editor - Overview tab]
-
-
-.Source Tab
-Source tab shows the DRL source for a selected asset.
-
-.The Guided Decision Table - Source Tab
-image::3448.png[A screen shot of the asset editor - source tab]
-
-
-.Data Objects Tab
-The Data Objects tab suggests the set of imports used in the project. Each asset has its own imports and suggested fact types (that means data objects) that the user might want to use. See <<data_objects_create_proc>> for more information about data objects.
-
-.The Guided Decision Table - Data Objects Tab
-image::3625.png[A screen shot of the asset editor - config tab]
-
-
-[[_business_rules_with_the_guided_editor]]
-=== Business Rules with the Guided Rule Editor
-
-
-Business rules are edited in the Guided Rule Editor. The Guided Rule Editor prompts users for input based on the object model of the rule being edited.
-
-Assets used in a rule that belong to a different package must be imported into the rule. Assets in the same package are imported by default. Define your imports in the *Data Objects* tab.
-
-.The Guided Rule Editor
-====
-image::1140.png[A screen shot of the guided editor]
-====
-
-The Guided Rule Editor consists of the *When* and *Then* parts. Under the *Then* part is a *(show options...)* link that enables you to set additional rule attributes, such as ruleflow-group, salience, and similar. For more information about the Guided Rule Editor, see <<_the_guided_rule_template>>.
-
-.Rule Attributes
-image::1141.png[Guided Editor Rule Attributes]
-
-Since version 7.0, the Guided Rule Editor enables you to leverage planner-specific functionality. See the {URL_PLANNER_GUIDE}[{PLANNER}] guide for further information about the Guided Rule Editor planning capabilities.
-
-[[_narrowing_facts_using_package_white_list]]
-=== Narrowing Facts Using Package White List
-
-
-You can narrow down the facts available during rule creation and modification by using a file called `package-names-white-list`. Use this file to narrow down a group of facts that are loaded and are visible. This helps to speed up the loading of these facts while creating new rules.
-
-When you create a new project in the root directory, an empty `package-names-white-list` file is automatically created along with the `pom.xml` and `project.imports` project files.
-For existing projects, create the `package-names-white-list` file manually. In Business Central, you can view the file through the repository view of a project in the *Project Explorer*.
-
-By default (when the file is empty), all the facts within the project itself are visible while those from the project's dependencies are restricted.
-
-[float]
-==== Rules for Defining Packages
-
-
-The `package-names-white-list` file is a text file that accepts single package names on each line. Packages can contain wildcards, for example:
-
-* com.redhat.finance: allows facts from _only_ the [package]#com.redhat.finance# package. Thus, [class]``com.redhat.finance.Person`` and [class]``com.redhat.finance.Salary`` are allowed, but [class]``com.redhat.finance.senior.Management`` are not allowed.
-* com.redhat.finance.*: allows facts from the sub-packages of the [package]#com.redhat.finance# package __only__. Thus, [class]``com.redhat.finance.senior.Management`` and [class]``com.redhat.finance.junior.Management`` are allowed, but _not_ [class]``com.redhat.finance.Person``.
-* com.redhat.finance.**: this is a combination of the above two rules. Allows [class]``com.redhat.finance.Person`` and [class]``com.redhat.finance.senior.Management`` and even, [class]``com.redhat.finance.really.senior.Management`` classes.
-
-You can include specific packages from a dependency by adding appropriate entries into the `package-names-white-list`
- file.
-You can also include or remove all packages from specific dependencies.
-For more information, see <<dependencies_add_proc,Adding Dependencies>>.
-
-[[_the_anatomy_of_a_rule1]]
-=== The Anatomy of a Rule
-
-
-A rule consists of multiple parts:
-
-When::
-The when part of the rule is the condition that must be met.
-For instance, a bank providing credit in the form of a loan may specify that customers must be over twenty-one years of age.
-This would be represented by using when to determine if the customer is over twenty-one years of age.
-Then::
-The then part of the rule is the action to be performed when the conditional part of the rule has been met.
-For instance, when the customer is under twenty-one years of age, then decline the loan because the applicant is under age.
-Optional::
-+
-Optional attributes such as salience can be defined on rules.
-
-
-With the Guided Rule Editor, it is possible to add more conditions to the when (conditional) part of the rule and more actions to the then (action) part of the rule.
-For instance, if an applicant under the age of 21 had a guarantor for a loan application, the bank may decide to approve the loan application.
-
-[[_saliance]]
-=== Salience
-
-
-Each rule has a salience value which is an integer value that defaults to zero.
-The salience value represents the priority of the rule with higher salience values representing higher priority.
-Salience values can be positive or negative.
-
-[[_adding_conditions_or_actions_to_rules]]
-=== Adding Conditions or Actions to Rules
-
-.Procedure: Adding Conditions or Actions to Rules
-. Click the plus icon in the When section of the Guided Rule Editor to add a condition, or click the plus icon in the Then section of the Guided Rule Editor to add an action.
-. Select the condition or action from the menu and click *Ok*. If the package the rule belongs to has been configured to include DSL (Domain Specific Language) sentences, DSL sentences can be chosen from the menu.
-. If the condition or action requires input, i.e., a date, true or false, am integer, or other input type, enter the required value.
-
-
-[[_adding_a_field_to_a_fact_type]]
-=== Adding a Field to a Fact Type
-
-
-With the Guided Rule Editor, it is possible to add more conditions to the when (conditional) part of the rule and more actions to the then (action) part of the rule.
-For instance, if a loan applicant under the age of 21 had a guarantor for a loan application, the bank may decide to approve the loan application.
-
-To add the guarantor to the condition, first add the *guarantor* field to the application fact type (Data Object in Business Central) of the mortgage model. For further information about how to add a field to a fact type, see <<data_modeler_con>>.
-
-With the guarantor field now added to the applicant fact type,  you can modify the rule to include a guarantor as a condition.
-
-[[_technical_rules_drl]]
-=== Technical Rules (DRL)
-
-
-Technical (DRL) rules are stored as text and can be managed in the {PRODUCT} user interface.
-A DRL file can contain one or more rules. The condition and the action of the rule are the when and then parts of the rule respectively.
-
-Red Hat JBoss Developer Studio provides tools for creating, editing, and debugging DRL files, and it should be used for these purposes.
-However, DRL rules can be managed within the {PRODUCT} user interface.
-The DRL editor provides syntax highlighting for Java, DRL, and XML.
-
-.An Example Technical Rule (DRL)
-[source,java]
-----
-rule "approval"
-  salience 100 // This can short-circuit any processing.
-  when
-    a : Approve()
-    p : Policy()
-  then
-    p.setApproved(true);
-    System.out.println("APPROVED:" + a.getReason());
-end
-----
-
-
-[[_sect_decision_tables]]
-== Decision Tables
-
-[[_spreadsheet_decision_tables]]
-=== Spreadsheet Decision Tables
-
-
-Rules can be stored in spreadsheet decision tables.
-Each row in the spreadsheet is a rule, and each column is either a condition, an action, or an option.
-The [ref]_{DEVELOPMENT_GUIDE}_
- provides details for using decision tables.
-
-[[_uploading_spreadsheet_decision_tables]]
-=== Uploading Spreadsheet Decision Tables
-
-.Procedure: Uploading a Spreadsheet Decision Table
-. To upload an existing spreadsheet, select *New Item* -> *Decision Table (Spreadsheet)*.
-. Enter a name for the spreadsheet, click *Choose file...*, and select the spreadsheet. You can select `.xls` or `.xlsx` files. Click *Ok* when done.
-
-
-To convert the uploaded spreadsheet to a Guided Decision table:
-
-. Validate the uploaded spreadsheet by clicking on the *Validate* button located on the project screen menu bar.
-. Click *Convert*.
-
-
-[[_spreadsheet_decision_table_examples]]
-=== Spreadsheet Decision Table Examples
-
-
-We are here considering a simple example for an online shopping site which lists out the shipping charges for the ordered items.
-The site agrees for a FREE shipping with the following conditions:
-
-* If the number of items ordered is 4 or more and totaling $300 or over and
-* If delivered at the standard shipping day from the day they were purchased which would be 4 to 5 working days.
-
-
-The listed shipping rates are as follows:
-
-.For orders less than $300
-[cols="1,1,1", options="header"]
-|===
-|
-								Number of items
-
-|
-								Delivery Day
-
-|
-								Shipping Charge, N = Number of Items
-
-
-|
-
-3 or fewer
-| Next Day
-
-
-2nd Day
-
-
-Standard
-|
-
-$35
-
-$15
-
-$10
-|
-
-4 or more
-|
-
-Next Day
-
-
-2nd Day
-
-
-Standard
-
-|N*7.50
-
-N*3.50
-
-N*2.50
-
-|===
-
-.For orders more than $300
-[cols="1,1,1", options="header"]
-|===
-|
-								Number of items
-
-|
-								Delivery Day
-
-|
-								Shipping Charge, N = Number of Items
-
-
-|
-
-3 or fewer
-|Next Day
-
-2nd Day
-
-Standard
-|$25
-
-$10
-
-N*1.50
-|4 or more
-|Next Day
-
-2nd Day
-
-Standard
-|N*5
-
-N*2
-
-FREE
-|===
-
-
-The above conditions can be presented in a spreadsheet as:
-
-
-image::2485.png[]
-
+include::decision-tables-examples-con.adoc[leveloffset=+2]
 
 include::guided-decision-tables-con.adoc[leveloffset=+1]
 
@@ -671,7 +374,7 @@ end
 . Click *Save* to save the template when you are finished working in the Guided Template Editor.
 
 
-[[_the_domain_specific_language_editor]]
+[#rules_dsl_con]
 == The Domain Specific Language Editor
 
 
@@ -834,3 +537,55 @@ When you build your own application comprising guided scorecards, ensure that yo
 ====
 Scorecard is a Technology Preview feature, and therefore _not_ currently supported in Red Hat JBoss BRMS.
 ====
+
+
+////
+// Removed until a better use is found. Very product centric.
+
+[[_the_asset_editor1]]
+=== Editing Rules Using the Asset Editor
+
+
+The asset editor provides access to information about assets and gives users the ability to edit assets.
+
+The editor contains *Editor*, *Overview*, *Source*, and *Data Objects* tabs.
+
+.Editor Tab
+The *Editor* tab is where assets can be edited.
+The available options in the edit tab will depend on the type of asset being edited.
+
+.The Guided Decision Table - Editor Tab
+image::3281.png[A screen shot of the asset editor - edit tab]
+
+.Overview Tab
+The Overview screen displays the generic data and version history of an asset.
+It allows a user to edit other metadata details, add descriptions and discussions which are specific to a selected asset.
+
+.The Guided Decision Table - Overview Tab
+image::3449.png[A screen shot of the asset editor - Overview tab]
+
+
+.Source Tab
+Source tab shows the DRL source for a selected asset.
+
+.The Guided Decision Table - Source Tab
+image::3448.png[A screen shot of the asset editor - source tab]
+
+
+.Data Objects Tab
+The Data Objects tab suggests the set of imports used in the project. Each asset has its own imports and suggested fact types (that means data objects) that the user might want to use. See <<data_objects_create_proc>> for more information about data objects.
+
+.The Guided Decision Table - Data Objects Tab
+image::3625.png[A screen shot of the asset editor - config tab]
+////
+
+////
+// All of the options need to be defined. Until we do so, having just this one is odd.
+
+[[_saliance]]
+=== Salience
+
+Each rule has a salience value which is an integer value that defaults to zero.
+The salience value represents the priority of the rule with higher salience values representing higher priority.
+Salience values can be positive or negative.
+////
