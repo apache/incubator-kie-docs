@@ -980,6 +980,60 @@ end
 
 --
 
+
+[[custom-task-assignment-strategy]]
+== Custom Task Assignment Strategy
+A custom strategy for task assignment can be created by extending the `AssignmentStrategy` interface. A custom strategy allows you to assign tasks in a way you want, rather than relying on one of the provided assignment strategies.
+
+To use a custom strategy, you must include it in a KJAR and set the `org.jbpm.assignment.strategy` system property to the value of your `CustomStrategy` `IDENTIFIER`. 
+
+By implementing the `apply()` method, you can define how potential owners are applied to a task.
+
+The following is an example of a custom task assignment strategy:
+
+[source,java]
+----
+package org.jbpm.services.task.assignment.strategy;
+
+import org.kie.api.task.TaskContext;
+import org.kie.api.task.model.Task;
+import org.kie.internal.task.api.assignment.Assignment;
+import org.kie.internal.task.api.assignment.AssignmentStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CustomStrategy implements AssignmentStrategy {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomStrategy.class);
+    private static final String IDENTIFIER = "Custom";
+    private String assignToUser;
+
+    public CustomStrategy(String assignToUser) {
+        this.assignToUser = assignToUser;
+    }
+
+    @Override
+    public String getIdentifier() {
+        return IDENTIFIER;
+    }
+
+    @Override
+    public Assignment apply(Task task, TaskContext tc, String string) {
+        logger.debug("Task {} is assign to user {}.", task.getId(), assignToUser);
+        return new Assignment(assignToUser);
+
+    }
+
+    @Override
+    public String toString() {
+        return "AssignmentStrategy:: " + IDENTIFIER + " This strategy assign all task to user " + assignToUser;
+    }
+
+}
+----
+
+
+
 ifdef::BPMS[]
 [[_retrieving_process_and_task_information]]
 == Retrieving Process and Task Information
