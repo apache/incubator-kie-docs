@@ -1,21 +1,21 @@
-[[_chap_rule_algorithms]]
+[id='_chap_rule_algorithms']
 = Rule Algorithms
 
 
-[[_sect_rete_algorithm]]
+[id='_sect_rete_algorithm']
 == Rete Algorithm
 
 The Rete algorithm, invented by Dr. Charles Forgy, describes how to process rules in the production memory to generate an efficient discrimination network. A discrimination network is used to filter data as it propagates through the network. The nodes at the top of the network would have many matches at the beginning and fewer matches at the end. At the bottom of the network are the terminal nodes.
 
 The Rete algorithm defines four basic nodes; _root_ node, _1-input_ node, _2-input_ node, and a _terminal_ node. 
 
-[[_the_rete_root_node]]
+[id='_the_rete_root_node']
 [float]
 === Rete Root Node
 
 The root node is where all objects enter the network. From there, the flow continues to the `ObjectTypeNode` node. For example, consider two objects: `Account` and `Order`. Matching every single node against every single object would be inefficient. Thus, the rule engine passes the object only to the nodes that match the object type. The easiest way to do this is to create an `ObjectTypeNode` and have all 1-input and 2-input nodes descend from it.
 
-[[_the_objecttypenode]]
+[id='_the_objecttypenode']
 [float]
 === ObjectTypeNode
 When an object is asserted, the rule engine retrieves a list of valid `ObjectTypesNodes` using a lookup in a HashMap from the object’s Class; if this list doesn’t exist, the rule engine scans all the `ObjectTypeNodes`, finding valid matches which it caches in the list. This enables the rule engine to match against any class type that matches with an `instanceof()` check.
@@ -28,7 +28,7 @@ image:Object_Type_Nodes.png[]
 * `LeftInputAdapterNodes`
 *  `BetaNodes`
 
-[[_alphanodes]]
+[id='_alphanodes']
 [float]
 === AlphaNodes
 
@@ -36,13 +36,13 @@ image:Object_Type_Nodes.png[]
 
 image:Alpha_Nodes.png[]
 
-[[_hashing]]
+[id='_hashing']
 [float]
 === Hashing
 
 The rule engine extends Rete by optimizing the propagation from `ObjectTypeNode` to `AlphaNode` using _hashing_. Each time an `AlphaNode` is added to an `ObjectTypeNode`, it adds the literal value as a key to the HashMap with the `AlphaNode` as the value. When a new instance enters the `ObjectType` node, rather than propagating to each `AlphaNode`, it can instead retrieve the correct `AlphaNode` from the HashMap, which avoids unnecessary literal checks.
 
-[[_betanodes]]
+[id='_betanodes']
 [float]
 === BetaNodes
 
@@ -63,7 +63,7 @@ To enable the first Object, `Cheese` object in the image above, to enter the net
 
 Terminal nodes are used to indicate a single rule having matched all its conditions; at this point, the rule has a full match. A rule with an _or_ conditional disjunctive connective results in subrule generation for each possible logical branch; thus one rule can have multiple terminal nodes.
 
-[[_node_sharing]]
+[id='_node_sharing']
 [float]
 === Node Sharing
 The rule engine also performs node sharing. Many rules repeat the same patterns, and node sharing enables the rule engine to collapse those patterns so that the rule patterns does not re-evaluate the pattern for every single instance. The following two rules share the first pattern, but not the last:
@@ -94,7 +94,7 @@ The compiled Rete network shows that the alpha node is shared, but the beta node
 .Node Sharing
 image::5954.png[]
 
-[[_reteoo]]
+[id='_reteoo']
 [float]
 === ReteOO
 
@@ -105,7 +105,7 @@ The ReteOO algorithm has been discontinued and is not supported since {PRODUCT} 
 
 ReteOO is an implementation of the Rete algorithm. Because it is an unsupported algorithm in {PRODUCT} 7.0, use the PHREAK algorithm, which iterates on ReteOO and addresses core issues of Rete.
 
-[[_phreak_algorithm]]
+[id='_phreak_algorithm']
 == PHREAK Algorithm
 
 The new PHREAK algorithm is evolved from the RETE algorithm. While RETE is considered eager and data oriented, PHREAK on the other hand follows lazy and goal oriented approach. The RETE algorithm does a lot of work during the insert, update and delete actions in order to find partial matches for all rules. In case of PHREAK, this partial matching of rule is delayed deliberately.
@@ -123,7 +123,7 @@ In addition to the enhancements listed in the Rete00 algorithm, PHREAK algorithm
 * Isolated rule evaluation.
 * Set-oriented propagations.
 
-[[_rule_evaluation_with_phreak_algorithm]]
+[id='_rule_evaluation_with_phreak_algorithm']
 == Rule Evaluation With PHREAK Algorithm
 
 When the rule engine starts, all the rules are unlinked. At this stage, there is no rule evaluation. The insert, update, and delete actions are queued before entering the beta network. The rule engine uses a simple heuristic--based on the rule most likely to result in firings--to calculate and select the next rule for evaluation. This delays the evaluation and firing of the other rules. When a rule has all the right input values populated, it gets linked in; a goal representing this rule is created and placed into a priority queue, which is ordered by salience. Each queue is associated with an `AgendaGroup`. The engine only evaluates rules for the active `AgendaGroup` by inspecting the queue and popping the goal for the rule with the highest salience. This means the work done shifts from the insert, update, delete phase to the `fireAllRules` phase. Only the rule for which the goal was created is evaluated, and other potential rule evaluations are delayed. While individual rules are evaluated, node sharing is still achieved through the process of segmentation.
@@ -144,7 +144,7 @@ The same bit-mask technique is used to also track dirty nodes, segments, and rul
 As opposed to a single unit of memory in RETE, PHREAK has three levels of memory. This allows for much more contextual understanding during the evaluation of a rule.
 
 [float]
-[[_phreak_and_sequential_mode]]
+[id='_phreak_and_sequential_mode']
 === PHREAK and Sequential Mode
 
 The sequential mode is supported for the PHREAK algorithm: the `modify` and `update` rule statements are now allowed. Any rule that has not yet been evaluated will have access to data modified by the previous rules that used `modify` or `update`. This results in a more intuitive behavior of the sequential mode.
