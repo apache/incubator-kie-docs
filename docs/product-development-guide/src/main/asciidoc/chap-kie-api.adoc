@@ -3238,6 +3238,8 @@ This is automatically registered on the `KieSession`.
 
 WARNING: The `MVELUserGroupCallback` class fails to initialize in an OSGi environment. Do _not_ use or include `MVELUserGroupCallback` as it is not designed for production purposes.
 
+
+
 [id='_strategies']
 === Strategies
 
@@ -3946,6 +3948,87 @@ public interface ObjectMarshallingStrategy {
 
 The methods `read()` and `write()` are for backwards compatibility. Use the methods `accept()`, `marshal()` and `unmarshal()` to create your strategy.
 
+[id='runtime-manager-spring_proc']
+=== Runtime Manager with Spring
+
+The following procedure demonstrates how to configure Spring for a single `RuntimeManager` within the Spring application context. 
+
+.Procedure
+
+. Set up the entity manager factory and transaction manager.
++
+For Java EE containers use the following configuration:
++
+[source,xml,options="nowrap"]
+----
+<bean id="jbpmEMF" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+  <property name="persistenceUnitName" value="org.jbpm.persistence.spring.jta"/>
+</bean>
+
+<bean id="narayanaUserTransaction" factory-method="userTransaction"
+        class="com.arjuna.ats.jta.UserTransaction" />
+
+<bean id="narayanaTransactionManager" factory-method="transactionManager"
+      class="com.arjuna.ats.jta.TransactionManager" />
+
+<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
+  <property name="transactionManager" ref="narayanaTransactionManager" />
+  <property name="userTransaction" ref="narayanaUserTransaction" />
+</bean>
+
+----
++
+This configuration provides persistence that provides:
++
+* JTA transaction manager (backed by Narayana - for unit tests or servlet containers).
+* An entity manager factory for persistence named `org.jbpm.persistence.spring.jta`.
+
+. Configure the business process resource:
++
+[source,xml,options="nowrap"]
+----
+<bean id="process" factory-method="newClassPathResource" class="org.kie.internal.io.ResourceFactory">
+  <constructor-arg>
+    <value>jbpm/processes/sample.bpmn</value>
+  </constructor-arg>
+</bean>
+----
++
+This configures the `sample.bpmn` on the classpath as a process that is available for execution. 
+
+. Configure `RuntimeEnvironment`: 
++
+[source,xml,options="nowrap"]
+----
+<bean id="runtimeEnvironment" class="org.kie.spring.factorybeans.RuntimeEnvironmentFactoryBean">
+    <property name="type" value="DEFAULT"/>
+    <property name="entityManagerFactory" ref="jbpmEMF"/>
+    <property name="transactionManager" ref="jbpmTxManager"/>
+    <property name="assets" ref="assets"/>
+  </bean>
+----
++
+This provides a default `RuntimeEnvironment` that can be used to create an instance of a runtime manager.
+
+. Create `RuntimeManager`:
+[source,xml,options="nowrap"]
+----
+<bean id="runtimeManager" class="org.kie.spring.factorybeans.RuntimeManagerFactoryBean" destroy-method="close">
+  <property name="identifier" value="spring-rm"/>
+  <property name="runtimeEnvironment" ref="runtimeEnvironment"/>
+</bean>
+----
+ 
+Using this configuration, you can execute processes with Spring and {PRODUCT} utilizing `EntityManagerFactory` and JTA transaction manager.
+
+{PRODUCT} also supports the following configurations:
+
+* JTA and `SharedEntityManager` 
+* Local Persistence Unit and `EntityManagerFactory`
+* Local Persistence Unit and `SharedEntityManager`
+
+
+
 [id='_sect_kie_services']
 == KIE Services
 
@@ -4650,85 +4733,6 @@ public class ProcessEngine {
   }
 }
 ----
-
-[id='runtime-manager-spring_proc']
-=== Runtime Manager with Spring
-
-The following procedure demonstrates how to configure Spring for a single runtime manager within the Spring application context. 
-
-.Procedure
-
-. Set up the entity manager factory and transaction manager.
-+
-For Java EE containers use the following configuration:
-+
-[source,xml,options="nowrap"]
-----
-<bean id="jbpmEMF" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
-  <property name="persistenceUnitName" value="org.jbpm.persistence.spring.jta"/>
-</bean>
-
-<bean id="narayanaUserTransaction" factory-method="userTransaction"
-        class="com.arjuna.ats.jta.UserTransaction" />
-
-<bean id="narayanaTransactionManager" factory-method="transactionManager"
-      class="com.arjuna.ats.jta.TransactionManager" />
-
-<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
-  <property name="transactionManager" ref="narayanaTransactionManager" />
-  <property name="userTransaction" ref="narayanaUserTransaction" />
-</bean>
-
-----
-+
-This configuration provides persistence that provides:
-+
-* JTA transaction manager (backed by Narayana - for unit tests or servlet containers).
-* An entity manager factory for persistence named `org.jbpm.persistence.spring.jta`.
-
-. Configure the business process resource:
-+
-[source,xml,options="nowrap"]
-----
-<bean id="process" factory-method="newClassPathResource" class="org.kie.internal.io.ResourceFactory">
-  <constructor-arg>
-    <value>jbpm/processes/sample.bpmn</value>
-  </constructor-arg>
-</bean>
-----
-+
-This configures the `sample.bpmn` on the classpath as a process that is available for execution. 
-
-. Configure the runtime environment: 
-+
-[source,xml,options="nowrap"]
-----
-<bean id="runtimeEnvironment" class="org.kie.spring.factorybeans.RuntimeEnvironmentFactoryBean">
-    <property name="type" value="DEFAULT"/>
-    <property name="entityManagerFactory" ref="jbpmEMF"/>
-    <property name="transactionManager" ref="jbpmTxManager"/>
-    <property name="assets" ref="assets"/>
-  </bean>
-----
-+
-This provides a default runtime environment that can be used to create an instance of a runtime manager.
-
-. Create `RuntimeManager`:
-[source,xml,options="nowrap"]
-----
-<bean id="runtimeManager" class="org.kie.spring.factorybeans.RuntimeManagerFactoryBean" destroy-method="close">
-  <property name="identifier" value="spring-rm"/>
-  <property name="runtimeEnvironment" ref="runtimeEnvironment"/>
-</bean>
-----
- 
-Using this configuration, you can execute processes with Spring and {PRODUCT} utilizing `EntityManagerFactory` and JTA transaction manager.
-
-{PRODUCT} also supports the following configurations:
-
-* JTA and `SharedEntityManager` 
-* Local Persistence Unit and `EntityManagerFactory`
-* Local Persistence Unit and `SharedEntityManager`
 
 
 [id='kie-services-integration-with-spring']
