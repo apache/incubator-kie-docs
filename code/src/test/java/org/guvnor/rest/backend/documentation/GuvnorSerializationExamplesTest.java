@@ -19,16 +19,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.guvnor.common.services.project.model.GAV;
-import org.guvnor.rest.client.JobStatus;
 import org.guvnor.rest.client.OrganizationalUnit;
 import org.guvnor.rest.client.ProjectResponse;
 import org.guvnor.rest.client.UpdateOrganizationalUnit;
-import org.guvnor.rest.client.UpdateOrganizationalUnitRequest;
-import org.guvnor.structure.repositories.Repository;
 import org.junit.Test;
 
 public class GuvnorSerializationExamplesTest {
