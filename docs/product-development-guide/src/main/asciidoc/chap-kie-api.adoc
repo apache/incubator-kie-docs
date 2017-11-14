@@ -3957,31 +3957,44 @@ The following procedure demonstrates how to configure Spring for a single `Runti
 
 . Set up the entity manager factory and transaction manager.
 +
-For Java EE containers use the following configuration:
+.. For Java EE containers use the following configuration:
 +
 [source,xml,options="nowrap"]
 ----
-<bean id="jbpmEMF" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
-  <property name="persistenceUnitName" value="org.jbpm.persistence.spring.jta"/>
-</bean>
-
-<bean id="narayanaUserTransaction" factory-method="userTransaction"
-        class="com.arjuna.ats.jta.UserTransaction" />
-
-<bean id="narayanaTransactionManager" factory-method="transactionManager"
-      class="com.arjuna.ats.jta.TransactionManager" />
-
-<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
-  <property name="transactionManager" ref="narayanaTransactionManager" />
-  <property name="userTransaction" ref="narayanaUserTransaction" />
-</bean>
-
+<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager"/>
 ----
 +
-This configuration provides persistence that provides:
+.. For non-Java EE containers, or for standalone usage, use the following configuration:
 +
+[source,xml,options="nowrap"]
+----
+<bean id="narayanaUserTransaction" factory-method="userTransaction"
+       class="com.arjuna.ats.jta.UserTransaction" />
+
+ <bean id="narayanaTransactionManager" factory-method="transactionManager"
+       class="com.arjuna.ats.jta.TransactionManager" />
+
+ <bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
+   <property name="transactionManager" ref="narayanaTransactionManager" />
+   <property name="userTransaction" ref="narayanaUserTransaction" />
+</bean>
+----
++
+This explicitly provides the `TransactionManager` and `UserTransaction`, and provides:
+
 * JTA transaction manager (backed by Narayana - for unit tests or servlet containers).
 * An entity manager factory for persistence named `org.jbpm.persistence.spring.jta`.
+
++
+
+Alternatively, you can bind `TransactionManager` to `java:comp/TransactionManager` and `UserTransaction` to `java:comp/UserTransaction`, and use the following configuration:
+
++
+[source,xml,options="nowrap"]
+----
+<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager"/>
+----
+
 
 . Configure the business process resource:
 +
