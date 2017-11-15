@@ -3238,6 +3238,8 @@ This is automatically registered on the `KieSession`.
 
 WARNING: The `MVELUserGroupCallback` class fails to initialize in an OSGi environment. Do _not_ use or include `MVELUserGroupCallback` as it is not designed for production purposes.
 
+
+
 [id='_strategies']
 === Strategies
 
@@ -3946,6 +3948,100 @@ public interface ObjectMarshallingStrategy {
 
 The methods `read()` and `write()` are for backwards compatibility. Use the methods `accept()`, `marshal()` and `unmarshal()` to create your strategy.
 
+[id='runtime-manager-spring_proc']
+=== Runtime Manager with Spring
+
+The following procedure demonstrates how to configure Spring for a single `RuntimeManager` within the Spring application context. 
+
+.Procedure
+
+. Set up the entity manager factory and transaction manager.
++
+.. For Java EE containers use the following configuration:
++
+[source,xml,options="nowrap"]
+----
+<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager"/>
+----
++
+.. For non-Java EE containers, or for standalone usage, use the following configuration:
++
+[source,xml,options="nowrap"]
+----
+<bean id="narayanaUserTransaction" factory-method="userTransaction"
+       class="com.arjuna.ats.jta.UserTransaction" />
+
+ <bean id="narayanaTransactionManager" factory-method="transactionManager"
+       class="com.arjuna.ats.jta.TransactionManager" />
+
+ <bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
+   <property name="transactionManager" ref="narayanaTransactionManager" />
+   <property name="userTransaction" ref="narayanaUserTransaction" />
+</bean>
+----
++
+This explicitly provides the `TransactionManager` and `UserTransaction`, and provides:
+
+* JTA transaction manager (backed by Narayana - for unit tests or servlet containers)
+* An entity manager factory for persistence named `org.jbpm.persistence.spring.jta`
+
++
+
+Alternatively, you can bind `TransactionManager` to `java:comp/TransactionManager` and `UserTransaction` to `java:comp/UserTransaction`, and use the following configuration:
+
++
+[source,xml,options="nowrap"]
+----
+<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager"/>
+----
+
+
+. Configure the business process resource as follows:
++
+[source,xml,options="nowrap"]
+----
+<bean id="process" factory-method="newClassPathResource" class="org.kie.internal.io.ResourceFactory">
+  <constructor-arg>
+    <value>jbpm/processes/sample.bpmn</value>
+  </constructor-arg>
+</bean>
+----
++
+This configures the `sample.bpmn` on the classpath as a process that is available for execution. 
+
+. Configure `RuntimeEnvironment` as follows: 
++
+[source,xml,options="nowrap"]
+----
+<bean id="runtimeEnvironment" class="org.kie.spring.factorybeans.RuntimeEnvironmentFactoryBean">
+    <property name="type" value="DEFAULT"/>
+    <property name="entityManagerFactory" ref="jbpmEMF"/>
+    <property name="transactionManager" ref="jbpmTxManager"/>
+    <property name="assets" ref="assets"/>
+  </bean>
+----
++
+This provides a default `RuntimeEnvironment` that can be used to create an instance of a runtime manager.
+
+. Create `RuntimeManager` as follows:
+[source,xml,options="nowrap"]
+----
+<bean id="runtimeManager" class="org.kie.spring.factorybeans.RuntimeManagerFactoryBean" destroy-method="close">
+  <property name="identifier" value="spring-rm"/>
+  <property name="runtimeEnvironment" ref="runtimeEnvironment"/>
+</bean>
+----
+ 
+With this configuration, you can execute processes with Spring and {PRODUCT} using `EntityManagerFactory` and JTA transaction manager.
+
+{PRODUCT} also supports the following configurations:
+
+* JTA and `SharedEntityManager` 
+* Local Persistence Unit and `EntityManagerFactory`
+* Local Persistence Unit and `SharedEntityManager`
+
+
+
 [id='_sect_kie_services']
 == KIE Services
 
@@ -4651,41 +4747,169 @@ public class ProcessEngine {
 }
 ----
 
-[id='runtime-manager-spring_proc']
-=== Runtime Manager with Spring
 
-The following procedure demonstrates how to configure Spring for a single runtime manager within the Spring application context.
+[id='kie-services-integration-with-spring']
+== KIE Services Integration with Spring
+
+The {PRODUCT} execution server based on KIE services provides an agnostic framework, allowing for dynamic Spring integration by allowing the application to easily consume java services embedded in `jbpm-kie-services`. The dynamic nature means that processes and other assets, such as data models, rules, forms, and others, can be added and removed without restarting the application.
+
+.Prerequisite
+
+To configure KIE services in Spring, you must implement the `IdentityProvider` security interface. This can be built with Spring Security, as follows:
+
+[source,java,options="nowrap"]
+----
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.kie.internal.identity.IdentityProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+public class SpringSecurityIdentityProvider implements IdentityProvider {
+
+	public String getName() {
+		
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null && auth.isAuthenticated()) {
+			return auth.getName();
+		}
+		return "system";
+	}
+
+	public List<String> getRoles() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null && auth.isAuthenticated()) {
+			List<String> roles = new ArrayList<String>();
+			
+			for (GrantedAuthority ga : auth.getAuthorities()) {
+				roles.add(ga.getAuthority());
+			}
+			
+			return roles;
+		}
+		
+		return Collections.emptyList();
+	}
+
+	public boolean hasRole(String role) {
+		return false;
+	}
+
+}
+----
 
 .Procedure
+Configure the execution server with KIE services and Spring using the following procedure:
 
-. Set up the entity manager factory and transaction manager.
-
+. Configure the `TransactionManager`:
++
 [source,xml,options="nowrap"]
 ----
-<bean id="jbpmEMF" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
-  <property name="persistenceUnitName" value="org.jbpm.persistence.spring.jta"/>
+<context:annotation-config />
+<tx:annotation-driven />
+<tx:jta-transaction-manager />                
+
+<bean id="transactionManager" class="org.springframework.transaction.jta.JtaTransactionManager" />
+----
+
+. Configure JPA and persistence:
++
+[source,xml,options="nowrap"]
+----
+<bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean" depends-on="transactionManager">
+   <property name="persistenceXmlLocation" value="classpath:/META-INF/jbpm-persistence.xml" />
+</bean>
+----
+
+. Configure security and user/group information providers:
++
+[source,xml,options="nowrap"]
+----
+<util:properties id="roleProperties" location="classpath:/roles.properties" />
+ 
+<bean id="userGroupCallback" class="org.jbpm.services.task.identity.JBossUserGroupCallbackImpl">
+  <constructor-arg name="userGroups" ref="roleProperties"></constructor-arg>
 </bean>
 
-<bean id="btmConfig" factory-method="getConfiguration" class="bitronix.tm.TransactionManagerServices"></bean>
-
-<bean id="BitronixTransactionManager" factory-method="getTransactionManager"
-      class="bitronix.tm.TransactionManagerServices" depends-on="btmConfig" destroy-method="shutdown" />
-  
-<bean id="jbpmTxManager" class="org.springframework.transaction.jta.JtaTransactionManager">
-  <property name="transactionManager" ref="BitronixTransactionManager" />
-  <property name="userTransaction" ref="BitronixTransactionManager" />
-</bean>
+<bean id="identityProvider" class="org.jbpm.spring.SpringSecurityIdentityProvider"/>
 
 ----
+
+. Configure the the Spring context-aware runtime manager factory that can interact with the Spring container with supporting services, such as transactional command service and task service: 
 +
-This configuration provides persistence that provides:
-* JTA transaction manager (backed by bitronix - for unit tests or servlet containers).
-* 
+[source,xml,options="nowrap"]
+----
+<bean id="runtimeManagerFactory" class="org.kie.spring.manager.SpringRuntimeManagerFactoryImpl">
+  <property name="transactionManager" ref="transactionManager"/>
+  <property name="userGroupCallback" ref="userGroupCallback"/>
+</bean>
 
-. 
+<bean id="transactionCmdService" class="org.jbpm.shared.services.impl.TransactionalCommandService">
+  <constructor-arg name="emf" ref="entityManagerFactory"></constructor-arg>
+</bean>
 
+<bean id="taskService" class="org.kie.spring.factorybeans.TaskServiceFactoryBean" destroy-method="close">
+  <property name="entityManagerFactory" ref="entityManagerFactory"/>
+  <property name="transactionManager" ref="transactionManager"/>
+  <property name="userGroupCallback" ref="userGroupCallback"/>
+  <property name="listeners">
+    <list>
+      <bean class="org.jbpm.services.task.audit.JPATaskLifeCycleEventListener">
+        <constructor-arg value="true"/>
+      </bean>
+    </list>
+  </property>
+</bean>
+----
 
-[id='bpm-integration-with-spring']
-== {PRODUCT} Integration with Spring
+. Configure KIE services as Spring beans:
++
+[source,xml,options="nowrap"]
+----
+<!-- definition service -->
+<bean id="definitionService" class="org.jbpm.kie.services.impl.bpmn2.BPMN2DataServiceImpl"/>
+
+<!-- runtime data service -->
+<bean id="runtimeDataService" class="org.jbpm.kie.services.impl.RuntimeDataServiceImpl">
+  <property name="commandService" ref="transactionCmdService"/>
+  <property name="identityProvider" ref="identityProvider"/>
+  <property name="taskService" ref="taskService"/>
+</bean>
+
+<!-- -- deployment service -->
+<bean id="deploymentService" class="org.jbpm.kie.services.impl.KModuleDeploymentService" depends-on="entityManagerFactory" init-method="onInit">
+  <property name="bpmn2Service" ref="definitionService"/>
+  <property name="emf" ref="entityManagerFactory"/>
+  <property name="managerFactory" ref="runtimeManagerFactory"/>
+  <property name="identityProvider" ref="identityProvider"/>
+  <property name="runtimeDataService" ref="runtimeDataService"/>
+</bean>
+
+<!-- process service -->
+<bean id="processService" class="org.jbpm.kie.services.impl.ProcessServiceImpl" depends-on="deploymentService">
+  <property name="dataService" ref="runtimeDataService"/>
+  <property name="deploymentService" ref="deploymentService"/>
+</bean>
+
+<!-- user task service -->
+<bean id="userTaskService" class="org.jbpm.kie.services.impl.UserTaskServiceImpl" depends-on="deploymentService">
+  <property name="dataService" ref="runtimeDataService"/>
+  <property name="deploymentService" ref="deploymentService"/>
+</bean>
+
+<!-- register runtime data service as listener on deployment service so it can receive notification about deployed and undeployed units -->
+<bean id="data" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean" depends-on="deploymentService">
+  <property name="targetObject" ref="deploymentService"></property>
+  <property name="targetMethod"><value>addListener</value></property>
+  <property name="arguments">
+  <list>
+      <ref bean="runtimeDataService"/>
+  </list>
+  </property>
+</bean>
+----
 
 
