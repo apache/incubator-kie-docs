@@ -1,0 +1,126 @@
+[[_jbpmreleasenotes720]]
+
+= New and Noteworthy in jBPM 7.5.0
+:imagesdir: ..
+
+The following features were added to jBPM 7.5
+
+== Case management
+
+jBPM 7.5 brings number of case management improvements.
+
+=== Sub case support
+
+Sub case support is provided as additional activity that can be easily drag and dropped into existing case definitions or even
+into regular processes to allow creating case instances from within business process.
+
+It allows to provide all information as for regular start case plus enables users to decide what should happen after case is started.
+For more information take a look at this http://mswiderski.blogspot.com/2017/10/sub-cases-for-case-instance-and-process.html[article]
+
+=== Case file and case comment authorization
+
+Access to case file and case comments can be restricted to particular case roles. By default the access is open unless specified
+differently.
+
+Access restrictions can be set for comment:
+
+- when adding a comment
+- when updating a comment
+
+Access restrictions to case file can be set:
+
+- in case definition
+- when starting a case
+- when setting case file items
+
+More detailed explanation of this feature can be found http://mswiderski.blogspot.com/2017/10/case-management-improvements-data.html[here]
+
+=== Case close with message
+
+Support for close of case instance was added with optional message. That message will then show up in case instance as outcome message.
+It accompanies case abort and destroy operations to provide complete coverage of the possible end states of the case instance.
+
+== Document list marshalling strategy
+
+A common requirement is to have a list of documents to be handled by business process, jBPM does provide support for physical
+documents (e.g. pdf) since version 6 with custom marshalling strategy. Though it only allows to handle single document per process
+variable. With version 7.5 there is a new marshalling strategy provided to allow handling list of
+documents `org.jbpm.document.marshalling.DocumentsMarshallingStrategy`. It does rely on the `DocumentMarshallingStrategy` to process
+individual documents so they are properly stored in document management system.
+
+This marshalling strategy accepts only `org.jbpm.document.Documents` type that represents list of documents.
+
+
+== Update task metadata and variables in single operation
+
+UserTaskService has been extended to provide operation to update meta data of a task and its input and output data at the same time.
+It allows to update following meta data of a task:
+
+- name
+- description
+- priority
+- expiration date
+- form name
+
+Same feature is available via KIE Server REST and JMS api.
+
+== Quartz improvements - db job store aware of deployed kjars
+
+Quartz scheduler service has been improved to allow to fetch jobs only for deployments (kie containers) that are currently available in the
+running system. This applies only to Quartz setup with data base job store and requires additional changes in quartz configuration file:
+
+....
+org.quartz.jobStore.driverDelegateClass=org.jbpm.process.core.timer.impl.quartz.DeploymentsAwareStdJDBCDelegate
+....
+
+there is another PostgreSQL delegate class (due to handling of blob data)
+
+....
+org.quartz.jobStore.driverDelegateClass=org.jbpm.process.core.timer.impl.quartz.DeploymentsAwarePostgreSQLDelegate
+....
+
+they both do the same logic to find next trigger to fire - query for triggers based on trigger group id that now is set to deploymentId of the kjar.
+
+== Move of jbpm work items into dedicated repository
+
+As part of preparation work for revamped Service Repository, some jBPM work items have been moved to dedicated https://github.com/kiegroup/jbpm-work-items[GitHub repository].
+This is intended to allow easier contribution from community to build up a comprehensive list of work items that users
+can simply import from Service repository and use in their processes.
+
+== XStream security improvements
+
+XStream is used as one of data formats (next to JSON and XML-JAXB) used by KIE Server when interacting with runtimes. It might be  exposed to certain security
+issues that could allow to push malicious code over the wire and affect server upon serialization process.
+This has been addressed by hardening security policy on XStream instances used by KIE Server marshaller. By default it allows only few selected classes
+from KIE projects plus classes found in kjar.
+
+Additional classes can be added to the policy globally by system property *org.kie.server.xstream.enabled.packages* that accepts wildcard expressions.
+
+== KIE Server < - > KIE Controller communication security
+
+KIE server uses either REST or WebSocket to communicate with KIE Controller. Up till now, the only way to provide password was to use system
+properties which had certain drawbacks from security stand point. Version 7.5 brings in support for keystore based password storage that
+KIE Server and KIE Controller can use on runtime to load password.
+
+Take a look at section 'KIE Execution Server -> Securing password using key store' for more details
+
+== Business rule task fire limit
+
+Business rule task has been enhanced to limit number of fired rules to avoid situation where rules run into infinite loop and make server
+completely unresponsive. Fire limit is set by default to 10000 and can be configured:
+
+ - globally (per JVM) via system property *org.jbpm.rule.task.firelimit*
+ - per business rule task via data input named *FireRuleLimit*
+
+
+in case fire rule limit is reached service will throw exception to indicate possible dangerous situation.
+
+== Swagger based KIE Server documentation
+
+KIE Server documentation, that is hosted on running KIE Server has been completely rewritten based on Swagger. It provides
+nice looking UI plus possibility to try different endpoints directly from within the documentation.
+
+Moreover, it does filter endpoints based on active KIE Server extensions and shows endpoints that are actually available.
+
+It is build as KIE Server extension itself and thus can be disabled if not needed, like production environments.
+More on this can be found http://mswiderski.blogspot.com/2017/10/improved-kie-server-documentation.html[here].
