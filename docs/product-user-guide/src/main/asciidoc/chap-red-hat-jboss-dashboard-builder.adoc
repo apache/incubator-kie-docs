@@ -113,40 +113,44 @@ image::processinstancedetails.png[]
 === Tasks Dashboard
 
 
-To view the *Tasks*
- dashboard, click the *Tasks*
- tab at the top of the screen.
+To view the *Tasks* dashboard, click the *Tasks* tab at the top of the screen.
 This dashboard provides the same features as introduced above, but related to the tasks only.
 
-[id='_sect_data_sources']
-== Data Sources
 
-Red Hat JBoss Dashboard Builder can be connected to an external database, either using the container's JNDI data source or connecting directly using the JDBC driver to access the database.
+[id='_data_sources_con']
+== Data Source Management
 
-The data source management system provides the ability of defining data sources for accessing external databases. This data sources can be later used by other workbench components like the Data Sets.
+Red Hat JBoss Dashboard Builder can be connected to an external database, either using the container's JNDI data source or connecting directly using the JDBC driver to access the database. The data source management system provides the ability of defining data sources for accessing external databases. This data sources can be later used by other workbench components like Data Sets.
 
 Connections to databases can be configured by clicking image:settings-button.png[Settings button] -> *Data Sources*. This opens the *DataSource Explorer* perspective.
 
-After you have established the connection to the database, you need to create a data provider that will collect the data from the database and allow you to visualize it as an indicator in the dashboard area of a page.
 
-When connecting to CSV files to acquire data, the connection is established directly through the data provider.
+[id='_data-source-explorer_con']
+=== The *DataSource Explorer*
 
-Note that Red Hat JBoss Dashboard Builder makes use of its own local internal database to store its local data.
-This database is read-only for Dashboard Builder, but is accessible from outside.
+The *DataSource Explorer* is a data source management system that allows you to define data sources for accessing external databases. These data sources can be used by other workbench components like xref:id='data_sets_con'[Data Sets]. The *Datasource Explorer* perspective can be accessed from anywhere inside Business Central by clicking image:settings-button.png[Settings button] -> *Data Sources*. 
 
-=== Database Drivers
+[NOTE]
+====
+The *DataSource Explorer* perspective is only available to administration users. 
+====
 
-In order to communicate with the target database, a data source requires a database driver. These can be added and configured in the *DataSource Explorer* perspective. A databse driver is a JDBC-compliant driver. 
+The *Datasource Explorer* allows you to view and manage the data sources and drivers that are defined in the system. From this perspective, you can do the following:
 
-=== Data Source Management
+* Create a new data source.
+* View the list of available data sources.
+* Create a new driver.
+* View the list of available drivers.
 
-The data source management system allows you to define data sources for accessing external databases. These data sources can be used by other workbench components like xref:id='data_sets_con'[Data Sets].
+
+[id='_adding-data-source_task']
+=== Adding a New Data Source
 
 All data source and data set authoring tools are available in the *DataSource Explorer* perspective, accessed by clicking image:settings-button.png[Settings button] -> *Data Sources*.
 
 To connect to an external data source, do the following:
 
-. Make sure the data source is up and running and that the application server has access to the data source. (Check the driver, the login credentials, and so on, In {EAP} 7, you can do so in the Management Console under *Configuration* -> *Subsystems* -> *Datasources*)
+. Make sure the data source is up and running and that the application server has access to the data source. (Check the driver, the login credentials, and so on. In {EAP} 7, you can do so in the Management Console under *Configuration* -> *Subsystems* -> *Datasources*)
 . From anywhere in Business Central, click *Settings* image:settings-button.png[Settings button] -> *Data Sources*. 
 . In the *DataSource Explorer* perspective, click the *Add DataSource* image:5456.png[] button to open the *New data source* wizard.
 +
@@ -171,12 +175,62 @@ jdbc:postgresql://localhost:5432/appformer
 Using the *Test Connection* feature is not a requirement, however it is recommended that you use it to check the data source parameters prior to completing the data source creation.
 ====
 
-You can modify the data source configuration parameters in the *Data Source Editor* by clicking the data source in the list under *Data Sources* in the *DataSource Explorer*.
-
+You can modify the data source configuration parameters in the *Data Source Definition* editor by clicking the data source in the list under *Data Sources* in the *DataSource Explorer*.
 
 ifdef::BPMS[]
-If you want the Dashboard to use the new data source, you must also modify the respective data providers (jBPM Count Processes, jBPM Process Summary, jBPM Task Summary). Note that the data source must have access to jBPM history.
+If you want the Dashboard to use the new data source, you must also modify the respective data providers ({PRODUCT_BPMS} Count Processes, {PRODUCT_BPMS} Process Summary, {PRODUCT_BPMS} Task Summary). Note that the data source must have access to {PRODUCT_BPMS} history.
 endif::BPMS[]
+
+
+[id='_data-source-browser_con']
+=== Data Source Content Browser
+
+The data source content browser is accessed as follows:
+
+. Open the *DataSource Explorer* by clicking *Settings* image:settings-button.png[Settings button] -> *Data Sources*.
+. Select a data source from the list under *Data Sources*.
+. Click the *Browse Content* button in the *Data Source Definition* editor.
++
+image:data-source-editor.png[Data Source Definition]
+
+The content browser allows you to navigate through structure of the data source target database. This navigation is performed at three levels:
+
+Schemas level:: This level lists all the database schemas accessible by the selected data source. The list of schemas displayed is based on the database access rights of the user as defined in the connection configuration. This also applies to the current schema level.
+Current schema level:: This level shows all database tables for the selected schema.
+Current table level:: This level shows the table content for the selected table.
+
+In the data source content browser, clicking the *Open* button opens the next level for each item. 
+
+[id='_external-data-sources_con']
+=== External data sources
+
+External data sources exist in the current container, and are not typically defined in the current workbench. For some containers, such as Wildfly 10 or {EAP} 7 servers, they can be listed in read-only mode. In this case, only the data source content browser is enabled, and you cannot edit any configuration parameters using the *Data Source Definition* editor. 
+
+For example:
+image:example-data-source.png[ExampleDS]
+
+[id='_database-drivers_con']
+=== Database Drivers
+
+In order to communicate with the target database, a data source requires a database driver. These can be added and configured in the *DataSource Explorer* perspective. A database driver is a JDBC-compliant driver. 
+
+[id='_adding-datasource-driver_task']
+=== Adding a new driver
+
+You can add a new driver in the *DataSource Explorer* perspective, accessed by clicking image:settings-button.png[Settings button] -> *Data Sources*.
+
+Under the *Drivers* menu, click image:add-driver.png[Add Driver] to open the *New driver* wizard.
+
+The following are parameters are required to define a driver:
+
+* *Name*: A unique name for the driver definition.
+* *Driver Class Name*: The fully-qualified java name for the class that implements the JDBC driver contract.
+* *Group Id*: The maven group ID for the artifact that contains the JDBC driver implementation.
+* *Artifact Id*: The maven artifact ID for the artifact that contains the JDBC driver implementation.
+* *Version*: The maven version for the artifact that contains the JDBC driver implementation.
+
+Some commercial database drivers are not available in the maven central repository. Commercial drivers can still be used by first uploading them with the *Artifact Repository* perspective, then continuing with the same driver configuration as other drivers available in the maven central repository.
+
 
 [id='_security_considerations']
 === Security Considerations
