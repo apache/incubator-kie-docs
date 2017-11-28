@@ -113,52 +113,164 @@ image::processinstancedetails.png[]
 === Tasks Dashboard
 
 
-To view the *Tasks*
- dashboard, click the *Tasks*
- tab at the top of the screen.
+To view the *Tasks* dashboard, click the *Tasks* tab at the top of the screen.
 This dashboard provides the same features as introduced above, but related to the tasks only.
 
-[id='_sect_data_sources']
-== Data Sources
 
-Red Hat JBoss Dashboard Builder can be connected to an external database, either using the container's JNDI data source or connecting directly using the JDBC driver to access the database.
-Connections to databases can be configured in workspace _Showcase_ on page __External Connections__.
-After you have established the connection to the database, you need to create a data provider that will collect the data from the database and allow you to visualize it as an indicator in the dashboard area of a page.
+[id='_data_sources_con']
+== Data Source Management
 
-When connecting to CSV files to acquire data, the connection is established directly through the data provider.
+In the data source management system you can define data sources for accessing external databases. To configure database connections, click image:settings-button.png[Settings button] -> *Data Sources*. 
 
-Note that Red Hat JBoss Dashboard Builder
- makes use of its own local internal database to store its local data.
-This database is read-only for Dashboard Builder, but is accessible from outside.
+Connect the Dashboard Builder to an external database by first connecting the database in one of two ways:
 
-=== Connecting to Data Sources
+* Specify the JNDI name of the data source. This links to the data source on the application server. 
+* Connect to the database directly by specifying the JDBC driver name of the data source.
+
+These data sources can be later used by other workbench components, including xref:data_sets_con[Data Sets]. Once the database connection has been established, you can select one of its corresponding data sets from the list of available data sets in the Dashboard Builder Displayer component.
+
+[id='_data-source-explorer_con']
+=== The *DataSource Explorer*
+
+The *DataSource Explorer* is a data source management system that allows you to define data sources for accessing external databases. Other workbench components, such as xref:data_sets_con[Data Sets], also use these data sources. The *Datasource Explorer* perspective can be accessed from anywhere inside Business Central by clicking image:settings-button.png[Settings button] -> *Data Sources*. 
+
+[NOTE]
+====
+The *DataSource Explorer* perspective is only available to administration users. 
+====
+
+The *Datasource Explorer* allows you to view and manage the data sources and JDBC drivers that are defined in the system. From this perspective, you can complete the following operations:
+
+* Create a new data source.
+* View the list of available data sources.
+* Create a new driver.
+* View the list of available drivers.
 
 
-You can connect either to a JNDI data source, that is, a data source set up and accessible from the application container, or directly to the data source as a custom data source, if the application container has the correct JDBC driver deployed.
+[id='_adding-data-source_task']
+=== Adding a New Data Source
+
+All tools for authoring data sources and data sets are available in the *DataSource Explorer* perspective. To access this perspective, click image:settings-button.png[Settings button] -> *Data Sources*.
 
 To connect to an external data source, do the following:
 
+<<<<<<< HEAD
 . Make sure the data source is up and running and that the application server has access to the data source. (Check the driver, the login credentials, etc. In Red Hat JBoss EAP 6, you can do so in the Management Console under *Subsystems* -> *Connector* -> *Datasources*)
 . In Dashboard Builder, on the Tree Menu (by default located on the of the Showcase page), go to *Administration* -> *External connections*.
 . On the displayed External Connection panel, click the *New DataSource* image:5456.png[] button.
 . Select the data source type (JNDI or Custom DataSource) and provide the respective data source parameters below.
+=======
+.Prerequisite
+
+* The data source is up and running.
+* The application server has access to the data source. 
++
+In {EAP} 7, verify access to the data source and review settings in the Management Console under *Configuration* -> *Subsystems* -> *Datasources*.
+
+.Procedure
+. From anywhere in Business Central, click *Settings* image:settings-button.png[Settings button] -> *Data Sources*. 
+. In the *DataSource Explorer* perspective, click the *Add DataSource* image:5456.png[] button to open the *New data source* wizard.
++
+image:data-source-wizard.png[New data source]
+
+. Enter the following required parameters:
+* *Name*: A unique name for the data source definition.
+* *Connection URL*: A JDBC database connection URL compliant with the selected driver type. The following is an example for a PostgreSQL database:
++
+----
+jdbc:postgresql://localhost:5432/appformer
+----
+
+* *User*: A user name in the target database.
+* *Password*: The password of the user.
+* *Driver*: Selects the JDBC driver to be used for connecting to the target database. The connection URL format might vary depending on the driver, and different database vendors typically provide different drivers.
+
+. Click the *Test Connection* button to show the connection test status.
++
+[NOTE]
+====
+Using the *Test Connection* feature is not a requirement, however it is best practice that you use it to check the data source parameters prior to completing the data source creation.
+====
+
+You can modify the data source configuration parameters in the *Data Source Definition* editor by clicking the data source in the list under *Data Sources* in the *DataSource Explorer*.
+>>>>>>> 041b21c... BXMSDOC-1341 Data Source Management (#510)
 
 ifdef::BPMS[]
-If you wish the jBPM Dashboard to use the new data source, modify also the respective data providers (jBPM Count Processes, jBPM Process Summary, jBPM Task Summary). Note that the data source needs to have access to jBPM history.
+If you want the Dashboard to use the new data source, you must also modify the respective data providers ({PRODUCT_BPMS} Count Processes, {PRODUCT_BPMS} Process Summary, {PRODUCT_BPMS} Task Summary). Note that the data source must have access to {PRODUCT_BPMS} history.
 endif::BPMS[]
 
-[id='_security_considerations']
-=== Security Considerations
+
+[id='_data-source-browser_con']
+=== Data Source Content Browser
+
+To access the data source content browser:
+
+. Open the *DataSource Explorer* by clicking *Settings* image:settings-button.png[Settings button] -> *Data Sources*.
+. Select a data source from the list under *Data Sources*.
+. Click the *Browse Content* button in the *Data Source Definition* editor.
++
+image:data-source-editor.png[Data Source Definition]
+
+The content browser allows you to navigate through the structure of the data source target database. This navigation is performed at three levels:
+
+Schemas level:: This level lists all the database schemas accessible by the selected data source. The list of schemas displayed is based on the database access rights of the user as defined in the connection configuration. This also applies to the selected schema level.
+Current schema level:: This level shows all database tables for the selected schema.
+Current table level:: This level shows the table content for the selected table.
+
+In the data source content browser, clicking the *Open* button opens the next level for each item. 
+
+
+[id='_external-data-sources_con']
+=== External Data Sources
+
+External data sources exist in the current container and are not typically defined in the current workbench. For some containers, such as Wildfly 10 or {EAP} 7 servers, they can be listed in read-only mode. In this case, only the data source content browser is enabled, and you cannot edit any configuration parameters using the *Data Source Definition* editor. 
+
+For example:
+image:example-data-source.png[ExampleDS]
 
 [IMPORTANT]
 ====
-When creating an external datasource using JBoss Dashboard Builder, it needs to use the local connection so that the user can be passed through.
+When creating an external data source using *DataSource Explorer*, the data source needs to use the local connection so that the user can be passed through.
 Otherwise, with a connection that uses <host>:<port>, every user would have the same virtual database (VDB) permissions.
 ====
 
-[id='_building_a_dashboard_for_large_volumes_of_data']
-=== Building a Dashboard for Large Volumes of Data
 
+[id='_database-drivers_con']
+=== Database Drivers
+
+In order to communicate with the target database, a data source requires a database driver. You can add and configure database drivers in the *DataSource Explorer* perspective. A database driver is a JDBC-compliant driver. 
+
+{PRODUCT} includes the following default drivers. These drivers are configured for the most commonly used open source databases and aligned with the latest database versions supported by the Wildfly 10 and {EAP} 7 servers:
+
+* MariaDB-1.3.4
+* MySQL-5.1.38
+* PostgreSQL-9.4.1207
+
+[id='_adding-datasource-driver_task']
+=== Adding a New Driver
+
+You can add a new driver in the *DataSource Explorer* perspective. To access this perspective, click image:settings-button.png[Settings button] -> *Data Sources*.
+
+.Procedure
+
+. Under the *Drivers* menu, click image:add-driver.png[Add Driver] to open the *New driver* wizard.
+. Enter the following required parameters:
+
+* *Name*: A unique name for the driver definition.
+* *Driver Class Name*: The fully-qualified Java name for the class that implements the JDBC driver contract.
+* *Group Id*: The Maven group ID for the artifact that contains the JDBC driver implementation.
+* *Artifact Id*: The Maven artifact ID for the artifact that contains the JDBC driver implementation.
+* *Version*: The Maven version for the artifact that contains the JDBC driver implementation.
+
+. Click *Finish*.
+
+Some commercial database drivers are not available in the Maven central repository. To use commercial drivers, upload them with the *Artifact Repository* perspective and then continue with the driver configuration process, similar to other drivers available in the Maven central repository..
+
+To modify the driver configuration parameters in the *Driver Definition* editor, click the driver in the list under *Drivers* in the *DataSource Explorer*.
+
+
+[id='_building_a_dashboard_for_large_volumes_of_data']
+== Building a Dashboard for Large Volumes of Data
 
 You can connect Red Hat JBoss Dashboard Builder to external databases and load data for generating reports and charts. Generally, if the volume of data is small (up to 2MB), Red Hat JBoss Dashboard Builder preloads the data into (local) memory and uses this data for report and chart generation.
 However, in case of large volumes of data, it is not possible to load the entire data set into the Dashboard Builder's local memory.
@@ -286,11 +398,12 @@ You can think about them as database queries.
 The collected data can be then visualized in indicators on pages, exported as XLS or CSV, etc.
 
 [id='_creating_data_provider']
-==== Creating Data Providers
+=== Creating Data Providers
 
 
-To create a new data provider, do the following:
+To create a new data provider:
 
+.Procedure
 . In the Tree Menu (the panel in the lateral menu of the Showcase workspace), click *Administration* -> *Data providers*.
 . In the *Data Providers* panel, click the *Create new data provider* image:5457.png[] button.
 . In the updated *Data Providers* panel, select in the *Type* dropdown menu the type of the data provider depending on the source you want the data provider to operate on.
@@ -320,7 +433,7 @@ Data provider over a database (SQL query)::
 The data provider can now be visualized in an indicator on a page of your choice.
 
 [id='_sect_workspace']
-=== Workspace
+== Workspace
 
 
 A workspace is a container for pages with panels or indicators.
@@ -336,7 +449,7 @@ You can also edit the current workspace properties, delete the current workspace
 Every workspace uses a particular skin and envelope, which define the workspace's graphical properties.
 
 [id='_creating_a_workspace']
-==== Creating Workspace
+=== Creating a Workspace
 
 
 To create a new workspace, do the following:
@@ -359,7 +472,7 @@ If set to `Current page`, all users will use the current home page as their home
 
 
 [id='_sect_pages']
-==== Pages
+=== Pages
 
 
 Pages are units that live in a workspace and provide space (dashboard) for panels.
@@ -370,7 +483,7 @@ The parts are divided further (the exact division is visible when placing a new 
 
 A page also has a customizable header part and logo area.
 
-===== Creating Pages
+==== Creating Pages
 
 
 To create a new page, do the following:
@@ -392,7 +505,7 @@ To create a new page, do the following:
 
 
 [id='_page_permissions1']
-===== Defining Page Permissions
+==== Defining Page Permissions
 
 
 Although users are usually authorized using the authorization method setup for the underlying application container (on Red Hat JBoss EAP, the `other` security domain by default), the Red Hat JBoss Dashboard Builder
@@ -410,7 +523,7 @@ To define permissions on a page or all workspace pages for a role, do the follow
 
 
 [id='_sect_panels']
-==== Panels
+=== Panels
 
 
 A panel is a GUI widget, which can be placed on a page.
@@ -446,7 +559,7 @@ are panels that provide access to system setting and administration facilities a
 * Export/Import workspaces: a panel for exporting and importing of workspaces
 
 [id='_adding_panels']
-===== Adding Panels
+==== Adding Panels
 
 
 To add an existing panel to a page or to create a new panel, do the following:
