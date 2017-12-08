@@ -2,91 +2,201 @@
 = Service Repository
 :imagesdir: ..
 
-A lot of these domain-specific services are generic, and can be reused by a lot of different users.
-Think for example about integration with Twitter, doing file system operations or sending email.
-Once such a domain-specific service has been created, you might want to make it available to other users so they can easily import and start using it.
+A service repository allows easy discovery and use of existing services, as well as contributing new services to the jBPM community.
+It should allow public access via URL as well as allow users to locally build and update it as they see fit. The content
+of the service repository are domain-specific services that provide integration of your processes with different
+types of systems. Their implementation should work out-of-the-box or with minimal configuration to the users.
+Users can benefit from the service repository by having pre-tested and ready to use integration points
+which they do not have to implement themselves.
 
-A service repository allows you to import services by browsing the repository looking for services you might need and importing these services into your workspace.
-These will then automatically be added to your palette and you can start using them in your processes.
-You can also import additional artefacts like for example an icon, any dependencies you might need, a default handler that will be used to execute the service (although you're always free to override the default, for example for testing), etc.
-
-To browse the repository, open the wizard to import services, point it to the right location (this could be to a directory in your file system but also a public or private URL) and select the services you would like to import.
-For example, in Eclipse, right-click your project that contains your processes and select "Configure ... -> Import jBPM services ...".  This will open up a repository browser.
-In the URL field, fill in the URL of your repository (see below for the URL of the public jBPM repository that hosts some common service implementations out-of-the-box), or use the "..." button to browse to a folder on your file system.
-Click the Get button to retrieve the contents of that repository.
-
-image::DomainSpecificProcesses/ImportService.png[]
-
-Select the service you would like to import and then click the Import button.
-Note that the Eclipse wizard allows you to define whether you would like to automatically configure the service (so it shows up in the palette of your processes), whether you would also like to download any dependencies that might be needed for executing the service and/or whether you would like to automatically register the default handler, so make sure to mark the right checkboxes before importing your service (if you are unsure what to do, leaving all check boxes marked is probably best).
-
-After importing your service, (re)open your process diagram and the new service should show up in your palette and you can start using it in your process.
-Note that most services also include documentation on how to use them (e.g.
-what the different input and output parameters are) when you select them browsing the service repository.
-
-Click on the image below to see a screencast where we import the Twitter service in a new jBPM project and create a simple process with it that sends an actual tweet.
-Note that you need the  necessary Twitter keys and secrets to be able to programmatically send tweets to your Twitter account.
-How to create these is explained https://docs.jboss.org/jbpm/v6.0/repository/Twitter/[here], but once you have these, you can just drop them in your project using a simple configuration file.
-
-image::DomainSpecificProcesses/Twitter.png[link="http://people.redhat.com/kverlaen/twitter-repository.swf"]
 
 == Public jBPM service repository
 
-We are building a public service repository that contains predefined services that people  can use out-of-the-box if they want to:
+jBPM provides a public service repository which contains contributed reusable services:
 
-https://docs.jboss.org/jbpm/v6.0/repository/
+https://docs.jboss.org/jbpm/service-repository/7.5.0.Final
 
-This repository contains some integrations for common services like Twitter integration or file system operations that you can import.
-Simply point the import wizard to this URL to start browsing the repository.
+This repository is dynamically generated from the https://github.com/kiegroup/jbpm-work-items[jBPM Workitems GitHub module].
+It includes an user-friendly "Home Page" where you can view details about all services provied as well as download links to specific service definitions and implementation (jar).
+jBPM tooling as for example the jBPM Designer can be used to discover this service repository and easily install these services into the
+workbench for you to start using them inside business processes.
 
-If you have an implementation of a common service that you would like to contribute to the community, do not hesitate to contact someone from the development team.
-We are always looking for contributions to extend our repository.
+.Generated service repository example \"Home Page\""
+image::DomainSpecificProcesses/jBPMServiceRepoHome.png[width=60%]
+
+.Example work item info page
+image::DomainSpecificProcesses/jBPMServiceRepoWorkitemInfo.png[width=60%]
+
+To start implementing and contributing your own service integration points please take a look at https://github.com/kiegroup/jbpm/tree/master/jbpm-workitems/jbpm-workitems-archetype[jBPM Workitems Archetype] module
+which can get you up and running with a Maven project quickly. Otherwise feel free to contact someone from the dev team and we will be
+happy to help you get started.
+
+== Building and extending the jBPM Service Repository
+
+You can build and extend the jBPM service repository locally. For this simply build the https://github.com/kiegroup/jbpm-work-items[jBPM work items module on GitHub].
+The look/feel of the repository can be changed by updating the https://github.com/kiegroup/jbpm-work-items/tree/master/repository/src/main/resources[repository index file].
+jBPM tooling can discover your repository even if it's not available on a public URL.
+
+== Using repository workitems in your processes
+
+Within the workbench you can use jBPM Designer editor to easily start importing your services into existing processes.
+Inside Designer open up the workitem repository editor and type in the repository URL to connect to, for example
+
+https://docs.jboss.org/jbpm/service-repository/7.5.0.Final
+
+or if you build your repository locally it could look something like
+
+file:///Users/tsurdilovic/devel/jbpm-work-items/repository/target/repository-7.5.0-SNAPSHOT
+
+The repository import feature then will scan the workitem repository and list its content for you to start importing:
+
+
+.Service repo import
+image::DomainSpecificProcesses/ServiceRepoImport.png[width=60%]
+
+Once imported, workitems are going to be included in the Designer shapes section when new processes are created or existing are re-opened.
+
+Another option is to tell your app server that is running the KIE workbench to automatically install specific workitems from your repository
+on workbench startup. This is a very nice option which saves time of having to manually import individual workitems
+via the repository importer. It automatically registers your workitem handler and its maven dependencies to the workbench which is very handy (same is done via
+the manual install using Designer).
+
+For example let's say you have a service repository available at http://mysite.com/myservicerepo and there you have two services, namely BuyStock and SellStock.
+To have these services automatically installed in the Workbench you can add the following startup parameters:
+====
+[source]
+----
+AS/bin/standalone.sh -Dorg.jbpm.service.repository=http://mysite.com/myservicerepo -Dorg.jbpm.service.servicetasknames=BuyStock,SellStock
+----
+====
+
+Or if you wanted just the SellStock service installed:
+====
+[source]
+----
+AS/bin/standalone.sh -Dorg.jbpm.service.repository=http://mysite.com/myservicerepo -Dorg.jbpm.service.servicetasknames=SellStock
+----
+====
+
+Currently there is no install-all option available so service names must be individually specified.
+When creating a new or opening an existing business process then the Workbench will attempt to install the specified services from the provided repository URL.
+This will install the service wid configuration, the spcified icon (if there is one or if not the Workbench will provide a default one for it), the default handler will be added to the deployment descriptor of your Workbench project as well as the specified maven dependencies in the service configuration will be added to the Workbench project pom.xml file.
+Please note that currently there is no option to specify maven repositories via the service task configuration so they must be added via the Workbench in its POM Editor by the users.
 
 == Setting up your own service repository
 
-You can set up your own service repository and add your own services by creating a configuration file that contains the necessary information (this is an extended version of the normal work definition configuration file as described earlier in this chapter) and putting the necessary files (like an icon, dependencies, documentation, etc.) in the right folders.
+With previous versions of the jBPM Service repository users had to manually set up their workitem configuration (.wid) files as well as
+provide jars and the maintain a repo configuratin file (index.conf). With the new version this is no longer the case and if you use Maven
+most if not all of the repository artifacts can be generated for you.
 
-The extended configuration file contains the normal properties (like name, parameters, results and icon), with some additional ones.
-For example, the following extended configuration file describes the Twitter integration service (as shown in the screencast above):
+If you do have an existing custom repository already set up be rest assured that it will still work as the
+overall structure has not changed. In this case there are two things you will notice. One that there is no longer
+the need for you to maintain the index.conf file which lists all your repository workitems, and two that you now
+can add maven dependencies into your workitem configurations to define depends which can be pulled in at compile or runtime
+rather than dependencies which you had to previously provide manually.
 
+Ok, so let's see what are some easy ways to set up your own repository:
+
+==== Create own workitem inside jBPM WorkItems module
+
+Here you would clone the https://github.com/kiegroup/jbpm-work-items[jBPM WorkItems module] from GitHub and create
+your own modules for your services. You can follow one of the existing modules to set up your own workitem implementation.
+Once you have added your module to the list of modules in the https://github.com/kiegroup/jbpm-work-items/blob/master/pom.xml#L16[main pom], then
+also add it to the https://github.com/kiegroup/jbpm-work-items/blob/master/repository/src/main/resources/index.html#L122[repository Home Page setup]
+and you are good to go. Once you build the main module all the artifacts and the repository itself will be generated for you
+under $moduleHome$/repository/target/repository-$version$.
+
+This is a also a nice way to contribute your workitem impl to the community as it will be already set-up and ready
+to do a pull request if you so choose so.
+
+==== Create own workitem with the workitem Maven Archetype
+
+We mentioned before the https://github.com/kiegroup/jbpm/tree/master/jbpm-workitems/jbpm-workitems-archetype[jBPM Workitem Archetype] module.
+Creating a workitem project with this archetype will provide you with full generation of all elements needed for the repository.
+
+To get started run the following maven command (update the archetypeVersion as needed):
+====
 [source]
 ----
-[
-  [
-    "name" : "Twitter",
-    "description" : "Send a Twitter message",
-    "parameters" : [
-      "Message" : new StringDataType()
-    ],
-    "displayName" : "Twitter",
-    "eclipse:customEditor" : "org.drools.eclipse.flow.common.editor.editpart.work.SampleCustomEditor",
-    "icon" : "twitter.gif",
-    "category" : "Communication",
-    "defaultHandler" : "org.jbpm.process.workitem.twitter.TwitterHandler",
-    "documentation" : "index.html",
-    "dependencies" : [
-      "file:./lib/jbpm-twitter.jar",
-      "file:./lib/twitter4j-core-2.2.2.jar"
-    ]
-  ]
-]
+mvn archetype:generate -DarchetypeGroupId=org.jbpm -DarchetypeArtifactId=jbpm-workitems-archetype -DarchetypeVersion=7.5.0-SNAPSHOT -DgroupId=org.jbpm.demo.workitems -DartifactId=myworkitem -DclassPrefix=MyWorkItem -DarchetypeCatalog=local -Dversion=1.0
 ----
+====
 
+This will create a base workitem project for you called myworkitem. If you within that workitem run
+====
+[source]
+----
+mvn clean install
+----
+====
 
-* The name property is the unique name for your service
-* The parameters property defines the service data inputs giving them a name and a type
-* You can similarly to input parameters also define the "results" property for service data ouputs (same structure applies)
-* The icon property should refer to a file with the given file name in the same folder as
+you will find that the Maven build process will generate the workitem configuration, the implementation jar as well as
+html that contains your workitem information in the myworkitem/jbpm-workitems-myworkitem/target/jbpm-workitems-myworkitem-1.0.zip file.
+You can then simply extract the contents of this zip into your existing custom repository or anywhere on the file system. The zip will have
+the following structure (for the base project):
+====
+[source]
+----
+index.conf
+MyWorkItem/
+  - MyWorkItem.json
+  - MyWorkItem.wid
+  - MyWorkItem.png
+  - index.html
+  - jbpm-workitems-myworkitem-1.0.jar
+----
+====
+
+== Workitem Configuration (wid) from Handler Annotations
+
+Generating the workitem configuration used to be a manual process which involved creating a workitem .wid file and having to know mvel
+to define your workitem input/output parameters, handler, dependencies etc. You can still manually do that but we have added a way
+to define your workitem configuration information in your workitem Java implementation using annotations. Here is an example of this approach
+====
+[source,java]
+----
+@Wid(widfile = "DropboxDownloadFileDefinitions.wid", name = "DropboxDownloadFile",
+        displayName = "DropboxDownloadFile",
+        defaultHandler = "mvel: new org.jbpm.process.workitem.dropbox.DownloadFileWorkitemHandler()",
+        parameters = {
+                @WidParameter(name = "DocumentPath")
+        },
+        results = {
+                @WidResult(name = "Document")
+        },
+        mavenDepends = {
+                @WidMavenDepends(group = "com.dropbox.core", artifact = "dropbox-core-sdk", version = "3.0.5")
+        })
+public class DownloadFileWorkitemHandler extends AbstractLogOrThrowWorkItemHandler {
+...
+}
+
+----
+====
+
+Annotating your workitem handler implementation tells the jBPM Workitem Processor to use the defined
+information by this annotation to generate the workitem configuration from. It has a number of different properties you can use:
+
+* [property]``widFile``: defines the name of the generated config file
+* [property]``name``: - unique name for your service
+* [property]``displayName``: - display name to be used within editors such as jBPM Designer
+* [property]``parameters``: - define the service data inputs given their name and type
+* [property]``results``: - define the service data outputs
+* [property]``mavenDepends``: - define a list of maven dependencies needed for your workitem to be executable at runtime.
+* [property]``icon``: - should refer to a file with the given file name in the same folder as
   the extended configuration file (so it can be downloaded by the import wizard and used in the process
   diagrams).  Icons should be 16x16 GIF files.
-* The category property defines the category this service should be placed under when
+* [property]``category``: - defines the category this service should be placed under when
   browsing the repository.
-* The defaultHandler property defines the default handler implementation (i.e. the Java class that implements the `WorkItemHandler` interface and can be used to execute the service).  This can automatically be registered as the handler for that service when importing the service from the repository. You can also use mvel to resolve the default handler expression which has the additional benefit of being able to resolve the handlers parameters, for example:
+* [property]``defaultHandler``: -  defines the default handler implementation (i.e. the Java class that implements the `WorkItemHandler` interface and can be used to execute the service).  This can automatically be registered as the handler for that service when importing the service from the repository. You can also use mvel to resolve the default handler expression which has the additional benefit of being able to resolve the handlers parameters, for example:
+====
 [source]
 ----
 "defaultHandler" : "mvel: new org.jbpm.process.workitem.twitter.TwitterHandler(ksession)",
 ----
+====
 Some of the available named parameters you can use are:
+====
 [source]
 ----
 ksession
@@ -95,70 +205,68 @@ runtimeManager
 classLoader
 entityManagerFactory
 ----
-* The documentation property defines a documentation file that describes what the service does and how it works. This property should refer to a HTML file with the given name in the same folder as the extended configuration file (so it can be shown by the import wizard when browsing the repository).
-* The dependencies property defines additional dependencies that are necessary to execute this service. This usually includes the handler implementation JAR, but could also include additional external dependencies. These dependencies should also be located on the repository on the given location (relative to the folder where the extended configuration file is located), so they can be downloaded by the import wizard when importing the service. If the necessary dependencies are located in a maven repository you can define them via the mavenDependencies property, for example:
+====
+* [property]``documentation``: - defines a documentation file that describes what the service does and how it works. This property should refer to a HTML file with the given name in the same folder as the extended configuration file (so it can be shown by the import wizard when browsing the repository).
+* [property]``version``: - the version (String) of the workitem implmentation
+
+Only setup needed for the @Wid annotation is to use an already provided annotation processor, namely
 [source]
 ----
-"mavenDependencies" : [
-  "org.jbpm:jbpm-twitter:1.0",
-  "org.twitter4j:twitter4j-core:2.2.2"
-]
+org.jbpm.process.workitem.core.util.WidProcessor
 ----
-
-The root of your repository should also contain an [path]_index.conf_ file that references all the folders that should be processed when searching for services on the repository. This file could look as follows:
-[source]
+To add this in your projects pom.xml, you can define in the poms <plugins> section:
+====
+[source,xml]
 ----
-Email
-FileSystem
-ESB
-FTP
-Google
-Java
-Jabber
-Rest
-RSS
-Transform
-Twitter
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+      <annotationProcessors>
+        <annotationProcessor>org.jbpm.process.workitem.core.util.WidProcessor</annotationProcessor>
+      </annotationProcessors>
+      <compilerArgs>
+        <arg>-AwidName=${project.artifactId}</arg>
+      </compilerArgs>
+    </configuration>
+</plugin>
 ----
-
-Each of those folders should then contain: 
-
-* An extended configuration file with the same name as the folder (e.g. [path]_Twitter.conf_)
- that defines the service task
-* The icon as referenced in the configuration file
-* The documentation as referenced in the configuration file
-* The dependencies as referenced in the configuration file (for example in a lib folder)
-You can create your own hierarchical structure, because if one of those folders also contains an [path]_index.conf_ file, that will be used to scan additional sub-folders.
-Note that the hierarchical structure of the repository is not shown when browsing the repository using the import wizard, as the category property in the configuration file is used for that.
+====
 
 == Programatically interacting with the service repository
+
 jBPM provides classes in the org.jbpm.process.workitem package which allows you to connect and retrieve your service information. For example:
-[source]
+[source,java]
 ----
 Map<String, WorkDefinitionImpl> workitemsFromRepo =
-  WorkItemRepository.getWorkDefinitions("https://docs.jboss.org/jbpm/v6.0/repository/");
+  WorkItemRepository.getWorkDefinitions("https://docs.jboss.org/jbpm/service-repository/7.5.0.Final");
 ----
-This will provide you with all services defined in the repository (and declared in your index.conf file). You can then get more detailed information about each of services in the repository using their name as declared in the service wid file, for example when using the twitter wid configuration from above we could do:
-[source]
+This will provide you with all services defined in the repository. You can then get more detailed information about each of services in the repository using their name as declared in the service wid file, for example we could do (for an example Workitem called "MyWorkitem"):
+====
+[source,java]
 ----
-workitemsFromRepo.get( "Twitter" ).getName();                 // "Twitter"
-workitemsFromRepo.get( "Twitter" ).getDescription();          // "Send a Twitter message"
-workitemsFromRepo.get( "Twitter" ).getDefaultHandler();       // "org.jbpm.process.workitem.twitter.TwitterHandler"
-workitemsFromRepo.get( "Twitter" ).getDependencies();         // String["file:./lib/jbpm-twitter.jar","file:./lib/twitter4j-core-2.2.2.jar"]
+workitemsFromRepo.get( "MyWorkitem" ).getName();
+workitemsFromRepo.get( "MyWorkitem" ).getDescription();
+workitemsFromRepo.get( "MyWorkitem" ).getDefaultHandler();
+workitemsFromRepo.get( "MyWorkitem" ).getMavenDependencies();
 ...
 ----
+====
 or you could for example check if the correct version of the service you need is contained in the repository:
+====
 [source]
 ----
-if( workitemsFromRepo.containsKey( "Twitter" ) && workitemsFromRepo.get( "Twitter" ).getVersion().equals( "1.0" )) {
+if( workitemsFromRepo.containsKey( "MyWorkitem" ) && workitemsFromRepo.get( "MyWorkitem" ).getVersion().equals( "1.0" )) {
   // do something
 }
 ----
+====
 Currently all operations are read-only. There isn't a way to update the service repository automatically.
 
 == Defining extended service configuration with JSON
 The previous extended configuration example for the Twitter service was defined with the default mvel configuration. It is also possible to do this with JSON and the Twitter example would look like this:
-[source]
+====
+[source,json]
 ----
 [
   [
@@ -183,29 +291,7 @@ The previous extended configuration example for the Twitter service was defined 
   ]
 ]
 ----
+====
 In your service repository you can define the extended configuration of your services with mvel or JSON (or have some defined in one way and some in the other as well).
-Defining the extended configuration with JSON might have some benefits if being read by custom web-based clients for example.
-
-== Installing services from the service repository
-The Workbench provides two ways of installing services from the user defined service repositories:
-
-* Automatic install - allows you to specify the repository URL and a list of services (via their unique names specified in the wid) that will get installed and be ready for use when
-you create/open a business process in the Workbench. For example let's say we have a service repository available at http://mysite.com/myservicerepo and there we define as previsously mentioned two services, namely BuyStock and SellStock.
-To have these services automatically installed in the Workbench you can add the following startup parameters:
-[source]
-----
-AS/bin/standalone.sh -Dorg.jbpm.service.repository=http://mysite.com/myservicerepo -Dorg.jbpm.service.servicetasknames=BuyStock,SellStock
-----
-
-Or if you wanted just the SellStock service installed:
-[source]
-----
-AS/bin/standalone.sh -Dorg.jbpm.service.repository=http://mysite.com/myservicerepo -Dorg.jbpm.service.servicetasknames=SellStock
-----
-
-Currently there is no install-all option available so service names must be individually specified.
-When creating a new or opening an existing business process then the Workbench will attempt to install the specified services from the provided repository URL.
-This will install the service wid configuration, the spcified icon (if there is one or if not the Workbench will provide a default one for it), the default handler will be added to the deployment descriptor of your Workbench project as well as the specified maven dependencies in the service configuration will be added to the Workbench project pom.xml file.
-Please note that currently there is no option to specify maven repositories via the service task configuration so they must be added via the Workbench in its POM Editor by the users.
-
-* Manual installation through the Workbench - allows users to install one or more services from the services through the Workbench. You can find detailed information on how to do that in the <<jBPMDesigner,Process Designer Chapter>>.
+Defining the extended configuration with JSON might have some benefits if being read by custom web-based clients for example but the mvel configuration option
+is default and currently still prefered.
