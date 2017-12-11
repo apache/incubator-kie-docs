@@ -523,6 +523,46 @@ The jBPM workbench provides an administration area which provides user, group an
 By default the application's security management system points to the application's server realm. For instance, in case of using the packaged distribution for Wildfly, it points to the Wildfly's ApplicationRealm (properties based). It means the entities from the realm presented in the administration area are not the ones from the Keycloak realm that the application is using. There exist the following options in order to change this default behavior:
 
 * Disable the user system administration
-* A Keycloak security management provider is available to use in order to administrate the Keycloak realm from the administration area. Please read the instructions for updating the packaged application in order to use the Keycloak security provider https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management/uberfire-security-management-keycloak[here].
+* Use the built-in Keycloak security management provider instead of the default one
 
-For more information about the user system administration please refer to https://github.com/kiegroup/appformer/blob/master/uberfire-extensions/uberfire-security/uberfire-security-management/README.md[this readme].
+In order to customize an existing jBPM application (WAR file) for using the Keycloak security management provider please follow the next steps:
+
+. Add the artifact __keycloak-core-1.9.x.Final.jar__ into __WEB-INF/lib__
+. Add the artifact __keycloak-common-1.9.x.Final.jar__ into __WEB-INF/lib__
+. Remove the actual __jar__ artifact for any security management provider in use from __WEB-INF/lib__ (eg: remove __WEB-INF/lib/uberfire-security-management-wdilfly-x.y.Z.jar__)
+. Replace the content for __WEB-INF/classes/security-management.properties__ by:
+[source]
+----
+org.uberfire.ext.security.management.api.userManagementServices=KCAdapterUserManagementService
+org.uberfire.ext.security.management.keycloak.authServer=<authz_server_url>
+# eg: org.uberfire.ext.security.management.keycloak.authServer=http://localhost:8180/auth
+----
+. Update the __/META-INF/jboss-deployment-structure.xml__ in order to include/exclude the following modules:
+[source]
+----
+<deployment>
+    <dependencies>
+        ...
+        <module name="org.jboss.resteasy.resteasy-jackson-provider" services="import"/>
+        ...
+    </dependencies>
+    <exclusions>
+        ...
+        <module name="org.jboss.resteasy.resteasy-jackson2-provider"/>
+        ...
+    </exclusions>
+</deployment>
+----
+
+[NOTE]
+====
+The __jar__ artifacts required in the steps above can be either downloaded from https://repository.jboss.org/nexus/[JBoss Nexus] or either build from https://github.com/kiegroup/appformer[sources].
+====
+
+Once applying the above changes, the security administration area uses the access token present in the user's session in order to authorize and manage the specific Keycloak realm data.
+
+[IMPORTANT]
+====
+In order to be able to manage Keycloak realms remotely, please ensure the user has the __realm-management__ client role assigned
+====
+
