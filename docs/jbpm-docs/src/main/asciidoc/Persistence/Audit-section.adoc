@@ -285,7 +285,7 @@ The `BAMTaskSummary` table that collects information about tasks that is used by
 |NOT NULL
 
 |``createdDate``
-|Date whentask was created
+|Date when task was created
 |
 
 |``duration``
@@ -414,9 +414,8 @@ To log process history information in a database like this, you need to register
 
 [source,java]
 ----
-EntityManagerFactory emf = this.createEntityManager();
-StatefulKnowledgeSession ksession = this.buildKnowledgeSession();
-AbstractAuditLogger auditLogger = AuditLoggerFactory.newJPAInstance(emf);
+KieSession ksession = ...;
+AbstractAuditLogger auditLogger = AuditLoggerFactory.newInstance(Type.JPA, ksession, null);
 ksession.addProcessEventListener(auditLogger);
 
 // invoke methods one your session here
@@ -436,7 +435,7 @@ To specify the database where the information should be stored, modify the file 
   http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd"
   xmlns="http://java.sun.com/xml/ns/persistence"
   xmlns:orm="http://java.sun.com/xml/ns/persistence/orm"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance>
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
   <persistence-unit name="org.jbpm.persistence.jpa" transaction-type="JTA">
     <provider>org.hibernate.ejb.HibernatePersistence</provider>
@@ -491,7 +490,7 @@ Map<String, Object> jmsProps = new HashMap<String, Object>();
 jmsProps.put("jbpm.audit.jms.transacted", true);
 jmsProps.put("jbpm.audit.jms.connection.factory", factory);
 jmsProps.put("jbpm.audit.jms.queue", queue);
-AbstractAuditLogger auditLogger = AuditLoggerFactory.newInstance(Type.JMS, session, jmsProps);
+AbstractAuditLogger auditLogger = AuditLoggerFactory.newInstance(Type.JMS, ksession, jmsProps);
 ksession.addProcessEventListener(auditLogger);
 
 // invoke methods one your session here
@@ -503,14 +502,14 @@ This is just one of possible ways to configure JMS audit logger, see javadocs fo
 == Variables auditing
 
 
-Process and task variables are stored in autdit tables by default although there are stored in simplest possible way - by creating string representation of the variable - variable.toString(). In many cases this is enough as even for custom classes used as variables users can implement custom toString() method that produces expected "view" of the variable. 
+Process and task variables are stored in audit tables by default although there are stored in simplest possible way - by creating string representation of the variable - variable.toString(). In many cases this is enough as even for custom classes used as variables users can implement custom toString() method that produces expected "view" of the variable. 
 
 Though this might not cover all needs, especially when there is a need for efficient queries by variables (both task and process). Let's take as an example a Person object that has following structure:
 
 
 [source,java]
 ----
-public class Person implements Serializable{
+public class Person implements Serializable {
 
     private static final long serialVersionUID = -5172443495317321032L;
     private String name;
@@ -589,7 +588,7 @@ public interface VariableIndexer<V> {
 }
 ----
 
-By default (indexer that takes the `toString()`) will prodce single audit entry for single 
+By default (indexer that takes the `toString()`) will produce single audit entry for single 
 variable, so it's one to one relationship. But that's not the only option: indexers (as can be 
 seen in the interface) returns list of objects that are the outcome of single variable indexation.
 
