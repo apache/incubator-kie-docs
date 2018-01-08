@@ -1,0 +1,148 @@
+[id='decision-tables-rule-table-entries-ref']
+= RuleTable entries
+
+
+
+IMPORTANT: Rule attributes specified in a Rule Set area will affect all rule assets in the same package (not only in the spreadsheet). Unless you are sure that the spreadsheet is the only one rule asset in the package, the recommendation is to specify rule attributes not in a Rule Set area but in a Rule Table columns for each rule instead.
+
+
+.Basic RuleTable entries
+[cols="25%,15%,35%,25%", options="header"]
+|===
+|Keyword |Initial |Value |Usage
+
+|`NAME`
+|N
+|Provides the name for the rule generated from that row. The default is constructed from the text following the RuleTable tag and the row number.
+|At most one column.
+
+|`DESCRIPTION`
+|I
+|A text, resulting in a comment within the generated rule.
+|At most one column.
+
+|`CONDITION`
+|C
+|Code snippet and interpolated values for constructing a constraint within a pattern in a condition.
+|At least one per rule table.
+
+|`ACTION`
+|A
+|Code snippet and interpolated values for constructing an action for the consequence of the rule.
+|At least one per rule table.
+
+|`METADATA`
+|@
+|Code snippet and interpolated values for constructing a metadata entry for the rule.
+|Optional, any number of columns.
+|===
+
+[id='_conditional_elements']
+=== Conditional Elements
+
+Given a column headed `CONDITION`, the cells in successive lines result in a conditional element.
+
+* Text in the first cell below `CONDITION` develops into a pattern for the rule condition, with the snippet in the next line becoming a constraint. If the cell is merged with one or more neighbours, a single pattern with multiple constraints is formed: all constraints are combined into a parenthesized list and appended to the text in this cell. The cell may be left blank, which means that the code snippet in the next row must result in a valid conditional element on its own.
++
+To include a pattern without constraints, you can write the pattern in front of the text for another pattern.
++
+The pattern may be written with or without an empty pair of parentheses. A "from" clause may be appended to the pattern.
++
+If the pattern ends with "eval", code snippets are supposed to produce boolean expressions for inclusion into a pair of parentheses after "eval".
+* Text in the second cell below `CONDITION` is processed in two steps.
+** The code snippet in this cell is modified by interpolating values from cells farther down in the column. If you want to create a constraint consisting of a comparison using "==" with the value from the cells below, the field selector alone is sufficient. Any other comparison operator must be specified as the last item within the snippet, and the value from the cells below is appended. For all other constraint forms, you must mark the position for including the contents of a cell with the symbol `$param`. Multiple insertions are possible by using the symbols `$1`, `$2`, etc., and a comma-separated list of values in the cells below.
++
+A text according to the pattern `forall(_DELIMITER_){_SNIPPET_}` is expanded by repeating the `_SNIPPET_` once for each of the values of the comma-separated list of values in each of the cells below, inserting the value in place of the symbol `$` and by joining these expansions by the given `_DELIMITER_`. Note that the forall construct may be surrounded by other text.
+** If the cell in the preceding row is not empty, the completed code snippet is added to the conditional element from that cell. A pair of parentheses is provided automatically, as well as a separating comma if multiple constraints are added to a pattern in a merged cell.
++
+If the cell above is empty, the interpolated result is used as is.
+* Text in the third cell below `CONDITION` is for documentation only. It should be used to indicate the column's purpose to a human reader.
+* From the fourth row on, non-blank entries provide data for interpolation as described above. A blank cell results in the omission of the conditional element or constraint for this rule.
+
+[id='_action_statements']
+=== Action Statements
+
+Given a column headed `ACTION`, the cells in successive lines result in an action statement:
+
+* Text in the first cell below `ACTION` is optional. If present, it is interpreted as an object reference.
+* Text in the second cell below `ACTION` is processed in two steps.
+** The code snippet in this cell is modified by interpolating values from cells farther down in the column. For a singular insertion, mark the position for including the contents of a cell with the symbol `$param`. Multiple insertions are possible by using the symbols `$1`, `$2`, etc., and a comma-separated list of values in the cells below.
++
+A method call without interpolation can be achieved by a text without any marker symbols. In this case, use any non-blank entry in a row below to include the statement.
++
+The `forall` construct is available here, too.
+** If the first cell is not empty, its text, followed by a period, the text in the second cell and a terminating semicolon are stringed together, resulting in a method call which is added as an action statement for the consequence.
++
+If the cell above is empty, the interpolated result is used as is.
+* Text in the third cell below `ACTION` is for documentation only. It should be used to indicate the column's purpose to a human reader.
+* From the fourth row on, non-blank entries provide data for interpolation as described above. A blank cell results in the omission of the action statement for this rule.
+
+NOTE: Using `$1` instead of `$param` will fail if the replacement text contains a comma.
+
+[id='_metadata_statements']
+=== Metadata Statements
+
+Given a column headed `METADATA`, the cells in successive lines result in a metadata annotation for the generated rules:
+
+* Text in the first cell below `METADATA` is ignored.
+* Text in the second cell below `METADATA` is subject to interpolation, as described above, using values from the cells in the rule rows. The metadata marker character `@` is prefixed automatically, and should not be included in the text for this cell.
+* Text in the third cell below `METADATA` is for documentation only. It should be used to indicate the column's purpose to a human reader.
+* From the fourth row on, non-blank entries provide data for interpolation as described above. A blank cell results in the omission of the metadata annotation for this rule.
+
+
+
+.Additional RuleTable attributes
+[cols="30%,15%,55%", options="header"]
+|===
+|Keyword
+|Initial
+|Value
+
+|`PRIORITY`
+|P
+|An integer defining the "salience" value for the rule. Overridden by the "Sequential" flag.
+
+|`DURATION`
+|D
+|A long integer value defining the "duration" value for the rule.
+
+|`TIMER`
+|T
+|A timer definition. See <<_timers1>>.
+
+|`CALENDARS`
+|E
+|A calendars definition. See <<_calendars>>.
+
+|`NO-LOOP`
+|U
+|A Boolean value. `true` inhibits looping of rules due to changes made by its consequence.
+
+|`LOCK-ON-ACTIVE`
+|L
+|A Boolean value. `true` inhibits additional activations of all rules with this flag set within the same ruleflow or agenda group.
+
+|`AUTO-FOCUS`
+|F
+|A Boolean value. `true` for a rule within an agenda group causes activations of the rule to automatically give the focus to the group.
+
+|`ACTIVATION-GROUP`
+|X
+|A string identifying an activation (or XOR) group. Only one rule within an activation group will fire, for example the first one to fire cancels any existing activations of other rules within the same group.
+
+|`AGENDA-GROUP`
+|G
+|A string identifying an agenda group, which has to be activated by giving it the "focus", which is one way of controlling the flow between groups of rules.
+
+|`RULEFLOW-GROUP`
+|R
+|A string identifying a rule-flow group.
+
+|`DATE-EFFECTIVE`
+|V
+|A string containing a date and time definition. A rule can only activate if the current date and time is after `DATE-EFFECTIVE` attribute.
+
+|`DATE-EXPIRES`
+|Z
+|A string containing a date and time definition. A rule cannot activate if the current date and time is after the `DATE-EXPIRES` attribute.
+|===
