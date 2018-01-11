@@ -1,7 +1,11 @@
 [id='decision-tables-defining-proc']
 = Defining decision tables
 
-Decision table spreadsheets (XLS or XLSX) require two key areas that define rule data: a `RuleSet` area and a `RuleTable` area. The `RuleSet` area of the spreadsheet defines elements that you want to apply globally to all rule tables in the same package (not only the spreadsheet), such as a rule set name or universal rule attributes. The `RuleTable` area defines the actual rules (rows) and the conditions, actions, and other rule attributes (columns) that constitute that rule table within the specified rule set. A decision table spreadsheet can contain multiple `RuleTable` areas, but only one `RuleSet` area.
+Decision table spreadsheets (XLS or XLSX) require two key areas that define rule data: a `RuleSet` area and a `RuleTable` area. The `RuleSet` area of the spreadsheet defines elements that you want to apply globally to all rules in the same package (not only the spreadsheet), such as a rule set name or universal rule attributes. The `RuleTable` area defines the actual rules (rows) and the conditions, actions, and other rule attributes (columns) that constitute that rule table within the specified rule set. A decision table spreadsheet can contain multiple `RuleTable` areas, but only one `RuleSet` area.
+
+IMPORTANT: You should create only one decision table spreadsheet, containing all necessary `RuleTable` definitions, per rule package in {CENTRAL}. You can create separate decision table spreadsheets for separate packages, but multiple decision table spreadsheets in the same package can cause compilation errors from conflicting `RuleSet` or `RuleTable` attributes.
+
+*<@Michael X: I've added the above note both here and in the "Uploading decision tables" section to clarify that a single spreadsheet should be used. That work?>*
 
 Refer to the following sample spreadsheet as you define your decision table:
 
@@ -15,12 +19,15 @@ image::1248.jpg[]
 . Below the the `RuleSet` area and in the same column as the `RuleSet` cell, skip a row and label a new cell `RuleTable` (row 13 in example) and enter a table name in the same cell. The name string is used as the initial part of the name for all rules derived from this rule table, with the row number appended for distinction. You can override this automatic naming by inserting a `NAME` attribute column.
 . Use the next four rows to define the following elements as needed (rows 14-17 in example):
 +
-*<@Michael (1 of 6): I'm not clear here on which cells are required and which are optional. The drools doc says that really just the rule attribute (first bullet below) is required, like CONDITION, etc., and the others are optional. But the user needs to specify at least the second cell too, the object type, right? If all are optional, then how would the user specify the condition or action or whatever? It would just say CONDITION and then the value of the first data cell, 3 rows down, would have what? Maybe a complete standalone code snippet or something? Can you give an example of a table that leaves all the optional cells blank?>*
-+
 * *Rule attributes:* Conditions, actions, or other attributes. For supported attributes, see xref:decision-tables-rule-table-entries-ref[].
-* *Object types:* (Optional) The data objects to which the rule attributes apply. Leave blank if unused. If the same object type applies to multiple columns, merge the object cells into one cell across multiple columns, instead of repeating the object type in multiple cells. When an object type is merged, all columns below the merged range will be combined into one set of constraints within a single pattern for matching a single fact at a time. When an object is repeated in separate columns, the separate columns can create different patterns, potentially matching different or identical facts.
-* *Constraints:* (Optional) Constraints on the object types, if specified. Leave blank if unused.
+* *Object types:* The data objects to which the rule attributes apply. If the same object type applies to multiple columns, merge the object cells into one cell across multiple columns, instead of repeating the object type in multiple cells. When an object type is merged, all columns below the merged range will be combined into one set of constraints within a single pattern for matching a single fact at a time. When an object is repeated in separate columns, the separate columns can create different patterns, potentially matching different or identical facts.
+* *Constraints:* Constraints on the object types.
 * *Column label:* (Optional) Any descriptive label for the column, as a visual aid. Leave blank if unused.
++
+NOTE: As an alternative to populating both the object type and constraint cells, you can enter the full expression in either cell and leave the other blank. For example, instead of `Person` as the object type and `age` as the constraint (separate cells), you can enter `Person( age == $1)` in the object type cell and leave the constraint empty, or vice versa.
+
++
+*<@Michael X: I've added the above note to clarify that the full expression can be populated in either object type or constraint cells. That work?>*
 +
 . After you have defined all necessary rule attributes (columns), enter values for each column as needed, row by row, to generate rules (rows 18 and 19 in example). Cells with no data are ignored (such as when a condition or action does not apply).
 +
@@ -28,7 +35,7 @@ If you need to add more rule tables to this decision table spreadsheet, skip a r
 +
 . Save your XLS or XLSX spreadsheet to finish.
 
-NOTE: Only the first worksheet in a spreadsheet workbook will be processed as a decision table when you upload the spreadsheet in {CENTRAL}. Each `RuleTable` name combined with the sheet name must be unique across all decision table files in the same package.  *<@Michael (2 of 6): By "sheet name", do you mean spreadsheet file name or RuleSet name?>*
+NOTE: Only the first worksheet in a spreadsheet workbook will be processed as a decision table when you upload the spreadsheet in {CENTRAL}. Each `RuleSet` name combined with the `RuleTable` name must be unique across all decision table files in the same package.  *<@Michael X: I've clarified the name combination restriction (RuleSet + RuleTable, not RuleTable + sheet). This correct now?>*
 
 After you upload the decision table in {CENTRAL}, the rules are rendered as DRL rules like the following example, from the sample spreadsheet:
 
