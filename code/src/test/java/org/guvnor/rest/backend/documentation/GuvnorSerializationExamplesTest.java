@@ -65,20 +65,12 @@ public class GuvnorSerializationExamplesTest {
             orgUnit.setName( "EmployeeWage" );
             orgUnit.setOwner( "Employee" );
             orgUnit.setDefaultGroupId( "org.bpms" );
-            List<String> repoNames = new ArrayList<String>();
-            repoNames.add( "EmployeeRepo" );
-            repoNames.add( "OtherRepo" );
-            orgUnit.setRepositories( repoNames );
             orgUnits.add( orgUnit );
 
             orgUnit = new OrganizationalUnit();
             orgUnit.setName( "OrgUnitName" );
             orgUnit.setOwner( "OrgUnitOwner" );
             orgUnit.setDefaultGroupId( "org.group.id" );
-            repoNames = new ArrayList<String>();
-            repoNames.add( "repository-name-1" );
-            repoNames.add( "repository-name-2" );
-            orgUnit.setRepositories( repoNames );
             orgUnits.add( orgUnit );
 
         ObjectMapper om = new ObjectMapper();
