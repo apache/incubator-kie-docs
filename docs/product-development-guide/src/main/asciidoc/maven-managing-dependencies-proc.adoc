@@ -1,0 +1,207 @@
+[id='maven-managing-dependencies-proc']
+= Managing Maven dependencies
+
+.Prerequisite
+
+In order to use the correct Maven dependencies in your {PRODUCT} project, you must add relevant Bill Of Materials (BOM) files to the project's `pom.xml` file. Adding the BOM files ensures that the correct versions of transitive dependencies from the provided Maven repositories are included in the project.
+
+See the {URL_INSTALLATION_GUIDE}#supported_comps[Supported Component Versions] chapter of _{INSTALLATION_GUIDE}_ to view the supported BOM components.
+
+.Procedure
+
+. Declare the BOM in `pom.xml`. For example:
++
+.BOM for Red Hat JBoss BPM Suite {PRODUCT_VERSION}.0
+====
+[source,xml]
+----
+<dependencyManagement>
+ <dependencies>
+  <dependency>
+   <groupId>org.jboss.bom.brms</groupId>
+   <artifactId>jboss-brms-bpmsuite-platform-bom</artifactId>
+   <version>6.4.2.GA-redhat-2</version>
+   <type>pom</type>
+   <scope>import</scope>
+  </dependency>
+ </dependencies>
+</dependencyManagement>
+<dependencies>
+<!-- Your dependencies -->
+</dependencies>
+----
+====
++
+To check the current BOM version, see the {URL_INSTALLATION_GUIDE}#supported_comps[Supported Component Versions] chapter of _{INSTALLATION_GUIDE}_.
+
+. Declare dependencies needed for your project in the `dependencies` tag.
+
+* For a basic {PRODUCT_BA} project, declare the following dependencies:
++
+[id='_embedded_jbpm_engine_dependencies']
+.Embedded jBPM Engine Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-kie-services</artifactId>
+</dependency>
+
+<!-- Dependency needed for default WorkItemHandler implementations. -->
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems</artifactId>
+</dependency>
+
+<!-- Logging dependency. You can use any logging framework compatible with slf4j. -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
+
+* For a {PRODUCT_BA} project that uses CDI, declare the following dependencies:
++
+[id='_cdi_enabled_jbpm_engine_dependencies']
+.CDI-Enabled jBPM Engine dependencies 
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-kie-services</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-services-cdi</artifactId>
+</dependency>
+----
+
+* For a basic {PRODUCT_DM} project, declare the following dependencies:
++
+[id='_embedded_drools_engine_dependencies']
+.Embedded Drools Engine Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-compiler</artifactId>
+</dependency>
+
+<!-- Dependency for persistence support. -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-persistence-jpa</artifactId>
+</dependency>
+
+<!-- Dependencies for decision tables, templates, and scorecards.
+For other assets, declare org.drools:drools-workbench-models-* dependencies. -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-decisiontables</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-templates</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-scorecards</artifactId>
+</dependency>
+
+<!-- Dependency for loading KJARs from a Maven repository using KieScanner. -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+</dependency>
+
+<!-- Dependency for loading KJARs from a Maven repository using KieScanner in an OSGi environment. -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci-osgi</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
+
++
+Do not use both `kie-ci` and `kie-ci-osgi` in one `pom.xml` file.
+
+
+* To use the {KIE_SERVER}, declare the following dependencies:
++
+[id='_client_application_intelligent_process_server_dependencies']
+.Client Application {KIE_SERVER} Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-api</artifactId>
+</dependency>
+
+<!-- Dependency for Red Hat JBoss BRMS functionality. -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
+
+* To create a remote client for {PRODUCT_BA} or {PRODUCT_DM}, declare the following dependencies:
++
+.Client Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.remote</groupId>
+  <artifactId>kie-remote-client</artifactId>
+</dependency>
+----
+
+* To use assets in `KJAR` packaging, the recommended way is to include `kie-maven-plugin`:
++
+.Kie Maven Plugin
+[source,xml]
+----
+<!-- BOM does not resolve plugin versioning. Consult section Supported Components of Red Hat JBoss BPM Suite Installation Guide for newest version number. -->
+
+<packaging>kjar</packaging>
+<build>
+ <plugins>
+  <plugin>
+   <groupId>org.kie</groupId>
+   <artifactId>kie-maven-plugin</artifactId>
+   <version>6.5.0.Final-redhat-7</version>
+   <extensions>true</extensions>
+  </plugin>
+ </plugins>
+</build>
+----
+
+
+
+include::maven-integrated-dependencies-ref.adoc[leveloffset=+1]
+include::maven-testing-dependencies-ref.adoc[leveloffset=+1]
+
