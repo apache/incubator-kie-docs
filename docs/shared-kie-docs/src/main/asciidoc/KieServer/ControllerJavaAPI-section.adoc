@@ -58,7 +58,7 @@ See the examples below to get started:
 === Kie Server Controller Endpoints
 
 * REST: /rest/controller
-* Web Socket: /websocket/controller/management
+* Web Socket: /websocket/controller
 
 .Client Configuration Example using REST
 [example]
@@ -99,7 +99,7 @@ import org.kie.server.controller.client.KieServerControllerClientFactory;
 
 public class ListServerTemplatesExample {
 
-    private static final String URL = "ws://localhost:8080/kie-server-controller/websocket/controller/management";
+    private static final String URL = "ws://localhost:8080/kie-server-controller/websocket/controller";
     private static final String USER = "kieserver";
     private static final String PASSWORD = "kieserver1!";
 
@@ -168,6 +168,83 @@ public class RESTTimeoutExample {
 
 ==== Web Socket
 
+When connecting via Web Socket protocol, the Kie Server Controller Client allows you to receive events notification based
+on changes that happen in the particular Kie Server Controller that the client API is connected to. For instance, you can
+receive a notification about a Kie Sever instance that got connected to the controller.
+
+.Kie Server Controller Events Example
+[example]
+
+[source,java]
+----
+import org.kie.server.controller.api.model.events.*;
+import org.kie.server.controller.api.model.spec.ServerTemplateList;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+import org.kie.server.controller.client.event.EventHandler;
+
+public class WebSocketEventsExample {
+
+    private static final String URL = "ws://localhost:8080/kie-server-controller/websocket/controller";
+    private static final String USER = "kieserver";
+    private static final String PASSWORD = "kieserver1!";
+
+    public static void main(String[] args) {
+        KieServerControllerClient client = KieServerControllerClientFactory.newWebSocketClient(URL,
+                                                                                               USER,
+                                                                                               PASSWORD,
+                                                                                               new TestEventHandler());
+
+        final ServerTemplateList serverTemplateList = client.listServerTemplates();
+        System.out.println(String.format("Found %s server template(s) at controller url: %s",
+                                         serverTemplateList.getServerTemplates().length,
+                                         URL));
+        try {
+            Thread.sleep(60 * 1000);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    static class TestEventHandler implements EventHandler {
+
+        @Override
+        public void onServerInstanceConnected(ServerInstanceConnected serverInstanceConnected) {
+            System.out.println("serverInstanceConnected = " + serverInstanceConnected);
+        }
+
+        @Override
+        public void onServerInstanceDeleted(ServerInstanceDeleted serverInstanceDeleted) {
+            System.out.println("serverInstanceDeleted = " + serverInstanceDeleted);
+        }
+
+        @Override
+        public void onServerInstanceDisconnected(ServerInstanceDisconnected serverInstanceDisconnected) {
+            System.out.println("serverInstanceDisconnected = " + serverInstanceDisconnected);
+        }
+
+        @Override
+        public void onServerTemplateDeleted(ServerTemplateDeleted serverTemplateDeleted) {
+            System.out.println("serverTemplateDeleted = " + serverTemplateDeleted);
+        }
+
+        @Override
+        public void onServerTemplateUpdated(ServerTemplateUpdated serverTemplateUpdated) {
+            System.out.println("serverTemplateUpdated = " + serverTemplateUpdated);
+        }
+
+        @Override
+        public void onServerInstanceUpdated(ServerInstanceUpdated serverInstanceUpdated) {
+            System.out.println("serverInstanceUpdated = " + serverInstanceUpdated);
+        }
+
+        @Override
+        public void onContainerSpecUpdated(ContainerSpecUpdated containerSpecUpdated) {
+            System.out.println("onContainerSpecUpdated = " + containerSpecUpdated);
+        }
+    }
+}
+----
 
 == Setting up a Kie Server Controller
 
@@ -193,7 +270,7 @@ import org.kie.server.controller.client.KieServerControllerClientFactory;
 
 public class WebSocketSetupControllerExample {
 
-    private static final String URL = "ws://localhost:8080/kie-server-controller/websocket/controller/management";
+    private static final String URL = "ws://localhost:8080/kie-server-controller/websocket/controller";
     private static final String USER = "kieserver";
     private static final String PASSWORD = "kieserver1!";
     private static KieServerControllerClient client;
