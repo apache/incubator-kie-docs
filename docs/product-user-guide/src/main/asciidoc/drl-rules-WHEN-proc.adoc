@@ -1,0 +1,158 @@
+[id='drl-rules-when-proc']
+= Adding WHEN conditions in DRL rules
+
+The `when` part of the rule contains the conditions that must be met to execute an action. For example, if a bank requires loan applicants to have over 21 years of age, then the `when` condition of an "Underage" rule would be `Applicant( age < 21 )`. Conditions consist of a series of stated patterns and constraints, with optional bindings and other supported Java elements, based on the available data objects in the package.
+
+.Prerequisites
+* The `package` is defined at the top of the DRL file. This should have been done for you when you created the file.
+* The `import` list of data objects used in the rule is defined below the `package` line of the DRL file. Data objects can be from this package or from another package in {CENTRAL}.
+* The `rule` name is defined in the format `rule "name"` below the `package` and `import` lines of the DRL file. The same rule name cannot be used more than once in the same package. Optional rule attributes (such as `salience` or `no-loop`) that define rule behavior are below the rule name, before the `when` section.
+
+.Procedure
+. In the DRL designer, enter `when` within the rule to begin adding condition statements. The `when` section consists of zero or more fact patterns that define conditions for the rule.
++
+If the `when` section is empty, then actions in the `then` section are executed once every time the decision engine creates a new session. This is useful when certain actions apply to all rules every session, regardless of conditions. *<@Michael: I tried to make this clearer, but not sure I'm right. This close? And again, is "decision engine" interchangeable with "working memory" of the decision engine, just for simplicity?>* Such rules are rendered
++
+.Rule without conditions
+[source,java]
+----
+rule "Approve all"
+  when   // empty
+
+  then   // actions to be executed once
+    application.setApproved( true );
+    application.setExplanation( "Approve all applicants" );
+end
+
+// The above rule is internally rewritten as:
+
+rule "Approve all"
+  when
+    eval( true )
+  then
+    application.setApproved( true );
+    application.setExplanation( "Approve all applicants" );
+end
+----
++
+. Enter a pattern for the first condition to be met, with optional constraints, bindings, and other supported Java elements. A basic pattern format is `patternBinding : patternType ( constraints )`. Patterns are based on the available data objects in the package and define the conditions to be met in order to trigger actions in the `then` section.
++
+* *Simple pattern:* A simple pattern with no constraints matches against a fact of the given type. For example, the following condition is only that the applicant exists.
++
+[source,java]
+----
+when
+  Applicant( )
+----
++
+* *Pattern with constraints:* A pattern with constraints matches against a fact of the given type and the additional restrictions in parentheses that are true or false. For example, the following condition is that the applicant is over the age of 21.
++
+[source,java]
+----
+when
+  Applicant( age < 21 )
+----
++
+* *Pattern with binding:* A binding on a pattern is a shorthand reference that other components of the rule can use to refer back to the defined pattern. For example, the following binding `a` on `LoanApplication` is used in a related action for underage applicants.
++
+[source,java]
+----
+when
+  a : LoanApplication( )
+  Applicant( age < 21 )
+then
+  a.setApproved( false );
+  a.setExplanation( "Underage" )
+----
++
+. Continue defining all condition patterns that apply to this rule. Below are some of the options for defining DRL conditions:
++
+* `and`: Use this to group conditional components into a logical conjunction. Infix and prefix `and` are supported. By default, all listed conditions or actions are combined with `and` without the need of specifying.
++
+[source,java]
+----
+a : LoanApplication( )
+Applicant( age < 21 )
+
+// This is the same as this:
+
+a : LoanApplication( )
+and Applicant( age < 21 )
+----
++
+* `or`: Use this in non-collective lists. Infix and prefix `or` are supported.
++
+[source,java]
+----
+( Bankruptcy( amountOwed == 100000 ) or IncomeSource( amount == 20000 ) )
+
+Bankruptcy( amountOwed == 100000 )
+or IncomeSource( amount == 20000 )
+
+----
++
+* `exists`: Use this to specify facts and constraints that must exist. This option is triggered on only the first match, not subsequent matches.
++
+[source,java]
+----
+exists (Bankruptcy( yearOfOccurrence > 1990 || amountOwed > 10000 ))
+----
++
+* `not`: Use this to specify facts and constraints that must not exist.
++
+[source,java]
+----
+not (Applicant( age < 21 ))
+----
++
+* `forall`: Use this to set up a construct where all facts that match the first pattern match all the remaining patterns.
++
+[source,java]
+----
+forall( app : Applicant( age < 21 )
+              Applicant( this == app, status = 'underage' ) )
+----
++
+* `from`: Use this to specify a source for data to be matched by the conditional pattern.
++
+[source,java]
+----
+Applicant( ApplicantAddress : address )
+Address( zipcode == "23920W" ) from ApplicantAddress
+----
++
+* `entry-point`: Use this to define an `Entry Point` corresponding to a data source for the pattern. Typically used with `from`.
++
+[source,java]
+----
+Applicant( ) from entry-point "LoanApplication"
+----
++
+* `collect`: Use this to define a collection of objects that the construct can use as part of the condition. In the example, all pending applications in the decision engine for each given mortgage are grouped in `ArrayLists`. If three or more pending applications are found, the rule is executed.
++
+[source, java]
+----
+m : Mortgage()
+a : ArrayList( size >= 3 )
+    from collect( LoanApplication( Mortgage == m, status == 'pending' ) )
+----
++
+* `accumulate`: Use this to iterate over a collection of objects, execute custom actions for each of the elements, and return a result object. This option is a more flexible and powerful form of `collect`. Use the format `accumulate( <source pattern>; <functions> [;<constraints>] )`. In the example, `min`, `max`, and `average` are accumulate functions that calculate the minimum, maximum and average temperature values over all the readings for each sensor. Other supported functions include `count`, `sum`, `variance`, `standardDeviation`, `collectList`, `collectSet`.
++
+[source,java]
+----
+s : Sensor()
+accumulate( Reading( sensor == s, temp : temperature );
+            min : minimum( temp ),
+            max : maximum( temp ),
+            avg : average( temp );
+            min < 20, avg > 70 )
+----
++
+.Advanced DRL options
+[NOTE]
+====
+These are examples of basic options and constructs for defining conditions. For more advanced DRL definitions, tasks, and syntax supported in the DRL designer, visit the http://docs.jboss.org/drools/release/7.0.0.CR3/drools-docs/html_single/#_droolslanguagereferencechapter[Drools Documentation] online.
+====
+. After you define all condition components of the rule, click *Validate* in the upper-right toolbar of the DRL designer to validate the DRL file. If the file validation fails, address any problems described in the error message, review all syntax and components in the DRL file, and try again to validate the file until the file passes.
+. Click *Save* in the DRL designer to save your work.
