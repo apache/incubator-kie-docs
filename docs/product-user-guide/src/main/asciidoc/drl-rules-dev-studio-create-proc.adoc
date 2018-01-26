@@ -1,0 +1,162 @@
+[id='drl-rules-dev-studio-create-proc']
+= Creating DRL files in Red Hat JBoss Developer Studio
+
+You can use Red Hat JBoss Developer Studio to create DRL files with rules and integrate the files with your {PRODUCT} decision service. This method of creating DRL rules is helpful if you already use Red Hat Developer Studio for your decision service and want to continue with the same work flow. If you do not already use this method, then the {CENTRAL} interface of {PRODUCT} is recommended for creating DRL files and other rule assets.
+
+.Prerequisite
+Red Hat JBoss Developer Studio has been installed from the https://access.redhat.com/downloads/[Red Hat Customer Portal].
+
+.Procedure
+. In the Red Hat JBoss Developer Studio, click *File* -> *New* -> *Project*.
+. In the *New Project* window that opens, select *Drools* -> *Drools Project* and click *Next*.
+. Click the second icon to *Create a project and populate it with some example files to help you get started quickly*. Click *Next*.
+. Enter a *Project name* and select the *Maven* radio button as the project building option. Specify the GAV values which form fully qualified name for the project:
+* *Group ID:* `com.mycompany.app`
+* *Artifact ID:* `my-app`
+* *Version:* `1.0.0`
+. Click *Finish* to create the project.
++
+This configuration sets up a basic project structure, class path, and sample rules. Below is an overview of the project structure:
++
+[source]
+----
+My-Project
+ `-- src/main/java
+    | `-- com.sample
+    |    `-- DecisionTable.java
+    |    `-- DroolsTest.java
+    |    `-- ProcessTest.java
+    |
+ `-- src/main/resources
+    | `-- dtables
+    |    `-- Sample.xls
+    | `-- process
+    |    `-- sample.bpmn
+    | `-- rules
+    |    `-- Sample.drl
+    | `-- META-INF
+    |
+ `-- JRE System Library
+    |
+ `-- Maven Dependencies
+    |
+ `-- Drools Library
+    |
+ `-- src
+    |
+ `-- target
+    |
+ `-- pom.xml
+----
++
+Notice the following elements:
++
+* A `Sample.drl` rule file in the `src/main/resources` directory, containing an example `Hello World` and `GoodBye` rules.
+* A `DroolsTest.java` file under the `src/main/java` directory in the `com.sample` package. The `DroolsTest` class can be used to execute rules.
+* The `Drools Library` directory, which acts as a custom class path containing JAR files necessary for execution.
+
+. Create a fact model with all necessary data objects for the DRL file.
++
+The `DroolsTest.java` file contains a sample Java object `Message` with getter and setter methods. You can edit this class or create a different Java object. In this example, a class `Person` containing methods to set and retrieve the first name, last name, hourly rate, and wage of a person is used.
++
+[source,java]
+----
+public static class Person {
+
+  private String firstName;
+  private String lastName;
+  private Integer hourlyRate;
+  private Integer wage;
+
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
+  }
+
+  public Integer getHourlyRate() {
+    return hourlyRate;
+  }
+
+  public void setHourlyRate(Integer hourlyRate) {
+    this.hourlyRate = hourlyRate;
+  }
+
+  public Integer getWage(){
+    return wage;
+  }
+
+  public void setWage(Integer wage){
+    this.wage = wage;
+  }
+}
+----
+
+. Update the `main()` method to pass the Java object to a rule.
++
+The `DroolsTest.java` file contains a `main()` method that loads the knowledge base, inserts facts, and executes rules. The following method update passes the object `Person` to a rule:
++
+[source,java]
+----
+public static final void main(String[] args) {
+  try {
+    // Load the knowledge base:
+    KieServices ks = KieServices.Factory.get();
+    KieContainer kContainer = ks.getKieClasspathContainer();
+    KieSession kSession = kContainer.newKieSession("ksession-rules");
+
+    // Go!
+    Person p = new Person();
+    p.setWage(12);
+    p.setFirstName("Tom");
+    p.setLastName("Summers");
+    p.setHourlyRate(10);
+
+    kSession.insert(p);
+    kSession.fireAllRules();
+  }
+
+  catch (Throwable t) {
+    t.printStackTrace();
+  }
+}
+----
++
+To load the knowledge base, get a `KieServices` instance and a class-path-based `KieContainer` and build the `KieSession` with the `KieContainer`. In the example above, a session `ksession-rules` matching the one defined in `kmodule.xml` file is passed.
++
+. Create a DRL file containing at minimum a package specification, an import list of data objects to be used by the rule or rules, and one or more rules with `when` conditions and `then` actions.
++
+The rule file `Sample.drl` contains an example of two rules. You can edit this file or create a new one.
++
+[source,java]
+----
+package com.sample
+
+import com.sample.DroolsTest.Person;
+
+dialect "java"
+
+rule "Wage"
+  when
+    Person(hourlyRate * wage > 100)
+    Person(name : firstName, surname : lastName)
+  then
+    System.out.println("Hello" + " " + name + " " + surname + "!");
+    System.out.println("You are rich!");
+end
+----
+
+. Go to *File* -> *Save* to save the file.
+. After you create and save all DRL assets in your project, right-click your project folder and select *Run As* -> *Java Application* to test the project. If the project validation fails, address any problems described in the *Problems* tab of the lower window in Developer Studio, and try again to validate the project until the project passes.
+
+*<@Michael (11 of 13): What should the user expect or do now? Are the DRL files integrated with {PRODUCT} via the knowledge base? Can the user see their stuff in {CENTRAL} now? If so, where? Not sure what happens once the user does this and would like to call out what the overall result is of their doing this in Dev Studio.>*

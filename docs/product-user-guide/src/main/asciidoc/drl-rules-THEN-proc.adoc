@@ -1,4 +1,4 @@
-[id='drl-rules-then-proc']
+[id='drl-rules-THEN-proc']
 = Adding THEN actions in DRL rules
 
 The `then` part of the rule contains the actions to be performed when the conditional part of the rule has been met. For example, when a loan applicant is under 21 years old, the `then` action of an "Underage" rule would be `setApproved( false )`, declining the loan because the applicant is under age. Actions execute consequences based on the rule conditions and on available data objects in the package.
@@ -6,32 +6,37 @@ The `then` part of the rule contains the actions to be performed when the condit
 .Prerequisites
 * The `package` is defined at the top of the DRL file. This should have been done for you when you created the file.
 * The `import` list of data objects used in the rule is defined below the `package` line of the DRL file. Data objects can be from this package or from another package in {CENTRAL}.
-* The `rule` name is defined in the format `rule "name"` below the `package` and `import` lines of the DRL file. The same rule name cannot be used more than once in the same package. Optional rule attributes (such as `salience` or `no-loop`) that define rule behavior are below the rule name, before the `when` section.
+* The `rule` name is defined in the format `rule "name"` below the `package`, `import`, and other lines that apply to the entire DRL file. The same rule name cannot be used more than once in the same package. Optional rule attributes (such as `salience` or `no-loop`) that define rule behavior are below the rule name, before the `when` section.
 
 .Procedure
 . In the DRL designer, enter `then` after the `when` section of the rule to begin adding action statements.
-. Enter one or more actions to be executed on fact patterns defined in the conditions for the rule.
+. Enter one or more actions to be executed on fact patterns based on the conditions for the rule.
 +
-Below are some of the options for defining DRL conditions:
+Below are some of the keyword options for defining DRL actions:
 +
-* `and`: Use this in collective lists. By default, all listed conditions or actions are combined with `and` without the need of specifying.
+* `and`: Use this to group action components into a logical conjunction. Infix and prefix `and` are supported. By default, all listed conditions or actions are combined with `and` when no conjunction is specified.
 +
 [source,java]
 ----
-a : LoanApplication( )
-Applicant( age < 21 )
+application.setApproved ( false ) and application.setExplanation( "has been bankrupt" );
 
-// This is the same as this:
+application.setApproved ( false );
+and application.setExplanation( "has been bankrupt" );
 
-a : LoanApplication( )
-and Applicant( age < 21 )
+application.setApproved ( false );
+application.setExplanation( "has been bankrupt" );
+
+// All of the above are the same.
 ----
 +
-* `or`: Use this in non-collective lists.
+* `or`: Use this to group action components into a logical disjunction. Infix and prefix `or` are supported.
 +
 [source,java]
 ----
 ( Bankruptcy( amountOwed == 100000 ) or IncomeSource( amount == 20000 ) )
+
+Bankruptcy( amountOwed == 100000 )
+or IncomeSource( amount == 20000 )
 ----
 +
 * `set`: Use this to set the value of a field.
@@ -51,7 +56,7 @@ modify( LoanApplication ) {
 }
 ----
 +
-* `update`: Use this to specify whole facts to be modified and to notify the decision engine of the change. After a fact has changed you must call `update` before changing another fact, or indexing problems can occur within the rule engine. The `modify` keyword avoids this problem.
+* `update`: Use this to specify fields and the entire related fact to be modified and to notify the decision engine of the change. After a fact has changed, you must call `update` before changing another fact, or indexing problems can occur within the decision engine. The `modify` keyword avoids this problem.
 +
 [source,java]
 ----
@@ -60,7 +65,7 @@ update( LoanApplication ) {
 }
 ----
 +
-* `retract`: Use this to retract an object from the decision engine. *<@Michael: Diff between retract and delete? When to use which?>*
+* `retract`: Use this to retract an object from the decision engine. *<@Michael (8 of 13): Diff between retract and delete? When to use which?>*
 +
 [source,java]
 ----
@@ -74,14 +79,14 @@ retract( LoanApplication );
 delete( LoanApplication );
 ----
 +
-* `insert`: Use this to insert a `new` fact and define resulting fields and values for the fact.
+* `insert`: Use this to insert a `new` fact and define resulting fields and values as needed for the fact.
 +
 [source,java]
 ----
 insert( new Applicant() );
 ----
 +
-* `insertLogical`: Use this to insert a `new` fact logically into the decision engine and define resulting fields and values for the fact. The {PRODUCT} decision engine is responsible for logical decisions on insertions and retractions of facts. After regular or stated insertions, facts have to be retracted explicitly. After logical insertions, facts are automatically retracted when the conditions that originally asserted the facts are no longer true.
+* `insertLogical`: Use this to insert a `new` fact logically into the decision engine and define resulting fields and values as needed for the fact. The {PRODUCT} decision engine is responsible for logical decisions on insertions and retractions of facts. After regular or stated insertions, facts have to be retracted explicitly. After logical insertions, facts are automatically retracted when the conditions that originally asserted the facts are no longer true.
 +
 [source,java]
 ----
@@ -91,7 +96,7 @@ insertLogical( new Applicant() );
 .Advanced DRL options
 [NOTE]
 ====
-These are examples of basic options and constructs for defining actions. For more advanced DRL definitions, tasks, and syntax supported in the DRL designer, visit the http://docs.jboss.org/drools/release/7.0.0.CR3/drools-docs/html_single/#_droolslanguagereferencechapter[Drools Documentation] online.
+These are examples of basic keyword options and pattern constructs for defining actions. For more advanced DRL options and syntax supported in the DRL designer, visit the http://docs.jboss.org/drools/release/7.0.0.CR3/drools-docs/html_single/#_droolslanguagereferencechapter[Drools Documentation] online.
 ====
 . After you define all action components of the rule, click *Validate* in the upper-right toolbar of the DRL designer to validate the DRL file. If the file validation fails, address any problems described in the error message, review all syntax and components in the DRL file, and try again to validate the file until the file passes.
 . Click *Save* in the DRL designer to save your work.
