@@ -1,7 +1,7 @@
 [id='drl-rules-WHEN-proc']
 = Adding WHEN conditions in DRL rules
 
-The `when` part of the rule contains the conditions that must be met to execute an action. For example, if a bank requires loan applicants to have over 21 years of age, then the `when` condition of an "Underage" rule would be `Applicant( age < 21 )`. Conditions consist of a series of stated patterns and constraints, with optional bindings and other supported Java elements, based on the available data objects in the package.
+The `when` part of the rule contains the conditions that must be met to execute an action. For example, if a bank requires loan applicants to have over 21 years of age, then the `when` condition of an "Underage" rule would be `Applicant( age < 21 )`. Conditions consist of a series of stated patterns and constraints, with optional bindings and other supported DRL elements, based on the available data objects in the package.
 
 .Prerequisites
 * The `package` is defined at the top of the DRL file. This should have been done for you when you created the file.
@@ -11,31 +11,29 @@ The `when` part of the rule contains the conditions that must be met to execute 
 .Procedure
 . In the DRL designer, enter `when` within the rule to begin adding condition statements. The `when` section consists of zero or more fact patterns that define conditions for the rule.
 +
-If the `when` section is empty, then actions in the `then` section are executed once every time the decision engine creates a new session. This is useful when certain actions apply to all rules every session, regardless of conditions. *<@Michael (7 of 13): I tried to make this clearer, but not sure I'm right. This close? And again, is "decision engine" interchangeable with "working memory" of the decision engine, just for the sake of simplicity?>*
+If the `when` section is empty, then actions in the `then` section are executed every time a `fireAllRules()` call is made in the decision engine. This is useful if you want to use rules to set up the decision engine state.
 +
 .Rule without conditions
 [source,java]
 ----
-rule "Approve all"
+rule "bootstrap"
   when   // empty
 
   then   // actions to be executed once
-    application.setApproved( true );
-    application.setExplanation( "Approve all applicants" );
+    insert( new Applicant() );
 end
 
 // The above rule is internally rewritten as:
 
-rule "Approve all"
+rule "bootstrap"
   when
     eval( true )
   then
-    application.setApproved( true );
-    application.setExplanation( "Approve all applicants" );
+    insert( new Applicant() );
 end
 ----
 +
-. Enter a pattern for the first condition to be met, with optional constraints, bindings, and other supported Java elements. A basic pattern format is `patternBinding : patternType ( constraints )`. Patterns are based on the available data objects in the package and define the conditions to be met in order to trigger actions in the `then` section.
+. Enter a pattern for the first condition to be met, with optional constraints, bindings, and other supported DRL elements. A basic pattern format is `patternBinding : patternType ( constraints )`. Patterns are based on the available data objects in the package and define the conditions to be met in order to trigger actions in the `then` section.
 +
 * *Simple pattern:* A simple pattern with no constraints matches against a fact of the given type. For example, the following condition is only that the applicant exists.
 +
