@@ -1,0 +1,170 @@
+[[installer-run-proc]]
+= Installing {PRODUCT} Using Installer
+
+The installer for {PRODUCT} is an executable Java JAR file. You can use it to install {PRODUCT} on an existing {EAP} 6.4 installation.
+
+NOTE: For security reasons, you should run the installer as a non-root user.
+
+[float]
+==== Prerequisite
+
+Before attempting to install {PRODUCT}, ensure you have already installed {EAP} 6, version 6.4.7 or higher, and create a back up. Ensure that your user has sufficient rights to complete the installation.
+
+Make sure you have the JAR binary present in `$PATH` before running the installer. On Red Hat Enterprise Linux, it is present in the package `java-$_JAVA_VERSION_-openjdk-devel`.
+
+. Navigate to the folder where you downloaded the installer file in a command prompt and execute the following command.
++
+[source]
+----
+java -jar jboss-bpmsuite-VERSION-installer.jar
+----
++
+[NOTE]
+====
+When running the installer on Windows, you may be prompted to provide administrator credentials during the installation. To prevent this, add the `izpack.mode=privileged` option to the installation command:
+
+[source]
+----
+java -Dizpack.mode=privileged -jar jboss-bpmsuite-VERSION-installer.jar
+----
+
+Furthermore, when running the installer with a 32-bit Java Virtual Machine, you can encounter memory limitations. To solve the issue, run:
+
+[source]
+----
+java -XX:MaxHeapSize=4g -jar jboss-bpmsuite-VERSION-installer.jar
+----
+====
++
+The graphical installer will execute and display a splash screen and a license agreement page.
+
+. Accept the license to proceed.
+
+. In the next screen, provide the parent location of an existing {EAP} where you want to install {PRODUCT}.
+. In the next two screens, create two users: the first one for the management console of the {EAP} (ManagementRealm) and the second one for managing {PRODUCT} itself (ApplicationRealm).
++
+Creation of the first user for the management console of {EAP} is optional and you may skip it if it is not required.
++
+Make a note of these user names and passwords as you will need them to access the {EAP} server (if you do decide to create it) and the {PRODUCT} application respectively.
++
+Unless advanced configuration is performed, the Red Hat JBoss BPM Suite user password will be used as the default password for both client and server JMS SSL keystores, as well as password vault keystores.
++
+[IMPORTANT]
+====
+Make sure that the selected user name does _not_ conflict with any known title of a role or a group. See _defining_roles COMMENT:link.
+
+For example, if there is a role called `admin`, you should _not_ create a user with the user name `admin`.
+====
++
+[NOTE]
+====
+The passwords that you create must have at least 8 characters and must contain at least one number and one non-alphanumeric character (_not_ including the character `&`).
+====
++
+[NOTE]
+====
+The application role assigned to the second user that you create is the `admin` role. You can assign additional roles to this user at this stage.
+====
+
+. Next, set up the security environment of your new {PRODUCT} installation. Decide to enable or disable the Java Security Manager in this step by clicking on the check box. The Java Security Manager makes your system more secure but may downgrade performance. You need to make a decision based on your environment.
+
+. Choose whether you want to setup pure IPv6 configuration on the server that the installation is taking place. This will enable you to setup runtime IPv6 specific configurations later.
+
+. Configure runtime environment.
++
+--
+This step provides the option of using a default configuration or specifying an advanced configuration.
+
+.. _Default Configuration_
++
+Choose *Perform default configuration* for the runtime environment in the next step and click *Next* to review the installation details. If you are happy with the details, click *Next* to start the actual installation or click *Previous* to go back and make changes.
+
+.. _Advanced Configuration_
++
+Choose to enable advanced configuration options. Select *Perform advanced configuration* and choose the advanced configuration options you want to enable for your environment using the check boxes.
+
+[[_configure_password_vault,Configuring Password Vault]]
+i) _Configure Password Vault_
++
+Vault passwords are used to obfuscate passwords in the various server descriptors using a Java secret key generated during the installation process, or manually using the keytool. This prevents passwords from being stored as plain text in the descriptors. The *Iteration count* and *Salt* are both parameters to the encryption process.
++
+In the case of Red Hat JBoss BPM Suite, a vault is always installed, even if the user does not choose to install one with their own parameters. When this occurs, default values will be used.
++
+For more information about vault passwords, see the _{EAP} Security Guide_.
+
+ii) _SSL Security_
++
+The *SSL Security* screen enables you to add the `<ssl>` and `<truststore>` elements to the ManagementRealm security realm using the provided keystore.
++
+  * The `<ssl>` element causes the server to present the certificate within the keystore as its identity, which enables the user to apply their official certificate.
+  * The `<truststore>` element enables Client-Cert authentication. This means that, if a remote client attempts to connect to any resource managed by the ManagementRealm, the client can present a certificate, and if an entry in the truststore matches, will be authenticated without needing to provide a user name/password.
++
+The end result is an encrypted connection that is secure between the client and the server for the ManagementRealm.
+
+iii) _LDAP Connection_
++
+This step in the installer enables the user to define an LDAP server, which in turn defines users which should be allowed to authenticate with the ManagementRealm. This replaces the default configuration.
++
+The *LDAP Connection* screen enables users to define how to connect to the LDAP server.
++
+  * *Distinguished Name (DN)*: the user that can connect to the LDAP server. Typically the DN will uniquely define a special user for this purpose.
+
++
+[float]
+==== LDAP Security (Management Console)
++
+The *Management Console LDAP Configuration* screen enables you to set up a security realm. This defines the `<security-realm>` element to be added to the descriptors, and utilizes the connection defined previously.
+
++
+  * *Base DN*: Will typically define a 'base search' or 'root context' to begin searching for users.
+  * *Filter Type*: Tells {EAP} how to find the LDAP attribute that defines a user; it is can be a simple attribute, but can also be a complex LDAP filter.
+  * *Username filter*: The LDAP attribute which holds the user name values. A user name entered in this field is used for search queries as a value of the `uid` attribute. If a user chooses LDAP Syntax Query as a filter type, this query must be specified in this field.
+  * *Recursive directory search*: If enabled, {EAP} will traverse the LDAP tree recursively, starting at Base DN. Otherwise, the search will be limited to Base DN.
++
+[float]
+==== LDAP Security (Business Central)
++
+Most of the following fields are similar to the Base DN. Contexts are used to search for roles, which enables it to perform authorization in addition to authentication. Otherwise, the context fields are analogous to the Base DN from the previous, and attribute fields are analogous to user name attribute. The filters enable fine grained control over which values of the given attribute will be accepted.
++
+In Red Hat JBoss BPM Suite, the `jbpm.usergroup.callback.properties` and `jbpm.user.info.properties` files used by `LDAPUserGroupInfo` and `LDAPUserInfo` components of Task Service, are also filled by values entered on the *Business Central LDAP Configuration* page.
++
+Input values from *Business Central LDAP Configuration* page are used to configure a new security domain, which make use of `LdapExtended` login module. This security domain is set as default for Business Central web application. For more information about security domains and login modules, see the _{EAP} Security Guide_.
+
+
+iv) _Security Domain and JSSE Configuration_
++
+The *Security Domain* screen enables you to configure all of the elements of the `<security-domain>` security subsystem for managing security information, including JSSE configuration. For more detailed information about configuring security domains, see the _{EAP} Security Guide_.
+
+
+v) _Configure JMS SSL Keystores_
++
+The *Configuring JMS SSL Keystores* screen enables the encryption of JMS messages sent to Business Central. The client keystores are distributed to systems that need to communicate with the server to facilitate encrypted communications. You can use your pre-existing keystores or generate new ones.
+
+vi) _Configure Clustering_
++
+Selecting this option installs {PRODUCT} ready for clustered operation. For more information, see configuring_clustering_on_red_hat_jboss_eap COMMENT:link.
+
+vii) _Business Central Datasource Setup_
++
+After cluster configuration, the next screen enables you to configure the Business Central data source.
+
+viii) _Dashbuilder Datasource Setup_
++
+The *Dashbuilder Datasource Setup* screen enables you to configure the Dashbuilder data source.
+
+ix) _Configure Optaplanner Execution Server_
++
+Optaplanner is enabled by default. To disable Optaplanner, select *Configure Optaplanner Execution Server* then select *Disable Optaplanner Execution Server* on the *Configure Optaplanner* screen.
+ 
+x) _Configure KIE Server Management_
++
+Check *Enable KIE server management* if you want Business Central to manage the Intelligent Process Server and use the same data source for both execution servers.
++
+Managing the Intelligent Process Server using the Business Central requires a password vault to be configured. If you did not configure one, a vault with default values is created. See configure_password_vault COMMENT:link for further information. The password to the keystore is the same as for the user `bpmsAdmin`.
+
+--
+
+. The installer will go through the steps to install {PRODUCT} and will perform post installation configuration steps when you click *Next*. The installer can also start the {PRODUCT} server in the mode of your choosing (_standalone_ or _domain_, more information in starting_the_server2 COMMENT:link) and connect to it to validate the installation. Click *Next* to get to the last screen where you can generate the installation script and properties file. Click *Done* to quit the installer.
+
+You have successfully installed {PRODUCT} using the installer.
+
