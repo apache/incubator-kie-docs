@@ -23,8 +23,8 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.guvnor.common.services.project.model.GAV;
-import org.guvnor.rest.client.OrganizationalUnit;
 import org.guvnor.rest.client.ProjectResponse;
+import org.guvnor.rest.client.Space;
 import org.guvnor.rest.client.UpdateOrganizationalUnit;
 import org.junit.Test;
 
@@ -56,47 +56,47 @@ public class GuvnorSerializationExamplesTest {
         ObjectMapper om = new ObjectMapper();
 //        System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(projectRequests) );
     }
-    
+
     @Test
     public void getOrganizationalUnitsExample() throws JsonGenerationException, JsonMappingException, IOException {
-        List<OrganizationalUnit> orgUnits = new ArrayList<OrganizationalUnit>();
-        
-            OrganizationalUnit orgUnit = new OrganizationalUnit();
-            orgUnit.setName( "EmployeeWage" );
-            orgUnit.setOwner( "Employee" );
-            orgUnit.setDefaultGroupId( "org.bpms" );
-            List<String> repoNames = new ArrayList<String>();
-            repoNames.add( "EmployeeRepo" );
-            repoNames.add( "OtherRepo" );
-            orgUnit.setRepositories( repoNames );
-            orgUnits.add( orgUnit );
+        List<Space> orgUnits = new ArrayList<Space>();
 
-            orgUnit = new OrganizationalUnit();
-            orgUnit.setName( "OrgUnitName" );
-            orgUnit.setOwner( "OrgUnitOwner" );
-            orgUnit.setDefaultGroupId( "org.group.id" );
-            repoNames = new ArrayList<String>();
-            repoNames.add( "repository-name-1" );
-            repoNames.add( "repository-name-2" );
-            orgUnit.setRepositories( repoNames );
-            orgUnits.add( orgUnit );
+        Space space = new Space();
+        space.setName("EmployeeWage");
+        space.setOwner("Employee");
+        space.setDefaultGroupId("org.bpms");
+        List<String> repoNames = new ArrayList<String>();
+        repoNames.add("EmployeeRepo");
+        repoNames.add("OtherRepo");
+        space.setProjects(repoNames);
+        orgUnits.add(space);
+
+        space = new Space();
+        space.setName("SpaceName");
+        space.setOwner("SpaceOwner");
+        space.setDefaultGroupId("org.group.id");
+        repoNames = new ArrayList<String>();
+        repoNames.add("repository-name-1");
+        repoNames.add("repository-name-2");
+        space.setProjects(repoNames);
+        orgUnits.add(space);
 
         ObjectMapper om = new ObjectMapper();
         // System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(orgUnits) );
     }
-    
+
     @Test
     public void updateOrganizationalUnitExample() throws JsonGenerationException, JsonMappingException, IOException {
 
         UpdateOrganizationalUnit updateOrgUnit = new UpdateOrganizationalUnit();
-        
-        // use owner in existing OU if post owner is null
+
+        // use owner in existing Space if post owner is null
         updateOrgUnit.setOwner("NewOwner");
         updateOrgUnit.setDefaultGroupId("org.new.default.group.id");
-        
+
         ObjectMapper om = new ObjectMapper();
         // System.out.println( om.writerWithDefaultPrettyPrinter().writeValueAsString(updateOrgUnit) );
-        
+
         String jsonStr = "{ \"name\" : null,  \"owner\" : \"NewOwner\",  \"defaultGroupId\" : \"org.new.default.group.id\" }";
         updateOrgUnit = om.readValue(jsonStr, UpdateOrganizationalUnit.class);
         String name = updateOrgUnit.getClass().getName();
