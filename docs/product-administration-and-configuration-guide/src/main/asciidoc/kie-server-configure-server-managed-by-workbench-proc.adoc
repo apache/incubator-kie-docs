@@ -1,0 +1,120 @@
+[id='kie-server-configure-server-managed-by-{CENTRAL}-proc']
+= Configuring {KIE_SERVER} Managed by Business Central
+
+WARNING: This section provides a sample setup that you can use for testing purposes. Some of the values are unsuitable for a production environment, and are marked as such.
+
+Configure the Business Central to manage {A_KIE_SERVER} instance by performing the following steps:
+
+.Configuring {KIE_SERVER} Managed by Business Central
+. Make sure users with the following roles exist:
++
+--
+* In Business Central, a user with the role `rest-all`.
+* On the {KIE_SERVER}, a user with the role `kie-server`.
+
+NOTE: In production environments, use two distinct users, each with one role. In this sample situation, we use only one user named `controllerUser` that has both the `rest-all` and the `kie-server` roles.
+
+If such users do not exist, create them. 
+
+* On Red Hat JBoss EAP, go to `_EAP_HOME_/bin/` and execute:
++
+[source,bash]
+----
+$ ./add-user.sh -a --user controllerUser --password controllerUser1234; --role kie-server,rest-all
+----
++
+[WARNING]
+====
+Plain-text passwords are not secure. For production environments, use a password vault. For more information, see the https://access.redhat.com/documentation/en/red-hat-jboss-enterprise-application-platform/version-6.4/how-to-configure-server-security/#password_vault[Password Vault] chapter of the _Red Hat JBoss Enterprise Application Platform 6.4 How To Configure Server Security_ guide.
+====
+
+* On Red Hat JBoss Web Server, see <<_decision_server_tomcat>>.
+* On IBM WebSphere Application Server, see the {URL_IBM_GUIDE}#create_users_and_groups[Creating Users and Groups] section of the _{IBM_GUIDE}_.
+* On Oracle WebLogic Server, see the {URL_ORACLE_GUIDE}#configuring_security_settings[Configuring Security Settings] section of the _{ORACLE_GUIDE}_.
+--
++
+. Set the following JVM properties. The location of Business Central and the {KIE_SERVER} may be different. In such case, ensure you set the properties on the correct server instances.
++
+--
+** On Red Hat JBoss EAP, modify the `<system-properties>` section in:
+*** `_EAP_HOME_/standalone/configuration/standalone*.xml` for standalone mode.
+*** `_EAP_HOME_/domain/configuration/domain.xml` for domain mode.
+** On Red Hat JBoss Web Server, see <<_decision_server_tomcat>>.
+** On IBM WebSphere Application Server, see section {URL_IBM_GUIDE}#add_custom_jvm_properties[Adding Custom JVM Properties] of the _{IBM_GUIDE}_.
+** On Oracle WebLogic Server, see section {URL_ORACLE_GUIDE}#setting_environment_variables[Setting Environment Variables] of the _{ORACLE_GUIDE}_.
+
+ifdef::BA[.JVM Properties for {KIE_SERVER} Instance]
+ifdef::DM[.JVM Properties for Managed {KIE_SERVER} Instance]
+[cols="1,1,1a", options="header"]
+|===
+| Property
+| Value
+| Note
+
+| `org.kie.server.id`
+| `default-kie-server`
+| The {KIE_SERVER} ID.
+
+| `org.kie.server.controller`
+| `http://localhost:8080/business-central/rest/controller`
+| The location of Business Central.
+
+| `org.kie.server.controller.user`
+| `controllerUser`
+| The user name with the role `rest-all` as mentioned in the previous step.
+
+| `org.kie.server.controller.pwd`
+| `controllerUser1234;`
+| The password of the user mentioned in the previous step.
+
+| `org.kie.server.location`
+| `http://localhost:8080/kie-execution-server/services/rest/server`
+| The location of the {KIE_SERVER}.
+
+|===
+
+.JVM Properties for Business Central Instance
+[cols="1,1,1a", options="header"]
+|===
+| Property
+| Value
+| Note
+
+| `org.kie.server.user`
+| `controllerUser`
+| The user name with the role `kie-server` as mentioned in the previous step.
+
+| `org.kie.server.pwd`
+| `controllerUser1234;`
+| The password of the user mentioned in the previous step.
+
+|===
+--
++
+. Verify the successful start of the {KIE_SERVER} by sending a GET request to ``http://_SERVER:PORT_/kie-execution-server/services/rest/server/``. Once authenticated, you get an XML response similar to this:
++
+[source,xml]
+----
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<response type="SUCCESS" msg="Kie Server info">
+    <kie-server-info>
+        <capabilities>BRM</capabilities>
+        <capabilities>BPM-UI</capabilities>
+        <capabilities>BPM</capabilities>
+        <capabilities>BRP</capabilities>
+        <capabilities>KieServer</capabilities>
+        <location>http://localhost:8080/kie-execution-server/services/rest/server</location>
+        <messages>
+            <content>Server KieServerInfo{serverId='local-server-123', version='6.4.0.Final-redhat-3', location='http://localhost:8080/kie-execution-server/services/rest/server'}started successfully at Fri Jun 03 13:48:44 CEST 2016</content>
+            <severity>INFO</severity>
+            <timestamp>2016-06-03T13:48:44.606+02:00</timestamp>
+        </messages>
+        <name>local-server-123</name>
+        <id>local-server-123</id>
+        <version>6.4.0.Final-redhat-3</version>
+    </kie-server-info>
+</response>
+----
+
+. Verify successful registration by logging in to Business Central and selecting *Deploy* -> *Execution Servers*. If successful, you can see the registered server ID.
