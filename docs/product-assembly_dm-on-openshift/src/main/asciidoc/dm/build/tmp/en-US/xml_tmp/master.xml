@@ -1,0 +1,382 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE book [
+<!ENTITY % sgml.features "IGNORE">
+<!ENTITY % xml.features "INCLUDE">
+<!ENTITY % DOCBOOK_ENTS PUBLIC "-//OASIS//ENTITIES DocBook Character Entities V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/dbcentx.mod">
+%DOCBOOK_ENTS;
+]>
+<?asciidoc-toc?><?asciidoc-numbered?><book xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0">
+<info>
+<title>Decision Manager on OpenShift</title><subtitle>
+	For Red Hat Decision Manager 7.0
+
+</subtitle>
+
+<date>2018-01-27</date>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Author_Group.xml"/>
+<authorinitials>RC</authorinitials>
+<productname>Red Hat Decision Manager</productname>
+<productnumber>7.0</productnumber>
+<abstract>
+	<para>This topic describes deploying Red Hat Decision Manager 7.0 in an OpenShift environment.</para>
+</abstract>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Common_Content/Legal_Notice.xml"/>
+</info>
+<preface>
+<title>Preface</title>
+<simpara>As a system administrator, you can deploy and manage Red Hat Decision Manager in an OpenShift environment. The OpenShift platform automates container deployment and management. You can use the templates provided with Decision Manager to deploy it into OpenShift and to scale it as necessary.</simpara>
+<formalpara>
+<title>Prerequisite</title>
+<para>You must have a deployed OpenShift environment. For deta
+ils, see the documentation for the OpenShift product that you use.</para>
+</formalpara>
+</preface>
+<chapter xml:id="dm-openshift-overview-con">
+<title>Overview</title>
+<simpara>If you have an OpenShift environment, you can deploy Red Hat Decision Manager into this environment instead of a regular on-premises deployment.</simpara>
+<simpara>In this solution, Decision Server is deployed as an OpenShift pod. You can scale the pod up and down, providing as few or as many containers as necessary. You can use all standard OpenShift methods to manage the pod, balance the load, and deploy new versions.</simpara>
+<simpara>You can also deploy Decision Central on the OpenShift infrastructure together with Decision Server. In this case, you can use Decision Central to manage the Decision Server and to develop new rules.</simpara>
+<simpara>Alternatively, you can deploy Decision Server without Decision Central. To manage Decision Server in this case, you have two options:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Use the <emphasis>source to image</emphasis> (S2I) template and provide a Git repository with the source of your decision service. OpenShift automatically builds the source, installs the decision service into the Decision Server image, and starts the service. No further management of the image is required. If you want to use a new version of the decision service, you can build a new image. This option is often preferable for typical version management approaches (DevOps) in a containerized infrastructure.</simpara>
+</listitem>
+<listitem>
+<simpara>Use an instance of Decision Central installed on-premises (without OpenShift) or a stand-alone management console installed on-premises to manage the Decision Server that is deployed in OpenShift.</simpara>
+</listitem>
+</itemizedlist>
+<important>
+<simpara>All calls to the Decision Server that runs on OpenShift must be stateless. While the server accepts stateful calls, the state might not be saved between calls, because the server can be scaled to multiple containers or might be restarted by OpenShift automatically.</simpara>
+</important>
+</chapter>
+<chapter xml:id="dm-openshift-prepare-con">
+<title>Preparing to deploy Red Hat Decision Manager in your OpenShift environment</title>
+<simpara>Before deploying Red Hat Decision Manager in your OpenShift environment, you need to complete several preparatory tasks. You do not need to redo these tasks if you want to deploy additional images, for example, for new versions of decision services or for other decision services.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>Ensure that at least 4 gigabytes of memory are available in the OpenShift environment.</simpara>
+</listitem>
+<listitem>
+<simpara>Create the OpenShift project for the deployment.</simpara>
+</listitem>
+<listitem>
+<simpara>Log in to the project using the OpenShift web console and using the <literal>oc</literal> command.</simpara>
+</listitem>
+</itemizedlist>
+<section xml:id="imagestreams-file-install-proc">
+<title>Ensuring the availability of image streams</title>
+<simpara>You must ensure that the image streams that are required for the deployment are available in your OpenShift environment. Some versions of the OpenShift environment include the necessary image streams. You must check if they are available. If they are not available, you must install the <literal>image_streams.json</literal> file that is provided with Red Hat Decision Manager.</simpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Run the following commands:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc get imagestreamtag -n openshift | grep rhdm70-decisioncentral-openshift
+$ oc get imagestreamtag -n openshift | grep rhdm70-kieserver-openshift</screen>
+<simpara>If the output of both commands is not empty, the required image streams are available and no furtehr action is required.
+. If the output of one or both of the commands is empty, install the <literal>image-streams.json</literal> file. Complete one of the following actions:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Run the following command:</simpara>
+</listitem>
+</itemizedlist>
+<screen>$ oc create -f image_streams.json</screen>
+<itemizedlist>
+<listitem>
+<simpara>Using the OpenShift Web UI, select <emphasis role="strong">Add to Project &gt; Import YAML / JSON</emphasis>, then choose the file or paste its contents.</simpara>
+</listitem>
+</itemizedlist>
+</section>
+<section xml:id="secrets-kie-create-proc">
+<title>Creating the secrets for Decision Server</title>
+<simpara>OpenShift uses objects called <literal>Secrets</literal> to hold sensitive information, such as passwords or keystores. See the <link xlink:href="https://access.redhat.com/documentation/en/openshift-enterprise/version-3.2/developer-guide/#dev-guide-secrets">Secrets chapter</link> in the OpenShift documentation for more information.</simpara>
+<simpara>You must create an SSL certificate for Decision Server and provide it to your OpenShift environment as a secret.</simpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Generate an SSL keystore with a private and public key for SSL encryption for Decision Server. For production use, generate a valid signed certificate that matches the expected URL of the Decision Server. Save the keystore in a file named <literal>keystore.jks</literal>. Record the name of the certificate and the password of the keystore file.</simpara>
+</listitem>
+</orderedlist>
+<simpara>See <link xlink:href="https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.1/html-single/Security_Guide/index.html#Generate_a_SSL_Encryption_Key_and_Certificate">Generate a SSL Encryption Key and Certificate</link> for more information on how to create a keystore with self-signed or purchased SSL certificates.</simpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Use the <literal>oc</literal> command to generate a secret named <literal>kieserver-app-secret</literal> from the new keystore file:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc create secret generic kieserver-app-secret --from-file=keystore.jks</screen>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Create a service account named <literal>kieserver-service-account</literal>:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc create serviceaccount kieserver-service-account</screen>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Add the secret to the service account:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc secret add sa/kieserver-service-account secret/kieserver-app-secret</screen>
+</section>
+<section xml:id="secrets-central-create-proc">
+<title>Creating the secrets for Decision Central</title>
+<simpara>If you are planning to deploy Decision Central in your OpenShift environment, you must create an SSL certificate for Decision Central and provide it to your OpenShift environment as a secret. Do not use the same certificate and keystore for Decision Central and for Decision Server.</simpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Generate an SSL keystore with a private and public key for SSL encryption for Decision Central. For production use, generate a valid signed certificate that matches the expected URL of the Decision Central. Save the keystore in a file named <literal>keystore.jks</literal>. Record the name of the certificate and the password of the keystore file.</simpara>
+</listitem>
+</orderedlist>
+<simpara>See <link xlink:href="https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.1/html-single/Security_Guide/index.html#Generate_a_SSL_Encryption_Key_and_Certificate">Generate a SSL Encryption Key and Certificate</link> for more information on how to create a keystore with self-signed or purchased SSL certificates.</simpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Use the <literal>oc</literal> command to generate a secret named <literal>decisioncentral-app-secret</literal> from the new keystore file:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc create secret generic decisioncentral-app-secret --from-file=keystore.jks</screen>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Create a service account named <literal>decisioncentral-service-account</literal>:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc create serviceaccount decisioncentral-service-account</screen>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Add the secret to the service account:</simpara>
+</listitem>
+</orderedlist>
+<screen>$ oc secret add sa/decisioncentral-service-account secret/decisioncentral-app-secret</screen>
+</section>
+</chapter>
+<chapter xml:id="dm-openshift-deploy-con">
+<title>Deploying Red Hat Decision Manager in your OpenShift environment</title>
+<simpara>To deploy Red Hat Decision Manager in your OpenShift environment, use the OpenShift templates that are provided with Red Hat Decision Manager.</simpara>
+<formalpara>
+<title>Prerequisites</title>
+<para>You must complete the preparatory tasks as described in <xref linkend="dm-openshift-prepare-con"/>.</para>
+</formalpara>
+<note>
+<simpara>You can also use the <literal>oc</literal> command line tool to deploy the templates and set their parameters. For details, see the documentation for the version of OpenShift in your environment.</simpara>
+</note>
+<section xml:id="kieserver-central-deploy-proc">
+<title>Deploying Decision Central and Decision Server</title>
+<simpara>You can deploy Decision Central on the OpenShift infrastructure together with Decision Server. In this case, you can use Decision Central to manage the Decision Server and to develop new rules.</simpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>In the OpenShift Web UI, select <emphasis role="strong">Add to Project &gt; Browse Catalog</emphasis>, search for <literal>decision</literal>, and then select the <emphasis role="strong">Red Hat Decision Manager 7.0 applications (Persistent with https)</emphasis> template.</simpara>
+<itemizedlist>
+<listitem>
+<simpara>If this template is not available, use the <literal>rhdm70-full.yaml</literal> file that  is supplied with Red Hat Decision Manager. Select <emphasis role="strong">Add to Project &gt;  Import YAML / JSON</emphasis> and then select or paste the <literal>rhdm70-full.yaml</literal> file. In the <emphasis role="strong">Add Template</emphasis> window, ensure <emphasis role="strong">Process the template</emphasis> is selected and click <emphasis role="strong">Continue</emphasis>.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Set the following mandatory parameters:</simpara>
+<itemizedlist>
+<listitem>
+<simpara><emphasis role="strong">Application Name</emphasis>: the name of the OpenShift application. It is used in the default URLs for Decision Central and Decision Server.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Decision Central Server Certificate Name</emphasis>: the name of the certificate in the keystore that you created in <xref linkend="secrets-central-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Decision Central Server Keystore Password</emphasis>: the password for the keystore that you created in <xref linkend="secrets-central-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Certificate Name</emphasis>: the name of the certificate in the keystore that you created in <xref linkend="secrets-kie-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Keystore Password</emphasis>: the password for the keystore that you created in <xref linkend="secrets-kie-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">ImageStream Namespace</emphasis>: the namespace where the image streams are available. If the image streams were already available in your OpenShift environment (see <xref linkend="imagestreams-file-install-proc"/>), the namespace is <literal>openshift</literal>. If you have installed the image streams file, the namespace is the name of the OpenShift project.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</orderedlist>
+<simpara>You can also set other parameters as necessary.
+. Click <emphasis role="strong">Create</emphasis>.</simpara>
+</section>
+<section xml:id="kieserver-s2i-deploy-proc">
+<title>Deploying Decision Server using Source to Image (S2I)</title>
+<simpara>You can deploy Decision Server on the OpenShift infrastructure using Source to Image (S2I). In this case, provide a Git repository with the source of your decision service. OpenShift automatically builds the source, installs the decision service into the Decision Server image, and starts the service. No further management of the image is required. If you want to use a new version of the decision service, you can build a new image. This option is often preferable for typical version management approaches (DevOps) in a containerized infrastructure.</simpara>
+<formalpara>
+<title>Before you begin</title>
+<para>Ensure that the complete source code for your decision service is available in a Git repository that the OpenShift server can access. The source code is built using a Maven process, so it must include a <literal>pom.xml</literal> file.</para>
+</formalpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>In the OpenShift Web UI, select <emphasis role="strong">Add to Project &gt; Browse Catalog</emphasis>, search for <literal>decision</literal>, and then select the <emphasis role="strong">Red Hat Decision Manager Execution Server 7.0 S2I (Ephemeral with https)</emphasis> template.</simpara>
+<itemizedlist>
+<listitem>
+<simpara>If this template is not available, use the <literal>rhdm70-kieserver-s2i.yaml</literal> file that  is supplied with Red Hat Decision Manager. Select <emphasis role="strong">Add to Project &gt;  Import YAML / JSON</emphasis> and then select or paste the <literal>rhdm70-kieserver-s2i.yaml</literal> file. In the <emphasis role="strong">Add Template</emphasis> window, ensure <emphasis role="strong">Process the template</emphasis> is selected and click <emphasis role="strong">Continue</emphasis>.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Set the following mandatory parameters:</simpara>
+<itemizedlist>
+<listitem>
+<simpara><emphasis role="strong">Application Name</emphasis>: the name of the OpenShift application. It is used in the default URLs for Decision Central and Decision Server.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Certificate Name</emphasis>: the name of the certificate in the keystore that you created in <xref linkend="secrets-kie-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Keystore Password</emphasis>: the password for the keystore that you created in <xref linkend="secrets-kie-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Container Deployment</emphasis>: the identifying information of the decision service (KJAR file) that is built from your source. The format is: <literal>&lt;containerId&gt;=&lt;groupId&gt;:&lt;artifactId&gt;:&lt;version&gt;</literal>. You can provide two or more KJAR files using the <literal>|</literal> separator, for example: <literal>containerId=groupId:artifactId:version|c2=g2:a2:v2</literal>. The Maven build process must produce all these files from the source in the Git repository.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Git Repository URL</emphasis>: the URL for the Git repository that contains the source for your decision service.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Git Reference</emphasis>: the branch in the Git repository</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Context Directory</emphasis>: the path to the source within the project downloaded from the Git repository</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Artefact Directory</emphasis>: the path within the project that contains the required binary files (KJAR files and any other necessary files) after a successful Maven build. Normally this directory is the target directory of the build. However, you can provide prebuilt binaries in this directory in the Git repository</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">ImageStream Namespace</emphasis>: the namespace where the image streams are available. If the image streams were already available in your OpenShift environment (see <xref linkend="imagestreams-file-install-proc"/>), the namespace is <literal>openshift</literal>. If you have installed the image streams file, the namespace is the name of the OpenShift project.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</orderedlist>
+<simpara>You can also set other parameters as necessary. In particular:
+* If you want to use Decision Central or a stand-alone management console to manage the Decision Server, set the following parameters according to the URL that you use to access the web user interface of the Decision Central or of the management console:</simpara>
+<itemizedlist>
+<listitem>
+<simpara><emphasis role="strong">KIE server controller protocol</emphasis> (http or https)</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE server controller host</emphasis></simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE server controller port</emphasis></simpara>
+<itemizedlist>
+<listitem>
+<simpara>If the Maven build of your decision service pulls packages from a Maven repository, you can set the URL for a mirror repository and, if necessary, set the username and password to access the mirror repository. In this case, the build process will pull packages from the mirror repository instead of the configured original repository:</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Maven mirror URL</emphasis></simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Maven repository username</emphasis></simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Maven repository password</emphasis></simpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Click <emphasis role="strong">Create</emphasis>.</simpara>
+</listitem>
+</orderedlist>
+</listitem>
+</itemizedlist>
+</section>
+<section xml:id="kieserver-nos2i-deploy-proc">
+<title>Deploying Decision Server without using Source to Image (S2I)</title>
+<simpara>You can deploy Decision Server on the OpenShift infrastructure without Decision Central and without S2I. In this case, Decision Server can pick up a decision service from a Maven repository. However, to load the service, you must manage the Decision Server using one of the following tools:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Decision Central, installed outside of the OpenShift environment</simpara>
+</listitem>
+<listitem>
+<simpara>A stand-alone management console, installed outside of the OpenShift environment</simpara>
+</listitem>
+<listitem>
+<simpara>The API.</simpara>
+</listitem>
+</itemizedlist>
+<formalpara>
+<title>Before you begin</title>
+<para>Ensure that the Maven repository for your decision service is available.</para>
+</formalpara>
+<simpara>If you are planning to use Decision Central or a management console, ensure that it is installed and record its settings for controlling a KIE server.</simpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>In the OpenShift Web UI, select <emphasis role="strong">Add to Project &gt; Browse Catalog</emphasis>, search for <literal>decision</literal>, and then select the <emphasis role="strong">Red Hat Decision Manager Execution Server 7.0 (Ephemeral with https)</emphasis> template.</simpara>
+<itemizedlist>
+<listitem>
+<simpara>If this template is not available, use the <literal>rhdm70-kieserver.yaml</literal> file that  is supplied with Red Hat Decision Manager. Select <emphasis role="strong">Add to Project &gt;  Import YAML / JSON</emphasis> and then select or paste the <literal>rhdm70-kieserver.yaml</literal> file. In the <emphasis role="strong">Add Template</emphasis> window, ensure <emphasis role="strong">Process the template</emphasis> is selected and click <emphasis role="strong">Continue</emphasis>.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Set the following mandatory parameters:</simpara>
+<itemizedlist>
+<listitem>
+<simpara><emphasis role="strong">Application Name</emphasis>: the name of the OpenShift application. It is used in the default URLs for Decision Central and Decision Server.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Certificate Name</emphasis>: the name of the certificate in the keystore that you created in <xref linkend="secrets-kie-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE Server Keystore Password</emphasis>: the password for the keystore that you created in <xref linkend="secrets-kie-create-proc"/>.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">ImageStream Namespace</emphasis>: the name of the OpenShift project.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+</orderedlist>
+<simpara>You can also set other parameters as necessary. In particular:
+* If you want to use Decision Central or a stand-alone management console to manage the Decision Server, set the following parameters according to the URL that you use to access the web user interface of the Decision Central or of the management console:</simpara>
+<itemizedlist>
+<listitem>
+<simpara><emphasis role="strong">KIE server controller protocol</emphasis> (http or https)</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE server controller host</emphasis></simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">KIE server controller port</emphasis></simpara>
+<itemizedlist>
+<listitem>
+<simpara>If you want to set the Maven repository for retrieving the decision service, set the following parameters to point to the repository:</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Maven repository URL</emphasis></simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Maven repository username</emphasis></simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Maven repository password</emphasis></simpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Click <emphasis role="strong">Create</emphasis>.</simpara>
+</listitem>
+</orderedlist>
+</listitem>
+</itemizedlist>
+</section>
+</chapter>
+<chapter xml:id="dm-openshift-manage-con">
+<title>Managing Red Hat Decision Manager on OpenShift</title>
+<simpara>You can scale Decision Server on OpenShift as necessary.</simpara>
+<simpara>Do not scale Decision Central on OpenShift. If you deploy Decision Central and Decision Server and then scale Decision Server, the Decision Central automatically manages all the copies of Decision Server.</simpara>
+<section xml:id="updating_your_decision_service" remap="_updating_your_decision_service">
+<title>Updating your decision service</title>
+<simpara>When you want to update to a new version of your decision service, you can either use the existing pod to deploy the new version or create a new pod.</simpara>
+<simpara>To change the decision service in an existing pod, you must manage the Decision Server using Decision Central or a stand-alone management console. In this case, changes are handled the same way as in an on-premise deployment without containers.</simpara>
+<simpara>If you want to use a typical container application lifecycle, build a new pod to update your decision service. The Source to Image (S2I) deployment is usually most convenient for this solution.</simpara>
+<simpara>To update a service on the same URL alias, use the <link xlink:href="https://docs.openshift.com/container-platform/3.7/dev_guide/deployments/deployment_strategies.html#recreate-strategy">recreate strategy</link>. Decision Server does not support the <link xlink:href="https://docs.openshift.com/container-platform/3.7/dev_guide/deployments/deployment_strategies.html#rolling-strategy">rolling strategy</link>.</simpara>
+</section>
+</chapter>
+<appendix xml:id="versioning_information" remap="_versioning_information">
+<title>Versioning information</title>
+<simpara>Documentation last updated on: Fri Sep 29, 2017.</simpara>
+</appendix>
+</book>
