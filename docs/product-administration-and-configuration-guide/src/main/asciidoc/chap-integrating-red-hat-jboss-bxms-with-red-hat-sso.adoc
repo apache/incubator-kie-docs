@@ -271,7 +271,6 @@ image::kie_git_client_settings.png[]
 +
 For more information, see chapter https://keycloak.gitbooks.io/securing-client-applications-guide/content/v/2.2/topics/oidc/java/jaas.html[JAAS plugin] of the Keycloak _Securing Applications and Services Guide_.
 
-
 After you successfuly generate and download the JSON configuration file, specify the correct RH-SSO login module in the `_EAP_HOME_/standalone/configuration/standalone.xml` file. By default, the security domain in {PRODUCT} is set to `other`. Replace the default values of the `login-module` in this security domain with the ones presented in the example below:
 
 [source,xml]
@@ -294,16 +293,17 @@ At this point, all users authenticated through the RH-SSO server can clone inter
 ----
 git clone ssh://USER_NAME@localhost:8001/system
 ----
-=== Required JAR files
+=== Enabling user and group management for RH-SSO
+Complete the steps in this section to enable you to use {CENTRAL} to manage users and groups stored in RH-SSO.
 
-. Ensure that the following libraries are in the `WEB-INF/lib` directory. You can download these files from the Nexus repository or from you local m2 home.
-COMMENT: Clarify
+.Procedure
+. Ensure that the following libraries are in the `WEB-INF/lib` directory.
 +
 [source]
 ----
-uberfire-security-management-api-X.Y.Z.jar
-uberfire-security-management-backend-X.Y.Z.jar
-uberfire-security-management-keycloak-X.Y.Z.jar
+uberfire-security-management-api-<latest_artifact_version>.jar
+uberfire-security-management-backend-<latest_artifact_version>.jar
+uberfire-security-management-keycloak-<latest_artifact_version>.jar
 keycloak-core-U.V.W.Final.jar
 keycloak-common-U.V.W.Final.jar
 ----
@@ -311,7 +311,8 @@ keycloak-common-U.V.W.Final.jar
 +
 [source]
 ----
-uberfire-security-management-wildfly-X.Y.Z.jar, remove uberfire-security-management-tomcat-X.Y.Z.jar,etc)
+uberfire-security-management-wildfly-<latest_artifact_version>.jar
+uberfire-security-management-tomcat-<latest_artifact_version>.jar
 ----
 . Replace the entire contents of the `WEB-INF/classes/security-management.properties` file with the following content:
 +
@@ -323,20 +324,15 @@ org.uberfire.ext.security.management.keycloak.realm=demo
 org.uberfire.ext.security.management.keycloak.user=admin
 org.uberfire.ext.security.management.keycloak.password=admin
 org.uberfire.ext.security.management.keycloak.clientId=kie
-org.uberfire.ext.security.management.keycloak.clientSecret=[kie_secret_secret]
+org.uberfire.ext.security.management.keycloak.clientSecret=<kie_secret_secret>
 ----
++
+In the last entry, `<kie_secret_secret>` is a value similar to `759514d0-dbb1-46ba-b7e7-ff76e63c6891`.
 +
 [NOTE]
 ====
 If the `WEB-INF/classes/security-management.properties` file does not exist, create it.
 ====
-. COMMENT: What do I do with these (Using the Keycloak Adapter provider):
-+
-[source]
-----
-org.uberfire.ext.security.management.api.userManagementServices=KCAdapterUserManagementService
-org.uberfire.ext.security.management.keycloak.authServer=http://localhost:8081/auth
-----
 . Edit the following dependencies and exclusions in the  `/META-INF/jboss-deployment-structure.xml` file:
 +
 [source]
@@ -431,7 +427,6 @@ Once you create a new client, its *Access Type* is set to `public` by default. C
 
 
 === Installing and Setting Up {KIE_SERVER} with Client Adapter
-Comment: Ask Karel to confirm
 
 To consume the {KIE_SERVER} remote service endpoints, you must first create and assign the `kie-server` role in the RH-SSO Admin Console.
 
