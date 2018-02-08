@@ -1,6 +1,6 @@
 = Integrating {PRODUCT} with Red Hat Single Sign-On
 
-Red Hat Single Sign-On (RH-SSO) is a Single Sign-On solution that you can use for securing your browser applications and your REST web services and Git access. This chapter describes how you can integrate RH-SSO with {PRODUCT} and leverage its features.
+Red Hat Single Sign-On (RH-SSO) is a single sign-on solution that you can use for securing your browser applications with your REST web services and Git access. This chapter describes how you can integrate RH-SSO with {PRODUCT} and leverage its features.
 
 Integrating with RH-SSO brings an integrated SSO and IDM (Identity Management) environment for {PRODUCT}. The session management feature of RH-SSO allows you to use different {PRODUCT} environments on the web by authenticating only once.
 
@@ -92,7 +92,7 @@ The *Add Client* page opens.
 . On the *Add Client* page, provide the required information to create a new client for your realm. For example:
 * *Client ID*: kie
 * *Client protocol*: openid-connect
-* *Root URL*: http://_localhost_:8080/business-central
+* *Root URL*: http://_localhost_:8080/decision-central
 
 . Click *Save* to save your changes.
 +
@@ -131,7 +131,7 @@ You do not need to perform this step for Red Hat JBoss EAP 6.
 [source,xml]
 ----
 <subsystem xmlns="urn:jboss:domain:keycloak:1.1">
- <secure-deployment name="business-central.war">
+ <secure-deployment name="decision-central.war">
    <realm>demo</realm>
    <realm-public-key>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrVrCuTtArbgaZzL1hvh0xtL5mc7o0NqPVnYXkLvgcwiC3BjLGw1tGEGoJaXDuSaRllobm53JBhjx33UNv+5z/UMG4kytBWxheNVKnL6GgqlNabMaFfPLPCF8kAgKnsi79NMo+n6KnSY8YeUmec/p2vjO2NjsSAVcWEQMVhJ31LwIDAQAB</realm-public-key>
    <auth-server-url>http://localhost:8180/auth</auth-server-url>
@@ -294,6 +294,60 @@ At this point, all users authenticated through the RH-SSO server can clone inter
 ----
 git clone ssh://USER_NAME@localhost:8001/system
 ----
+=== Required JAR files
+
+. Ensure that the following libraries are in the `WEB-INF/lib` directory. You can download these files from the Nexus repository or from you local m2 home.
+COMMENT: Clarify
++
+[source]
+----
+uberfire-security-management-api-X.Y.Z.jar
+uberfire-security-management-backend-X.Y.Z.jar
+uberfire-security-management-keycloak-X.Y.Z.jar
+keycloak-core-U.V.W.Final.jar
+keycloak-common-U.V.W.Final.jar
+----
+. Remove third-party security JAR files, for example:
++
+[source]
+----
+uberfire-security-management-wildfly-X.Y.Z.jar, remove uberfire-security-management-tomcat-X.Y.Z.jar,etc)
+----
+. Replace the entire contents of the `WEB-INF/classes/security-management.properties` file with the following content:
++
+[source]
+----
+org.uberfire.ext.security.management.api.userManagementServices=KCCredentialsUserManagementService
+org.uberfire.ext.security.management.keycloak.authServer=http://localhost:8081/auth
+org.uberfire.ext.security.management.keycloak.realm=demo
+org.uberfire.ext.security.management.keycloak.user=admin
+org.uberfire.ext.security.management.keycloak.password=admin
+org.uberfire.ext.security.management.keycloak.clientId=kie
+org.uberfire.ext.security.management.keycloak.clientSecret=[kie_secret_secret]
+----
++
+[NOTE]
+====
+If the `WEB-INF/classes/security-management.properties` file does not exist, create it.
+====
+. COMMENT: What do I do with these (Using the Keycloak Adapter provider):
++
+[source]
+----
+org.uberfire.ext.security.management.api.userManagementServices=KCAdapterUserManagementService
+org.uberfire.ext.security.management.keycloak.authServer=http://localhost:8081/auth
+----
+. Edit the following dependencies and exclusions in the  `/META-INF/jboss-deployment-structure.xml` file:
++
+[source]
+----
+<dependencies>
+    <module name="org.jboss.resteasy.resteasy-jackson-provider" services="import"/>
+</dependencies>
+<exclusions>
+    <module name="org.jboss.resteasy.resteasy-jackson2-provider"/>
+</exclusions>
+----
 
 
 ifdef::BA[]
@@ -377,6 +431,7 @@ Once you create a new client, its *Access Type* is set to `public` by default. C
 
 
 === Installing and Setting Up {KIE_SERVER} with Client Adapter
+Comment: Ask Karel to confirm
 
 To consume the {KIE_SERVER} remote service endpoints, you must first create and assign the `kie-server` role in the RH-SSO Admin Console.
 
@@ -435,7 +490,7 @@ Here is an example:
 
 [source]
 ----
-EXEC_SERVER_HOME/bin/standalone.sh -Dorg.kie.server.id=kieserver1 -Dorg.kie.server.user=kieserver -Dorg.kie.server.pwd=password -Dorg.kie.server.location=http://localhost:8080/kie-execution-server/services/rest/server -Dorg.kie.server.controller=http://localhost:8080/business-central/rest/controller -Dorg.kie.server.controller.user=kiecontroller -Dorg.kie.server.controller.pwd=password
+EXEC_SERVER_HOME/bin/standalone.sh -Dorg.kie.server.id=kieserver1 -Dorg.kie.server.user=kieserver -Dorg.kie.server.pwd=password -Dorg.kie.server.location=http://localhost:8080/kie-execution-server/services/rest/server -Dorg.kie.server.controller=http://localhost:8080/decision-central/rest/controller -Dorg.kie.server.controller.user=kiecontroller -Dorg.kie.server.controller.pwd=password
 ----
 --
 +
@@ -490,7 +545,7 @@ If you have enabled the basic authentication in the RH-SSO client adapter config
 +
 [source]
 ----
- curl http://admin:password@localhost:8080/business-central/rest/repositories
+ curl http://admin:password@localhost:8080/decision-central/rest/repositories
 ----
 
 * For the {KIE_SERVER}: 
@@ -546,5 +601,5 @@ For example, if you want to check the internal {PRODUCT} repositories, use the t
 
 [source]
 ----
-curl -H "Authorization: bearer $TOKEN" http://localhost:8080/business-central/rest/repositories
+curl -H "Authorization: bearer $TOKEN" http://localhost:8080/decision-central/rest/repositories
 ----
