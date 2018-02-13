@@ -1,56 +1,53 @@
 = Integrating {PRODUCT} with Red Hat Single Sign-On
 
-Red Hat Single Sign-On (RH-SSO) is a single sign-on solution that you can use for securing your browser applications with your REST web services and Git access. This chapter describes how you can integrate RH-SSO with {PRODUCT} and leverage its features.
+Red Hat Single Sign-On (RH-SSO) is a single sign-on solution that you can use to secure your browser applications with your REST web services and Git access. This chapter describes how you can integrate RH-SSO with {PRODUCT} and leverage its features.
 
-Integrating with RH-SSO brings an integrated SSO and IDM (Identity Management) environment for {PRODUCT}. The session management feature of RH-SSO allows you to use different {PRODUCT} environments on the web by authenticating only once.
+Integrating with RH-SSO brings an integrated SSO and identity management (IDM) environment for {PRODUCT}. The session management feature of RH-SSO enables you to use different {PRODUCT} environments on the web by authenticating only once.
 
 For more information on RH-SSO, see the https://access.redhat.com/documentation/en/red-hat-single-sign-on/version-7.0/getting-started-guide/[RH-SSO documentation].
 
 [float]
-== Red Hat Single Sign On Integration Points
+== RH-SSO integration points
 You can integrate RH-SSO with {KIE_SERVER}s using the following integration points:
 
 * *{PRODUCT} authentication through an RH-SSO server*
 +
-Authenticating {PRODUCT} {PRODUCT} through RH-SSO involves securing both the {PRODUCT} web client and remote services through RH-SSO. This integration enables you to connect to {PRODUCT} using either web interface or a remote service consumer through RH-SSO.
+Authenticating {PRODUCT} {PRODUCT} through RH-SSO involves securing both the {PRODUCT} web client and remote services through RH-SSO. This integration enables you to connect to {PRODUCT} using either the web interface or a remote service consumer through RH-SSO.
 
 * *{KIE_SERVER} authentication through an RH-SSO server*
 +
-Authenticating {PRODUCT} {KIE_SERVER} through RH-SSO involves securing the remote services provided by the {KIE_SERVER} as it does not provide a web interface for server authentication. This enables any remote {PRODUCT} service consumer (user or a service) to authenticate through RH-SSO.
+Authenticating {PRODUCT} {KIE_SERVER} through RH-SSO involves securing the remote services provided by the {KIE_SERVER} because it does not provide a web interface for server authentication. This enables any remote {PRODUCT} service consumer (user or a service) to authenticate through RH-SSO.
 
 * *Third-party client authentication through an RH-SSO server*
 +
-Authenticating a third-party client through an RH-SSO server involves third-party clients to authenticate themselves using RH-SSO to consume the remote service endpoints provided by {PRODUCT} and {KIE_SERVER}, such as the REST API or remote file system services.
+Authenticating a third-party client through an RH-SSO server requires third-party clients to authenticate themselves using RH-SSO to consume the remote service endpoints provided by {PRODUCT} and {KIE_SERVER}, such as the REST API or remote file system services.
 
 The following sections describe how to achieve RH-SSO integration through these integration points:
 
 
-== {PRODUCT} Authentication through RH-SSO
+== {PRODUCT} authentication through RH-SSO
 
 To authenticate {PRODUCT} through RH-SSO:
 
 . Set up and run an RH-SSO server with a realm client for {PRODUCT}.
-. Install and set up the RH-SSO client adapter for EAP.
-. Secure {PRODUCT} Remote Service using RH-SSO.
+. Install and set up the RH-SSO client adapter for {EAP}.
+. Secure {PRODUCT} remote service using RH-SSO.
 ifdef::BA[]
 . Create an RH-SSO client and configure the RH-SSO client adapter for Dashbuilder (BAM).
 endif::BA[]
 
 
-=== Setting Up RH-SSO with Realm Client for {PRODUCT}
+=== Setting up RH-SSO with the realm client for {PRODUCT}
 
-Security realms are used to restrict access for the different applications resources. It is advised to create a new realm whether your RH-SSO instance is private or shared amongst other products. You can keep the master realm as a place for super administrators to create and manage the realms in your system. If you are integrating with an RH-SSO instance that is shared with other product installations to achieve Single Sign-On with those applications, all those applications must use the same realm.
-
-Here is how you can install an RH-SSO server and create a security realm for {PRODUCT}:
+Security realms are used to restrict access for different application resources. You should create a new realm whether your RH-SSO instance is private or shared with other products. You can keep the master realm as a place for super administrators to create and manage the realms in your system. If you are integrating with an RH-SSO instance that is shared with other product installations to achieve single sign-on with those applications, all of those applications must use the same realm.
 
 .Procedure
-. Download RH-SSO from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?downloadType=distributions&product=core.service.rhsso&version=7.0[DOWNLOADS] section of the Red Hat Customer Portal.
-. Install and configure a basic RH-SSO standalone server. To do this, follow the instructions in chapter https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/single/getting-started-guide/#install-boot[Install and Boot] of the _Red Hat Single Sign On Getting Started Guide_. For production environment settings, consult the _Red Hat Single Sign On_ https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/single/server-administration-guide/[Server Administration Guide].
+. Download RH-SSO from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?downloadType=distributions&product=core.service.rhsso&version=7.0[Downloads] section of the Red Hat Customer Portal.
+. Install and configure a basic RH-SSO standalone server. To do this, follow the instructions in the https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/single/getting-started-guide/#install-boot["Install and Boot"] chapter of the _Red Hat Single Sign On Getting Started Guide_. For production environment settings, consult the _Red Hat Single Sign On_ https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/single/server-administration-guide/[Server Administration Guide].
 +
 [NOTE]
 ====
-If you want to run both RH-SSO and {PRODUCT} servers on the same machine, ensure that you avoid port conflicts.
-To do so, do one of the following:
+If you want to run both RH-SSO and {PRODUCT} servers on the same system, ensure that you avoid port conflicts. by doing one of the following:
 
 * Update the `_RHSSO_HOME_/standalone/configuration/standalone.xml` file and set a port offset to 100. For example:
 +
@@ -67,7 +64,7 @@ bin/standalone.sh -Djboss.socket.binding.port-offset=100
 ----
 ====
 
-. Start the RH-SSO server using the following command from `_RHSSO_HOME_/bin`:
+. Start the RH-SSO server to configure RH-SSO from `_RHSSO_HOME_/bin`:
 +
 --
 [source]
@@ -75,17 +72,17 @@ bin/standalone.sh -Djboss.socket.binding.port-offset=100
 ./standalone.sh
 ----
 
-Once the RH-SSO server starts, open http://localhost:8180/auth/admin in a web browser and log in using your admin credentials that you created while installing RH-SSO. When you login for the first time, you can set up the initial user using the new user registration form.
+After the RH-SSO server starts, open http://localhost:8180/auth/admin in a web browser and log in using the admin credentials that you created while installing RH-SSO. When you login for the first time, you can set up the initial user on the new user registration form.
 --
 +
 
-. In the RH-SSO Admin Console, click the *Realm Settings* left menu item.
+. In the RH-SSO Admin Console, click the *Realm Settings* menu item.
 . On the *Realm Settings* page, click *Add Realm*.
 +
 The *Add realm* page opens.
 
 . On the *Add realm* page, provide a name for the realm and click *Create*.
-. Click the *Clients* left menu item and click *Create*.
+. Click the *Clients* menu item and click *Create*.
 +
 The *Add Client* page opens.
 
@@ -96,36 +93,33 @@ The *Add Client* page opens.
 
 . Click *Save* to save your changes.
 +
-Once you create a new client, its *Access Type* is set to `public` by default. Change it to `confidential`. 
+After you create a new client, its *Access Type* is set to `public` by default. Change it to `confidential`. 
 +
-At this point, the RH-SSO server is configured with a realm with a client for {PRODUCT} applications ({PRODUCT}, in this example) and running and listening for HTTP connections at [parameter]``localhost:8180``. This realm provides different users, roles, and sessions for the {PRODUCT} applications.
+At this point, the RH-SSO server is configured with a realm with a client for {PRODUCT} applications and running and listening for HTTP connections at [parameter]``localhost:8180``. This realm provides different users, roles, and sessions for the {PRODUCT} applications.
 
 
-=== Setting Up RH-SSO Client Adapter for EAP
+=== Setting up the RH-SSO client adapter for {EAP}
 
-To set up the RH-SSO client adapter for EAP:
-
-. Install the RH-SSO adapter for EAP.
-. Configure the {PRODUCT} application and the RH-SSO client adapter.
+To set up the RH-SSO client adapter for {EAP}, install the RH-SSO adapter for {EAP} then configure the {PRODUCT} application and the RH-SSO client adapter.
 
 
 .Procedure
-. Install Red Hat JBoss EAP 6.4._X_ or 7.0.
+. Install {EAP} 6.4._X_ or 7.0.
 +
 For version 6, see chapter https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html/Installation_Guide/chap-Installation_Instructions.html[Installation Instructions] from the _Red Hat JBoss Enterprise Application Platform Installation Guide_.
 +
-For version 7, see chapter https://access.redhat.com/documentation/en/red-hat-jboss-enterprise-application-platform/7.0/single/installation-guide/#installing_jboss_eap[Installing JBoss EAP] from the _Red Hat JBoss Enterprise Application Platform Installation Guide_.
-. Install {PRODUCT} in the freshly installed JBoss EAP.
+For version 7, see chapter https://access.redhat.com/documentation/en/red-hat-jboss-enterprise-application-platform/7.0/single/installation-guide/#installing_jboss_eap[Installing {EAP}] from the _Red Hat JBoss Enterprise Application Platform Installation Guide_.
+. Install {PRODUCT} in the freshly installed {EAP} home.
 +
-If you configure RH-SSO adapter by making changes in `standalone.xml`, and then unzip {PRODUCT}, you may overwrite and lose the RH-SSO adapter configuration.
-. Download the EAP adapter from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?product=core.service.rhsso&downloadType=distributions[Red Hat Customer Portal].
-. Unzip and install the adapter. For installation instructions, see section https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/securing-applications-and-services-guide/securing-applications-and-services-guide#jboss_adapter[JBoss EAP Adapter] from the _Red Hat Single Sign On Securing Applications and Services Guide_.
-. For version 7, go to `_EAP_HOME_/standalone/configuration` and open the `standalone.xml` and `standalone-full.xml` files. Delete the `<single-sign-on/>` element from both of them.
+If you configure the RH-SSO adapter by making changes to the `standalone.xml` file, and then unzip {PRODUCT}, you may overwrite and lose the RH-SSO adapter configuration.
+. Download the {EAP} adapter from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?product=core.service.rhsso&downloadType=distributions[Red Hat Customer Portal].
+. Unzip and install the adapter. For installation instructions, see the https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/securing-applications-and-services-guide/securing-applications-and-services-guide#jboss_adapter[JBoss EAP Adapter] section of the _Red Hat Single Sign On Securing Applications and Services Guide_.
+. For version 7, go to `_EAP_HOME_/standalone/configuration` and open the `standalone.xml` and `standalone-full.xml` files. Delete the `<single-sign-on/>` element from both of the files.
 +
-You do not need to perform this step for Red Hat JBoss EAP 6.
+You do not need to perform this step for {EAP} 6.
 
 .Procedure
-. Navigate to `_EAP_HOME_/standalone/configuration` in your EAP installation and edit `standalone.xml` to add the RH-SSO subsystem configuration. For example:
+. Navigate to `_EAP_HOME_/standalone/configuration` directory in your {EAP} installation and edit the `standalone.xml` file to add the RH-SSO subsystem configuration. For example:
 +
 --
 [source,xml]
@@ -144,25 +138,25 @@ You do not need to perform this step for Red Hat JBoss EAP 6.
 </subsystem>
 ----
 
-Here,
+In this example:
 
-* `secure-deployment name`: Name of your application's WAR file.
-* `realm`: Name of the realm that you created for the applications to use.
-* `realm-public-key`: The public key of the realm you created. You can find the key in the *Keys* tab in the *Realm settings* page of the realm you created in the RH-SSO Admin Console. If you do not provide a value for `realm-public-key`, the server retrieves it automatically.
-* `auth-server-url`: The URL for the RH-SSO authentication server.
-* `enable-basic-auth`: The setting to enable basic authentication mechanism, so that the clients can use both token-based and basic authentication approaches to perform the requests.
-* `resource`: The name for the client that you created.
-* `credential name`: The secret key for the client you created. You can find the key in the *Credentials* tab on the *Clients* page of the RH-SSO Admin Console.
-* `principal-attribute`: The login name of the user. If you do not provide this value, your User Id is displayed in the application instead of your user name.
+* `secure-deployment name` is the name of your application's WAR file.
+* `realm` is the name of the realm that you created for the applications to use.
+* `realm-public-key` is the public key of the realm you created. You can find the key in the *Keys* tab in the *Realm settings* page of the realm you created in the RH-SSO Admin Console. If you do not provide a value for `realm-public-key`, the server retrieves it automatically.
+* `auth-server-url` is the  URL for the RH-SSO authentication server.
+* `enable-basic-auth` is the  setting to enable basic authentication mechanism, so that the clients can use both token-based and basic authentication approaches to perform the requests.
+* `resource` is the  name for the client that you created.
+* `credential name` is the  secret key for the client you created. You can find the key in the *Credentials* tab on the *Clients* page of the RH-SSO Admin Console.
+* `principal-attribute` is the login name of the user. If you do not provide this value, your User Id is displayed in the application instead of your user name.
 +
 [NOTE]
 ====
-The RH-SSO server converts the user names to lowercase. Therefore, after integration with RH-SSO, your user name will appear in lowercase in {PRODUCT}. If you have user names in upper-case letters hard coded in business processes, the application may not be able to identify the upper-case user.
+The RH-SSO server converts the user names to lowe rcase. Therefore, after integration with RH-SSO, your user name will appear in lowe rcase in {PRODUCT}. If you have user names in upper case hard coded in business processes, the application may not be able to identify the upper case user.
 ====
 --
 +
 
-. Navigate to `_EAP_HOME_/bin/` and start the EAP server using the following command:
+. Navigate to `_EAP_HOME_/bin/` and enter the following command to start the {EAP} server:
 +
 --
 [source]
@@ -173,22 +167,22 @@ The RH-SSO server converts the user names to lowercase. Therefore, after integra
 
 [NOTE]
 ====
-You can also configure RH-SSO adapter for EAP by updating your applications WAR file to use the RH-SSO security subsystem. However, the recommended approach is configuring the adapter through the RH-SSO subsystem. This means that you are updating EAP configuration instead of applying the configuration on each WAR file.
+You can also configure the RH-SSO adapter for {EAP} by updating your application's WAR file to use the RH-SSO security subsystem. However, Red Hat recommends that you configure the adapter through the RH-SSO subsystem. Doing this updates the {EAP} configuration instead of applying the configuration on each WAR file.
 ====
 
 [id='_adding_a_new_user']
-=== Adding a New User
+=== Adding a new user
 
 To add new users and assign them a role to access {PRODUCT}:
 
 . Log in to the RH-SSO Admin Console and open the realm to which you wish to add a user.
-. Click the *Users* left menu item under the *Manage* section.
+. Click the *Users* menu item under the *Manage* section.
 +
 An empty user list page called *Users* opens.
 
 . Click the *Add User* button on the empty user list to start creating your new user.
 +
-An *Add user* page opens.
+The *Add user* page opens.
 
 . Provide user information on the *Add user* page and click *Save*.
 . Set a new password under the *Credentials* tab.
@@ -200,13 +194,12 @@ Define the roles as realm roles in the *Realm Roles* tab under the *Roles* secti
 
 . Click *Role Mappings* tab on the *Users* page to assign roles.
 
-You can now log in to your {PRODUCT} application (in this example, {PRODUCT}) once the server is running using the user credentials you just created. 
+You can now log in to {CENTRAL} after you start {KIE_SERVER}. 
 
-=== Securing {PRODUCT} Remote Service Using RH-SSO
+=== Securing the {PRODUCT} remote service using RH-SSO
 
 {PRODUCT} provides different remote service endpoints that can be consumed by third-party clients using remote API.
 To authenticate those services through RH-SSO, you must disable a security filter called [parameter]``BasicAuthSecurityFilter``.
-To do this, follow these steps:
 
 .Procedure
 . Open your application deployment descriptor file (`WEB-INF/web.xml`) and apply the following changes to it:
@@ -250,12 +243,13 @@ To do this, follow these steps:
 
 . Save your changes.
 
-=== Securing {PRODUCT} File System Services Using RH-SSO
+=== Securing {PRODUCT} file system services using RH-SSO
 
-To consume other remote services, such as file systems (for example, a remote GIT service), you need to specify a correct RH-SSO login module. First, generate a JSON configuration file:
+To consume other remote services, such as file systems (for example, a remote GIT service), you must specify a correct RH-SSO login module. First, generate a JSON configuration file.
 
+.Procedure
 . Navigate to the *RH-SSO Admin Console* located at http://localhost:8080/auth/admin.
-. Click the *Clients* left menu item. 
+. Click *Clients*. 
 . Create a new client with the following settings:
 +
   * Set *Client ID* as `kie-git`.
@@ -269,9 +263,9 @@ image::kie_git_client_settings.png[]
 . Click *Download*.
 . Move the downloaded JSON file to an accessible directory in the server's file system or add it to the application class path.
 +
-For more information, see chapter https://keycloak.gitbooks.io/securing-client-applications-guide/content/v/2.2/topics/oidc/java/jaas.html[JAAS plugin] of the Keycloak _Securing Applications and Services Guide_.
+For more information, see the https://keycloak.gitbooks.io/securing-client-applications-guide/content/v/2.2/topics/oidc/java/jaas.html[JAAS plugin] chapter of the Keycloak _Securing Applications and Services Guide_.
 
-After you successfuly generate and download the JSON configuration file, specify the correct RH-SSO login module in the `_EAP_HOME_/standalone/configuration/standalone.xml` file. By default, the security domain in {PRODUCT} is set to `other`. Replace the default values of the `login-module` in this security domain with the ones presented in the example below:
+After you successfully generate and download the JSON configuration file, specify the correct RH-SSO login module in the `_EAP_HOME_/standalone/configuration/standalone.xml` file. By default, the security domain in {PRODUCT} is set to `other`. Replace the default values of the `login-module` in this security domain with the values in the following example:
 
 [source,xml]
 ----
@@ -345,13 +339,13 @@ If the `WEB-INF/classes/security-management.properties` file does not exist, cre
 
 
 ifdef::BA[]
-=== Creating and Configuring RH-SSO Client Adapter for BAM
+=== Creating and configuring the RH-SSO client adapter for BAM
 
-Once you have created a realm client for {PRODUCT} and set up the RH-SSO client adapter for EAP, you can repeat the same steps to integrate BAM with RH-SSO. After successful integration of RH-SSO with BAM, you can navigate within {PRODUCT} and BAM without having to re-login.
+After you have created a realm client for {PRODUCT} and set up the RH-SSO client adapter for {EAP}, you can repeat the same steps to integrate BAM with RH-SSO. After successful integration of RH-SSO with BAM, you can navigate within {PRODUCT} and BAM without having to re-login.
 
 .Procedure
 . In the RH-SSO Admin Console, open the security realm that you created.
-. Click the *Clients* left menu item and click *Create*.
+. Click the *Clients* menu item and click *Create*.
 +
 The *Add Client* page opens.
 
@@ -360,9 +354,9 @@ The *Add Client* page opens.
 * *Root URL*: http://_localhost_:8080/dashbuilder
 * *Client protocol*: openid-connect
 +
-Once you create a new client, its *Access Type* is set to `public` by default. Change it to `confidential`. 
+After you create a new client, its *Access Type* is set to `public` by default. Change it to `confidential`. 
 +
-. Configure the RH-SSO client adapter for BAM. To do so, navigate to `_EAP_HOME_/standalone/configuration` in your EAP installation and edit `standalone.xml` to add the RH-SSO subsystem configuration. For example:
+. Configure the RH-SSO client adapter for BAM. To do so, navigate to `_EAP_HOME_/standalone/configuration` in your {EAP} installation and edit `standalone.xml` to add the RH-SSO subsystem configuration. For example:
 +
 --
 [source,xml]
@@ -390,25 +384,24 @@ Here,
 --
 +
 
-. Restart the EAP server and open http://localhost:8080/dashbuilder in a web browser to access BAM. Log in to BAM using your RH-SSO admin user credentials.
+. Restart the {EAP} server and open http://localhost:8080/dashbuilder in a web browser to access BAM. Log in to BAM using your RH-SSO admin user credentials.
 +
 You can now access both the applications ({PRODUCT} and BAM) without having to re-login.
 endif::BA[]
 
-== {KIE_SERVER} Authentication through RH-SSO
-
+== {KIE_SERVER} authentication through RH-SSO
 
 The {PRODUCT} {KIE_SERVER} provides a REST API for third-party clients. You can integrate the {KIE_SERVER} with RH-SSO to delegate the third-party clients identity management to the RH-SSO server.
 
-Once you have created a realm client for {PRODUCT} and set up the RH-SSO client adapter for EAP, you can repeat the same steps to integrate the {KIE_SERVER} with RH-SSO.
+After you have created a realm client for {PRODUCT} and set up the RH-SSO client adapter for {EAP}, you can repeat the same steps to integrate the {KIE_SERVER} with RH-SSO.
 
-=== Creating Client for {KIE_SERVER} on RH-SSO
+=== Creating a client for {KIE_SERVER} on RH-SSO
 
 To create a new client on your already created realm on RH-SSO Admin Console:
 
 .Procedure
 . In the RH-SSO Admin Console, open the security realm that you created.
-. Click the *Clients* left menu item and click *Create*.
+. Click the *Clients* menu item and click *Create*.
 +
 The *Add Client* page opens.
 
@@ -419,11 +412,11 @@ The *Add Client* page opens.
 
 . Click *Save* to save your changes.
 +
-Once you create a new client, its *Access Type* is set to `public` by default. Change it to `confidential` and click *Save* again.
+After you create a new client, its *Access Type* is set to `public` by default. Change it to `confidential` and click *Save* again.
 . Navigate to the *Credentials* tab and copy the secret key. The secret key is necessary to configure the kie-execution-server client in the next section. 
 
 
-=== Installing and Setting Up {KIE_SERVER} with Client Adapter
+=== Installing and setting up {KIE_SERVER} with the client adapter
 
 To consume the {KIE_SERVER} remote service endpoints, you must first create and assign the `kie-server` role in the RH-SSO Admin Console.
 
@@ -433,7 +426,7 @@ If you deployed the {KIE_SERVER} to a different application server than {PRODUCT
 ====
 
 .Procedure
-. Navigate to `_EAP_HOME_/standalone/configuration` in your EAP installation and edit `standalone.xml` to add the RH-SSO subsystem configuration. For example:
+. Navigate to `_EAP_HOME_/standalone/configuration` in your {EAP} installation and edit `standalone.xml` to add the RH-SSO subsystem configuration. For example:
 +
 --
 [source,xml]
@@ -470,7 +463,7 @@ Here,
 +
 
 . Save your configuration changes in `standalone.xml`.
-. Use the following command to restart the EAP server and run the {KIE_SERVER}.
+. Use the following command to restart the {EAP} server and run the {KIE_SERVER}.
 +
 --
 [source]
@@ -487,7 +480,7 @@ EXEC_SERVER_HOME/bin/standalone.sh -Dorg.kie.server.id=kieserver1 -Dorg.kie.serv
 --
 +
 
-. Once the {KIE_SERVER} is running, you can check the server status. In the following command, `kieserver` is a user name with the `kie-server` role and password `password`:
+. After the {KIE_SERVER} is running, you can check the server status. In the following command, `kieserver` is a user name with the `kie-server` role and password `password`:
 +
 [source]
 ----
@@ -514,7 +507,7 @@ In such case, do not set the `org.kie.server.controller.user` and `org.kie.serve
 As the {KIE_SERVER} is unable to refresh the token, use a high-lifespan token. A token's lifespan must not exceed January 19 2038. Check with your security best practices to see whether this is a suitable solution for your environment.
 ====
 
-== Third-Party Client Authentication through RH-SSO
+== Third-party client authentication through RH-SSO
 
 To use the different remote services provided by {PRODUCT} or by the {KIE_SERVER}, your client, such as curl, wget, web browser, or a custom REST client, must authenticate through the RH-SSO server and have a valid token to perform the requests. To use the remote services, the authenticated user must have assigned the following roles:
 
@@ -529,7 +522,7 @@ Your client can authenticate through RH-SSO using one of these options:
 * Token-based authentication.
 
 
-=== Basic Authentication
+=== Basic authentication
 
 If you have enabled the basic authentication in the RH-SSO client adapter configuration for both {PRODUCT} and {KIE_SERVER}, you can avoid the token grant/refresh calls and call the services as shown in the examples below:
 
@@ -548,12 +541,12 @@ curl http://admin:password@localhost:8080/kie-execution-server/services/rest/ser
 ----
 
 [id='_token_based_authentication']
-=== Token-Based Authentication
+=== Token-based authentication
 
 If you want to opt for a more secure option of authentication, you can consume the remote services from both {PRODUCT} and {KIE_SERVER} using a granted token provided by RH-SSO.
 
 .Procedure
-. In the RH-SSO Admin Console, click the *Clients* left menu item and click *Create* to create a new client.
+. In the RH-SSO Admin Console, click the *Clients* menu item and click *Create* to create a new client.
 +
 The *Add Client* page opens.
 
@@ -564,7 +557,7 @@ The *Add Client* page opens.
 . Click *Save* to save your changes.
 
 . Change the token settings in *Realm Settings*:
-.. In the RH-SSO Admin Console, click the *Realm Settings* left menu item.
+.. In the RH-SSO Admin Console, click the *Realm Settings* menu item.
 .. Click the *Tokens* tab.
 .. Change the value for *Access Token Lifespan* to [parameter]``15`` minutes.
 +
@@ -572,7 +565,7 @@ This gives you enough time to get a token and invoke the service before it expir
 
 .. Click *Save* to save your changes.
 
-. Once a public client for your remote clients is created, you can now obtain the token by making an HTTP request to the RH-SSO server's token endpoint using:
+. After a public client for your remote clients is created, you can now obtain the token by making an HTTP request to the RH-SSO server's token endpoint using:
 +
 [source]
 ----
