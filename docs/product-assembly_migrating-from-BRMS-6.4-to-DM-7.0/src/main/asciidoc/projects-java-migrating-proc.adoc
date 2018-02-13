@@ -1,0 +1,42 @@
+[id='projects-java-migrating-proc']
+= Migrating Java projects
+
+For Java projects that are not developed in Business Central workbench, you must modify the dependencies in the `pom.xml` file and resolve any build issues. This process is the same for decision services and client applications written in Java.
+
+.Prerequisite
+
+You must download the Maven repository for {PRODUCT} {PRODUCT_VERSION} and make it available to the local Maven installation (as a local or remote repository).
+
+.Procedure
+. Open the `pom.xml` file of the project.
+. Remove any BOM file dependencies and any other Drools and OptaPlanner dependencies.
+. Add the following dependency under the `<dependencies>` tag:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.jboss.bom.rhdm</groupId>
+  <artifactId>rhdm-platform-bom</artifactId>
+  <version>${rhdm.version}</version>
+  <scope>import</scope>
+  <type>pom</type>
+</dependency>
+----
++
+where `${rhdm.version}` is the version of the `org.jboss.bom.rhdm.rhdm-platform-bom` artifact in the Maven repository for {PRODUCT} {PRODUCT_VERSION}. You can view the version of the artifact by entering the repository and navigating to `maven-repository/org/jboss/bom/rhdm/rhdm-platform-bom` directory; the name of the only subdirectory in this directory is the version. For example, `7.0.0.GA-redhat-1` .
+. If your code uses any Drools CDI annotations (`@KReleaseId` , `@KContainer`, `@KBase`, `@Ksession`), also add the following dependency:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-cdi</artifactId>
+  <scope>import</scope>
+  <type>pom</type>
+</dependency>
+----
++
+This dependency is necessary because CDI annotations are now defined in a separate module and not im main Drools code. Without this dependency, the annotations do not work.
+. Save the `pom.xml` file.
+. Rebuild the project, using a regular Maven build.
+. If build errors or subsequent execution errors happen, resolve them using the following information.  
