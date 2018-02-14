@@ -9,8 +9,12 @@ You must download the Maven repository for {PRODUCT} {PRODUCT_VERSION} and make 
 
 .Procedure
 . Open the `pom.xml` file of the project.
-. Remove any BOM file dependencies and any other Drools and OptaPlanner dependencies.
-. Add the following dependency under the `<dependencies>` tag:
+. Remove the <version> tag from any dependencies under the following groups:
+** `org.kie`
+** `org.drools`
+** `org.jbpm`
+** `org.optaplanner`
+. Add the following dependency under the `<dependencies>` tag within the `<dependencyManagement>` section:
 +
 [source,xml]
 ----
@@ -23,20 +27,77 @@ You must download the Maven repository for {PRODUCT} {PRODUCT_VERSION} and make 
 </dependency>
 ----
 +
-where `${rhdm.version}` is the version of the `org.jboss.bom.rhdm.rhdm-platform-bom` artifact in the Maven repository for {PRODUCT} {PRODUCT_VERSION}. You can view the version of the artifact by entering the repository and navigating to `maven-repository/org/jboss/bom/rhdm/rhdm-platform-bom` directory; the name of the only subdirectory in this directory is the version. For example, `7.0.0.GA-redhat-1` .
-. If your code uses any Drools CDI annotations (`@KReleaseId` , `@KContainer`, `@KBase`, `@Ksession`), also add the following dependency:
+Where `${rhdm.version}` is the version of the `org.jboss.bom.rhdm:rhdm-platform-bom` artifact in the Maven repository for {PRODUCT} {PRODUCT_VERSION}. You can view the version of the artifact by entering the repository and navigating to `maven-repository/org/jboss/bom/rhdm/rhdm-platform-bom` directory; the name of the only subdirectory in this directory is the version. For example, `7.0.0.GA-redhat-1` .
+. If your code uses any Drools CDI annotations (`@KReleaseId` , `@KContainer`, `@KBase`, `@KSession`), also add the following dependency:
 +
 [source,xml]
 ----
 <dependency>
   <groupId>org.drools</groupId>
   <artifactId>drools-cdi</artifactId>
-  <scope>import</scope>
-  <type>pom</type>
 </dependency>
 ----
 +
-This dependency is necessary because CDI annotations are now defined in a separate module and not im main Drools code. Without this dependency, the annotations do not work.
+This dependency is necessary because the CDI extension for processing the annotations is now defined using a separate module. Without this dependency, the annotations do not work.
+. If the following dependency exists:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems</artifactId>
+</dependency>
+----
++ 
+Replace it with one or more of the following dependencies, depending on the workitems that your code uses:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-core</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-bpmn2</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-email</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-jms</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-rest</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-webservice</artifactId>
+</dependency>
+----
+. If the following dependency exists:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.remote</groupId>
+  <artifactId>kie-remote-client</artifactId>
+</dependency>
+----
++ 
+Replace it with the following dependency:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.uberfire</groupId>
+  <artifactId>uberfire-rest-client</artifactId>
+</dependency>
+----
+. Update the version of the project artifact.
 . Save the `pom.xml` file.
 . Rebuild the project, using a regular Maven build.
-. If build errors or subsequent execution errors happen, resolve them using the following information.  
+. If build errors or subsequent execution errors happen, resolve them using the information in xref:code-troubleshooting-ref[].  
