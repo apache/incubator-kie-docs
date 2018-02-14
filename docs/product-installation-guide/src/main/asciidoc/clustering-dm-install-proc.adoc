@@ -1,16 +1,19 @@
 [id='clustering-dm-install-proc']
 = Installing {CENTRAL} on cluster nodes
 
-After you have installed Apache ActiveMQ Artemis and Elasticsearch, complete the steps in this section to install and run {CENTRAL} on each node of the cluster.
+Complete the steps in this section to install and run {CENTRAL} on each node of the cluster.
 
 .Prerequisites
 * An NFS cluster
-* Apache ActiveMQ Artemis installed on the main node of the cluster
 * Elasticsearch installed on the main node of the cluster
+* ActiveMQ JMS broker activated on the main node of the cluster
 
 .Procedure
 . Install {CENTRAL} on each node of the cluster. See <<installing-con>> for information about installing {CENTRAL}.
-. Edit the following properties in the `./standalone.xml` file, where `<MAIN_NODE>` is the IP address of the main node of the cluster:
+. Edit the following properties in the `./standalone.xml` file, where:
+* `<MAIN_NODE>` is the IP address of the main node of the cluster 
+* `<JMS_BROKER_USER>` is a username for the JMS broker
+* `<JMS_BROKER_PASSWORD>` is a password for the JMS broker
 +
 [source,xml]
 ----
@@ -19,8 +22,8 @@ After you have installed Apache ActiveMQ Artemis and Elasticsearch, complete the
       <niogit_dir_on_shared_nfs>"/>
   <property name="appformer-cluster" value="true"/>
   <property name="appformer-jms-url" value="tcp://<MAIN_NODE_IP>:61616"/>
-  <property name="appformer-jms-username" value="admin"/>
-  <property name="appformer-jms-password" value="admin"/>
+  <property name="appformer-jms-username" value="JMS_BROKER_USER"/>
+  <property name="appformer-jms-password" value="JMS_BROKER_PASSWORD"/>
   <property name="org.appformer.ext.metadata.index" value="elastic"/>
   <property name="org.appformer.ext.metadata.elastic.port" value="9300"/>
   <property name="org.appformer.ext.metadata.elastic.host" 
@@ -30,6 +33,13 @@ After you have installed Apache ActiveMQ Artemis and Elasticsearch, complete the
   <property name="org.appformer.ext.metadata.elastic.retries" value="10"/>
 </system-properties>
 ----
+. On the main node of the cluster, in {EAP} create a user with the `admin` role and a username and password that matches the <JMS_BROKER_USER> and <JMS_BROKER_PASSWORD> that you created in the previous step. For example:
++
+[source,bash]
+----
+$ <MAIN_NODE_EAP_HOME>/bin/./add-user.sh -a --user <JMS_BROKER_USER> --password <JMS_BROKER_USER> --role admin
+----
+
 .  To start {CENTRAL}, enter one of the following commands on each node of the cluster:
 +
 * On Linux or UNIX-based systems:
