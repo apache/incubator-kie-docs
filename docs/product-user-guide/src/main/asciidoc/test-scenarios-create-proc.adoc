@@ -1,96 +1,58 @@
-[id='test_scenarios_create_proc']
-= Creating and Running a Test Scenario
+[id='test-scenarios-create-proc']
+= Creating and running a test scenario
 
-A basic test scenario requires, at minimum, the following data:
+You can create test scenarios in {CENTRAL} to test the functionality of business rule data before deployment. A basic test scenario must have at least the following data:
 
 * Related data objects
 * *GIVEN* facts
-* *EXPECT* facts
+* *EXPECT* results
 
-With this data, the test scenario can compare given facts with expected results, according to the related data objects, and validate the configured rules.
-
-For information on adding more advanced test scenario settings, see <<test_scenarios_advanced_con>>.
+With this data, the test scenario can validate the expected and actual results for that rule instance based on the defined facts.
 
 .Procedure
-. In {CENTRAL}, go to *Authoring* -> *Project Authoring* and click the project name.
+. Go to *Menu* -> *Design* -> *Projects* and click the project name.
 . Click *Create New Asset* -> *Test Scenario*.
-. Enter the test scenario name, select the package, and click *OK*.
+. Enter an informative *Test Scenario* name and select the appropriate *Package*. The package that you specify must be the same package where the required data objects and rule assets have been assigned or will be assigned.
 +
-The Test Scenario editor appears.
+. Click *Ok* to create the test scenario.
 +
-.Test Scenario Editor
+The new test scenario is now listed in the *Test Scenarios* panel of the *Project Explorer*,
++
+. Click the *Data Objects* tab to verify that all data objects needed for the rules that you want to test are listed. If not, click *New item* to import the needed data objects from other packages, or
+ifeval::["{context}" == "test-scenarios"]
+xref:data-objects-create-proc_test-scenarios[create data objects]
+endif::[]
+ifeval::["{context}" == "chap-test-scenarios"]
+xref:data-objects-create-proc_chap-data-models[create data objects]
+endif::[]
+within your package.
+. After all data objects are in place, return to the *Editor* tab of the test scenarios designer and define the *GIVEN* and *EXPECT* data for the scenario, based on the available data objects.
++
+.The test scenarios designer
 image::test-scenario-edit.png[]
-
-. Click the *Data Objects* tab to verify that all data objects needed for the rules you want to test are listed. If not, click *New item* to import the needed data objects from other packages.
 +
-Data objects from the same package are available by default, but data objects in other packages must be imported.
+The *GIVEN* section defines the input facts for the test. For example, if an "Underage" rule in the project declines loan applications for applicants under the age of 21, then the *GIVEN* facts in the test scenario could be `Applicant` with `age` set to some integer less than 21.
 +
-For example, consider the package structure `org.company.project` with these data objects:
+The *EXPECT* section defines the expected results based on the *GIVEN* input facts. That is, *GIVEN* the input facts, *EXPECT* these other facts to be valid or entire rules to be activated. For example, with the given facts of an applicant under the age of 21 in the scenario, the *EXPECT* results could be `LoanApplication` with `approved` set to `false` (as a result of the underage applicant), or could be the activation of the "Underage" rule as a whole.
 +
---
-* `Fact1` in package `org.company`
-* `Fact2` in package `org.company.project`
---
-If you create your test scenario in `org.company`, then `Fact1` is available but you must import `Fact2`.
-+
-. After confirming or importing the data objects, return to the *Editor* tab and define the *GIVEN* and *EXPECT* data by clicking image:5686.png[] next to each label. Click *Save* in the editor after you make any changes.
-+
-The *GIVEN* section defines the input facts for the test. You can select a particular data object from the model and give it a variable name, called *Fact Name* in the window, or choose to activate a rule flow group instead. Activating a rule flow group allows rules from the specified rule flow group to be tested by activating the group in advance.
-+
-.Define GIVEN
-image::test-scenario-facts.png[]
-+
-NOTE: For information about adding advanced values to *GIVEN* fields, see <<test_scenarios_advanced_proc>>.
-
-+
-The *EXPECT* section defines the expected results based on the *GIVEN* input facts. That is, *GIVEN* the input parameters, *EXPECT* these rules to be activated or fired. You can also *EXPECT* facts to be present and to have specific field values, or *EXPECT* rules not to fire at all.
-+
-.Define EXPECT
-image::test-scenario-expected-rules.png[]
-+
-You can provide one of three expectations, depending on the data in the *GIVEN* section:
+. Optionally, add a *CALL METHOD* and any *globals* to the test scenario:
 +
 --
-* *Rule:* Enables you to check for firing of a particular rule. Either type the name of a rule that is expected to be fired or select it from the list of rules. Click *OK*.
-* *Fact value:* Enables you to check a specific object instance and its values. In the following example, given a `Customer` object with the `hasInternetService` boolean set to `true`, we expect the same object to have the `hasPhoneService` boolean set to `true`:
+* *CALL METHOD:* Use this to invoke a method from another fact when the rule execution is initiated. Click *CALL METHOD*, select a fact, and click image:6187.png[] to select the method to invoke.
+* *globals:* Use this to add any global variables in the project to the test scenario. Click *globals* to select the variable to be validated, and then in the test scenarios designer, click the global name and define field values to be applied to the global variable. If no global variables are available, then they need to be created as new assets in {CENTRAL}. Global variables are named objects that are visible to the rule engine but are different from the objects for facts. Changes in the object of a global do not trigger the re-evaluation of rules.
 --
 +
-image::factvalues.png[]
+*<@Toni (1 of 3): Am I even close on my descriptions of call method and globals above? I'm still not clear myself on what exactly a call method does and what globals do. Any thoughts?>*
 +
---
-* *Any fact that matches:* Enables you to check any objects in the working memory and the values of their field. In the following example, given a `Customer` object which has Internet service, a new object `RecurringPayment` is expected to be inserted into the working memory with the `amount` field set to `5`:
---
+. Click *More* at the bottom of the test scenarios designer to add other data blocks to the same scenario file as needed.
+. After you have defined the *GIVEN* input and *EXPECT* results for the scenario, click *Run scenario* in the upper-right corner to run the test, or click *Run all scenarios* to run all `.scenario` files in the project package at once (if there are multiple).
 +
-image::amount-field.png[]
-
-. After you have defined the *GIVEN* input and *EXPECT* results and saved all changes, click *Run scenario* in the upper-right corner to execute your test. If you created more tests in one file, click *Run all scenarios* run all the tests in a sequence.
+*<@Toni (2 of 3): Is the above correct about "Run all scenarios"? Seems to be the case when I test it, but the problem is that I intentionally made a bogus test that fails when run individually but all scenarios pass when I run all. That is, I have 5 good scenarios and 1 bad one, but when I run all, it says all 6 scenarios pass. Do you think it's a bug or am I missing something?>*
 +
-The test results are displayed in the *Reporting* panel at the bottom of the screen.
+If the test fails, address any problems described in the *Reporting* message at the bottom of the window, review all components in the scenario, and try again to validate the scenario until the scenario passes.
 +
-.Test Scenario Report
-image::test-scenario-reporting.png[]
+. Click *Save* in the test scenarios designer to save your work.
 
-. Open the *Audit log* to view test scenario details.
-+
-.Test Scenario Audit Log
-image::auditlog.png[]
+For more details about adding GIVEN facts to test scenarios, see xref:test-scenarios-GIVEN-proc[].
 
-.Multiple Test Scenarios in One File
-[NOTE]
-====
-When you create more tests in one file, be sure to delete facts inserted by previous tests. When you insert a new *GIVEN* fact, notice the following fields:
-
-* *Modify an existing fact* enables you to edit a fact between knowledge base executions.
-* *Delete an existing fact* enables you to remove facts between executions.
-+
-.Modifying and Deleting Existing Facts
-image::modify-facts.png[Modify and Delete and existing fact options for JBoss BRMS Test Scenarios]
-====
-
-
-*Use this or lose it.*
-
-After you run all test scenarios, the status of the scenarios is reported in a *Messages* panel of the test scenarios designer to help you address any reported problems.
-
-.Speed test scenario screen
-image::speed-test-scenario.png[Speed test Scenario screen]
+For more details about adding EXPECT results to test scenarios, see xref:test-scenarios-EXPECT-proc[].
