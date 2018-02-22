@@ -86,7 +86,7 @@ If you're only using Java, you could execute the actual service in a new thread:
 ----
 public class MyServiceTaskHandler implements WorkItemHandler {
 
-        
+
   public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
     new Thread(new Runnable() {
       public void run() {
@@ -136,12 +136,12 @@ jBPM executor operates on commands, which are essential piece of code that is go
 [source,java]
 ----
 /**
- * Executor's Command are dedicated to contain purely business logic that should be executed. 
+ * Executor's Command are dedicated to contain purely business logic that should be executed.
  * It should not have any reference to underlying process engine and should not be concerned
  * with any process runtime related logic such us completing work item, sending signals, etc.
  * <br/>
- * Information that are taken from process will be delivered as part of data instance of 
- * <code>CommandContext</code>. Depending on the execution context that data can vary but 
+ * Information that are taken from process will be delivered as part of data instance of
+ * <code>CommandContext</code>. Depending on the execution context that data can vary but
  * in most of the cases following will be given:
  * <ul>
  *  <li></li>
@@ -156,11 +156,11 @@ jBPM executor operates on commands, which are essential piece of code that is go
  * </ul>
  * Important note about implementations is that it shall always be possible to be initialized with default constructor
  * as executor service is an async component so it will initialize the command on demand using reflection.
- * In case there is a heavy logic on initialization it should be placed in another service implementation that 
+ * In case there is a heavy logic on initialization it should be placed in another service implementation that
  * can be looked up from within command.
  */
 public interface Command {
-    
+
     /**
      * Executed this command's logic.
      * @param ctx - contextual data given by the executor service
@@ -182,7 +182,7 @@ It acts purely as data transfer object and puts single requirement on the data i
 ----
 /**
  * Data holder for any contextual data that shall be given to the command upon execution.
- * Important note that every object that is added to the data container must be serializable 
+ * Important note that every object that is added to the data container must be serializable
  * meaning it must implement <code>java.io.Seriazliable</code>
  *
  */
@@ -268,8 +268,8 @@ public class ExecutionResults implements Serializable {
     public String toString() {
         return "ExecutionResults{" + "data=" + data + '}';
     }
-    
-    
+
+
 }
 ----
 
@@ -321,14 +321,30 @@ Then at modeling time TaskName property needs to be aligned with those used at r
 
 
 jbpm executor is configurable to allow fine tuning of its environment.
-In general jbpm executor runs as a thread pool that periodically checks for waiting jobs and executes them when needed.
+In general jbpm executor runs as a thread pool executor that schedules or directly executes jobs when needed. This is based on specialised executor to
+take into consideration job priority (important when there are many jobs to be fired at exact same time). Thread pool is backed
+by data base to make sure jobs will survive server restarts. When executor is initialised it will load all jobs that are awaiting
+execution into the thread pool executor.
+
 Configuration of jbpm executor is done via system properties:
 
 * org.kie.executor.disabled = true|false - allows to completely disable executor component
-* org.kie.executor.pool.size = Integer - allows to specify thread pool size where default it 1
+* org.kie.executor.pool.size = Integer - allows to specify thread pool size where default is 1
 * org.kie.executor.retry.count = Integer - allows to specify number of retries in case of errors while running a job
-* org.kie.executor.interval = Integer - allows to specify interval (in seconds) that executor will use while checking for waiting jobs where default is 3 seconds
+* org.kie.executor.interval = Integer - allows to specify interval (by default in seconds) that executor will use to synchronize with data base - default is 0 seconds which means it is disabled
 * org.kie.executor.timeunit = String - allows to specify timer unit used for calculating interval, value must be a valid constant of java.util.concurrent.TimeUnit, by default it's SECONDS.
+
+==== Clustering and failover
+
+jBPM executor will run jobs on the same server instance (jvm) that they were scheduled on. Unless that server crashes or is shutdown. In single
+server setup this will mean that until that server is brought up again, jobs are not going to be executed. In case of cluster, job might be
+executed by any cluster member if synchronisation with data base was enabled or on the same server when it was not enabled.
+
+Whenever jBPM executor needs to run in cluster (meaning more than one instance using same data base) it's recommended to enable synchronisation
+with underlying data base. That will ensure jobs from instances that failed will be processed by another cluster member.
+
+To enable it, set `org.kie.executor.interval` system property to a valid interval. It's recommended to take into account the demands of your
+system, such as maximum acceptable delay for jobs to avoid too frequent synchronisations.
 
 
 ==== Reoccurring jobs
@@ -366,9 +382,9 @@ See http://mswiderski.blogspot.com/2014/12/keep-your-jbpm-environment-healthy.ht
 ==== Run jobs on same server node on which it was scheduled
 
 
-By default jbpm executor is cluster ready and by that will distribute jobs across all cluster members.
+By default jbpm executor is cluster ready and by that might distribute jobs across all cluster members.
 That might result in execution of given job on different cluster member than it was scheduled which is not always desired.
-To override this mechanism job can set 'Owner' as part of their data when being registered wher owner is the executor instance that is scheduling the job.
+To override this mechanism job can set 'Owner' as part of their data when being registered where owner is the executor instance that is scheduling the job.
 
 [source]
 ----
@@ -380,7 +396,7 @@ To override this mechanism job can set 'Owner' as part of their data when being 
 ----
 
 
-That will ensure that only the isntance that scheduled the job will be the one which will execute it.
+That will ensure that only the instance that scheduled the job will be the one which will execute it.
 Note that it might impact the time when the job is executed especially in cases where given cluster member will be unavailable.
 
 ==== Assign priority to jobs
