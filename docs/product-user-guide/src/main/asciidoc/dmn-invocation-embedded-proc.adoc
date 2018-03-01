@@ -1,0 +1,95 @@
+[#dmn-invocation-embedded-proc]
+= Embedding a DMN call directly into the Java application
+
+This section describes executing decision services for DMN models by directly interacting with a KIE container.
+
+.Prerequisites
+
+* A KJAR containing the DMN model to execute
+
+* The following dependencies are added to the pom.xml of the project:
+
+[source,xml]
+----
+<!-- Required for the DMN runtime API -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-dmn-core</artifactId>
+  <version>${drools-version}</version>
+</dependency>
+
+<!-- Required if not using classpath kie container -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+  <version>${drools-version}</version>
+</dependency>
+----
+
+NOTE: *${drools-version}* is a Maven property that should resolve to the precise version used for other KIE / Drools dependencies at runtime.
+
+.Procedure
+. Create a KIE Container from classpath or ReleaseId, for example:
++
+[source,java]
+----
+KieServices kieServices = KieServices.Factory.get();
+
+ReleaseId releaseId = kieServices.newReleaseId( "org.acme", "my-kjar", "1.0.0" );
+KieContainer kieContainer = kieServices.newKieContainer( releaseId );
+----
++
+Or alternatively:
++
+[source,java]
+----
+KieServices kieServices = KieServices.Factory.get();
+
+KieContainer kieContainer = kieServices.getKieClasspathContainer();
+----
+
+. Obtain DMNRuntime from the KIE Container and a reference to the DMN model to be evaluated, by using the *model namespace* and *model name*.
++
+[source,java]
+----
+DMNRuntime dmnRuntime = kieContainer.newKieSession().getKieRuntime( DMNRuntime.class );
+
+DMNModel dmnModel =
+      dmnRuntime.getModel("http://www.redhat.com/_c7328033-c355-43cd-b616-0aceef80e52a",
+            "dmn-movieticket-ageclassification");
+----
+
+. Execute the decision services for the desired model:
++
+[source,java]
+----
+DMNContext dmnContext = dmnRuntime.newContext();   // <1>
+
+for (Integer age : Arrays.asList(1,12,13,64,65,66)) { // <2>
+  dmnContext.set("Age", age);  // <3>
+  DMNResult dmnResult = dmnRuntime.evaluateAll(dmnModel, dmnContext); // <4>
+  for (DMNDecisionResult dr : dmnResult.getDecisionResults()) { // <5>
+    log.info("Age " + age + " Decision '" + dr.getDecisionName() + "' : " + dr.getResult());
+  }
+}
+----
+<1> Instantiate a new DMN Context to be the input for the model evaluation. Note that this example is looping through the Age Classification decision multiple times.
+<2> Assign input variables for the input DMN context.
+<3> Evaluate all DMN decisions defined in the DMN model.
+<4> Each evaluation may result in one or more results, creating the loop.
+
+This example would print the following output:
+
+[source]
+----
+Age 1 Decision 'AgeClassification' : Child
+Age 12 Decision 'AgeClassification' : Child
+Age 13 Decision 'AgeClassification' : Adult
+Age 64 Decision 'AgeClassification' : Adult
+Age 65 Decision 'AgeClassification' : Senior
+Age 66 Decision 'AgeClassification' : Senior
+----
+
+.Related Information
+
+* {URL_PACKAGING_DEPLOYING_DECISION_SERVICE}[{PACKAGING_DEPLOYING_DECISION_SERVICE}]
