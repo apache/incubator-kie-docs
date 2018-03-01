@@ -1,58 +1,69 @@
 [id='configure-server']
 = Configuring WAS for {KIE_SERVER}
 
-Before you can deploy {KIE_SERVER} on WAS, you must configure the server to accept the deployable WAR files, which are provided as two deployable web application archives: `business-central.war` and `kie-execution-server.war`
+Before you can deploy {KIE_SERVER} on WAS, you must configure the server to accept the deployable `kie-execution-server.war` file.
 
 .Prerequisites
-Ensure that you have root access to WAS and that you are able to successfully access the IBM WebSphere's administrative console. Log in to your IBM WebSphere console using an administrative login before performing any of these steps. The usual login URL is `http://_TARGET_SERVER_:9060/ibm/console` (for example `http://localhost:9060/ibm/console`).
-
-After you successfully log in to the IBM WebSphere console, the *IBM Integrated Solutions Console* with the welcome screen opens. The main menu on the left side of the console contains all the links necessary for configuring the application server.
+You have successfully logged in to the IBM WebSphere's *IBM Integrated Solutions Console*. The main menu on the left side of the console contains all the links necessary for configuring the application server.
 
 .IBM Integrated Solutions Console
 image::websphere_console.png[]
 
 == Increasing JVM heap size
 
-With the default JVM heap size, the WAS freezes or causes deployment errors when deploying {KIE_SERVER}. To increase the heap size:
+The default JVM heap size in WAS may cause errors when deploying {KIE_SERVER}. To avoid issues, increase the heap size:
 
-. In the *Integrated Solutions Console*, go to *Servers* -> *Server Types* -> *WebSphere Application Servers*.
-. In the list of application servers, click on the server on which you are going to deploy {KIE_SERVER}. For example `server1`.
+. In the *Integrated Solutions Console*, go to *Servers* -> *Server Types* -> *WebSphere application servers*.
+. From the list of application servers, click on the server that you are going to deploy {KIE_SERVER}. For example, `server1`.
 +
-The configuration page for that server opens.
-. Under *Server Infrastructure* heading on the right side, click *Java and Process Management* -> *Process Definition*.
+The configuration page for `server1` opens.
+. Under *Server Infrastructure*, expand *Java and Process Management* and click *Process definition*.
 +
 .Application server configuration page
 image::process_definition.png[]
-. Click *Java Virtual Machine* under the *Additional Properties* heading on the right.
+. Click *Java Virtual Machine* under *Additional Properties*.
 +
 .Process definition configuration page
 image::process_definition2.png[]
 +
-This will open up the configuration properties for the JVM that is used to start the server.
-. Change both the *Initial Heap Size* and *Maximum Heap Size* to `2048`. This is the configuration {KIE_SERVER} is tested with.
+The *General Properties* for the JVM that is used to start the server page opens.
+. Change both the *Initial heap size* and *Maximum heap size* to `2048`. {KIE_SERVER} has been tested with this value.
 +
 .JVM configuration page
 image::process_definition3.png[]
-. Click *Apply* at the bottom.
-+
-*Messages* pop-up window appears at the top of the *Application Servers* configuration page. You can choose to save these configuration settings to the master configuration at this stage.
+. Click *Apply*.
+. Click *Save* in the *Messages* window to save your changes to the master configuration.
 +
 .Messages pop-up
 image::messages_popup.png[]
-. Restart the server at this point or wait until other configuration changes have been made.
+. Stop and restart the server in your terminal by navigating to the WebSphere Application Server `/bin` directory location that you specified during installation.
+. Run the following commands:
++
+
+[source]
+----
+sudo ./stopServer.sh server1
+----
++
+
+[source]
+----
+sudo ./startServer.sh server1
+----
 
 == Creating users and groups
 
-. In the main menu on the left, click *Users and Groups* -> *Manage Groups*.
-
-. Create the `kie-server` group by clicking *Create...*.
+. Paste `http://_TARGET_SERVER_:9060/ibm/console` in to your web browser and log in with the user credentials created in the previous procedure. For example: `http://localhost:9060/ibm/console`.
++
+The *WebSphere Integrated Solutions Console* opens.
+. Click *Users and Groups* -> *Manage Groups*.
+. Create the `kie-server` group by clicking *Create*.
 +
 .Created groups
 image::created_groups_brms.png[]
 
-. In the main menu on the left, click *Users and Groups* -> *Manage Users*.
-
-. Click *Create...* and fill in the user credentials.
+. Click *Users and Groups* -> *Manage Users*.
+. Click *Create* and fill in the user credentials.
 +
 [IMPORTANT]
 ====
@@ -64,33 +75,31 @@ For example, if there is a role called `kie-server`, you should _not_ create a u
 .Create User Dialog Window
 image::creating_user.png[]
 
-. Click *Group Membership* and assign the user to the `kie-server` group that you created previously.
-. Click *Create*.
+. Click *Group Membership*.
+. Assign the user to the `kie-server` group and click *Create*.
 
 == Setting up JMS resources
 
-WAS must be configured to send and receive JMS messages through {KIE_SERVER}. However, before you do this, a service bus must be present. Follow the steps below to create a service bus if one does not already exist.
+Create a service bus in WAS to send and receive JMS messages through the {KIE_SERVER} if one does not already exist.
 
 === Creating the service bus
 
-. In the main menu on the left, click *Service Integration* -> *Buses*.
-. Click *New...*.
-. Enter the name and make sure that the *Bus Security* option is _unchecked_.
+. Click *Service Integration* -> *Buses* -> *New*.
+. Enter a new bus name and deselect the *Bus Security* option.
 . Click *Next* and then *Finish* to create the service bus.
 
 ==== Adding a bus member
 
-Before you continue, add a new bus member. A bus member is a server or a cluster that has been added to this service bus.
+Add a new bus member, which is a server or a cluster that is added to the service bus.
 
-. Go to *Service Integration* -> *Buses* and click on the service bus that you have created.
-. Under the *Topology* heading on the right, click *Bus Members*.
-. Click *Add*.
-. In the *Add a New Bus Member* wizard, choose the server and the type of message store for the persistence in the first two steps. Depending on the previous selection, you can also specify the properties of the message store.
-. Click *Finish* in the last step to add a new bus member.
+. Click *Service Integration* -> *Buses* and click on the service bus that you have created.
+. Click *Bus Members* in the *Topology* section, and click *Add*.
+. In the *Add a New Bus Member* wizard, choose the server and the type of message store for persistence. You can also specify the properties of the message store.
+. Click *Finish* to add the new bus member.
 
 === Creating JMS connection factories
 
-To send and receive messages from the {KIE_SERVER}, you have to create the JMS connection factories, which are needed for establishing connections used for sending messages into queues.
+To send and receive messages from {KIE_SERVER}, you must create the JMS connection factories. Connection factories are required for establishing connections when sending messages into queues.
 
 ifdef::BA[]
 For Business Central, create the following connection factories: `KIE.SIGNAL`, `KIE.INPUT` (for queries), `KIE.RESPONSE.ALL` (for responses), and `KIE.EXECUTOR` (for the executor).
@@ -99,13 +108,13 @@ If you will be installing the {KIE_SERVER} as well, you need to create `KIE.SERV
 endif::BA[]
 
 ifdef::DM[]
-{KIE_SERVER} needs the Java Messaging Services. Use the procedure below to create the following connection factories: `KIE.SERVER.REQUEST` and `KIE.SERVER.RESPONSE`.
+Create the `KIE.SERVER.REQUEST` and `KIE.SERVER.RESPONSE` connection factories.
 endif::DM[]
 
 NOTE: The factory names shown above are suggestions only and you can change them to suit your needs and company guidelines.
 
-. In the main menu on the left, go to *Resources* -> *JMS* -> *Connection Factories*.
-. Make sure the correct scope is selected and click *New*.
+. Click *Resources* -> *JMS* -> *Connection Factories*.
+. Select the correct scope and click *New*.
 . Select the *Default Messaging Provider* option and click *OK*.
 ifdef::BA[]
 . Enter the name and JNDI name of the factory. For example:
@@ -129,14 +138,14 @@ ifdef::DM[]
 The JNDI name for `KIE.SERVER.RESPONSE` is `jms/conn/KIE.SERVER.RESPONSE`.
 ====
 endif::DM[]
-. From the *Bus Name* drop-down list, select the service bus created earlier.
+. Select the service bus from the *Bus Name* drop-down list.
 +
-The rest of the options are not mandatory and can be left with default values.
-. Click *Apply* and choose to save the changes to the master configuration.
+Leave the default values for the remaining options.
+. Click *Apply* and *Save* to save the changes to the master configuration.
 
 === Creating JMS queues
 
-The next step is to create the JMS queues. These queues are the destination end points for point-to-point messaging.
+JMS queues are the destination end points for point-to-point messaging.
 
 ifdef::BA[]
 For {PRODUCT}, create the following queues: `KIE.RESPONSE.ALL` (for responses), `KIE.AUDIT` (for asynchronous audit logs), `KIE.SESSION` (for `ksession`-based operations), `KIE.TASK` (for task-based operations), `KIE.EXECUTOR` (for Business Central executor services), and `KIE.SIGNAL` (for sending external global signals to processes).
@@ -145,16 +154,15 @@ For {KIE_SERVER}, create the following: `KIE.SERVER.REQUEST` (for requests), `KI
 endif::BA[]
 
 ifdef::DM[]
-For {KIE_SERVER}, create the following queues: `KIE.SERVER.REQUEST` (for requests) and `KIE.SERVER.RESPONSE` (for responses).
+Create the `KIE.SERVER.REQUEST` (for requests) and `KIE.SERVER.RESPONSE` (for responses) queues.
 
 //IMPORTANT: To prevent warnings in the log, create `KIE.EXECUTOR` queue as well.
 endif::DM[]
 
-To create these queues:
+. Click *Resources* -> *JMS* -> *Queues*.
+. Select the correct scope and click *New*.
+. Select the *Default Messaging Provider* option and click *OK*.
 
-. In the main menu, go to *Resources* -> *JMS* -> *Queues*.
-. Make sure the correct scope is selected and click *New*.
-. Select the *Default Messaging Provider* radio button and click *OK*.
 ifdef::BA[]
 . Enter the name and the JNDI name of the queue, for example:
 +
@@ -174,18 +182,19 @@ ifdef::DM[]
 +
 [NOTE]
 ====
-All of the JNDI names of other queues follow the same convention as the example above.
+All of the JNDI names follow the same convention as the example above.
 ====
 endif::DM[]
 . From the *Bus Name* drop-down list, select the service bus created earlier.
-. From the *Queue Name* drop-down list, make sure to select the *Create Service Integration Bus Destination*.
+. From the *Queue Name* drop-down list, select the *Create Service Integration Bus Destination*.
 +
-This will open up the *Create New Queue* form for creating a new service integration bus. In this form, enter a unique identifier and select the bus member created earlier in this section.
-. Click *Apply* at the bottom and choose to save the changes to the master configuration.
+The *Create New Queue* form opens to assist you with creating a new service integration bus.
+. Enter a unique identifier and select the bus member that you created earlier.
+. Click *Apply* and *Save* to save the changes to the master configuration.
 
 === Creating JMS activation specifications
 
-A JMS activation specification is required to be the bridge between the queue and the message-driven bean.
+A JMS activation specification is required and is the bridge between the queue and the message-driven bean.
 
 ifdef::BA[]
 For Business Central, create the following activation specifications: `KIE.RESPONSE.ALL` (for responses), `KIE.AUDIT` (for asynchronous audit logs), `KIE.SESSION` (for `ksession`-based operations), `KIE.TASK` (for task-based operations), `KIE.EXECUTOR` (for Business Central executor services), and `KIE.SIGNAL` (for sending external global signals to processes).
@@ -194,14 +203,15 @@ For {KIE_SERVER}, create the following: `KIE.SERVER.REQUEST` (for requests) and 
 endif::BA[]
 
 ifdef::DM[]
-For {KIE_SERVER}, create the following activation specifications: `KIE.SERVER.REQUEST` (for requests) and  `KIE.SERVER.RESPONSE` (for responses).
+For {KIE_SERVER}, create the `KIE.SERVER.REQUEST` (for requests) and  `KIE.SERVER.RESPONSE` (for responses) activation specifications.
 
 //IMPORTANT: To prevent warnings in the log, create `KIE.EXECUTOR` activation specification as well.
 endif::DM[]
 
-. In the main menu, go to *Resources* -> *JMS* -> *Activation Specifications*.
-. Make sure the correct scope is selected and click *New*.
-. Check the *Default Messaging Provider* radio button and click *OK*.
+. Click *Resources* -> *JMS* -> *Activation Specifications*.
+. Select the correct scope and click *New*.
+. Select the *Default Messaging Provider* option and click *OK*.
+
 ifdef::BA[]
 . Enter the name and the JNDI name of the activation specification, for example:
 +
@@ -212,8 +222,8 @@ ifdef::BA[]
 ====
 All of the JNDI names of other activation specifications follow the same convention as the example above.
 ====
-. From the *Destination Type* drop-down list, make sure to select *Queue*.
-. Enter the *Destination JNDI Name* (as created in the previous procedure), for example `jms/KIE.RESPONSE.ALL`.
+. From the *Destination Type* drop-down, select *Queue*.
+. Enter the *Destination JNDI Name*. For example `jms/KIE.RESPONSE.ALL`.
 endif::BA[]
 ifdef::DM[]
 . Enter the name and the JNDI name of the activation specification, for example:
@@ -225,26 +235,29 @@ ifdef::DM[]
 ====
 All of the JNDI names of other activation specifications follow the same convention as the example above.
 ====
-. From the *Destination Type* drop-down list, make sure to select *Queue*.
+. From the *Destination Type* drop-down list, select *Queue*.
 . Enter the *Destination JNDI Name* (as created in the previous procedure), for example `jms/KIE.SERVER.REQUEST`.
 endif::DM[]
-. From the *Bus Name* drop-down list, choose the service bus created earlier.
-. Click *OK* at the bottom with the rest of the field values as default and choose to save the changes to the master configuration.
 
-You have now successfully completed the JMS configurations required for setting up {KIE_SERVER} on WAS.
-
-=== Adding custom JVM properties
-
-You must add custom properties to the JVM that is used to start WAS. These custom properties take into consideration the configuration changes that have been outlined in previous sections of this guide.
-
-. In the main menu, go to *Servers* -> *Server Types* -> *WebSphere Application Servers*.
-. In the list of application servers, choose the server on which you are going to deploy {KIE_SERVER}.
-. Under the *Server Infrastructure* heading on the right, click *Java and Process Management* -> *Process Definition*.
-. Click *Java Virtual Machine* under the *Additional Properties* heading.
+. Select the service bus from the *Bus Name* drop-down list.
 +
-This opens up the configuration properties for the JVM that is used to start WAS.
+Leave the default values for the remaining options.
+. Click *Apply* and *Save* to save the changes to the master configuration.
+
+You have successfully completed the JMS configuration required for setting up {KIE_SERVER} on WAS.
+
+=== Adding custom Java Virtual Machine (JVM) properties
+
+You must add custom properties to the JVM that is used to start WAS.
+
+. Click *Servers* -> *Server Types* -> *WebSphere Application Servers*.
+. In the list of application servers, choose the server on which you are going to deploy {KIE_SERVER}.
+. Under the *Server Infrastructure*, click *Java and Process Management* -> *Process Definition*.
+. Click *Java Virtual Machine* in the *Additional Properties* section.
++
+This opens the configuration properties for the JVM that is used to start WAS.
 . Click *Custom Properties* under *Additional Properties*.
-. Create the following properties by clicking *New...* -> *Custom JVM Properties*.
+. Create the following properties by clicking *New* -> *Custom JVM Properties*.
 
 +
 [cols="1,1,2a", options="header"]
@@ -287,7 +300,7 @@ endif::BA[]
 
 +
 
-. Save these configuration settings to the master configuration.
+. Click *Save* to save the changes to the master configuration.
 . Restart WAS for these changes to take effect.
 
 ifdef::BA[]
