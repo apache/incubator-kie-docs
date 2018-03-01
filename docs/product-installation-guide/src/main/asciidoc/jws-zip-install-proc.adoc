@@ -1,0 +1,62 @@
+[id='jws-zip-install-proc']
+
+= Installing {KIE_SERVER} on Red Hat JBoss Web Server ZIP installation
+
+
+{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). This section explains how to perform the ZIP file installation to install {KIE_SERVER} on an existing Red Hat JBoss Web Server 3.1 instance.
+
+[NOTE]
+====
+To use the installer JAR file to install {KIE_SERVER}, see <<assembly_installing-using-installer>>.
+====
+
+.Prerequisites
+* A backed up Red Hat JBoss Web Server 3.1 with Tomcat 8 or higher server installation. The base directory of the JBoss Web Server installation is referred to as `__JWS_HOME__`. 
+* Sufficient user permissions to complete the installation.
+* The `rhdm-7.0-kie-server-jws.zip` file. To download this file:
++
+--
+.. Click *Download* next to *{PRODUCT} 7.0.0 Add Ons* on the Product Downloads page of the https://access.redhat.com[Red Hat Customer Portal].
+.. Unzip the `rhdm-7.0.0.GA-add-ons.zip` file. The `rhdm-7.0-kie-server-jws.zip` file is in the unzipped directory.
+--
+
+.Procedure
+. Extract the `rhdm-7.0-kie-server-jws.zip` archive to a temporary directory. In the following examples, this directory is called `__TEMP_DIR__`.
+. Copy the `__TEMP_DIR__/rhdm-7.0-kie-server-jws/kie-server.war` directory to the `_JWS_HOME_/tomcat8/webapps` directory.
++
+WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the Red Hat JBoss Web Server instance.
+. Remove the `.war` extensions from the `kie-server.war` folder.
+. Open the `_JWS_HOME_/tomcat8/conf/tomcat-users.xml` file in a text editor.
+. Add users and roles to the `_JWS_HOME_/tomcat8/conf/tomcat-users.xml` file. In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT}. For a list of supported roles, see <<dm-roles-con>>.  `<USERNAME>` and `<PASSWORD>` is a user and password combination of your choice:
++
+[source]
+----
+<role rolename="<ROLE_NAME>"
+<user username="<USER_NAME> password="<PASSWORD>" roles="<ROLE_NAME>"/>
+----
++
+If a user has more than one role, as shown in the following example, separate the roles with a comma:
++
+[source]
+----
+<role rolename="admin"
+<role rolename="kie-server"
+<user username="rhdmUser" password="user1234" roles="admin,kie-server"/>
+----
+. In the `_JWS_HOME_/tomcat8/bin` directory, create a readable `setenv.sh` file with the following content:
++
+`CATALINA_OPTS="-Xmx1024m -Dorg.jbpm.server.ext.disabled=true -Dorg.jbpm.ui.server.ext.disabled=true -Dorg.jbpm.case.server.ext.disabled=true"` 
++
+[IMPORTANT]
+====
+On Microsoft Windows, add the following values to the `setenv.bat` file:
+
+`set "CATALINA_OPTS=-Xmx1024m -Dorg.jbpm.server.ext.disabled=true -Dorg.jbpm.ui.server.ext.disabled=true -Dorg.jbpm.case.server.ext.disabled=true"`
+==== 
+. To start JBoss Web Server, enter the following command in the `_JWS_HOME_/tomcat8/bin` directory:
++
+[source]
+----
+./startup.sh
+----
+. After a few minutes, review the the `_JWS_HOME_/tomcat8/logs` directory and correct any errors.
