@@ -1,59 +1,39 @@
 [id='_chap_configure']
-= Configure
+= Configuring Oracle WebLogic Server
 
 [id='_setting_environment_variables']
-== Setting Environment Variables
+== Setting environment variables
 
-Certain environment variables on your Oracle WebLogic Server require configuration before deploying the application.
-
-[float]
-=== JVM Memory Size
-
-With the default JVM memory size, the WebLogic Server freezes and/or causes deployment errors when deploying Business Central. Increase the memory size by setting the following environment variable:
-
-----
-USER_MEM_ARGS=-Xms512m -Xmx1024m -XX:MaxPermSize=512m
-----
+You must set the environment variables listed in this section on your Oracle WebLogic Server before you deploy {KIE_SERVER}.
 
 [float]
-=== JVM Custom Properties
+=== JVM memory size
 
-The following custom properties require configuration on the WebLogic Server:
+Set the following environment variable to increase the JVM memory size:
+----
+USER_MEM_ARGS=-Xms512m -Xmx1024m 
+----
+If you do not increate the JVM memeory size, Oracle WebLogic Server freezes or causes deployment errors when deploying {KIE_SERVER}. 
 
-*Properties Required for Business Central and {KIE_SERVER}*
+[float]
+=== JVM custom properties
 
-* `org.kie.executor.jms.cf`: JNDI name of the connection factory for sending messages with job executor requests.
-
-* `org.kie.executor.jms.queue`: JNDI name of the destination (queue) for sending messages with job executor requests.
-
-*Properties Required for Business Central*
-
-ifdef::BA[]
-* `kie.services.jms.queues.response`:
-JNDI name of the response queue for JMS remote API of Business Central. Set to `jms/KIE.RESPONSE.ALL`.
-endif::BA[]
-
-ifdef::DM[]
-* `org.jbpm.designer.perspective=ruleflow`:
-Changes the default perspective in the designer to `RuleFlow` instead of `Full`.
-endif::DM[]
-
-* `org.uberfire.start.method`:
-Defines startable beans for Uberfire. Set to `ejb` (Enterprise Java Beans).
-
-* `org.uberfire.domain`:
-Sets the domain for Uberfire to use. Set to `OracleDefaultLoginConfiguration`.
+You must specify the following {KIE_SERVER} property values on the Oracle WebLogic Server instance:
 
 * `com.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager`:
 Uses `BeanManager` to look up extensions. This avoids conflicts across multiple instances. Set to `true`.
-
-*Properties Required for {KIE_SERVER}*
 
 * `kie.server.jms.queues.response`:
 JNDI name of the response queue for the {KIE_SERVER}.  Set to `jms/KIE.SERVER.RESPONSE`.
 
 * `org.kie.server.domain`:
 JAAS LoginContext domain used to authenticate users when using JMS. Set to `OracleDefaultLoginConfiguration`.
+
+* Set the values of the following properties to `true` to disable the jBPM functionality of {KIE_SERVER}:
++
+** `org.jbpm.server.ext.disabled`
+** `org.jbpm.ui.server.ext.disabled`
+** `org.jbpm.case.server.ext.disabled`
 
 ifdef::BA[]
 * `org.kie.server.persistence.ds`:
@@ -66,10 +46,7 @@ Transaction manager platform for setting Hibernate properties. Set to `org.hiber
 Specifies Hibernate dialect to be used.
 endif::BA[]
 
-For a full list of available {KIE_SERVER} system properties, see chapter {URL_ADMIN_GUIDE}#chap_the_realtime_decision_server[{KIE_SERVER}] of the
-_{USER_GUIDE}_.
-
-Set the following custom properties in a single environment variable:
+Set these property values in the JAVA_OPTIONS environment variable:
 ifdef::BA[]
 ----
 JAVA_OPTIONS="-Dkie.services.jms.queues.response=jms/KIE.RESPONSE.ALL  -Dkie.server.jms.queues.response=jms/KIE.SERVER.RESPONSE  -Dorg.uberfire.start.method=ejb
@@ -79,159 +56,162 @@ JAVA_OPTIONS="-Dkie.services.jms.queues.response=jms/KIE.RESPONSE.ALL  -Dkie.ser
  -Dorg.kie.server.persistence.ds=jdbc/jbpm
  -Dorg.kie.server.persistence.tm=org.hibernate.service.jta.platform.internal.WeblogicJtaPlatform
  -Dorg.kie.server.persistence.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
- -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true"
+ -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true
 ----
 endif::BA[]
 ifdef::DM[]
 ----
 JAVA_OPTIONS="-Dkie.server.jms.queues.response=jms/KIE.SERVER.RESPONSE
- -Dorg.jbpm.designer.perspective=ruleflow
- -Dorg.uberfire.start.method=ejb
- -Dorg.uberfire.domain=OracleDefaultLoginConfiguration
- -Dorg.kie.executor.jms.cf=jms/cf/KIE.EXECUTOR
- -Dorg.kie.executor.jms.queue=jms/KIE.EXECUTOR
- -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true"
+ -Dorg.org.kie.server.domain=OracleDefaultLoginConfiguration
+ -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true
+ -Dorg.jbpm.server.ext.disabled=true
+ -Dorg.jbpm.ui.server.ext.disabled=true
+ -Dorg.jbpm.case.server.ext.disabled=true"
 ----
 endif::DM[]
 
 [id='_configuring_security_settings']
-== Configuring Security Settings
 
-Several security settings on Oracle WebLogic Server must be set for the Business Central application to work. The following settings enable the container managed authentication mechanisms provided by the WebLogic server:
+== Starting Oracle WebLogic Server
 
+The instructions in this section describe how to start Oracle WebLogic Server in a standalone Oracle WebLogic Server domain.
+
+[NOTE]
+====
+If you are already running an instance of Oracle WebLogic Server that uses the same listener port as the one to be used by the server you are starting, you must stop the first server before starting the second server.
+====
+
+.Procedure
+. At the command prompt, navigate to the domain directory,  `_WLS_HOME_/user_projects/<DOMAIN_NAME>''. For example:
++
+[source]
+----
+WLS\user_projects\mydomain
+----
+. Enter one of the following commands to start Oracle WebLogic Server:
++
+* On UNIX-based system:
++
+[source]
+----
+startWebLogic.sh
+----
+* On Microsoft Windows:
++
+[source]
+----
+startWebLogic.cmd
+----
++ 
+The startup script displays a series of messages, finally displaying a message similar to the following:
++
+[source]
+----
+<Dec 8, 2017 3:50:42 PM PDT> <Notice> <WebLogicServer> <000360> <Server started in RUNNING mode>
+----
+. Open the following URL in a web browser:
++
+[source]
+----
+http://<HOSTNAME>:<PORT>/console
+----
++
+In this command:
++
+* `HOSTNAME` is the system name or IP address of the host server
+* `PORT` is the address of the port on which the host server is listening for requests (7001 by default)
++
+For example, to start the Administration Console for a local instance of Oracle WebLogic Server running on your system, enter the following URL in a web browser address field:
++
+[source]
+----
+http://localhost:7001/console/
+----
++
+If you started the Administration Server using secure socket layer (SSL), you must add `s` after `http`, as follows:
+`https://hostname:port/console`
+
+. When the login page appears, enter your administrative credentials.
+
+
+== Configuring security settings
+
+Complete the steps in this section to enable the container-managed authentication mechanisms provided by the Oracle WebLogic Server:
+
+.Procedure
 . In the WebLogic administrative console, click *Security Realms*.
 . Choose your desired security realm or click *New* to create a new security realm.
-. Navigate to *Users and Groups* -> *Groups* to get to the groups list for your security realm.
+. Navigate to *Users and Groups* -> *Groups* to display the groups list for your security realm.
 
 ifdef::BA[]
-. Click *New* to create a new group. Create the following new groups: `admin`, `analyst`, `developer`, `manager`, `user`, and `kie-server`. Also create the REST API groups if you will use API. For further information about API roles, see section {URL_DEVELOPMENT_GUIDE}#sect_rest_api[REST API] of _{DEVELOPMENT_GUIDE}_.
+. Click *New* to create a new group. Create the `kie-server` group.
 endif::BA[]
 ifdef::DM[]
-. Click *New* to create a new group. Create the following three new groups: `admin`, `analyst`, and `kie-server`. Also create the REST API groups if you will use API. For further information about API roles, see section {URL_DEVELOPMENT_GUIDE}#sect_rest_api[REST API] of _{DEVELOPMENT_GUIDE}_.
-endif::DM[]
-
-. Click on the *Users* tab and click *New* to create a new user. Provide this new user with a name (for example `business-central-admin`) and a password. Click *OK* to save.
+. Click *New* to create the `kie-server` group.
+. Click the *Users* tab and click *New* to create a new user. 
+. Enter a name and password for this new user, for example `server-user`/ `password1234`, and click *OK*.
 
 +
 [IMPORTANT]
 ====
 Make sure that the selected user name does _not_ conflict with any known title of a role or a group.
 
-For example, if there is a role called `admin`, you should _not_ create a user with the user name `admin`.
+For example, if there is a role called `kie-server`, you should _not_ create a user with the user name `kie-server`.
 ====
 
-. Click on the newly created user, then click the *Groups* tab. Use the selection tool to move the `admin` group from the *Available* field to the *Chosen* field. Click *Save* to save.
+. Click the newly created user, then click the *Groups* tab. 
+. Use the selection tool to move the `kie-server` group from the *Available* field to the *Chosen* field, and click *Save*.
 
-NOTE: You may assign this user to any of the groups previously created and in actual production systems you are likely to create separate users for separate groups that align with business roles. The admin group is all encompassing and is therefore useful for the purposes of this setup.
+== Configuring Java Message Service
 
-[id='_creating_a_data_source']
-== Creating Data Source
-
-The Business Central application requires a data source which must be created prior to the deployment of the actual WAR file. This also means that you must have access to an underlying database that the data source connects to. Whatever your underlying database, make sure you have the data source ready.
-
-. Navigate to *Services* -> *Data Sources*, which takes you to your JDBC Data Sources list.
-. Click *New* -> *Generic Data Source* to start creating a new data source.
-. Provide your data source with the following details:
-* *Name*: enter a name for your data source.
-* *JNDI Name*: set to `jdbc/jbpm`.
-* *Database Type*: set to `MySQL`.
-
-+
-[NOTE]
-====
-You can use alternative database types by editing `WEB-INF/classes/META-INF/persistence.xml` in the Business Central WAR archive. Edit the `hibernate.dialect` property to your preferred database.
-
-For example, to change to Oracle 12c, edit the `hibernate.dialect` to the following:
-
-----
-<property name="hibernate.dialect" value="org.hibernate.dialect.Oracle10gDialect" />
-----
-====
-
-+
-Click *Next* to advance to the next configuration screen.
-
-. Select your database driver in the drop-down menu. Click *Next* to advance to the next configuration screen.
-. Leave the *Transaction Options* as the defaults and click *Next* to advance to the next configuration screen.
-. Provide the following *Connection Properties* for your data source:
-+
-  * *Database Name*: the name of the database to use on your data source.
-  * *Host Name*: the hostname or IP address of the system containing the database.
-  * *Port*: the port used to connect to the database. Unless you have configured the database to use a different port, use the default port provided in this field.
-  * *Database User Name*: the database user that interacts with the database. Make sure the chosen user has the required permissions to access and write to the chosen database.
-  * *Password*: the password for the chosen database user.
-+
-Click *Next* to advance to the next configuration screen.
-
-. The *Test Database Connection* page provides a means to test and confirm your database connection. Click *Test Configuration* and the page will refresh with a valid connection message. Click *Finish* to complete the data source configuration.
-. Click on the name of the new data source and navigate to *Targets* tab. Click the checkbox for the server chosen to host the Business Central deployment. Click *Save* to save your selection.
-
+You must configure Oracle WebLogic Server to send and receive Java Message Service (JMS) messages through {KIE_SERVER}.
 ifdef::BA[]
-
-[IMPORTANT]
-====
-Dashbuilder requires the same JNDI as Business Central so that it connects to the same datasource. The default JNDI for Dashbuilder `jdbc/dashbuilder` must be changed to `jdbc/jbpm`.
-
-Log in to your WebLogic server, switch to the `dashbuilder.war` directory, and edit the `WEB-INF/etc/hibernate.cfg.xml` file. Find the following line:
-
-----
-<property name="connection.datasource">jdbc/dashbuilder</property>
-----
-
-Change it to:
-
-----
-<property name="connection.datasource">jdbc/jbpm</property>
-----
-
-Save the file when complete.
-====
+JMS must also be configured for {CENTRAL}.
 endif::BA[]
 
-[id='_configuring_java_message_service_jms']
-== Configuring Java Message Service (JMS)
+=== Create a JMS server
+You must create a JMS server before you can use JMS.
 
-Oracle WebLogic Server must be configured to send and receive JMS messages through {PRODUCT} {KIE_SERVER}.
-ifdef::BA[]
-JMS must also be configured for Business Central.
-endif::BA[]
-This requires a JMS server. Follow the steps below to create a JMS server:
-
+.Procedure
 . Navigate to *Services* -> *Messaging* -> *JMS Servers*.
-. Click *New* to start creating a new JMS Server.
-. Provide your JMS Server with a name. Click *Next* to advance to the next configuration screen.
-. Select the *Target* server chosen for the Business Central deployment. Click *Finish* to complete the JMS Server creation.
+. Click *New* to create a new JMS server.
+. Enter a name for your JMS server and click *Next*.
+. Select the target server chosen for the {CENTRAL} deployment. 
+. Click *Finish* to complete the JMS Server creation.
 
 [float]
-=== Create JMS Module
+=== Create a JMS module
 
-A JMS Module stores your JMS resources, such as connection factories and queues. Use the following steps to create a new JMS Module:
+A JMS module stores your JMS resources, such as connection factories and queues. Use the following steps to create a new JMS module.
 
+.Procedure
 . Navigate to *Services* -> *Messaging* -> *JMS Modules*.
-. Click *New* to start creating a new module.
+. Click *New* to create a new module.
 . Provide your module with a name and click *Next* to advance to the next configuration screen.
 ifdef::BA[]
-. Select the *Target* server chosen for the {KIE_SERVER} and Business Central deployment. Click *Finish* to complete the JMS Module creation.
+. Select the target server chosen for the {KIE_SERVER} and {CENTRAL} deployment and click *Finish*.
 endif::BA[]
 ifdef::DM[]
-. Select the *Target* server chosen for the {KIE_SERVER} deployment. Click *Finish* to complete the JMS Module creation.
+. Select the target server chosen for the {KIE_SERVER} deployment. 
+. Click *Finish* to complete the JMS module creation.
 endif::DM[]
-. Click on the newly created module's name, then click on *Subdeployments*.
+. Click the newly created module's name, then click *Subdeployments*.
 . Click *New* to create a subdeployment for your module.
-. Provide your subdeployment with a name and click *Next* to advance to the next configuration screen.
-. Choose the previously created JMS Server by marking the checkbox. Click *Finish* to complete the subdeployment configuration.
+. Give your subdeployment a name and click *Next*.
+. Click the box to select the previously created JMS server. 
+. Click *Finish* to complete the subdeployment configuration.
 
 [float]
-=== Create JMS Connection Factories
+=== Create JMS connection factories
 
-To send and receive messages from {PRODUCT} {KIE_SERVER} , you will need to create the JMS connection factories &ndash; one for receiving messages and one for sending them.
+To send and receive messages from {KIE_SERVER}, you must create a JMS connection factory for receiving messages and another JMS connection factory for sending messages.
 ifdef::BA[]
-You will also need to create several other connection factories for Business Central.
+You will also need to create several other connection factories for {CENTRAL}.
 endif::BA[]
 The following connection factories are required:
 
 ifdef::BA[]
-* `KIE.RESPONSE.ALL`: receiving all responses produced by the Red Hat JBoss BPM Suite.
+* `KIE.RESPONSE.ALL`: receiving all responses produced by {PRODUCT}.
 +
 Default value: `jms/cf/KIE.RESPONSE.ALL`.
 endif::BA[]
@@ -260,29 +240,19 @@ ifdef::BA[]
 Default value: `jms/cf/KIE.SIGNAL`.
 endif::BA[]
 
-* `KIE.SERVER.REQUEST`: for all requests to the {KIE_SERVER}.
+* `KIE.SERVER.REQUEST`: for all requests to {KIE_SERVER}.
 +
 Default value: `jms/cf/KIE.SERVER.REQUEST`.
 
-* `KIE.SERVER.RESPONSE`: receiving all responses produced by the {KIE_SERVER}.
+* `KIE.SERVER.RESPONSE`: for receiving all responses produced by {KIE_SERVER}.
 +
 Default value: `jms/cf/KIE.SERVER.RESPONSE`.
 
-* `KIE.EXECUTOR`: sending executor requests for jobs running in Business Central.
-+
-Default value: `jms/cf/KIE.EXECUTOR`.
+Perform the following steps for each connection factory.
 
-ifdef::DM[]
-* `KIE.SERVER.EXECUTOR`: sending executor requests for jobs running on the {KIE_SERVER}.
-+
-Default value: `jms/cf/KIE.SERVER.EXECUTOR`.
-endif::DM[]
-
-
-Use the following procedure to create each connection factory:
-
-. Navigate to *Services* -> *Messaging* -> *JMS Modules* to see your list of JMS Modules.
-. Click on your previously created module, then click *New* to start creating a new JMS resource.
+.Procedure
+. Navigate to *Services* -> *Messaging* -> *JMS Modules* to see a list of JMS modules.
+. Select your previously created module, then click *New* to create a new JMS resource.
 . Select *Connection Factory* and click *Next*.
 . Enter the name of the connection factory (for example
 ifdef::BA[]
@@ -293,23 +263,18 @@ ifdef::DM[]
 endif::DM[]
 and the JNDI name (for example
 ifdef::BA[]
-`jms/cf/KIE.RESPONSE.ALL`).
+`jms/cf/KIE.RESPONSE.ALL`)
 endif::BA[]
 ifdef::DM[]
-`jms/cf/KIE.SERVER.REQUEST`).
+`jms/cf/KIE.SERVER.REQUEST`)
 endif::DM[]
-
-+
-Click *Next* to advance to the next configuration screen.
-
-. The connection factory automatically selects the servers assigned to the JMS Module as the default. Click *Finish* to complete the connection factory creation.
-
-Repeat the above procedure for each connection factory.
+and click *Next*. The connection factory automatically selects the servers assigned to the JMS Module as the default. 
+. Click *Finish* to complete the connection factory creation.
 
 [float]
-=== Create JMS Queues
+=== Create JMS queues
 
-You now need to create the JMS Queues. These queues are the destination end points for point-to-point messaging. You will create:
+JMS queues are the destination end points for point-to-point messaging. You must create the following JMS queues:
 
 ifdef::BA[]
 * `KIE.RESPONSE.ALL`: for Red Hat JBoss BPM Suite responses.
@@ -348,20 +313,10 @@ Default value: `jms/KIE.SERVER.REQUEST`.
 +
 Default value: `jms/KIE.SERVER.RESPONSE`.
 
-* `KIE.EXECUTOR`: sending executor requests for jobs running in Business Central.
-+
-Default value: `jms/KIE.EXECUTOR`.
+Repeat the following steps to create each queue:
 
-ifdef::DM[]
-* `KIE.SERVER.EXECUTOR`: sending executor requests for jobs running on the {KIE_SERVER}.
-+
-Default value: `jms/KIE.SERVER.EXECUTOR`.
-endif::DM[]
-
-Use the following procedure to create each queue:
-
-. If you are not there already, navigate to *Services* -> *Messaging* -> *JMS Modules* to see your list of JMS Modules.
-. Click on your previously created module, then click *New* to start creating a new JMS resource.
+. Navigate to *Services* -> *Messaging* -> *JMS Modules* to see the list of JMS modules.
+. Select your previously created module, then click *New* to create a new JMS resource.
 . Select *Queue* and click *Next*.
 . Enter the name of the queue (for example
 ifdef::BA[]
@@ -372,20 +327,19 @@ ifdef::DM[]
 endif::DM[]
 and the JNDI name (for example
 ifdef::BA[]
-`jms/KIE.RESPONSE.ALL`).
+`jms/KIE.RESPONSE.ALL`)
 endif::BA[]
 ifdef::DM[]
-`jms/KIE.SERVER.REQUEST`).
+`jms/KIE.SERVER.REQUEST`)
 endif::DM[]
-+
-Click *Next* to advance to the next configuration screen.
+and then click *Next*.
 
-. Choose the JMS Module subdeployment that connects to the JMS Server. Click *Finish* to complete the queue creation.
+. Choose the JMS module subdeployment that connects to the JMS server. 
+. Click *Finish* to complete the queue creation.
 
-Repeat the above procedure for each queue.
 
 ifdef::BA[]
-== Configuring Unified Execution Servers
+== Configuring unified execution servers
 
-To configure Business Central to manage the {KIE_SERVER} and use the same data source, follow the instructions in the {URL_ADMIN_GUIDE}#unified_execution_servers[Unified Execution Servers] section of the _{ADMIN_GUIDE}_.
+To configure {CENTRAL} to manage the {KIE_SERVER} and use the same data source, follow the instructions in the {URL_ADMIN_GUIDE}#unified_execution_servers[Unified Execution Servers] section of the _{ADMIN_GUIDE}_.
 endif::BA[]
