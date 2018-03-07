@@ -1,7 +1,7 @@
 [id='controller-standalone-jws-install-proc']
-= Installing the Controller on Red Hat JBoss Web Server
+= Installing the standalone {KIE_SERVER} Controller on Red Hat JBoss Web Server
 
-You can install the Controller and use the REST API or the {KIE_SERVER} Java Client API to interact with it.
+You can install the standalone {KIE_SERVER} Controller and use the REST API or the {KIE_SERVER} Java Client API to interact with it.
 
 .Prerequisites
 * A backed up Red Hat JBoss Web Server 3.1 with Tomcat 8 or higher server installation. The base directory of the JBoss Web Server installation is referred to as `__JWS_HOME__`. 
@@ -20,15 +20,27 @@ You can install the Controller and use the REST API or the {KIE_SERVER} Java Cli
 WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the Red Hat JBoss Web Server instance.
 . Remove the `.war` extensions from the `controller.war` folder.
 . Copy the contents of the `__TEMP_DIR__/rhdm-7.0-controller-jws/SecurityPolicy/` directory to `__JWS_HOME__/bin`. When asked to overwrite files, select *Yes*.
-. In the `__JWS_HOME__/standalone/deployments/` directory, create an empty file named `controller.war.dodeploy`. This file ensures that the Controller is automatically deployed when the server starts.
+. In the `__JWS_HOME__/standalone/deployments/` directory, create an empty file named `controller.war.dodeploy`. This file ensures that the standalone {KIE_SERVER} Controller is automatically deployed when the server starts.
 . Add the `kie-server` role and user to the `_JWS_HOME_/tomcat8/conf/tomcat-users.xml` file. In the following example,  `<USERNAME>` and `<PASSWORD>` is a user and password combination of your choice:
 +
 [source]
 ----
-<role rolename="<kie-server>"
-<user username="<USER_NAME> password="<PASSWORD>" roles="<kie-server>"/>
+<role rolename="kie-server"/>
+<user username="<USER_NAME>" password="<PASSWORD>" roles="kie-server"/>
 ----
-. To start the Controller, enter one of the following commands in the `_JWS_HOME_/tomcat8/bin` directory:
+
+. In the `_JWS_HOME_/tomcat8/bin` directory of the instance running {KIE_SERVER}, create a readable `setenv.sh` file with the following content:
++
+`CATALINA_OPTS="-Dorg.kie.server.user=<USERNAME> -Dorg.kie.server.pwd=<USER_PWD>"` 
+. In the `_JWS_HOME_/tomcat8/bin` directory of the instance running the standalone {KIE_SERVER} Controller, create a readable `setenv.sh` file with the following content:
++
+`-Dorg.kie.server.controller.user=<CONTROLLER_USER> 
+-Dorg.kie.server.controller.pwd=<CONTROLLER_PWD> 
+-Dorg.kie.server.id=<KIE_SERVER_ID>
+-Dorg.kie.server.location=http://<HOST>:<PORT>/kie-server/services/rest/server
+-Dorg.kie.server.controller=http://<HOST>:<PORT>/controller/rest/controller` 
++
+. To start the standalone {KIE_SERVER} Controller, enter one of the following commands in the `_JWS_HOME_/tomcat8/bin` directory:
 +
 ** On Linux or UNIX-based systems:
 +
@@ -43,8 +55,15 @@ $ ./startup.sh
 startup.bat
 ----
 . After a few minutes, review the the `_JWS_HOME_/tomcat8/logs` directory and correct any errors.
+. To verify that {KIE_SERVER} is working on Red Hat JBoss Web Server, enter the following command. In this command, replace `<USER_NAME>` and `<PASSWORD>` with the values in the `tomcat-users.xml` file. The output of this command provides information about the {KIE_SERVER} instance.
++
+[source]
+----
+curl -X GET "http://localhost:8080/kie-server/services/rest/server" -H  "accept: application/xml" -u '<USER_NAME>:<PASSWORD>'
+----
+
 . In a web browser, enter the value of the `org.kie.server.controller` property, for example `http://localhost:8080/kie-wb/rest/controller`.
 [Note]
 ====
-Alternatively, you can use the {KIE_SERVER} Java API Client to access the Controller.
+Alternatively, you can use the {KIE_SERVER} Java API Client to access the standalone {KIE_SERVER} Controller.
 ====
