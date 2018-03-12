@@ -1,0 +1,68 @@
+[id='kie-server-wls-environment-set-proc']
+= Setting Java Virtual Machine (JVM) environment variables
+
+You must set the Java Virtual Machine (JVM) environment variables listed in this section on your {WEBLOGIC} before you deploy {KIE_SERVER}.
+
+.Procedure
+. Set the following environment variable to increase the JVM memory size:
++
+[source]
+----
+USER_MEM_ARGS=-Xms512m -Xmx1024m
+----
++
+If you do not increase the JVM memory size, {WEBLOGIC} freezes or causes deployment errors when deploying {KIE_SERVER}.
+
+. Specify the following JVM property values for {KIE_SERVER} on the {WEBLOGIC} instance:
++
+--
+* `com.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager`:
+Uses `BeanManager` to look up extensions. This avoids conflicts across multiple instances. Set to `true`.
+
+* `kie.server.jms.queues.response`:
+JNDI name of the response queue for the {KIE_SERVER}.  Set to `jms/KIE.SERVER.RESPONSE`.
+
+* `org.kie.server.domain`:
+JAAS LoginContext domain used to authenticate users when using JMS. Set to `OracleDefaultLoginConfiguration`.
+ifdef::BA[]
+* `org.kie.server.persistence.ds`:
+Datasource JNDI name.
+
+* `org.kie.server.persistence.tm`:
+Transaction manager platform for setting Hibernate properties. Set to `org.hibernate.service.jta.platform.internal.WeblogicJtaPlatform`.
+
+* `org.kie.server.persistence.dialect`:
+Specifies Hibernate dialect to be used.
+endif::BA[]
+--
+. Set the values of the following properties to `true` to disable the jBPM functionality of {KIE_SERVER}:
++
+* `org.jbpm.server.ext.disabled`
+* `org.jbpm.ui.server.ext.disabled`
+* `org.jbpm.case.server.ext.disabled`
++
+. Set these property values in the `JAVA_OPTIONS` environment variable:
+ifdef::BA[]
+[source]
+----
+JAVA_OPTIONS="-Dkie.services.jms.queues.response=jms/KIE.RESPONSE.ALL  -Dkie.server.jms.queues.response=jms/KIE.SERVER.RESPONSE  -Dorg.uberfire.start.method=ejb
+ -Dorg.uberfire.domain=OracleDefaultLoginConfiguration
+ -Dorg.kie.executor.jms.cf=jms/cf/KIE.EXECUTOR
+ -Dorg.kie.executor.jms.queue=jms/KIE.EXECUTOR
+ -Dorg.kie.server.persistence.ds=jdbc/jbpm
+ -Dorg.kie.server.persistence.tm=org.hibernate.service.jta.platform.internal.WeblogicJtaPlatform
+ -Dorg.kie.server.persistence.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+ -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true
+----
+endif::BA[]
+ifdef::DM[]
+[source]
+----
+JAVA_OPTIONS="-Dkie.server.jms.queues.response=jms/KIE.SERVER.RESPONSE
+ -Dorg.org.kie.server.domain=OracleDefaultLoginConfiguration
+ -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true
+ -Dorg.jbpm.server.ext.disabled=true
+ -Dorg.jbpm.ui.server.ext.disabled=true
+ -Dorg.jbpm.case.server.ext.disabled=true"
+----
+endif::DM[]
