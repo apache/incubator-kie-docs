@@ -1,0 +1,99 @@
+[id='kie-server-wls-environment-set-proc']
+= Setting environment variables in {WEBLOGIC}
+
+Set the environment variables listed in this section on your {WEBLOGIC} before you deploy {KIE_SERVER}.
+
+.Procedure
+. Set the following environment variable to increase the Java Virtual Machine (JVM) memory size:
++
+[source]
+----
+USER_MEM_ARGS=-Xms512m -Xmx1024m
+----
++
+If you do not increase the JVM memory size, {WEBLOGIC} freezes or causes deployment errors when deploying {KIE_SERVER}.
+
+. Specify the following JVM property values for {KIE_SERVER} on the {WEBLOGIC} instance:
++
+[cols="30,40,30", options="header"]
+.Required properties for {KIE_SERVER}
+|===
+|Name
+|Value
+|Description
+
+|`kie.server.jms.queues.response`
+|`jms/cf/KIE.SERVER.RESPONSE`
+|The JNDI name of connection factory for responses used by the {KIE_SERVER}.
+
+|`org.kie.server.domain`
+|`OracleDefaultLoginConfiguration`
+|JAAS `LoginContext` domain used to authenticate users when using JMS.
+
+|`com.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager`
+|`true`
+|Uses `BeanManager` to look up extensions. This avoids conflicts across multiple instances.
+
+ifdef::DM[]
+|`org.jbpm.server.ext.disabled`
+|`true`
+|Disables {CENTRAL} features, which are not supported in RHDM. If not set, {KIE_SERVER} will work, but will show error messages during start up.
+
+|`org.jbpm.ui.server.ext.disabled`
+|`true`
+|Disables {CENTRAL} features, which are not supported in RHDM. If not set, {KIE_SERVER} will work, but will show error messages during start up.
+
+|`org.jbpm.case.server.ext.disabled`
+|`true`
+|Disables {CENTRAL} features, which are not supported in RHDM. If not set, {KIE_SERVER} will work, but will show error messages during start up.
+endif::DM[]
+
+ifdef::BA[]
+|`org.kie.server.persistence.ds`
+|Set according to database type and configuration.
+|Datasource JNDI name.
+
+|`org.kie.server.persistence.tm`
+|`org.hibernate.service.jta.platform.internal.WeblogicJtaPlatform`
+|Transaction manager platform for setting Hibernate properties.
+
+|`org.kie.server.persistence.dialect`
+|Set according to database type and configuration.
+|Specifies the Hibernate dialect to be used.
+endif::BA[]
+|===
+
+. Set these property values in the `JAVA_OPTIONS` environment variable:
+ifdef::BA[]
+[source]
+----
+JAVA_OPTIONS="-Dkie.services.jms.queues.response=jms/KIE.RESPONSE.ALL  -Dkie.server.jms.queues.response=jms/KIE.SERVER.RESPONSE  -Dorg.uberfire.start.method=ejb
+ -Dorg.uberfire.domain=OracleDefaultLoginConfiguration
+ -Dorg.kie.executor.jms.cf=jms/cf/KIE.EXECUTOR
+ -Dorg.kie.executor.jms.queue=jms/KIE.EXECUTOR
+ -Dorg.kie.server.persistence.ds=jdbc/jbpm
+ -Dorg.kie.server.persistence.tm=org.hibernate.service.jta.platform.internal.WeblogicJtaPlatform
+ -Dorg.kie.server.persistence.dialect=org.hibernate.dialect.MySQL5InnoDBDialect
+ -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true
+----
+endif::BA[]
+ifdef::DM[]
+[source]
+----
+JAVA_OPTIONS="-Dkie.server.jms.queues.response=jms/KIE.SERVER.RESPONSE
+ -Dorg.org.kie.server.domain=OracleDefaultLoginConfiguration
+ -Dcom.sun.jersey.server.impl.cdi.lookupExtensionInBeanManager=true
+ -Dorg.jbpm.server.ext.disabled=true
+ -Dorg.jbpm.ui.server.ext.disabled=true
+ -Dorg.jbpm.case.server.ext.disabled=true"
+----
+endif::DM[]
+
+////
+// To be replaced. Retaining temporarily for reference. (Stetson, 13 Mar 2018)
+ifdef::BA[]
+== Configuring unified execution servers
+
+To configure {CENTRAL} to manage the {KIE_SERVER} and use the same data source, follow the instructions in the {URL_ADMIN_GUIDE}#unified_execution_servers[Unified Execution Servers] section of the _{ADMIN_GUIDE}_.
+endif::BA[]
+////
