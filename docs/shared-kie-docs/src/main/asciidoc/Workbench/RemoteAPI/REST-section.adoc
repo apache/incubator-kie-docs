@@ -7,8 +7,8 @@ The calls are asynchronous, that is, they continue their execution as a job afte
 The job ID  is returned by every call to allow (after the REST API call was performed) to request the job status and verify whether the job finished successfully.
 Parameters of these calls are provided in the form of JSON entities. 
 
-When using Java code to interface with the REST API, the classes used in POST operations or otherwise returned by various operations can be found in the `(org.kie.workbench.services:)kie-wb-common-services` JAR.
-All  of the classes mentioned below can be found in the `org.kie.workbench.common.services.shared.rest` package in that JAR.
+When using Java code to interface with the REST API, the classes used in POST operations or otherwise returned by various operations can be found in the link:https://origin-repository.jboss.org/nexus/#nexus-search;quick~uberfire-rest-client[`(org.uberfire:)uberfire-rest-client`] JAR.
+All  of the classes mentioned below can be found in the `org.guvnor.rest.client` package in that JAR.
 
 == Job calls
 
@@ -42,61 +42,52 @@ The following `job` calls are provided:
   Removes the job: If the job is not yet being processed, this will remove the job from the job queue.
   However, this will not cancel or stop an ongoing job
 
-== Repository calls
+== Project calls
 
 
-Repository calls to the Knowledge Store allow you to manage Git repositories and projects inside them.
+Project calls to the Knowledge Store allow you to manage Workspace projects.
 
-The following `repositories` calls are provided:
+The following `project` calls are provided:
 
-[GET] `/repositories`::
-  Gets information about the repositories in the Knowledge Store
+[GET] `/projects`::
+  Gets information about all the projects in the Knowledge Store.
 
-[GET] `/repositories/{repositoryName}`::
-  Gets information about the repository
+[GET] `/spaces/{spaceName}/projects/{projectName}`::
+  Gets information about the project.
 
-[POST] `/repositories`::
-  Creates a new empty repository or a new repository cloned from an existing (git) repository defined by `RepositoryRequest` JSON entity
+[POST] `/spaces/{spaceName}/projects/{projectName}`::
+  Creates a new project in given space.
 
-[DELETE] `/repositories/__{repositoryName}__`::
-  Removes the repository from the Knowledge Store
+[DELETE] `/spaces/{spaceName}/projects/{projectName}`::
+  Removes the project from the Knowledge Store.
 
-[GET] `/repositories/__{repositoryName}__/projects/`::
-  Gets information about all projects in the repository
+[GET] `/spaces/{spaceName}/projects`::
+  Gets information about all projects in the space
 
-[POST] `/repositories/__{repositoryName}__/projects/`::
-  Creates a project in the repository defined by `ProjectRequest` JSON entity
+[POST] `/spaces/{spaceName}/git/clone`::
+  Clones a project into the space from provided git address.
 
-[DELETE] `/repositories/__{repositoryName}__/projects/__{projectName}__`::
-  Deletes the project in the repository
+[DELETE] `/spaces/{spaceName}/projects/{projectName}`::
+  Deletes the project from the space.
 
-== Organizational unit calls
+== Space calls
 
 
-Organizational unit calls to the Knowledge Store allow you to manage organizational units and organize the connected Git repositories.
+Space calls to the Knowledge Store allow you to manage spaces.
 
-The following `organizationalUnits` calls are provided:
+The following `spaces` calls are provided:
 
-[GET] `/organizationalunits`::
-  Gets all organizational units
+[GET] `/spaces`::
+  Gets all spaces.
 
-[GET] `/organizationalunits/__{organizationalUnitName}__`::
-  Gets a single organizational unit
+[GET] `/spaces/{spaceName}`::
+  Gets a single space.
 
-[POST] `/organizationalunits`::
-  Creates an organizational unit described by `OrganizationalUnit` JSON entity
+[POST] `/spaces`::
+  Creates a space described by `Space` JSON entity.
 
-[POST] `/organizationalunits/__{organizationalUnitName}__`::
-  Updates the organizational unit described by `OrganizationalUnit` JSON entity
-
-[DELETE] `/organizationalunits/__{organizationalUnitName}__`::
-  Deletes the organizational unit
-
-[POST] `/organizationalunits/__{organizationalUnitName}__/repositories/__{repositoryName}__`::
-  Adds the repository to the organizational unit
-
-[DELETE] `/organizationalunits/__{organizationalUnitName}__/repositories/__{repositoryName}__`::
-  Removes the repository from the organizational unit
+[DELETE] `/spaces/{spaceName}`::
+  Deletes the space.
 
 == Maven calls
 
@@ -105,16 +96,16 @@ Maven calls to a project in the Knowledge Store allow you compile, test, install
 
 The following `maven` calls are provided:
 
-[POST] `/repositories/__{repositoryName}__/projects/__{projectName}__/maven/compile`::
+[POST] `/spaces/{spaceName}/projects/{projectName}/maven/compile`::
   Compiles the project (equivalent to ``mvn compile``)
 
-[POST] `/repositories/__{repositoryName}__/projects/__{projectName}__/maven/test`::
+[POST] `/spaces/{spaceName}/projects/{projectName}/maven/test`::
   Tests the project (equivalent to ``mvn test``)
 
-[POST] `/repositories/__{repositoryName}__/projects/__{projectName}__/maven/install`::
+[POST] `/spaces/{spaceName}/projects/{projectName}/maven/install`::
   Installs the project (equivalent to ``mvn install``)
 
-[POST] `/repositories/__{repositoryName}__/projects/__{projectName}__/maven/deploy`::
+[POST] `/spaces/{spaceName}/projects/{projectName}/maven/deploy`::
   Deploys the project (equivalent to  ``mvn deploy``)
 
 == REST summary
@@ -124,94 +115,6 @@ The URL templates in the table below are relative the following URL:
 
 * `http://__{server}__:__{port}__/kie-wb/rest`
 
-
-.Knowledge Store REST calls
-[cols="1,1,1", options="header"]
-|===
-| URL Template
-| Type
-| Description
-
-|/jobs/{jobID}
-|GET
-|return the job status
-
-|/jobs/{jobID}
-|DELETE
-|remove the job
-
-|/organizationalunits
-|GET
-|return a list of organizational units
-
-|/organizationalunits/{organizationalUnitName}
-|GET
-|return a single organizational unit
-
-|/organizationalunits
-|POST
-|create an organizational unit
-
-|/organizationalunits/{organizationalUnitName}
-|POST
-|update the organizational unit
-
-|/organizationalunits/{organizationalUnitName}
-|DELETE
-|delete the organizational unit
-
-|/organizationalunits/{organizationalUnitName}/repositories/{repositoryName}
-|POST
-|add the repository to the organizational unit
-
-|/organizationalunits/{organizationalUnitName}/repositories/{repositoryName}
-|DELETE
-|remove the repository from the organizational unit
-
-|/repositories
-|GET
-|return a list of repositories
-
-|/repositories/{repositoryName}
-|GET
-|return a single repository
-
-|/repositories
-|POST
-|create or clone the repository
-
-|/repositories/{repositoryName}
-|DELETE
-|remove the repository
-
-|/repositories/{repositoryName}/projects
-|GET
-|get a list of projects in the repository
-
-|/repositories/{repositoryName}/projects
-|POST
-|create a project in the repository
-
-|/repositories/{repositoryName}/projects/{projectName}
-|DELETE
-|delete the project in the repository
-
-|/repositories/{repositoryName}/projects/{projectName}/maven/compile
-|POST
-|compile the project
-
-|/repositories/{repositoryName}/projects/{projectName}/maven/test
-|POST
-|test the project
-
-|/repositories/{repositoryName}/projects/{projectName}/maven/install
-|POST
-|install the project
-
-|/repositories/{repositoryName}/projects/{projectName}/maven/deploy
-|POST
-|deploy the project
-|===
 
 == Embedded Kie Server Controller calls
 
