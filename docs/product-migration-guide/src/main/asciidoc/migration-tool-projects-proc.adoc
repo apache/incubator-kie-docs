@@ -1,0 +1,95 @@
+[id='migration-projects-tool-proc']
+
+= Migrating projects using the project migration tool
+
+Red Hat provides a project migration tool that you can use to migrate project data from {PRODUCT_OLD} 6.4 to the new data structure in {PRODUCT} {PRODUCT_VERSION}. This migration tool operates on the `.niogit` directory of your current {CENTRAL} distribution to restructure project data according to the structure in {PRODUCT} {PRODUCT_VERSION}.
+
+.Prerequisite
+* {CENTRAL} is not running for either {PRODUCT_OLD} 6.4 or {PRODUCT} {PRODUCT_VERSION}.
+* All {CENTRAL} project data is backed up, as a precaution.
+* Java is installed and is available on the path where the project migration tool will be installed.
+
+.Procedure
+. In your terminal application, clone the `kie-wb-common` https://github.com/kiegroup/kie-wb-common[GitHub project] to a local directory:
++
+[source]
+----
+$ ~/$REPO_DIR/git clone https://github.com/kiegroup/kie-wb-common.git
+----
+. In the cloned `kie-wb-common` directory, navigate to `kie-wb-common/kie-wb-common-cli/kie-wb-common-cli-tools/kie-wb-common-cli-project-migration` and run the following command:
++
+[source]
+----
+mvn clean install
+----
++
+After several minutes, the installation completes and generates a `kie-wb-common-cli-migration-tool-$VERSION-dist.zip` folder in the target directory.
+. Unzip the generated `kie-wb-common-cli-migration-tool-$VERSION-dist.zip` folder to a desired installation directory:
++
+[source]
+----
+unzip -d $INSTALL_DIR kie-wb-common-cli-migration-tool-$VERSION-dist.zip
+----
+. Navigate to the `.niogit` directory of your current {CENTRAL} distribution for {PRODUCT_OLD} and delete the `.index` directory. This is required because {PRODUCT} {PRODUCT_VERSION} comes with certain updates that are not compatible with {PRODUCT_OLD} 6.4. The `.niogit` directory will be re-indexed after the migration when you start {PRODUCT} {PRODUCT_VERSION}.
+. Copy or note the path to the `.niogit` directory. This will be required for running the migration tool.
+. Navigate to the installation directory where you extracted the `kie-wb-common-project-migration-$VERSION-linux` folder and run the following command, specifying the `.niogit` directory path:
++
+--
+On Linux or UNIX-based systems:
+
+[source]
+----
+$ ~/$INSTALL_DIR/kie-wb-common-project-migration-$VERSION-linux/bin/migration-tool.sh -t $NIOGIT_DIR
+----
+
+On Windows:
+
+[source]
+----
+$ ~/$INSTALL_DIR/kie-wb-common-project-migration-$VERSION-linux/bin/migration-tool.bat -t $NIOGIT_DIR
+----
+--
+. In the wizard that appears, select *Run all the available migration tools sequentially* to run the project migration tool and all other available migration tools. This ensures that all applicable project data is prepared for the migration.
++
+NOTE: If you prefer to run one migration tool at a time, select *Run one of the available migration tools*, and then after the tool runs, re-run the project migration tool and select the next tool option in this window.
++
+
+The tool runs the migration in place. If you encounter errors in the migration tool that you cannot resolve, you can also manually migrate your project data. For details, see xref:migration-projects-manual-proc[].
+. After the migration tool finishes restructuring your project data, start {PRODUCT} {PRODUCT_VERSION} depending on your installation (for example, `$EAP_HOME/bin/standalone.sh`) and log in with your credentials.
+. In {CENTRAL}, navigate to *Menu* -> *Design* -> *Projects* and select or create the space into which you want to import the projects. The default space is *myteam*.
+. Click the three vertical dots in the upper-right corner of the screen and select *Import Project*.
+. For the *Repository URL*, enter the path to one of the repositories in your `.niogit` directory in the following format:
++
+--
+[source]
+----
+file:///$NIOGIT_DIR/$REPOSITORY.git
+----
+For example, if the location of the `.niogit` directory is `/opt/eap7.0/bin/.niogit` and you want to import a project from the `repository1` repository, you would enter the following path:
+
+[source]
+----
+file://opt/eap7.0/bin/.niogit/repository1.git
+----
+--
+. Click *Import*, select the project to import, and click *Import*.
+. After the importing and indexing is complete, repeat these importing steps for each repository that you want to add to {PRODUCT} {PRODUCT_VERSION}.
+
+.`NoRemoteRepositoryException`
+[NOTE]
+====
+If during the import a `NoRemoteRepositoryException` error appears, you can temporarily remove the repository remotes in your terminal.
+
+For example:
+
+[subs="verbatim,macros"]
+----
+$ ~/opt/eap7.0/bin/.niogit/repository1.git
+$ git remote -v
+origin  https://github.com/guvnorngtestuser1/guvnorng-playground (fetch)
+origin  https://github.com/guvnorngtestuser1/guvnorng-playground (push)
+$ git remote remove origin
+----
+
+Then import the projects again. You can add the remotes in the new repository later if necessary (`git remote add $REPOSITORY_URL`).
+====
