@@ -1,0 +1,165 @@
+[id='migration-tool-7.0-proc']
+
+= Migrating {CENTRAL} data using the migration tool
+
+{PRODUCT} {PRODUCT_VERSION} contains a modified data structure and other feature changes that do not support a direct data migration from {PRODUCT_OLD}. Therefore, Red Hat provides a migration tool that enables you to migrate project data and system configurations from {PRODUCT_OLD} 6.4 to {PRODUCT} {PRODUCT_VERSION}. This migration tool operates on the `.niogit` directory of your {CENTRAL} distribution to prepare your {CENTRAL} data for the new data structure and features supported in {PRODUCT} {PRODUCT_VERSION}.
+
+The migration tool includes the following individual migration tools:
+
+* *Project migration tool*: Migrates the {PRODUCT_OLD} 6.4 project repository structure to the new project-oriented structure used in {PRODUCT} {PRODUCT_VERSION}.
+* *System configuration migration tool*: Migrates the `system.git` repository structure used in {PRODUCT_OLD} 6.4 to the new structure used in {PRODUCT} {PRODUCT_VERSION}. This tool requires the project migration tool to be executed first.
+* *Forms migration tool*: Migrates forms created in the {PRODUCT_OLD} 6.4 forms designer to the new forms designer. This tool requires the project migration tool and system configuration migration tool to be executed first. For more information about changes to forms, see <LINK>.
+
+////
+Old form modeler is deprecated and has been updated in BA 7. The new forms do not support all features of the old forms. For example, calculating fields and other dynamic features. The tool converts old forms to new forms. This tool is incrementally delivered with growing support of features, so don't delete old forms. The tool may support more features in the future.
+////
+
+.Prerequisites
+* {CENTRAL} is not running for either {PRODUCT_OLD} 6.4 or {PRODUCT} {PRODUCT_VERSION}.
+* All {CENTRAL} project data is backed up, as a precaution.
+* Java is installed and is available on the path where the project migration tool will be installed.
+* Apache Maven 3.3.9 or later is installed.
+
+.Procedure
+. Locate the `bin/.niogit` directory in your current {CENTRAL} distribution for {PRODUCT_OLD} and locate the same directory in your new {PRODUCT} {PRODUCT_VERSION} installation:
++
+--
+Example:
+[source]
+----
+$ ~/$JBOSS_HOME/bin/.niogit
+----
+
+ifdef::BA[]
+[source]
+----
+$ ~/$RHBA_HOME/bin/.niogit
+----
+endif::BA[]
+ifdef::DM[]
+[source]
+----
+$ ~/$RHDM_HOME/bin/.niogit
+----
+endif::DM[]
+--
+. In your command terminal, copy the `.niogit` directory from your current {CENTRAL} distribution for {PRODUCT_OLD} 6.4 to the `bin` folder of the new {PRODUCT} {PRODUCT_VERSION} installation directory:
++
+--
+ifdef::BA[]
+[source]
+----
+cp -r /$JBOSS_HOME/bin/.niogit  /$RHBA_HOME/bin/
+----
+endif::BA[]
+ifdef::DM[]
+[source]
+----
+cp -r /$JBOSS_HOME/bin/.niogit  /$RHDM_HOME/bin/
+----
+endif::DM[]
+
+The copied `.niogit` folder is the directory that the migration tool will prepare for {PRODUCT} {PRODUCT_VERSION}.
+--
+. In the {PRODUCT} {PRODUCT_VERSION} `bin` directory, delete the `.index` directory. You must delete this folder because {PRODUCT} {PRODUCT_VERSION} comes with certain updates that are not compatible with {PRODUCT_OLD} 6.4. The `bin` directory will be re-indexed after the migration when you start {PRODUCT} {PRODUCT_VERSION}.
+. Copy or note the path to the {PRODUCT} {PRODUCT_VERSION} `.niogit` directory that you copied. This will be required for running the migration tool.
+// This bit about cloning will likely be replaced by a zip file distro. TBA.
+. In your terminal application, clone the `kie-wb-common` https://github.com/kiegroup/kie-wb-common[GitHub project] to a local directory:
++
+[source]
+----
+$ ~/$REPO_DIR/git clone https://github.com/kiegroup/kie-wb-common.git
+----
+. In the cloned `kie-wb-common` directory, navigate to `kie-wb-common/kie-wb-common-cli/kie-wb-common-cli/kie-wb-common-cli-migration-tool` and run the following command:
++
+[source]
+----
+mvn clean install
+----
++
+. After the installation completes, navigate to the newly created `target` directory within the tool folder and unzip the `kie-wb-common-cli-migration-tool-$VERSION-dist.zip` folder to a desired installation directory.
+// Everything above may change to merely downloading a distributed zip file. TBA.
++
+[source]
+----
+unzip -d $INSTALL_DIR kie-wb-common-cli-migration-tool-$VERSION-dist.zip
+----
+. Navigate to the installation directory where you extracted the `kie-wb-common-project-migration-$VERSION` folder and run the following command. The `${PRODUCT_INIT_CAP}_NIOGIT_DIR` is the path to the `.niogit` directory that you copied to the {PRODUCT} {PRODUCT_VERSION} installation.
++
+--
+On Linux or UNIX-based systems:
+[source]
+ifdef::BA[]
+----
+$ ~/$INSTALL_DIR/kie-wb-common-project-migration-$VERSION/bin/migration-tool.sh -t $RHBA_NIOGIT_DIR
+----
+endif::BA[]
+ifdef::DM[]
+----
+$ ~/$INSTALL_DIR/kie-wb-common-project-migration-$VERSION/bin/migration-tool.sh -t $RHDM_NIOGIT_DIR
+----
+endif::DM[]
+
+On Windows:
+
+[source]
+ifdef::BA[]
+----
+$ ~/$INSTALL_DIR/kie-wb-common-project-migration-$VERSION-linux/bin/migration-tool.bat -t $RHBA_NIOGIT_DIR
+----
+endif::BA[]
+ifdef::DM[]
+----
+$ ~/$INSTALL_DIR/kie-wb-common-project-migration-$VERSION-linux/bin/migration-tool.bat -t $RHDM_NIOGIT_DIR
+----
+endif::DM[]
+--
+. In the command prompt that appears, select the option to run *ALL* migration tools in sequence. This ensures that all applicable project data, system configurations, and forms are prepared for the migration.
++
+NOTE: If you prefer to run one migration tool at a time, select and run an individual migration tool, and then after the tool runs, re-run the next migration tool in the sequence.
++
+
+The tool runs the migration in place.
+//If you encounter errors in the migration tool that you cannot resolve, you can also manually migrate your project data. For details, see xref:migration-projects-manual-proc[].
+. After the migration tool finishes preparing the data in the new `.niogit` directory, start {PRODUCT} {PRODUCT_VERSION} depending on your installation (for example, `$EAP_HOME/bin/standalone.sh`) and log in with your credentials.
+. Review your projects and assets in {CENTRAL} to ensure that the migration was successful.
+
+////
+. In {CENTRAL}, navigate to *Menu* -> *Design* -> *Projects* and select or create the space into which you want to import the projects. The default space is *myteam*.
+. Click the three vertical dots in the upper-right corner of the screen and select *Import Project*.
+. For the *Repository URL*, enter the path to one of the repositories in your `.niogit` directory in the following format:
++
+--
+[source]
+----
+file:///$NIOGIT_DIR/$REPOSITORY.git
+----
+For example, if the location of the `.niogit` directory is `/opt/eap7.0/bin/.niogit` and you want to import a project from the `repository1` repository, you would enter the following path:
+
+[source]
+----
+file://opt/eap7.0/bin/.niogit/repository1.git
+----
+--
+. Click *Import*, select the project to import, and click *Import*.
+. After the importing and indexing is complete, repeat these importing steps for each repository that you want to add to {PRODUCT} {PRODUCT_VERSION}.
+
+.`NoRemoteRepositoryException`
+[NOTE]
+====
+If during the import a `NoRemoteRepositoryException` error appears, you can temporarily remove the repository remotes in your terminal.
+
+For example:
+
+[subs="verbatim,macros"]
+----
+$ ~/opt/eap7.0/bin/.niogit/repository1.git
+$ git remote -v
+origin  https://github.com/guvnorngtestuser1/guvnorng-playground (fetch)
+origin  https://github.com/guvnorngtestuser1/guvnorng-playground (push)
+$ git remote remove origin
+----
+
+Then import the projects again. You can add the remotes in the new repository later if necessary (`git remote add $REPOSITORY_URL`).
+====
+////
