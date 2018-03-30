@@ -1,13 +1,46 @@
 [id='migration-update-remote-api-proc']
+= Replace API references to {CENTRAL} execution server
 
-= Replace remote Java API references in remote clients
-
-All references to the remote Java API in any remote client applications must be redirected to the {KIE_SERVER} client API. The purpose of the remote Java API is to interact with the {CENTRAL} execution server, which is now part of the {KIE_SERVER} in {PRODUCT} {PRODUCT_VERSION}. 
-
-As a result of the execution server capabilities being removed from {CENTRAL} in {PRODUCT} {PRODUCT_VERSION}, any remote client applications currently configured to interact
-
-with the remote Java API for the execution server in {CENTRAL}
+In {PRODUCT} {PRODUCT_VERSION}, {CENTRAL} no longer has execution server capabilities nor any API endpoints related to the execution server. Instead, the {KIE_SERVER} performs all execution and runtime functions and {CENTRAL} is used only for designing and managing decision services. Therefore, if any of your applications interact with the {CENTRAL} execution server through the remote Java API (`kie-remote-client`) or through direct REST API calls (`/business-central/rest/`), you must update these API references to redirect to {KIE_SERVER}.
 
 .Procedure
-Change your client applications that use the remote REST API to
-remove remote Java API to the KIE server client API, if remote clients are used.
+. In your application code for remote Java clients, replace any instances of the following legacy package and module for {CENTRAL} with the new package and module for {KIE_SERVER}. This replaces references to the remote Java API with references to {KIE_SERVER}.
++
+--
+Legacy {CENTRAL} package and module:
+[source,java]
+----
+org.kie.remote.client
+kie-remote-client
+----
+
+New {KIE_SERVER} package and module:
+[source,java]
+----
+org.kie.server.client
+kie-server-client
+----
+--
+. Wherever applicable in your application code, replace any legacy REST API calls in the format `http://<SERVER>:<PORT>/business-central/rest/<REQUEST_BODY>` with new REST API calls in the format `http://<SERVER>:<PORT>/kie-server/services/rest/server<REQUEST_BODY>`. This replaces references to the {CENTRAL} execution server with references to {KIE_SERVER}.
++
+*<@Maciej: Is what I say above correct? It will remove all refs to all {CENTRAL} REST APIs (including Knowledge Store) and remote Java APIs, if I understand correctly. I don't know if that's what we want, but I don't know what to tell users otherwise. For example, the {KIE_SEVER} controller is `http://<SERVER>:<PORT>/business-central/rest/controller` when it's {CENTRAL}. This is what we tell them in xref:migration-configure-kie-server-proc[]. So if users do the above replacement, will that be a problem for the {CENTRAL} controller? Am I wrong in something, or do we just need to put an emphatic note that they should replace all `business-central/rest/` instances EXCEPT for `business-central/rest/controller`, or replace more specific APIs?>*
++
+--
+The following example is an update to a REST API call for tasks.
+
+Legacy {CENTRAL} REST API call:
+[source]
+----
+http://localhost:8080/business-central/rest/tasks
+----
+
+New {KIE_SERVER} API call:
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/tasks
+----
+
+NOTE: If {KIE_SERVER} is deployed in a separate {EAP} or other environment or has been moved to a new location, the server and port locations will differ from {CENTRAL}.
+
+
+--
