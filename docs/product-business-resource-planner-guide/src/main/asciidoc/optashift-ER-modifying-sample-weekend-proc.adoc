@@ -1,0 +1,55 @@
+[id='optashift-ER-modifying-sample-weekend-proc']
+= Sample modification: do not make employees work two weekends in a row  
+With this sample modification, the employee rostering starter application does not place people on a roster for two weekends in a row. If a person is rostered for a Saturday or Sunday shift, the next Saturday and Sunday are guaranteed to be free. 
+
+The new rule relies on the information that is already available in the application. No changes to data structures or to the user interface are required. It is an example of a simple change in the starter application.
+
+You can review the full change and apply it by using the ??? patch file, available from ???
+
+.Procedure
+
+. Add the necessary calculations for time slots as static methods in the `src/main/resources/org/optaplanner/openshift/employeerostering/shared/timeslot/TimeSlot.java` class of the `optashift-employee-rostering-shared` package.
+.. Add a method to determine whether the time slot happens during a weekend:
++
+[source,java]
+----
+public static boolean isWeekend(LocalDateTime time) {
+    //DayOfWeek.SATURDAY = 6;
+    //DayOfWeek.SUNDAY = 7;
+    return time.getDayOfWeek().getValue() >= 6;
+}
+----
++
+NOTE: you can modify this method to hardcode public holidays as weekend days.
+
+.. Add a method to determine whether a given number of days pass between two points in time. Because emulated GWT classes, which are used in this application, support calculating time only in seconds, this method uses the interval in seconds to calculate the days.
++
+[source,java]
+----
+public static boolean areApartByNDays(LocalDateTime a, LocalDateTime b, int n) {
+    // Why seconds? Cause emulated GWT classes don't support anything else
+    int secondsPerMin = 60;
+    int minsPerHour = 60;
+    int hoursPerDay = 24;
+    return Math.abs(Duration.between(a, b).getSeconds()) / (secondsPerMin * minsPerHour * hoursPerDay) >= n;
+}
+----
++
+. In the `src/main/resources/org/optaplanner/openshift/employeerostering/server/solver/employeeRosteringScoreRules.drl` file of the `optashift-employee-rostering-shared` package, add a rule that triggers a hard constraint if there are two shifts for the same employee, both are on weekends, and less than 9 days have passed between them.
++
+[source,java]
+----
+rule "No weekends closer than 9 days apart"
+    when
+        Shift(
+                $e : employee,
+                $t : timeSlot,
+                TimeSlotUtils.isWeekend(timeSlot.getStartDateTime())
+        Shift(
+                employee == $e,
+                TimeSlotUtils.isWeekend(timeSlot.getStartDateTime(),
+                TimeSlotUtils.areApartByNDays($t.getStartDateTime(), timeSlot.getStartDateTime(), 9))
+        
+    then
+        scoreHolder.addHardConstraintMatch(kcontext, -50);
+----
