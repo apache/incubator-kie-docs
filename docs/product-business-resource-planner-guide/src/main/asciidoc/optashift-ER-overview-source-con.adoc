@@ -1,0 +1,45 @@
+[id='optashift-ER-overview-source-con']
+= Overview of the source code of the employee rostering starter application
+
+The employee rostering starter application consists of the following principal components:
+
+* The _server_ that implements the rostering logic using {PLANNER} and provides a REST API.
+* The _client_ that implements a user interface using the `gwt` library and calls the server using the REST API.
+
+While some code is shared between the client and the server, you can build and use these components independently. In particular, you can implement a different user interface and use the REST API to call the server.
+
+In addition to the two main components, the employee rostering template contains a generator of random source data (useful for demonstration and testing purposes) and a benchmarking application.
+
+.Packages and key classes
+The Java source code of the employee rostering template contains several packages. Each of these packages includes a separate aven project file (`pom.xml`), but they are intended for building in a common project. 
+
+The packages contain a number of files, including Java classes. This document lists all the packages, as well as the the classes and other files that contain the key information for the employee rostering calculations.
+
+* `optashift-employee-rostering-benchmark` package: contains an additional application that generates random data and benchmarks the solution.
+
+* `optashift-employee-rostering-distribution` package: contains readme files.
+
+* `optashift-employee-rostering-gwtui` package: contains the client application with the user interface, developed using the `gwt` toolkit.
+
+* `optashift-employee-rostering-server` package: contains the server application that uses {PLANNER} to perform the rostering calculation.
+** `src/main/resources/org/optaplanner/openshift/employeerostering/server/solver/employeeRosteringScoreRules.drl` file: contains the rules for the {PLANNER} calculation. These rules are written in the Drools rules language. You can modify the rules to change the logic for employee rostering.
+** `src/main/resources/org/optaplanner/openshift/employeerostering/server/roster/rosterGenerator.java` class: generates random input data for demonstration and testing purposes. If you change the requires input data, you need to change the generator accordingly.
+
+* `optashift-employee-rostering-shared` package: contains the data structures shared between the server and client applications. In particular, under `src/main/resources/org/optaplanner/openshift/employeerostering/shared`, this package includes the Java classes that define the input data for the rostering calculations:
+** `employee/EmployeeAvailability.java` defines availability information for an employee. For every time slot, an employee can be unavailable, available, or it can be a preferred timeslot for the employee.
+** `employee/Employee.java` defines an employee. An employee has a name and a list of skills. Skills are represented by `EmployeeSkillProficiency` objects.
+** `employee/EmployeeSkillProficiency.java` defines the availability of a skill for an employee. It is possible to extend this class to define different employee proficiency levels for skills (basic, advanced, and so on).
+** `roster/Roster.java` defines the calculated rostering information. 
+** `shift/Shift.java` defines a shift to which an employee can be assigned. A shift is defined by a time slot and a spot. For example, in a diner, there could be a shift in the `Kitchen` spot for the `February 20 8AM-4PM` time slot. However, multiple shifts can be defined for a given spot and time slot; in this case, multiple employees are required for this spot and time slot.
+** `skill/Skill.java` defines a skill that an employee can have.
+** `spot/Spot.java` defines a spot where employees can be placed. For example, in a diner, `Kitchen` can be a spot.
+** `tenant/Tenant.java` defines a tenant. Each tenant represents an independent set of data; any change in the data for one tenant does not affect any other tenants.
+** `timeslot/TimeSlot.java` defines a time slot doring which employees go on one shift. For example, `February 20 8AM-4PM` can be a time slot.
++
+The `optashift-employee-rostering-shared` package also includes other shared artifacts:
+** `*View.java` classes define value sets that are calculated from other information; the client application can read these values through the REST API, but not write them.
+** `*RestService.java` interfaces define the REST API. Both the server and the client application separately define implementations of these interfaces.
+
+* `optashift-employee-rostering-shared-gwt` package: contains some of the classes required for the GWT client application.
+
+* `optashift-employee-rostering-webapp` package: contains the HTML and other files necessary for building the entire application (client and server).
