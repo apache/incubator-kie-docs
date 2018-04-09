@@ -1,0 +1,45 @@
+[id='migration-configure-kie-server-proc']
+= Configure and start {KIE_SERVER}
+
+After you have migrated all {CENTRAL} data and have upgraded the relevant database, configure and start the new {KIE_SERVER} to transfer the execution server functionality and apply the migrated changes.
+
+.Prerequisites
+* Project data from {PRODUCT_OLD} 6.4 has been migrated using the {CENTRAL} migration tool.
+* The {PRODUCT_OLD} 6.4 database to be used with {PRODUCT} {PRODUCT_VERSION} has been upgraded.
+* All API references to {CENTRAL} execution server in application code have been redirected to the {KIE_SERVER}.
+
+.Procedure
+Navigate to the {PRODUCT} {PRODUCT_VERSION} `bin` directory and start the new {KIE_SERVER} with the following properties. Adjust the specific properties according to your environment.
+
+[source]
+----
+$ ~/EAP_HOME/bin/standalone.sh --server-config=standalone-full.xml <1>
+-Dorg.kie.server.id=myserver <2>
+-Dorg.kie.server.controller=http://localhost:8080/business-central/rest/controller <3>
+-Dorg.kie.server.location=http://localhost:8080/kie-server/services/rest/server <4>
+-Dorg.kie.server.persistence.dialect=org.hibernate.dialect.PostgreSQLDialect <5>
+-Dorg.kie.server.persistence.ds=java:jboss/datasources/psjbpmDS <6>
+----
+<1> Start command with `standalone-full.xml` server profile
+<2> Server ID that must match the server template name defined in {CENTRAL}
+<3> Controller location, {CENTRAL} URL with `/rest/controller` suffix
+<4> {KIE_SERVER} location (on the same instance as {CENTRAL} in this example)
+<5> Hibernate dialect to be used
+<6> JNDI name of the data source used for your previous {PRODUCT_OLD} database
+
+[NOTE]
+====
+If {CENTRAL} and {KIE_SERVER} are installed on separate application server instances ({EAP} or other), use a separate port for the {KIE_SERVER} location to avoid port conflicts with {CENTRAL}. If a separate {KIE_SERVER} port has not already been configured, you can add a port offset and adjust the {KIE_SERVER} port value accordingly in the {KIE_SERVER} properties.
+
+Example:
+
+[source]
+----
+-Djboss.socket.binding.port-offset=150
+-Dorg.kie.server.location=http://localhost:8230/kie-server/services/rest/server
+----
+
+If the {CENTRAL} port is 8080, as in this example, then the {KIE_SERVER} port, with a defined offset of 150, is 8230.
+====
+
+{KIE_SERVER} connects to the new {CENTRAL} and collects the list of KIE containers to be deployed.
