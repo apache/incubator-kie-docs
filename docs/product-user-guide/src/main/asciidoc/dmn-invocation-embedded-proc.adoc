@@ -1,13 +1,13 @@
-[#dmn-invocation-embedded-proc]
+[id='dmn-invocation-embedded-proc']
 = Embedding a DMN call directly into the Java application
 
-This section describes executing decision services for DMN models by directly interacting with a KIE container.
+A knowledge container is local when the knowledge assets are either embedded directly into the calling program, or are physically pulled in using Maven coordinates for the KJAR. You should embed knowledge assets directly into a project if there is a tight relationship between the version of the code and the version of the DMN definition. Any changes to the decision should only take effect after you have intentionally updated and redeployed the application. One potential benefit of this approach is that proper operation does not rely on any external dependencies to the runtime, which can be a limitation of locked down environments.
+
+Using Maven coordinates enables further flexibility because the specific version of the decision can dynamically change, for example by using a system property, and it can be periodically scanned for updates and automatically updated. This introduces an external dependency on the deploy time of the service, but executes the decision locally, reducing reliance on an external service being available during runtime.
 
 .Prerequisites
-
-* A KJAR containing the DMN model to execute
-
-* The following dependencies are added to the pom.xml of the project:
+* A KJAR containing the DMN model to execute has been created.
+* The following dependencies have been added to the `pom.xml` file of the project:
 
 [source,xml]
 ----
@@ -29,7 +29,7 @@ This section describes executing decision services for DMN models by directly in
 NOTE: *${drools-version}* is a Maven property that should resolve to the precise version used for other KIE / Drools dependencies at runtime.
 
 .Procedure
-. Create a KIE Container from classpath or ReleaseId, for example:
+. Create a KIE container from `classpath` or `ReleaseId`:
 +
 [source,java]
 ----
@@ -39,7 +39,7 @@ ReleaseId releaseId = kieServices.newReleaseId( "org.acme", "my-kjar", "1.0.0" )
 KieContainer kieContainer = kieServices.newKieContainer( releaseId );
 ----
 +
-Or alternatively:
+Alternative option:
 +
 [source,java]
 ----
@@ -48,7 +48,7 @@ KieServices kieServices = KieServices.Factory.get();
 KieContainer kieContainer = kieServices.getKieClasspathContainer();
 ----
 
-. Obtain DMNRuntime from the KIE Container and a reference to the DMN model to be evaluated, by using the *model namespace* and *model name*.
+. Obtain `DMNRuntime` from the KIE container and a reference to the DMN model to be evaluated, by using the model `namespace` and `modelName`:
 +
 [source,java]
 ----
@@ -64,12 +64,12 @@ DMNModel dmnModel = dmnRuntime.getModel(namespace, modelName);
 +
 [source,java]
 ----
-DMNContext dmnContext = dmnRuntime.newContext();   // <1>
+DMNContext dmnContext = dmnRuntime.newContext();  <1>
 
 for (Integer age : Arrays.asList(1,12,13,64,65,66)) {
-  dmnContext.set("Age", age);  // <2>
-  DMNResult dmnResult = dmnRuntime.evaluateAll(dmnModel, dmnContext); // <3>
-  for (DMNDecisionResult dr : dmnResult.getDecisionResults()) { // <4>
+  dmnContext.set("Age", age);  <2>
+  DMNResult dmnResult = dmnRuntime.evaluateAll(dmnModel, dmnContext);  <3>
+  for (DMNDecisionResult dr : dmnResult.getDecisionResults()) {  <4>
     log.info("Age " + age + " Decision '" + dr.getDecisionName() + "' : " + dr.getResult());
   }
 }
@@ -78,7 +78,8 @@ for (Integer age : Arrays.asList(1,12,13,64,65,66)) {
 <2> Assign input variables for the input DMN context.
 <3> Evaluate all DMN decisions defined in the DMN model.
 <4> Each evaluation may result in one or more results, creating the loop.
-
++
+--
 This example prints the following output:
 
 [source]
@@ -90,7 +91,4 @@ Age 64 Decision 'AgeClassification' : Adult
 Age 65 Decision 'AgeClassification' : Senior
 Age 66 Decision 'AgeClassification' : Senior
 ----
-
-.Related Information
-
-* {URL_PACKAGING_DEPLOYING_DECISION_SERVICE}[{PACKAGING_DEPLOYING_DECISION_SERVICE}]
+--
