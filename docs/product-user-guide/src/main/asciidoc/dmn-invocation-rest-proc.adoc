@@ -1,32 +1,31 @@
-[#dmn-invocation-rest-proc]
+[id='dmn-invocation-rest-proc']
 = Calling a DMN service on a remote server using REST APIs
 
-This section explains how to interact with a KIE Container from any client type using the REST endpoints. The examples here demonstrate using *nix style "curl" commands but provide relevant information to adapt to any REST client.
+Directly interacting with the REST endpoints of the {KIE_SERVER} provides the most separation between the calling code and the decision logic definition. The calling code is completely free of direct dependencies, and you can implement it in an entirely different development platform such as `node.js` or `.net`. The examples in this section demonstrate Nix-style curl commands but provide relevant information to adapt to any REST client.
 
 .Prerequisites
-
-* KIE Execution Server installed and configured, including service user accounts to allow access.
-* A KIE Container deployed in the KIE Execution Server in the form of a KJAR that includes the DMN model.
-* Knowing the container ID of the KIE Container containing the DMN model. If using more than one model, you must also know the model namespace and model name of the specific model being invoked.
+* {KIE_SERVER} is installed and configured, including service user accounts to allow access.
+* A KIE container is deployed in the {KIE_SERVER} in the form of a KJAR that includes the DMN model.
+* The container ID of the KIE container containing the DMN model. If more than one model is present, you must also know the model namespace and model name of the relevant model.
 
 .Procedure
 . Determine the base URL for accessing the REST endpoints. This requires knowing the following values (with the default local deployment values as an example):
 +
-* Host (localhost)
-* Port (8080)
-* Root context (kie-server)
-* Base REST path (services/rest/server)
-+
+--
+* Host (`localhost`)
+* Port (`8080`)
+* Root context (`kie-server`)
+* Base REST path (`services/rest/server`)
+
 Local deployment example URL:
-+
 [source]
 ----
 http://localhost:8080/kie-server/services/rest/server
 ----
-
-. Determine user authentication requirements. +
+--
+. Determine user authentication requirements.
 +
-When users are defined directly in the KIE Execution Server configuration, BasicAuth is used which requires the username and password.  Successful requests require that the user have the kie-server role.
+When users are defined directly in the {KIE_SERVER} configuration, BasicAuth is used which requires the user name and password. Successful requests require that the user have the `kie-server` role.
 +
 The following example demonstrates how to add credentials to a curl request:
 +
@@ -42,9 +41,7 @@ If the KIE Execution Server is configured with KeyCloak, the request must includ
 curl -H "Authorization: bearer $TOKEN" <request>
 ----
 
-. Specify the format of the request and response. +
-+
-The REST endpoints work with both JSON and XML formats and are set using request headers, for example:
+. Specify the format of the request and response. The REST endpoints work with both JSON and XML formats and are set using request headers.
 +
 .JSON
 [source]
@@ -58,19 +55,18 @@ curl -H "accept: application/json" -H "content-type: application/json"
 curl -H "accept: application/xml" -H "content-type: application/xml"
 ----
 
-. (Optional) Query the container for a list of deployed decision models.
-*[GET]* `/containers/$containerId/dmn`
+. (Optional) Query the container for a list of deployed decision models: *[GET]* `/containers/_CONTAINER_ID_/dmn`
 +
-.Age classification walkthough
-This example demonstrates how to assemble the commands for a local install with the Age Classification sample:
-+
+--
+Example curl request:
+
 [source]
 ----
 curl -u krisv:krisv -H "accept: application/xml" -X GET "http://localhost:8080/kie-server/services/rest/server/containers/MovieDMNContainer/dmn"
 ----
-+
+
 Sample XML output:
-+
+
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -90,9 +86,9 @@ Sample XML output:
     </dmn-model-info-list>
 </response>
 ----
-+
+
 Sample JSON output:
-+
+
 [source,json]
 ----
 {
@@ -113,19 +109,19 @@ Sample JSON output:
   }
 }
 ----
+--
+. Execute the model: *[POST]* `/containers/_CONTAINER_ID_/dmn`
++
+--
+Example curl request:
 
-. Execute the model.
-+
-*[POST]* `/containers/$containerId/dmn`
-+
-Putting it all together for a local install with the Age Classification sample:
-+
 [source]
 ----
 curl -u krisv:krisv -H "accept: application/json" -H "content-type: application/json" -X POST "http://localhost:8080/kie-server/services/rest/server/containers/MovieDMNContainer/dmn" -d "{ \"model-namespace\" : \"http://www.redhat.com/_c7328033-c355-43cd-b616-0aceef80e52a\", \"model-name\" : \"dmn-movieticket-ageclassification\", \"decision-name\" : [ ], \"decision-id\" : [ ], \"dmn-context\" : {\"Age\" : 66}}"
 ----
 
-.Formatted JSON request:
+Example JSON request:
+
 [source,json]
 ----
 {
@@ -137,7 +133,8 @@ curl -u krisv:krisv -H "accept: application/json" -H "content-type: application/
 }
 ----
 
-.Formatted XML request (JAXB style):
+Example XML request (JAXB style):
+
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -153,13 +150,17 @@ curl -u krisv:krisv -H "accept: application/json" -H "content-type: application/
 </dmn-evaluation-context>
 ----
 
-Regardless of format, the request requires:
+[NOTE]
+====
+Regardless of the request format, the request requires the following elements:
 
 * Model namespace
 * Model name
 * Context object containing input values
+====
 
-.Example JSON response:
+Example JSON response:
+
 [source,json]
 ----
 {
@@ -189,7 +190,8 @@ Regardless of format, the request requires:
 }
 ----
 
-.Example XML (JAXB format) response:
+Example XML (JAXB format) response:
+
 [source,xml]
 ----
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -222,7 +224,4 @@ Regardless of format, the request requires:
       </dmn-evaluation-result>
 </response>
 ----
-
-.Related Information
-
-* {URL_PACKAGING_DEPLOYING_DECISION_SERVICE}[{PACKAGING_DEPLOYING_DECISION_SERVICE}]
+--

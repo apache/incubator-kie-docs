@@ -1,22 +1,31 @@
-[#dmn-invocation-remote-java-proc]
-= Executing DMN Services Remotely on the KIE Server (Java)
+[id='dmn-invocation-remote-java-proc']
+= Executing DMN services remotely on the {KIE_SERVER} (Java)
 
-This section explains how to interact with a KIE Container deployed on a KIE Execution Server to execute decision services from a Java application. This approach leverages the KIE Server Java Client to interact with the remote service using minimal code.
+The KIE remote API client provides a lightweight approach to invoking a remote DMN service either through the REST or JMS interfaces of the {KIE_SERVER}. This approach reduces the number of runtime dependencies necessary to interact with a knowledge base. Decoupling the calling code from the decision definition also increases flexibility by enabling them to iterate independently at the appropriate pace.
 
 .Prerequisites
+* {KIE_SERVER} is installed and configured, including a known user name and credentials for a user with the `kie-server` role.
+* A KIE container is deployed in the {KIE_SERVER} in the form of a KJAR that includes the DMN model.
+* The container ID of the KIE container containing the DMN model. If more than one model is present, you must also know the model namespace and model name of the relevant model.
+* The following dependency is added to the `pom.xml` file of the project:
 
-* KIE Execution Server installed and configured, including a known username/credential for a user with the "kie-server" role.
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+  <version>${drools-version}</version>
+</dependency>
+----
 
-* A KIE Container deployed in the KIE Execution Server in the form of a KJAR that includes the DMN model.
-
-* Knowing the container ID of the KIE Container containing the DMN model. If more than one model is present, you must also know the model namespace and model name of the relevant model.
+NOTE: *${drools-version}* is a Maven property that should resolve to the precise version used for other KIE / Drools dependencies at runtime.
 
 .Procedure
-. Instantiate a KieServicesClient instance with the appropriate connection information.
+. Instantiate a `KieServicesClient` instance with the appropriate connection information.
 +
-The following snippet illustrates establishing this configuration:
-+
-.Instantiating KieServicesClient
+--
+Example:
+
 [source,java]
 ----
 KieServicesConfiguration conf =
@@ -26,26 +35,25 @@ conf.setMarshallingFormat(MarshallingFormat.JSON);  // <2>
 
 KieServicesClient kieServicesClient = KieServicesFactory.newKieServicesClient(conf);
 ----
-Supply the connection information in Line 1:
-+
+<1> The connection information:
 * Example URL: http://localhost:8080/kie-server/services/rest/server
-* The credentials should reference a user with the “kie-server” role.
-+
-In Line 2, Marshalling format is an instance of org.kie.server.api.marshalling.MarshallingFormat. It controls whether the messages will be JSON or XML. Options for Marshalling format are JSON, JAXB, or XSTREAM.
-
-. Obtain a DMNServicesClient from the KIE server Java client connected to the related KIE execution server by invoking the method getServicesClient() on the KIE Server Java client instance, as shown in the following example:
+* The credentials should reference a user with the `kie-server` role.
+<2> The Marshalling format is an instance of `org.kie.server.api.marshalling.MarshallingFormat`. It controls whether the messages will be JSON or XML. Options for Marshalling format are JSON, JAXB, or XSTREAM.
+--
+. Obtain a `DMNServicesClient` from the KIE server Java client connected to the related {KIE_SERVER} by invoking the method `getServicesClient()` on the KIE server Java client instance:
 +
 [source,java]
 ----
 DMNServicesClient dmnClient = kieServicesClient.getServicesClient(DMNServicesClient.class );
 ----
 +
-The dmnClient can now execute decision services on the KIE Execution Server.
+The `dmnClient` can now execute decision services on the {KIE_SERVER}.
 
 . Execute the decision services for the desired model.
 +
-The following snippet provides a basic example:
-+
+--
+Example:
+
 [source,java]
 ----
 for (Integer age : Arrays.asList(1,12,13,64,65,66)) { // <1>
@@ -63,20 +71,18 @@ for (Integer age : Arrays.asList(1,12,13,64,65,66)) { // <1>
 	}
 }
 ----
+<1> Instantiate a new DMN Context to be the input for the model evaluation. Note that this example is looping through the Age Classification decision multiple times.
+<2> Assign input variables for the input DMN Context.
+<3> Evaluate all the DMN Decisions defined in the DMN model:
+* `$kieContainerId` is the ID of the container where the KJAR containing the DMN model is deployed
+* `$modelNamespace` is the namespace for the model.
+* `$modelName` is the name for the model.
+<4> The DMN Result object is available from the server response.
 
-Note that this example loops through several values to invoke the Age Classification example.
+At this point, the `dmnResult` contains all the decision results from the evaluated DMN model.
 
-. Instantiate a new DMN Context to be the input for the model evaluation.
-. Assign input variables for the input DMN Context.
-. Evaluate all the DMN Decisions defined in the DMN model where $containerId is the ID of the container where the kjar containing the DMN model is deployed, $modelNamespace the namespace for the model, $modelName is the name for the model.
-. The DMN Result object is available from the server response.
+NOTE: You can also execute only a specific DMN Decision in the model, by making use of alternative methods of the `DMNServicesClient`.
 
-At this point, the dmnResult contains all the decision results from the evaluated DMN model.
+TIP: If the KIE container only contains one DMN Model, you can omit `$modelNamespace` and `$modelName` because the KIE API will select it by default.
 
-NOTE: It is possible to execute only a specific DMN Decision in the model, by making use of alternative methods of the DMNServicesClient.
-
-TIP: If the KIE Container only contains one DMN Model, it is possible to omit $modelnamespace and $modelname because the KIE API will select it by default.
-
-.Related Information
-
-* {URL_PACKAGING_DEPLOYING_DECISION_SERVICE}[{PACKAGING_DEPLOYING_DECISION_SERVICE}]
+--
