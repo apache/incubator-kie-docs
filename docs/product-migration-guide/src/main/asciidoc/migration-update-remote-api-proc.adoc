@@ -21,6 +21,65 @@ org.kie.server.client
 kie-server-client
 ----
 --
+. Rewrite any Java client application code that currently interacts with the legacy {KIE_SERVER} remote client so that it interacts instead with the relevant {KIE_SERVER} client. For information about {KIE_SERVER} clients, see xref:kie-server-clients-ref_exec-server[].
++
+--
+The following example illustrates code updates from the legacy `kie-remote-client` to the new `kie-server-client`.
+
+Legacy code using `kie-remote-client`:
+[source,java]
+----
+RuntimeEngine engine = RemoteRuntimeEngineFactory.newRestBuilder()
+			.addUrl(new URL("http://localhost:8080/business-central"))
+			.addUserName("john").addPassword("password")
+			.addDeploymentId("org.jbpm:Evaluation:1.0")
+				.build();
+		KieSession ksession = engine.getKieSession();
+		TaskService taskService = engine.getTaskService();
+
+		// start a new process instance
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("employee", "john");
+		params.put("reason", "Yearly performance evaluation");
+		ProcessInstance processInstance =  ksession.startProcess("evaluation", params);
+		System.out.println("Start Evaluation process " + processInstance.getId());
+
+		// complete Self Evaluation
+		List<TaskSummary> tasks = taskService.getTasksAssignedAsPotentialOwner("john", "en-UK");
+		TaskSummary task = tasks.get(0);
+		System.out.println("'john' completing task " + task.getName() + ": " + task.getDescription());
+		taskService.start(task.getId(), "john");
+		Map<String, Object> results = new HashMap<String, Object>();
+		results.put("performance", "exceeding");
+		taskService.complete(task.getId(), "john", results);
+----
+
+New code using `kie-server-client`:
+[source,java]
+----
+KieServicesConfiguration config =  KieServicesFactory.newRestConfiguration(
+			"http://localhost:8080/kie-server/services/rest/server", "john", "password");
+		KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
+		ProcessServicesClient processServices = client.getServicesClient(ProcessServicesClient.class);
+		UserTaskServicesClient taskServices = client.getServicesClient(UserTaskServicesClient.class);
+
+		// start a new process instance
+		Map<String, Object> params = new HashMap<String, Object>();
+		params.put("employee", "john");
+		params.put("reason", "Yearly performance evaluation");
+		Long processInstanceId = processServices.startProcess("evaluation_1.0.0-SNAPSHOT", "evaluation", params);
+		System.out.println("Start Evaluation process " + processInstanceId);
+
+		// complete Self Evaluation
+		List<TaskSummary> tasks = taskServices.findTasksAssignedAsPotentialOwner("john", 0, 10);
+		TaskSummary task = tasks.get(0);
+		System.out.println("'john' completing task " + task.getName() + ": " + task.getDescription());
+		taskServices.startTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "john");
+		Map<String, Object> results = new HashMap<String, Object>();
+		results.put("performance", "10");
+		taskServices.completeTask("evaluation_1.0.0-SNAPSHOT", task.getId(), "john", results);
+----
+--
 . Wherever applicable in your application code, replace any legacy REST API calls to the {CENTRAL} execution server in the format `http://<SERVER>:<PORT>/business-central/rest/<ENDPOINT>` with the new corresponding REST API calls to {KIE_SERVER} in the format `http://<SERVER>:<PORT>/kie-server/services/rest/server/<ENDPOINT>`.
 +
 --
