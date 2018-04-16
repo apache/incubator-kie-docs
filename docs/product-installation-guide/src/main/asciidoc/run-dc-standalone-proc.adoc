@@ -5,18 +5,82 @@ You can use the {CENTRAL} standalone JAR file to run {CENTRAL} without needing t
 [NOTE]
 ====
 Red Hat supports this installation type only when it is installed on premise, on Red Hat Enterprise Linux.
-//Any particular version of RHEL?
 ====
 
 .Procedure
 
-. Download the {CENTRAL} standalone JAR file from the https://access.redhat.com[Red Hat Customer Portal].
-. In a terminal window, navigate to the directory where you downloaded the installer file.
-. Create the `application-config.yaml` configuration file with the following contents:
+. Download the {CENTRAL} standalone JAR file from the https://access.redhat.com[Red Hat Customer Portal]:
+.. Log in to the https://access.redhat.com[Red Hat Customer Portal].
+.. Click *DOWNLOADS* at the top of the page.
+.. On the *Product Downloads* page that opens, navigate to the JBOSS INTEGRATION AND AUTOMATION section, and click *{PRODUCT}*.
+.. On the *Software Downloads* page, if necessary select 
+ifdef::PAM[]
+*Process Automation Manager*
+endif::[]  
+ifdef::DM[]
+*Decision Manager*
+endif::[]  
+from the *Product* menu and *{PRODUCT_VERSION}* from the *Version* menu.
+.. Download *{PRODUCT} {PRODUCT_VERSION} {CENTRAL} Standalone* 
+ifdef::PAM[]
+(`rhpam-7.0.0.GA-business-central-standalone.jar`).
+endif::[]  
+ifdef::DM[]
+(`rhdm-7.0.0.GA-decision-central-standalone.jar`).
+endif::[]  
+
+. Create a directory and move the 
+ifdef::PAM[]
+`rhpam-7.0.0.GA-business-central-standalone.jar`
+endif::[]  
+ifdef::DM[]
+`rhdm-7.0.0.GA-decision-central-standalone.jar`
+endif::[]   
+file to this directory.
+. In a terminal window, navigate to the directory that contains the standalone JAR file.
+. Create the `application-users.properties` file. Include an administrative user and if this {CENTRAL} instance will be a controller for {KIE_SERVER}, include a controller user, for example:
++
+[source]
+----
+ifdef::PAM[]
+rhpamAdmin=password1
+endif::PAM[]
+ifdef::DM[]
+rhdmAdmin=password1
+endif::DM[]
+controllerUser=controllerUser1234
+----
++
+. Create the `application-roles.properties` file to assign roles to the users that you included in the `application-users.properties` file, for example:
++
+[source]
+----
+ifdef::PAM[]
+rhpamAdmin=admin
+endif::PAM[]
+ifdef::DM[]
+rhdmAdmin=admin
+endif::DM[]
+controllerUser=kie-server
+----
++
+//For more information, see <<dm-roles-con>>.
+. Create the `application-config.yaml` configuration file with the following contents, where `<APPLICATION_USERS>` is the path to the `application-users.properties` file that you created in step 4 and `<APPLICATION_ROLES>` is the path to the `application-roles.properties` file that you created in step 5:
 +
 [source]
 ----
 swarm:
+ifdef::PAM[]
+  security:
+    security-domains:
+      other:
+        classic-authentication:
+          login-modules:
+            myloginmodule:
+              code: org.kie.security.jaas.KieLoginModule
+              flag: optional
+              module: deployment.kie-wb-webapp.war
+endif::[] 
   management:
     security-realms:
       ApplicationRealm:
@@ -25,47 +89,38 @@ swarm:
           allowed-users: local
           skip-group-loading: true
         properties-authentication:
-          path: /path/to/application-users.properties
+          path: <APPLICATION_USERS>
           plain-text: true
         properties-authorization:
-          path: /path/to/application-roles.properties
+          path: <APPLICATION_ROLES>
 datasource:
   management:
     wildfly:
       admin: admin
 ----
-. Create the `application-users.properties` file. Include an administrative user and if this {CENTRAL} instance will be a controller for {KIE_SERVER}, include a controller user, for example:
-+
-[source]
-----
-rhdmAdmin=password1
-controllerUser=controllerUser1234
-----
-+
-. Create the `application-roles.properties` file to assign roles to the users that you included in the `application-users.properties` file, for example:
-+
-[source]
-----
-rhdmAdmin=admin
-controllerUser=kie-server
-----
-+
-For more information, see <<dm-roles-con>>.
-
 . Enter the following command:
 +
 [source]
 ----
-java -jar rhdm-7.0.0.GA-decision-central-standalone.jar -s
-application-config.yaml
+ifdef::PAM[]
+java -jar rhpam-7.0.0.GA-decision-central-standalone.jar -s application-config.yaml
+endif::PAM[]
+ifdef::DM[]
+java -jar rhdm-7.0.0.GA-decision-central-standalone.jar -s application-config.yaml
+endif::DM[]
 ----
 +
 In addition, you can set any properties supported by {CENTRAL} by including the `-D<property>=<value>` parameter in this command, for example:
 +
 [source]
-----
-java -jar rhdm-7.0.0.GA-decision-central-standalone.jar -s
-application-config.yaml -D<property>=<value> -D<property>=<value>
+---- 
+ifdef::PAM[]
+java -jar rhpam-7.0.0.GA-decision-central-standalone.jar -s application-config.yaml -D<property>=<value> -D<property>=<value>
+endif::PAM[]
+ifdef::DM[]
+java -jar rhdm-7.0.0.GA-decision-central-standalone.jar -s application-config.yaml -D<property>=<value> -D<property>=<value>
+endif::DM[]
+
 ----
 +
 //For example:
