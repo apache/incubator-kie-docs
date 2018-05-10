@@ -1,0 +1,70 @@
+[id='sso-client-adapter-proc']
+= Installing the RH-SSO client adapter for {CENTRAL}
+
+After you install RH-SSO, you must install the RH-SSO client adapter for {EAP} and configure it for {CENTRAL}.
+
+.Prerequisite
+* RH-SSO is installed as described in <<sso-realm-proc>>.
+* A user with the `admin`role has been added to RH-SSO as described in <<sso-user-add-proc>>.
+* {CENTRAL} is installed in a {EAP} 7.1 instance, as described in _INSTALLING AND CONFIGURING RED HAT PROCESS AUTOMATION MANAGER ON EAP 7.1_.
+
+.Procedure
+. Download the {EAP} adapter:
+.. Log in to the https://access.redhat.com[Red Hat Customer Portal].
+.. Click *DOWNLOADS* at the top of the page.
+.. On the *Product Downloads* page that opens, navigate to the JBOSS INTEGRATION AND AUTOMATION section, and click *Red Hat Single Sign-On*.
+.. On the *Software Downloads* page, if necessary select *7.2* from the *Version* menu.
+.. Download *Red Hat Single Sign-on 7.2.0 Client Adaptor for JBoss EAP 7* (`rh-sso-7.2.0.GA-eap7-adapter.zip`).
+. Unzip and install `rh-sso-7.2.0.GA-eap7-adapter.zip`. For installation instructions, see the https://access.redhat.com/documentation/en/red-hat-single-sign-on/7.0/securing-applications-and-services-guide/securing-applications-and-services-guide#jboss_adapter[JBoss EAP Adapter] section of the _Red Hat Single Sign On Securing Applications and Services Guide_.
+. Go to `_EAP_HOME_/standalone/configuration` and open the `standalone.xml` and `standalone-full.xml` files. 
+. Delete the `<single-sign-on/>` element from both of the files.
+. Navigate to `_EAP_HOME_/standalone/configuration` directory in your {EAP} installation and edit the `standalone.xml` file to add the RH-SSO subsystem configuration. For example:
++
+--
+[source,xml]
+----
+<subsystem xmlns="urn:jboss:domain:keycloak:1.1">
+ <secure-deployment name="decision-central.war">
+   <realm>demo</realm>
+   <realm-public-key>MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrVrCuTtArbgaZzL1hvh0xtL5mc7o0NqPVnYXkLvgcwiC3BjLGw1tGEGoJaXDuSaRllobm53JBhjx33UNv+5z/UMG4kytBWxheNVKnL6GgqlNabMaFfPLPCF8kAgKnsi79NMo+n6KnSY8YeUmec/p2vjO2NjsSAVcWEQMVhJ31LwIDAQAB</realm-public-key>
+   <auth-server-url>http://localhost:8180/auth</auth-server-url>
+   <ssl-required>external</ssl-required>
+   <enable-basic-auth>true</enable-basic-auth>
+   <resource>kie</resource>
+   <credential name="secret">759514d0-dbb1-46ba-b7e7-ff76e63c6891</credential>
+   <principal-attribute>preferred_username</principal-attribute>
+ </secure-deployment>
+</subsystem>
+----
+
+In this example:
+
+* `secure-deployment name` is the name of your application's WAR file.
+* `realm` is the name of the realm that you created for the applications to use.
+* `realm-public-key` is the public key of the realm you created. You can find the key in the *Keys* tab in the *Realm settings* page of the realm you created in the RH-SSO Admin Console. If you do not provide a value for `realm-public-key`, the server retrieves it automatically.
+* `auth-server-url` is the  URL for the RH-SSO authentication server.
+* `enable-basic-auth` is the  setting to enable basic authentication mechanism, so that the clients can use both token-based and basic authentication approaches to perform the requests.
+* `resource` is the  name for the client that you created.
+* `credential name` is the  secret key for the client you created. You can find the key in the *Credentials* tab on the *Clients* page of the RH-SSO Admin Console.
+* `principal-attribute` is the login name of the user. If you do not provide this value, your User Id is displayed in the application instead of your user name.
++
+[NOTE]
+====
+The RH-SSO server converts the user names to lower case. Therefore, after integration with RH-SSO, your user name will appear in lower case in {PRODUCT}. If you have user names in upper case hard coded in business processes, the application may not be able to identify the upper case user.
+====
+--
++
+
+. Navigate to `_EAP_HOME_/bin/` and enter the following command to start the {EAP} server:
++
+--
+[source]
+----
+./standalone.sh
+----
+--
+
+[NOTE]
+====
+You can also configure the RH-SSO adapter for {CENTRAL} by updating your application's WAR file to use the RH-SSO security subsystem. However, Red Hat recommends that you configure the adapter through the RH-SSO subsystem. Doing this updates the {EAP} configuration instead of applying the configuration on each WAR file.
+====
