@@ -1,0 +1,53 @@
+[id='sso-user-manage-proc']
+= Enabling user and group management for RH-SSO
+This section describes how you can configure {CENTRAL} to manage users and groups stored in RH-SSO.
+
+.Procedure
+. Ensure that the following libraries are in the `WEB-INF/lib` directory:
++
+[source]
+----
+uberfire-security-management-api-<latest_artifact_version>.jar
+uberfire-security-management-backend-<latest_artifact_version>.jar
+uberfire-security-management-keycloak-<latest_artifact_version>.jar
+keycloak-core-<latest_artifact_version>.jar
+keycloak-common-<latest_artifact_version>.jar
+----
+. Remove third-party security JAR files, for example:
++
+[source]
+----
+uberfire-security-management-wildfly-<latest_artifact_version>.jar
+uberfire-security-management-tomcat-<latest_artifact_version>.jar
+----
+. Replace the entire contents of the `WEB-INF/classes/security-management.properties` file with the following content:
++
+[source]
+----
+org.uberfire.ext.security.management.api.userManagementServices=KCCredentialsUserManagementService
+org.uberfire.ext.security.management.keycloak.authServer=http://localhost:8081/auth
+org.uberfire.ext.security.management.keycloak.realm=demo
+org.uberfire.ext.security.management.keycloak.user=admin
+org.uberfire.ext.security.management.keycloak.password=admin
+org.uberfire.ext.security.management.keycloak.clientId=kie
+org.uberfire.ext.security.management.keycloak.clientSecret=759514d0-dbb1-46ba-b7e7-ff76e63c6891
+----
++
+[NOTE]
+====
+If the `WEB-INF/classes/security-management.properties` file does not exist, create it.
+====
+. Edit the following dependencies and exclusions in the  `/META-INF/jboss-deployment-structure.xml` file:
++
+[source]
+----
+<dependencies>
+    <module name="org.jboss.resteasy.resteasy-jackson-provider" services="import"/>
+</dependencies>
+<exclusions>
+    <module name="org.jboss.resteasy.resteasy-jackson2-provider"/>
+</exclusions>
+----
+
+
+ifdef::PAM[]
