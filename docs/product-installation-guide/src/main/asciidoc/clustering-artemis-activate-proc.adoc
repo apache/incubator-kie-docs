@@ -1,14 +1,46 @@
-[id='clustering-artemis-activate-proc']
-= Activating ActiveMQ JMS broker
-After you install Elasticsearch, you must activate ActiveMQ JMS broker on the main node of the cluster.
+[id='clustering-artemis-activate-proc_{context}']
+= Installing AMQ Broker 7.0
+//COMMENT: is the name AMQ Broker, or just AMQ Broker?
+You must install and configure Red Hat AMQ Broker on the cluster node where you installed Elasticseach.
+AMQ Broker is a full-featured, message-oriented middleware broker based on ActiveMQ Artemis.  It offers specialized queueing behaviors, message persistence, and manageability. Core messaging is provided by Apache ActiveMQ Artemis with support for different messaging styles such as publish-subscribe, point-to-point, and store-and-forward. It supports multiple protocols and client languages.  AMQ Broker supports clustering and high availability through shared store or shared nothing state replication.
 
-.Prerequisite
-Elasticsearch installed on the main node of the cluster
+.Prerequisites
+* A {EAP} 7.1 cluster is configured.
+* Elasticsearch is installed on one node of the cluster.
 
 .Procedure
-
+. Download Red Hat AMQ Broker 7.0 on the node where you installed Elasticsearch:
+.. Log in to the https://access.redhat.com[Red Hat Customer Portal].
+.. Click *DOWNLOADS* at the top of the page.
+.. On the *Product Downloads* page that opens, navigate to the JBOSS INTEGRATION AND AUTOMATION section, and click *Red Hat JBoss AMQ  Broker*.
+.. On the *Software Downloads* page, download *Red Hat JBoss AMQ Broker 7.0.0* (`amq-broker-7.0.0-bin.zip`).
+. Unzip the `amq-broker-7.0.0-bin.zip` archive. 
+. Enter the following command to create and run an AMQ Broker instance, where `<AMQ_HOME>` is the top-level directory of the unzipped the `amq-broker-7.1.0-bin.zip` archive and `<AMQ_BROKER_USER>` and `<AMQ_BROKER_PWD>` is a user name and password combination of your choice:
++
+[source]
+----
+$ <AMQ_HOME>/bin/artemis create --user <AMQ_BROKER_USER> --password <AMQ_BROKER_PWD> --role admin --allow-anonymous y <AMQ_HOME>/instances/mybroker
+----
++
+This command creates an AMQ Broker user with the `admin` role and a broker in the `<AMQ_HOME>/instances/mybroker` folder. This broker allows anonymous users to connect to the broker from `localhost`.  
 . Add the following properties to the `EAP_HOME/standalone/configuration/standalone.xml` file:
 * Add `<socket-binding name="activemq" port="61616"/>` to the socket-binding-group element.
 * Add `<remote-acceptor name="activemq-acceptor" socket-binding="activemq"/>` in `<server name="default">` of the messaging-activemq subsytem element.
-. Complete the steps in <<clustering-dm-install-proc>> on each node of the cluster.
+. Enter one of the following commands to start AMQ Broker:
++
+* On Linux or UNIX-based systems, enter:
++
+[source]
+----
+<AMQ_INSTANCE>/bin/artemis run
+----
++
+* On Windows, enter:
++
+[source]
+----
+<AMQ_INSTANCE>\bin\artemisbat run
+----
+
+For more information, see https://access.redhat.com/documentation/en-us/red_hat_jboss_amq/7.0/html-single/using_amq_broker/index[_Using AMQ Broker_].
 
