@@ -6,11 +6,41 @@ configure who can access the different resources and features available.
 
 == Basic concepts
 
-In order to understand the security management features provided, a few core concepts need to be introduced first.
+=== Introduction to the workbench's users, groups and roles
 
-=== Roles vs Groups
+The workbench's security domain defines three kind of entities: __user__, __group__ and __role__.
 
-Users can be assigned with more than one role and/or group. It is always mandatory to assign at least one role to the user, otherwise he/she won’t be able to login. Roles are defined at application server level and they are part of the webapp’s web.xml descriptor. On the other hand, groups are a more flexible concept, since they can be defined at runtime.
+The security entities are being registered in the domain by consuming some __realm__. The realm can be either the application server's one (Wildfly, EAP, Tomcat) or any other of the supported types, for example, using some Keycloak remote server that performs handles the target realm.
+
+On the other hand, it's important to notice that each realm provides, or potentially provides, its own capabilities, semantics or structure on the security domain. These kind of differences on the security domain results on inconsistencies between different environments when moving into the workbench's security domain. This way there exist some conventions which are important to understand - how security entities are being declared and how the platform behaves behind that complexity,
+
+The way the workbench integrates the security entities from an external realm corresponds to:
+
+* *User*
+
+A user, rather than attributes and some any other kind of metadata, which can be different across domains, represents the same kind entity in any of the supported security environments (Wildfly, EAP, Tomcat, Keybloak, etc), so the entity results in a user on the workbench as well
+
+* *Role* / *Group*
+
+Both role and group are security entities, but rather than a user, the semantics, the behaviors or the structure in the domain is not usually common across environments. As an example consider that exist domains which do not support both, or domains were the semantics for group or role differs.
+As it results domain specific, the way the application behaves and figures out if an entity should be considered a group or a role, it's by checking the application's Role Registry. This way an entity will be considered an role in case it's identifier is present in the application's Role Registry, otherwise the entity will be considered as a group.
+
+[NOTE]
+====
+The *Role Registry* is an application's component that provides the set of roles in the workbench's security domain. It's being populated by consuming the entities (__role-name__) declared in the __security-constraints__ section on the application's deployment descriptor (__web.xml__).
+See source file __org.uberfire.ext.security.server.RolesRegistry__.
+====
+
+[NOTE]
+====
+It means that depending on the concrete environment's configuration, some entity can be as a role, on the security environment consumed by the workbench, but it results a group in the workbench's security domain, or vice versa. It depends on the entity's identifier by checking it it is present in the Role Registry.
+====
+
+[NOTE]
+====
+A User can be assigned to multiple roles and groups, but it is mandatory to have at least, a single role assignment for being considered valid in the workbench's security domain.
+It does not mean, for instance, that the user is able login, or able to consume remote services, because it depends on the concrete role/s assigned and how the roles and permissions are defined the application.
+====
 
 === Permissions
 
