@@ -3,7 +3,7 @@
 
 This section highlights new features in {PRODUCT} {PRODUCT_VERSION}.
 
-== {PRODUCT}
+== {CENTRAL}
 
 === Improved navigation
 
@@ -21,25 +21,119 @@ A new dashboard is available for every project listed in the Projects perspectiv
 === Team Metrics dashboard
 The Team Metrics dashboard shows all of the project metrics for a team in a single page. This new dashboard replaces the older Contributors page, which was part of the Authoring group.
 
-=== {KIE_SERVER}
+=== New columns available on process instances, tasks, and jobs
+The following columns have been added to the corresponding perspectives:
+
+* Process instance list perspective: Last update and correlation key.
+* Task list: Last update, correlation key (of the associated process instance ID), process instance description (of the associated process instance).
+* Jobs perspective: Name of the associated process (if any), ID of the associated process instance (if any), Description of the associated process instance (if any).
+
+=== Advanced search filter
+You can now search for specific data by using the *Search* tab on the Jobs, Process Instances, Task Administration, and Execution Errors perspectives. For information about the new search feature, see the "Using the advanced search filter pages" section of the _{PRODUCT} {RELEASE} User Guide_.
+
+=== New Task List and Task Administration perspectives
+The former Task List perspective has been divided into the Task List and Task Administration perspectives. The Task List perspective is used by task operators to work with their assigned (or potentially assigned) tasks. The Task Administration perspective is used by administrators to manage tasks assigned to other users. This perspective is only available for users with admin or process-admin roles. It is similar to the Admin filter tab on the former Task List perspective.
+
+=== Error Handling
+While running a process instance or a job, the system now detects and stores execution errors such as exceptions after the maximum number of retries has been exceeded. If an error occurs, the system generates an event that contains the following data:
+
+--
+[cols="1,2",options="header"]
+|===
+| Data
+| Fields
+
+.3+| Process model
+| processModelID
+| processModelVersion
+| processModelName
+
+.2+| Process instance that has failed
+| processInstanceID
+| customProcessID
+
+.5+| Activity that has failed
+| activityID
+| activityName
+| activityType
+| iteration
+| status
+
+.2+| Error data
+| errorMessage: Message with the error that has occurred.
+| errorStack: Stack with error detail.
+|===
+--
+
+The process instance list includes a new column that displays the number of errors per process instance which are not marked as acknowledged. When you select the column, a window appears which enables you to navigate to the new Error perspective.
+
+The Execution Errors perspective lists any errors that occur during process instances or executor service jobs on a Decision Server. Use this perspective to help troubleshoot issues. It is visible to users with the admin and process-admin roles.
+
+=== Improved validation in deployment descriptor editor
+
+The deployment descriptor editor in Business Central has been improved to validate data entered for the following:
+
+* Work item handlers
+* Event listeners
+* Marshalling strategies
+* Globals
+* Environment entries
+* Configuration
+
+The deployment descriptor editor performs the validation when a build is invoked or manually when a user clicks *Validate*.
+
+== Process Engine
+
+=== Process API and task administration API
+A process administration API and task administration API have been introduced to simplify some of the more complex administrator use cases.
+You can use the process administration API to do the following:
+
+* Retrieve all process definition nodes
+* Cancel node instances
+* Retrigger node instances
+* Update the timer (absolute or relative)
+* List timer instances
+* Trigger nodes
+
+You can use the task administration API to do the following:
+
+* Add and remove potential owners and excluded owners and business administrators
+* Add and remove task inputs and outputs
+* List, create, and cancel escalations and notifications
+
+=== Advanced task routing
+When tasks are assigned to a group of users, you can use pluggable task assignment strategies to automatically assign tasks to a suitable individual immediately. This enables more efficient task allocation, based on all properties associated with the task. For example, potential owners and task priority but also task data that includes information such as geography, required skills, and so on. You can use business rules to define the assignment logic, making it easy to customize this to your needs.
+
+== {KIE_SERVER}
 The {KIE_SERVER} (also known as kie-server) has been extended to support core engine features and offers a remote API for these operations. In addition the following architectural changes were introduced.
 
-==== Separate {PRODUCT} from execution server
-{PRODUCT} now delegates all of its requests to the execution server. The main advantage is that {PRODUCT} can now be used to monitor any set of execution servers.
+=== Separate {CENTRAL} from execution server
+{CENTRAL} now delegates all of its requests to the execution server. The main advantage is that {CENTRAL} can now be used to monitor any set of execution servers. By linking the execution server to {CENTRAL}, the process and task monitoring UIs in {CENTRAL} can now connect to this execution server and show all relevant information. When multiple independent execution servers are used, you can either connect to a specific one or use the smart router to aggregate information across multiple servers. 
 
-==== Smart router
+
+=== Smart router
 The smart router (also known as kie-server-router) can be used as a proxy to help manage multiple independent process execution servers.
 
-==== Aliases
+=== Aliases
 You can now use aliases instead of container IDs in the remote REST APIs of the execution server.
 
-=== {PRODUCT} Monitoring web application
-This release includes a new distribution `war` file that enables you to build custom cloud images. Use the {PRODUCT} Monitoring web application with {KIE_SERVER} instances to manage containers, process instances, tasks, dashboards, and other runtime capabilities in the cloud. Unlike the standard {PRODUCT} distribution, no authoring capabilities are available.
+//=== {PRODUCT} Monitoring web application
+//This release includes a new distribution `war` file that enables you to build custom cloud images. Use the {PRODUCT} Monitoring web application with {KIE_SERVER} instances to manage containers, process instances, tasks, dashboards, and other runtime capabilities in the cloud. Unlike the standard {PRODUCT} distribution, no authoring capabilities are available.
+//
+//[NOTE]
+//====
+//For on-premise deployments, use the standard {PRODUCT} `war` file.
+//====
 
-[NOTE]
-====
-For on-premise deployments, use the standard {PRODUCT} `war` file.
-====
+=== Work Item archetype
+
+To help users build custom service tasks (work items), {PRODUCT} comes with the Work Item archetype that generates the majority of items required to build a custom service task.  The archetype includes the following:
+
+* A Work Item Definition (WID) file
+* The Work Item Handler implementation class
+* The Work Item Handler test class
+
+The Maven assembly (zip) packages everything at build time so it can be consumed by the Service Repository and therefore be used from within the Web Designer.
 
 === KIE Server Maven plugins
 KIE Server has been enhanced with additional Maven plugins that enable interaction with the KIE Server and KIE Controller REST API directly from within a build. This interaction facilitates easier integration with CI/CD pipelines when building KJars so they can be directly deployed to the execution environment (both managed and unmanaged KIE Servers).
@@ -60,14 +154,12 @@ The following components have been renamed in {PRODUCT} {PRODUCT_VERSION}:
 --
 [cols="1,2",grid="all",options="header"]
 |===
-| Red Hat JBoss BRMS
-| {PRODUCT} (RHDM)
+| Red Hat JBoss BPM Suite
+| {PRODUCT} (RHPAM)
 
-| BRMS
-| Decision Manager
+| Red Hat JBoss BPM Suite
+| Red Hat Process Automation Manager
 
-| Business Central
-| Decision Central
 
 | Business Resource Planner
 | Business Optimizer
@@ -75,11 +167,11 @@ The following components have been renamed in {PRODUCT} {PRODUCT_VERSION}:
 | Guided Decision Table editor
 | Guided Decision Table designer
 
-| Realtime Decision Server
-| Decision Server
+//| Realtime Decision Server
+//| Decision Server
 
 | KIE Execution Server
-| Decision Server (for Decision Management capabilities), Planner Server (for Business Optimization capabilities), KIE Server (represents both Decision server and Planner servers )
+| {KIE_SERVER} (for Process Automation Manager capabilities), Planner Server (for Business Optimization capabilities), KIE Server (represents both {KIE_SERVER} and Planner servers )
 
 | Organizational units
 | Spaces
@@ -90,22 +182,4 @@ The following components have been renamed in {PRODUCT} {PRODUCT_VERSION}:
 |===
 --
 
-== Business Application templates
 
-=== Templates
-Business application templates are provided with {PRODUCT} and can be modified to meet your business requirements. {PRODUCT} {PRODUCT_VERSION} contains the *Employee Roster* template.
-
-=== Template delivery
-Templates are downloaded from the Customer Portal and are included in the {PRODUCT} distribution.
-
-=== Template support
-
-Business application templates are not an integral part of {PRODUCT} and are intended for development purposes of customer solutions. Templates are provided to encourage customers to adopt and modify them to work for their specific needs.
-The content of the template itself does not carry product-specific Service Level Agreements (SLAs). We encourage you to report issues, request for enhancements, and any other feedback for consideration in template updates.
-
-Red Hat Support will provide guidance on the use of this template on a commercially reasonable basis for its intended use, excluding the provided example UI code provided within.
-
-[NOTE]
-====
-https://access.redhat.com/support/offerings/production/soc[Production support] is limited to {PRODUCT} distribution.
-====
