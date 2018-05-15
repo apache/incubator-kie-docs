@@ -1,0 +1,23 @@
+[id='execution-error-management-con']
+= Execution error management
+
+When an execution error occurs the process stops and rolls back to the most recent stable state (the closest safe point) and continues its execution. If an error of any kind is not handled by the process the entire transaction rolls back, leaving the process instance in the previous wait state. Any trace of this is only visible in the logs, and usually displayed to the caller who sent the request to the process engine.
+
+Users with process administrator (`process-admin`) or administrator (`admin`) roles are able to access error messages in {CENTRAL}, which has the following features:
+
+* Better traceability
+* Visibility in case of critical processes
+* Reporting and analytics based on error situations
+* External system error handling and compensation
+
+Configurable error handling is responsible for receiving any technical errors thrown throughout the process engine execution (including task service). The following technical exceptions apply:
+
+* Anything that extends `java.lang.Throwable`.
+* Process level error handling and any other exceptions not previously handled.
+
+There are several components that make up the error handling mechanism and allow a pluggable approach to extend its capabilities.
+
+The process engine entry point for error handling is the `ExecutionErrorManager`. This is integrated with RuntimeManager, which is then responsible for providing it to underlying components - `KieSession` and `TaskService`. From the API point of view, `ExecutionErrorManager` gives access to:
+
+* `ExecutionErrorHandler` - the primary mechanism for error handling.
+* `ExecutionErrorStorage` - pluggable storage for execution error information.
