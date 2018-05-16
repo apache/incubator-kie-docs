@@ -1,5 +1,5 @@
 [id='ba-dm-rn-whats-new-con']
-= What's new
+= New features
 
 This section highlights new features in {PRODUCT} {PRODUCT_VERSION}.
 
@@ -13,7 +13,7 @@ The {PRODUCT} Home page has been redesigned for easier navigation.
 === Guided Decision Table
 * Guided Decision Table has a new wizard for creating and editing columns.
 * Hit policies are now available. Hit policies determine the order in which rules (rows) in a guided decision table are applied.
-* New support to display multiple linked guided decision tables in the Guided Decision Table Editor has been added.
+* New support to display multiple linked guided decision tables in the Guided Decision Table designer has been added.
 
 === Projects Metrics dashboard
 A new dashboard is available for every project listed in the Projects perspective. The Projects Metrics dashboard displays all of your project contribution metrics in one place. This new dashboard replaces the Contributors page, which was part of the Authoring group.
@@ -69,7 +69,7 @@ The process instance list includes a new column that displays the number of erro
 
 The Execution Errors perspective lists any errors that occur during process instances or executor service jobs on a Decision Server. Use this perspective to help troubleshoot issues. It is visible to users with the admin and process-admin roles.
 
-=== Improved validation in deployment descriptor editor
+=== Improved validation in the deployment descriptor editor
 
 The deployment descriptor editor in Business Central has been improved to validate data entered for the following:
 
@@ -81,6 +81,21 @@ The deployment descriptor editor in Business Central has been improved to valida
 * Configuration
 
 The deployment descriptor editor performs the validation when a build is invoked or manually when a user clicks *Validate*.
+
+=== Case management enhancements  
+The following enhancements were made to the case management feature:
+
+* Sub-case support is provided as an additional activity that can be easily dragged and dropped into existing case definitions or even into regular processes to enable users to create case instances from within business process. It provides all of the information provide with a regular start case as well as enables users to decide what should happen after the case is started.
+* Access to case file and case comments can be restricted to particular case roles. By default the access is open.
+
+=== Form Modeler
+The new Form Modeler is the default forms engine. This new version improves the forms engine stability and provides several bug fixes.
+
+=== Decision Model and Notation models
+You can use Decision Model and Notation (DMN) to model a decision service graphically in a decision requirements diagram (DRD). This diagram traces business decisions from start to finish, with each decision node drawing logic from DMN model decision elements such as decision tables.
+
+=== Job creation
+The Job creation interface has been modified to enable you to start the job immediately or schedule it to be executed later.
 
 == Process Engine
 
@@ -101,8 +116,22 @@ You can use the task administration API to do the following:
 * Add and remove task inputs and outputs
 * List, create, and cancel escalations and notifications
 
+=== UserTaskService 
+UserTaskService updates task metadata and variables in single operation. This feature is available through KIE Server REST and JMS API.
+
 === Advanced task routing
 When tasks are assigned to a group of users, you can use pluggable task assignment strategies to automatically assign tasks to a suitable individual immediately. This enables more efficient task allocation, based on all properties associated with the task. For example, potential owners and task priority but also task data that includes information such as geography, required skills, and so on. You can use business rules to define the assignment logic, making it easy to customize this to your needs.
+
+=== Business rule task fire limit
+The business rule task has been enhanced to limit the number of fired rules. This avoids situations where rules run into an infinite loop and make the server completely unresponsive. The fire default fire limit is 10000.
+//https://issues.jboss.org/browse/BXMSDOC-2016
+
+=== NoSQL integration
+//https://issues.jboss.org/browse/BAPL-496
+Initial integration with NoSQL has been introduced. This is based on additional emitters that can be implemented to receive notifications when the process engine executes processes. This this enables users to plug in their own emitters that will be responsible for sending data to externals data stores. Note that this is an integration and not a replacement of the persistence layer of jBPM. 
+
+=== Quartz improvements
+The Quartz scheduler service has been improved to fetch jobs only for deployments (kie containers) that are currently available in the running system. 
 
 == {KIE_SERVER}
 The {KIE_SERVER} (also known as kie-server) has been extended to support core engine features and offers a remote API for these operations. In addition the following architectural changes were introduced.
@@ -110,9 +139,13 @@ The {KIE_SERVER} (also known as kie-server) has been extended to support core en
 === Separate {CENTRAL} from execution server
 {CENTRAL} now delegates all of its requests to the execution server. The main advantage is that {CENTRAL} can now be used to monitor any set of execution servers. By linking the execution server to {CENTRAL}, the process and task monitoring UIs in {CENTRAL} can now connect to this execution server and show all relevant information. When multiple independent execution servers are used, you can either connect to a specific one or use the smart router to aggregate information across multiple servers. 
 
-
 === Smart router
-The smart router (also known as kie-server-router) can be used as a proxy to help manage multiple independent process execution servers.
+Smart router (also known as kie-server-router) includes the following enhancements:
+
+* Smart router  can be used as a proxy to help manage multiple independent process execution servers.
+* When the controller is not available during smart router start up, a retry mechanism is in place to connect to the controller as soon as it becomes available.
+* A retry mechanism is in place for times when the controller is not available and there are updates to be sent to the controller.
+* When a {KIE_SERVER} does not respond to a request, it is removed from the list of active servers. Subsequent requests will not target it. The now inactive server is put on a list to be verified. After verification, it is added back to the active servers list.
 
 === Aliases
 You can now use aliases instead of container IDs in the remote REST APIs of the execution server.
@@ -138,14 +171,46 @@ The Maven assembly (zip) packages everything at build time so it can be consumed
 === KIE Server Maven plugins
 KIE Server has been enhanced with additional Maven plugins that enable interaction with the KIE Server and KIE Controller REST API directly from within a build. This interaction facilitates easier integration with CI/CD pipelines when building KJars so they can be directly deployed to the execution environment (both managed and unmanaged KIE Servers).
 
-== Business Optimizer
-* Multi-threaded partitioned search is available. Business Optimizer now has out-of-the box support for solving a single data set by partitioning across multiple threads. This enhancement makes use of multiple CPU cores for a single problem. Partitioned search can implement geo-fencing for Vehicle Routing use cases.
-* The Solution interface is deprecated. Your solution class requires only the `@PlanningSolution` annotation.
-* You no longer need to define the score type in the solver configuration. Business Optimizer now determines it automatically from the domain model.
-* The Business Optimizer editor screen now supports adding all termination types, including composite termination. The phase configuration section enables you to tweak Construction Heuristic settings and select the local search algorithm to optimize your planning problem.
+== {PLANNER}
 
-* The Business Optimizer domain editor can now specify a planning entity difficulty. Navigate through the object hierarchy and define the sorting attributes. Several construction heuristic algorithms use this information to construct a better initial solution.
-* The Business Optimizer execution server now supports real-time planning.
+=== Java 8 or higher required
+{PLANNER} 7.x requires Java 8 or higher to run. The API and implementation now make use of Java 8 features (such as lambdas).
+
+=== @PlanningPin
+To pin down an assignment and force {PLANNER} to leave it untouched, add the @PlanningPin annotation on a planning entity’s boolean property and make it true for those entities that are immovable.
+
+=== Conference scheduling
+You can assign each conference talk to a time slot and a room. Timeslots can overlap. Save data in or extract data from an `*.xlsx` file that can be edited with LibreOffice or Microsof Excel.
+
+=== PlannerBenchmark
+PlannerBenchmark has a new method benchmarkAndShowReportInBrowser() to automatically open the benchmark report in the default browser after the benchmark has finished.
+
+=== Guided decision tables integration
+{PLANNER} now integrates with the Guided Decision Table designer. Modify the score with built-in {PLANNER} actions that can be accessed in the Action BRL fragment column type. The Workbench examples now include the dinnerparty project, which uses a guided decision table to define score constraints.
+
+=== Guided rule editor integration
+{PLANNER} now integrates with the guided rule editor. You can modify the score with a built-in {PLANNER} action.
+
+=== Real-time planning
+{KIE_SERVER} now has an interface that enables you to update a problem data set while the solver is running. Use the Java client or REST interface to submit your ProblemFactChange implementations.
+
+=== Multi-threaded partitioned search 
+{PLANNER} now has out-of-the box support for solving a single data set by partitioning across multiple threads. This enhancement makes use of multiple CPU cores for a single problem. Partitioned search can implement geo-fencing for Vehicle Routing use cases.
+
+=== Solution interface
+The Solution interface is deprecated. Your solution class requires only the `@PlanningSolution` annotation.
+
+=== Score type
+You no longer need to define the score type in the solver configuration. {PLANNER} now determines it automatically from the domain model.
+
+=== Enhanced solver editor
+The {PLANNER} editor screen now supports adding all termination types, including composite termination. The phase configuration section enables you to tweak Construction Heuristic settings and select the local search algorithm to optimize your planning problem.
+
+=== Difficulty comparator definition
+The {PLANNER} domain editor can now specify a planning entity difficulty. Navigate through the object hierarchy and define the sorting attributes. Several construction heuristic algorithms use this information to construct a better initial solution.
+
+=== {PLANNER} execution server
+The {PLANNER} execution server now supports real-time planning.
 
 == New component names
 The following components have been renamed in {PRODUCT} {PRODUCT_VERSION}:
@@ -162,7 +227,7 @@ The following components have been renamed in {PRODUCT} {PRODUCT_VERSION}:
 
 
 | Business Resource Planner
-| Business Optimizer
+| {PLANNER}
 
 | Guided Decision Table editor
 | Guided Decision Table designer
