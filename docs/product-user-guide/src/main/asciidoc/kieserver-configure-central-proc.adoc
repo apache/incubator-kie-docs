@@ -1,14 +1,51 @@
 [id='kieserver-configure-central-proc_{context}']
 = Configuring a {KIE_SERVER} to connect to {CENTRAL}
 
-You can configure a {KIE_SERVER} to connect to an existing {CENTRAL}. You can also configure the name of the server template. The server becomes a part of that server template; any decision services deployed on the template are deployed on this server.
+You can configure a {KIE_SERVER} to connect to {CENTRAL}. You can also configure the name of the server configuration. The server becomes a part of that server configuration and any projects deployed on the server configuration are deployed on the server.
 
-IMPORTANT: If you are deploying the {KIE_SERVER} on OpenShift, see {URL_DM_ON_OPENSHIFT}[_{DM_ON_OPENSHIFT}_] for instructions about configuring it to connect to a {CENTRAL}.
+IMPORTANT: If you are deploying {KIE_SERVER} on OpenShift, see {URL_DM_ON_OPENSHIFT}[_{DM_ON_OPENSHIFT}_] for instructions about configuring it to connect to a {CENTRAL}.
+
+//@link: Update PAM on OpenShift link above.
+
+.Prerequisite
+{KIE_SERVER} is installed. For installation options, see Planning a {PRODUCT} installation.
+//@link: Add installation planning link.
 
 .Procedure
-. Install the {KIE_SERVER}. See {URL_INSTALLING_DM_ON_PREMISE}[_{INSTALLING_DM_ON_PREMISE}_] for instructions.
-. Create a `settings.xml` file for connecting to the Maven repository that the {CENTRAL} uses. If you have not changed the configuration of {CENTRAL}, it uses its own built-in Maven repository. Use the following contents for `settings.xml`:
+. Create a `settings.xml` file for connecting to the Maven repository that {CENTRAL} uses. If you have not changed the configuration of {CENTRAL}, it uses its own built-in Maven repository. Use the following contents for `settings.xml`:
 +
+ifdef::PAM[]
+[source,xml]
+----
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <servers>
+    <server>
+      <id>remote-repo</id>
+      <username>user</username>
+      <password>pwd</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>additional-maven-repos</id>
+      <repositories>
+        <repository>
+          <id>remote-repo</id>
+          <url>http://centralhost:centralport/business-central/maven2/</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>additional-maven-repos</activeProfile>
+  </activeProfiles>
+</settings>
+----
+endif::PAM[]
+ifdef::DM[]
 [source,xml]
 ----
 <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
@@ -38,36 +75,56 @@ IMPORTANT: If you are deploying the {KIE_SERVER} on OpenShift, see {URL_DM_ON_OP
   </activeProfiles>
 </settings>
 ----
+endif::DM[]
 +
+--
 Replace the following values:
+
+* *user:* The user name for a user who can log in to {CENTRAL}
+* *pwd:* The password for the user who can log in to {CENTRAL}
+* *centralhost:* The host name for {CENTRAL}
+* *centralport:* The port for {CENTRAL}
+
+If {CENTRAL} is deployed on OpenShift, remove
+ifdef::PAM[]
+`business-central/`
+endif::PAM[]
+ifdef::DM[]
+`decision-central/`
+endif::DM[]
+from the URL.
+--
+. Save the file in a known location, for example, `/opt/maven/settings.xml`.
+. In your {PRODUCT} installation directory, navigate to the `standalone.xml` file. For example, if you use a {EAP} installation for {PRODUCT}, go to `$EAP_HOME/standalone/configuration/standalone.xml`.
+. Open `standalone.xml` and under the `<system-properties>` tag, set the following properties:
 +
-** *user*: the user name for a user that can log into {CENTRAL}
-+
-** *pwd*: the password for the user that can log into {CENTRAL}
-+
-** *centralhost*: the host name for the {CENTRAL}
-+
-** *centralport*: the port for the {CENTRAL}
-+
-If the {CENTRAL} is deployed on OpenShift, remove `decision-central/` from the URL.
-+
-Save the file in a known location, for example, `/opt/maven/settings.xml` .
-. In the `<eap_home>/standalone/configuration/standalone.xml` file, under the `<system-properties>` tag, set the following properties:
-+
-** *org.kie.server.controller.user*: user name of an account that can log on to the {CENTRAL}.
-+
-** *org.kie.server.controller.pwd*: password for the account.
-+
-** *org.kie.server.controller*: the URL for connecting to the API of the {CENTRAL}. Normally, it is `\http://<centralhost>:<centralport>/decision-central/rest/controller` , where _<centralhost>_ and _<centralport>_ are the host name and port for the {CENTRAL}. If the {CENTRAL} is deployed on OpenShift, remove `decision-central/` from the URL.
-+
-** *org.kie.server.location*: the URL for connecting to the API of the {KIE_SERVER}. Normally, it is `\http://<serverhost>:<serverport>/kie-server/services/rest/server` , where _<serverhost>_ and _<serverport>_ are the host name and port for the {KIE_SERVER}.
-+
-** *org.kie.server.id*: the name of a server template. If this server template does not exist on the {CENTRAL}, it is created automatically when the {KIE_SERVER} connects to the {CENTRAL}.
-+
-** *kie.maven.settings.custom* : the full path to the `settings.xml` file for connecting to the Maven repository.
+* *org.kie.server.controller.user:* The user name of a user who can log in to the {CENTRAL}.
+* *org.kie.server.controller.pwd:* The password of the user who can log in to the {CENTRAL}.
+* *org.kie.server.controller:* The URL for connecting to the API of {CENTRAL}.
+ifdef::PAM[]
+Normally, the URL is `\http://<centralhost>:<centralport>/business-central/rest/controller`, where `<centralhost>` and `<centralport>` are the host name and port for {CENTRAL}. If {CENTRAL} is deployed on OpenShift, remove `business-central/` from the URL.
+endif::PAM[]
+ifdef::DM[]
+Normally, the URL is `\http://<centralhost>:<centralport>/decision-central/rest/controller`, where `<centralhost>` and `<centralport>` are the host name and port for {CENTRAL}. If {CENTRAL} is deployed on OpenShift, remove `decision-central/` from the URL.
+endif::DM[]
+* *org.kie.server.location:* The URL for connecting to the API of {KIE_SERVER}. Normally, the URL is `\http://<serverhost>:<serverport>/kie-server/services/rest/server`, where `<serverhost>` and `<serverport>` are the host name and port for {KIE_SERVER}.
+* *org.kie.server.id:* The name of a server configuration. If this server configuration does not exist in {CENTRAL}, it is created automatically when {KIE_SERVER} connects to {CENTRAL}.
+* *kie.maven.settings.custom:* The full path to the `settings.xml` file for connecting to the Maven repository.
 +
 For example:
 +
+ifdef::PAM[]
+[source,xml]
+----
+<property name="org.kie.server.controller.user" value="central_user"/>
+<property name="org.kie.server.controller.password" value="central_password"/>
+<property name="org.kie.server.controller" value="http://central.example.com:8080/business-central/rest/controller"/>
+<property name="org.kie.server.location" value="http://kieserver.example.com:8080/kie-server/services/rest/server"/>
+<property name="org.kie.server.id" value="production-servers"/>
+<property name="kie.maven.settings.custom" value="/opt/maven/settings.xml"/>
+----
+endif::PAM[]
+ifdef::DM[]
 [source,xml]
 ----
 <property name="org.kie.server.controller.user" value="central_user"/>
@@ -77,5 +134,6 @@ For example:
 <property name="org.kie.server.id" value="production-servers"/>
 <property name="kie.maven.settings.custom" value="/opt/maven/settings.xml"/>
 ----
+endif::DM[]
 +
 . Start or restart the {KIE_SERVER}.
