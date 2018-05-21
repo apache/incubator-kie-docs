@@ -127,10 +127,10 @@ The following example shows a more advanced `kmodule.xml` file:
 <kmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.drools.org/xsd/kmodule">
   <kbase name="KBase1" default="true" eventProcessingMode="cloud" equalsBehavior="equality" declarativeAgenda="enabled" packages="org.domain.pkg1">
     <ksession name="KSession1_1" type="stateful" default="true" />
-    <ksession name="KSession1_2" type="stateless" default="false" beliefSystem="jtms" />
+    <ksession name="KSession1_2" type="stateful" default="true" beliefSystem="jtms" />
   </kbase>
   <kbase name="KBase2" default="false" eventProcessingMode="stream" equalsBehavior="equality" declarativeAgenda="enabled" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
-    <ksession name="KSession2_1" type="stateful" default="false" clockType="realtime">
+    <ksession name="KSession2_1" type="stateless" default="true" clockType="realtime">
       <fileLogger file="debugInfo" threaded="true" interval="10" />
       <workItemHandlers>
         <workItemHandler name="name" type="new org.domain.WorkItemHandler()" />
@@ -146,7 +146,7 @@ The following example shows a more advanced `kmodule.xml` file:
 </kmodule>
 ----
 +
-This example defines two KIE bases. Two KIE sessions are instantiated from the `KBase1` KIE base, and one KIE session from `KBase2`. Specific `packages` of rule assets are included with both KIE bases. When you specify packages in this way, you must organize your DRL files in a folder structure that reflects the specified packages.
+This example defines two KIE bases. Two KIE sessions are instantiated from the `KBase1` KIE base, and one KIE session from `KBase2`. The KIE session from `KBase2` is a `stateless` KIE session, which means that data from a previous invocation of the KIE session (the previous session state) is discarded between session invocations. Specific `packages` of rule assets are included with both KIE bases. When you specify packages in this way, you must organize your DRL files in a folder structure that reflects the specified packages.
 +
 . In the `my-app/pom.xml` configuration file, specify the libraries that your application requires. Provide the {PRODUCT} dependencies as well as the `group ID`, `artifact ID`, and `version` (GAV) of your application.
 +
@@ -226,27 +226,13 @@ public void testApp() {
 mvn clean install
 ----
 +
-The first time you run this command, the build process can take more time than usual. After the build completes, the results are displayed in the command line:
+If the build fails, address any problems described in the command line error messages, and try again to validate the files until the build is successful.
+. After your files build successfully, run the following command to execute the rules. Replace `com.sample.app` with your package name.
 +
 [source]
 ----
-...
-
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.194 sec
-
-Results :
-
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
-
-[INFO]
-...
-[INFO] --------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] --------------------------------------------------------------
-[INFO] Total time: 6.393 s
-...
-[INFO] --------------------------------------------------------------
+mvn exec:java -Dexec.mainClass="com.sample.app"
 ----
-. Review the build results to ensure that the build ran properly, and address any errors in the files.
+. Review the rules to ensure that they executed properly, and address any needed changes in the files.
 
 To integrate the new rule assets with an existing project in {PRODUCT}, you can compile the new Maven project as a knowledge JAR (KJAR) and add it as a dependency in the `pom.xml` file of the project in {CENTRAL}.

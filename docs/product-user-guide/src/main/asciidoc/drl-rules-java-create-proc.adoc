@@ -86,14 +86,17 @@ public class DroolsTest {
       KieContainer kContainer = ks.getKieClasspathContainer();
       KieSession kSession = kContainer.newKieSession();
 
-      // Go!
+      // Set up the fact model:
       Person p = new Person();
       p.setWage(12);
       p.setFirstName("Tom");
       p.setLastName("Summers");
       p.setHourlyRate(10);
 
+      // Insert the person into the session:
       kSession.insert(p);
+
+      // Fire all rules:
       kSession.fireAllRules();
     }
 
@@ -104,9 +107,9 @@ public class DroolsTest {
 }
 ----
 +
-. Download the *{PRODUCT} {PRODUCT_VERSION} Core Engine* ZIP file from the https://access.redhat.com/downloads/[Red Hat Customer Portal] and extract it under
+. Download the *{PRODUCT} {PRODUCT_VERSION_LONG} Source Distribution* ZIP file from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and extract it under
 ifdef::PAM[]
-`my-project/bas-engine-jars/`.
+`my-project/pam-engine-jars/`.
 endif::[]
 ifdef::DM[]
 `my-project/dm-engine-jars/`.
@@ -131,10 +134,10 @@ The following example shows a more advanced `kmodule.xml` file:
 <kmodule xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.drools.org/xsd/kmodule">
   <kbase name="KBase1" default="true" eventProcessingMode="cloud" equalsBehavior="equality" declarativeAgenda="enabled" packages="org.domain.pkg1">
     <ksession name="KSession1_1" type="stateful" default="true" />
-    <ksession name="KSession1_2" type="stateless" default="false" beliefSystem="jtms" />
+    <ksession name="KSession1_2" type="stateful" default="true" beliefSystem="jtms" />
   </kbase>
   <kbase name="KBase2" default="false" eventProcessingMode="stream" equalsBehavior="equality" declarativeAgenda="enabled" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
-    <ksession name="KSession2_1" type="stateful" default="false" clockType="realtime">
+    <ksession name="KSession2_1" type="stateless" default="true" clockType="realtime">
       <fileLogger file="debugInfo" threaded="true" interval="10" />
       <workItemHandlers>
         <workItemHandler name="name" type="new org.domain.WorkItemHandler()" />
@@ -150,14 +153,14 @@ The following example shows a more advanced `kmodule.xml` file:
 </kmodule>
 ----
 +
-This example defines two KIE bases. Two KIE sessions are instantiated from the `KBase1` KIE base, and one KIE session from `KBase2`. Specific `packages` of rule assets are included with both KIE bases. When you specify packages in this way, you must organize your DRL files in a folder structure that reflects the specified packages.
+This example defines two KIE bases. Two KIE sessions are instantiated from the `KBase1` KIE base, and one KIE session from `KBase2`. The KIE session from `KBase2` is a `stateless` KIE session, which means that data from a previous invocation of the KIE session (the previous session state) is discarded between session invocations. Specific `packages` of rule assets are included with both KIE bases. When you specify packages in this way, you must organize your DRL files in a folder structure that reflects the specified packages.
 +
 . After you create and save all DRL assets in your Java object, navigate to the `my-project` directory in the command line and run the following command to build your Java files. Replace `DroolsTest.java` with the name of your Java main class.
 +
 ifdef::PAM[]
 [source]
 ----
-javac -classpath "./bas-engine-jars/*:." DroolsTest.java
+javac -classpath "./pam-engine-jars/*:." DroolsTest.java
 ----
 endif::[]
 
@@ -175,7 +178,7 @@ If the build fails, address any problems described in the command line error mes
 ifdef::PAM[]
 [source]
 ----
-javac -classpath "./bas-engine-jars/*:." DroolsTest
+javac -classpath "./pam-engine-jars/*:." DroolsTest
 ----
 endif::[]
 
