@@ -51,9 +51,22 @@ The copied `.niogit` folder is the directory that the migration tool will prepar
 --
 . In the {PRODUCT} {PRODUCT_VERSION} `bin` directory, delete the `.index` directory. You must delete this folder because {PRODUCT} {PRODUCT_VERSION} comes with certain updates that are not compatible with {PRODUCT_OLD} 6.4. The `bin` directory will be re-indexed after the migration when you start {PRODUCT} {PRODUCT_VERSION}.
 . Note the path to the copied `.niogit` directory for {PRODUCT} {PRODUCT_VERSION}. The path will be required when you run the migration tool.
-. If you have specific `dependencies`, `repositories`, or `pluginRepositories` that are required for any of your projects, create a `pom-migration.json` file containing these elements. When you run the migration tool, the tool will prompt you if you want to include this file in the migration.
+. If you have specific `dependencies`, `repositories`, or `pluginRepositories` that you want to add, remove, or update as part of the project migration, create a `pom-migration.json` file containing these elements. When you run the migration tool, the tool will prompt you if you want to include this file in the migration.
 +
 --
+The `pom-migration.json` file requires the following sections:
+
+* `"dependencies":[]`
+* `"repositories-add":[]`
+* `"repositories-remove":[]`
+* `"repositories-update-urls":[]`
+* `"pluginRepositories-add":[]`
+* `"pluginRepositories-remove":[]`
+* `"pluginRepositories-update-urls":[]`
+
+
+If any of these elements do not apply to your project, include them as empty sections to prevent parsing errors.
+
 Example `pom-migration.json` file:
 
 [source,json]
@@ -65,7 +78,41 @@ Example `pom-migration.json` file:
     {"groupId":"com.thoughtworks.xstream", "artifactId":"xstream", "version":"4.12", "scope":"test"}
 
   ],
-  "repositories":[
+
+  "repositories-add":[
+    {
+      "id":"jboss-public-repository-group",
+      "name":"JBoss Public Repository Group",
+      "url":"http://repository.jboss.org/nexus/content/groups/public/",
+      "releasesEnabled":true,
+      "releasesUpdatePolicy":"never",
+      "snapshotEnabled":true,
+      "snapshotUpdatePolicy":"never"
+    },
+    {
+      "id":"kie-internal-staging-repository-group",
+      "name":"KIE Internal Staging Repositories",
+      "url":"https://origin-repository.jboss.org/nexus/content/groups/kie-internal-group",
+      "releasesEnabled":true,
+      "releasesUpdatePolicy":"never",
+      "snapshotEnabled":false,
+      "snapshotUpdatePolicy":"never"
+    }
+  ],
+
+  "repositories-remove":[
+    {
+      "id":"productization-repository", "url":"http://download.lab.bos.redhat.com/brewroot/repos/jb-ip-6.1-build/latest/maven/"
+    }
+  ],
+
+  "repositories-update-urls":[
+    {
+      "id":"guvnor-m2-repo", "url":"http://localhost:8080/business-central/maven3/"
+    }
+  ],
+
+  "pluginRepositories-add":[
 
     {
       "id":"jboss-public-repository-group",
@@ -87,32 +134,10 @@ Example `pom-migration.json` file:
     }
 
   ],
-  "pluginRepositories":[
-
-    {
-      "id":"jboss-public-repository-group",
-      "name":"JBoss Public Repository Group",
-      "url":"http://repository.jboss.org/nexus/content/groups/public/",
-      "releasesEnabled":true,
-      "releasesUpdatePolicy":"never",
-      "snapshotEnabled":true,
-      "snapshotUpdatePolicy":"never"
-    },
-    {
-      "id":"kie-internal-staging-repository-group",
-      "name":"KIE Internal Staging Repositories",
-      "url":"https://origin-repository.jboss.org/nexus/content/groups/kie-internal-group",
-      "releasesEnabled":true,
-      "releasesUpdatePolicy":"never",
-      "snapshotEnabled":false,
-      "snapshotUpdatePolicy":"never"
-    }
-
-  ]
+  "pluginRepositories-remove":[],
+  "pluginRepositories-update-urls":[]
 }
 ----
-
-The `pom-migration.json` file requires all three `dependencies`, `repositories`, and `pluginRepositories` elements. If any of these elements do not apply to your project, include them as empty sections to prevent parsing errors.
 
 Example `pom-migration.json` file with `dependencies` only:
 
@@ -125,8 +150,12 @@ Example `pom-migration.json` file with `dependencies` only:
     {"groupId":"com.thoughtworks.xstream", "artifactId":"xstream", "version":"4.12", "scope":"test"}
 
   ],
-  "repositories":[],
-  "pluginRepositories":[]
+  "repositories-add":[],
+  "repositories-remove":[],
+  "repositories-update-urls":[],
+  "pluginRepositories-add":[],
+  "pluginRepositories-remove":[],
+  "pluginRepositories-update-urls":[]
 }
 ----
 --
