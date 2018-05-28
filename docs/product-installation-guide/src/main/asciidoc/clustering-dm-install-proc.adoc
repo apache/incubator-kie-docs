@@ -4,7 +4,7 @@
 Complete the steps in this section to install and run {CENTRAL} on each node of the cluster.
 
 .Prerequisite
-A {EAP} 7.1 cluster is configured and Elasticsearch and AMQ Broker 7.1 are installed and running on one node of the cluster.
+A Red Hat JBoss EAP 7.1 cluster is available and Elasticsearch and AMQ Broker 7.1 are installed and running on one node of the cluster.
 
 .Procedure
 
@@ -33,13 +33,42 @@ A {EAP} 7.1 cluster is configured and Elasticsearch and AMQ Broker 7.1 are insta
   <property name="org.appformer.ext.metadata.elastic.retries" value="10"/>
 </system-properties>
 ----
-. On the nodes where Elasticseach and AMQ Broker are installed, in {EAP} create a user with the `admin` role and a username and password that matches the values of `<AMQ_BROKER_USER>` and `<AMQ_BROKER_PASSWORD>`:
+. In the {EAP} instance hosting the embedded AMQ broker, create a user with the `admin` role and a username and password that matches the values of `<AMQ_BROKER_USER>` and `<AMQ_BROKER_PASSWORD>`:
 +
 [source,bash]
 ----
 $ <EAP_HOME>/bin/add-user.sh -a --user <AMQ_BROKER_USER> --password <AMQ_BROKER_USER> --role admin
 ----
-
+. If you are using the embedded JMS broker, edit the `domain.xml` file as follows:
+.. To create an outbound-socket-binding pointing to the remote messaging server, in the `domain.xml` file, add the following lines to the `<socket-binding-group name="full-sockets"` tag, where `localhost` is the host name or IP address of the remote {EAP} instance:
++
+[source]
+----
+ <socket-binding-group name="full-sockets" default-interface="public">
+.
+.
+.
+    <outbound-socket-binding name="remote-server">
+      <remote-destination host="localhost" port="8080"/>
+    </outbound-socket-binding>
+----
+.. To create a `remote-connector` referencing the `outbound-socket-binding`, locate the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` profile and add the following lines to the `"<server name="default">` section:
++
+[source]
+----  
+<http-connector name="remote-http-connector" socket-binding="remote-server" endpoint="http-acceptor"/>
+----
+.. To create a `connection-factory` referencing the  new `remote-connector`  add the following line to the `"<server name="default">` section:
++
+[source]
+----  
+<connection-factory name="remote-artemis" entries="java:/jms/remoteCF" connectors="remote-http-connector"/>
+----
+.. Delete `<property name="appformer-jms-url" value="tcp://<AMQ_NODE_IP>:61616"/>`.
+.. Change the value of the `appformer-jms-connection-mode` property to `"JNDI"`.
+.. Add the following property:
++
+`<property name="appformer-jms-connection-factory" value="java:/jms/remoteCF"/>`
 .  To start {CENTRAL}, enter one of the following commands on each node of the cluster:
 +
 * On Linux or UNIX-based systems:
