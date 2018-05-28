@@ -1,110 +1,99 @@
 [id='optashift-ER-openshift-deploy-proc']
-= Installing and running the employee rostering demonstration on Openshift
+= Installing and running the employee rostering demonstration on OpenShift
 
-You can deploy the {PLANNER} Employee Rostering starter application to an Openshift instance.
+You can deploy the {PLANNER} Employee Rostering starter application to an OpenShift instance.
 
 .Preparing deployment files
 . Unzip the add-ons distribution (`{PRODUCT_FILE}-add-ons.zip`).
-. Unzip the employee-rostering zip file that is extracted from the add-ons archive.
+. Unzip the employee rostering zip file (`rhpam-7.0-employee-rostering.zip`) that is extracted from the add-ons archive.
 +
 [NOTE]
 ====
-When you unzip the employee-rostering zip file, the `optashift-employee-rostering-{MAVEN_ARTIFACT_VERSION}` folder is created. This folder is the base folder in subsequent steps.  File and folder names may have higher version numbers than specifically noted in this document.
+When you unzip the employee rostering zip file, the `optashift-employee-rostering-{MAVEN_ARTIFACT_VERSION}` folder is created. This folder is the base folder in subsequent steps.  File and folder names may have higher version numbers than specifically noted in this document.
 ====
 
-There are two options for quickly deploying this application to Openshift:
+There are two options for quickly deploying this application to OpenShift:
 
-1. Using the Source to Image (S2I) template. This template pulls the source for the application from a Git repository and builds it during the deployment.
+1. Using the `provision.sh` shell script that is provided in the add-ons distribution. In this case, the application source code is built and packaged locally and uploaded to the OpenShift environment for deployment.  Use this preferred method when Java developer tools (Java Development Kit and Maven) and a bash shell command line are available.
 
-2. Using the pre-built binary application archive that is provided in the distribution. In this case, a template prepares the environment but does not rebuild the application.
+2. Using the provided Source to Image (S2I) template. This template pulls the source for the application from a Git repository and builds it during the deployment.  In this case, the compilation and packaging of the application occurs within the OpenShift environment.  Use this option when the prerequisites for using `provision.sh` are not available.
 
 [NOTE]
 ====
-The S2I approach requires significantly more resources to complete than the binary deployment. If your OpenShift environment has less than 2GB of memory available, for example, when using the Openshift Online Starter tier, you must follow the binary deployment approach.
+The S2I approach requires significantly more OpenShift resources to complete than the shell script deployment. If your OpenShift environment has less than 2GB of memory available, you must follow the shell script deployment approach. The application will not deploy successfully with any method to the OpenShift Online Starter tier at the time of this writing because of memory requirements.
 ====
 
-== Deploying using the Source to Image (S2I) template
+== Deploying using the provided script
+.Prerequisite
+* You have logged in to the target OpenShift environment using the oc command line tool.
+
 .Procedure
-. Log in to the OpenShift web console and click Import YAML/JSON in the upper right corner.
-. Select the project to add to from the Add to Project drop down menu, or select Create Project to create a new one. If creating a new project, enter a new project name, display name, and description.
-. Click the *Browse* button and navigate to the `optashift-employee-rostering-template.yaml` file. Starting from the `optashift-employee-rostering-{MAVEN_ARTIFACT_VERSION}` folder, access the file by clicking *sources > openshift > templates*.
-. Click *Create*.
+. Running the script
 +
-.Upload template window
-image::optashift-rostering/optashift-ER-s2i-step-one.png[]
+.. Using the command line, change to the `optashift-employee-rostering-{MAVEN_ARTIFACT_VERSION}/sources` folder.
 +
-. In the Add Template dialog box, click *Continue* to accept the default settings.
+.. Run the provision script to build and deploy the application:
 +
-.Add template window
-image::optashift-rostering/optashift-ER-s2i-step-two.png[]
+[source]
+----
+./provision.sh setup employee-rostering --binary
+----
 +
-. In the Import YAML/JSON dialog box, click *Create* to accept the default settings.
+[NOTE]
+====
+If the current OpenShift user name contains characters that are not letters or numbers, the deployment might fail.  This can be fixed by providing an additional parameter: `./provision.sh setup employee-rostering --binary --project-suffix optashift`.  This example uses "optashift", but the actual value has no impact on the deployment.
+====
+
+. Verify the compilation status
 +
-.Configure template window
-image::optashift-rostering/optashift-ER-s2i-step-three.png[]
+.. Compilation and packaging may take several minutes to complete, and should continually show progress on the command line output.
 +
-. In the Success dialog box, click *Close*.
-. Wait for the build and deployment to complete. This might take several minutes. When the deployment completes, click the link in the upper right corner and above the shaded bar to open the application.
+.. Once completed, the following message is displayed: `Uploading file "target/ROOT.war" as binary input for the build ...`.
 +
-.Completed deployment and resulting link
-image::optashift-rostering/optashift-ER-s2i-step-four.png[]
+. Use the OpenShift web UI to view the details for the deployed application. Click the link in the Routes section to open the starter application.
++
+The build can take up to 30 seconds to complete. The application container can take an additional 30 seconds to start up completely.
 +
 [NOTE]
 ====
 Perform a hard refresh of your browser page if the web app does not open after clicking the link.
 ====
++
+.OpenShift web console with deployed Employee Rostering starter application
+image::optashift-rostering/optashiftERBinarySuccess.png[]
++
+. Optionally, you can use other actions provided by the provision script:
+.. Deploy updates to the code to an existing deployment: `./provision.sh deploy employee-rostering --binary`
+.. Remove the application: `./provision.sh delete employee-rostering`
 
-== Deploying with pre-built binary
 
+== Deploying using the Source to Image (S2I) template
 .Procedure
-. Prepare the binary deployment.
+. Log in to the OpenShift web console and click *Import YAML/JSON* in the upper right corner.
+. Select the project to add to from the *Add to Project* drop down menu, or select *Create Project* to create a new one. If creating a new project, enter a new project name, display name, and description.
+. Click the *Browse* button and navigate to the `optashift-employee-rostering-template.yaml` file. Starting from the `optashift-employee-rostering-{MAVEN_ARTIFACT_VERSION}` folder, access the file by clicking *sources > openshift > templates*.
+. Click *Create*.
++
+.Upload template window
+image::optashift-rostering/optashiftERS2iStepOne.png[]
++
+. In the Add Template dialog box, click *Continue* to accept the default settings.
++
+.Add template window
+image::optashift-rostering/optashiftERS2iStepTwo.png[]
++
+. In the Import YAML/JSON dialog box, click *Create* to accept the default settings.
++
+.Configure template window
+image::optashift-rostering/optashiftERS2iStepThree.png[]
++
+. In the Success dialog box, click *Close*.
+. Wait for the build and deployment to complete. This might take several minutes. When the deployment completes, click the link in the upper right corner above the shaded bar to open the application.
++
+.Completed deployment and resulting link
+image::optashift-rostering/optashiftERS2iStepFour.png[]
 +
 [NOTE]
 ====
-You must conduct binary deployments using the oc command line tools.  See the OpenShift documentation for installation steps.
+Perform a hard refresh of your browser page if the web app does not open after clicking the link.
 ====
-+
-.. Working from the `optashift-employee-rostering-{MAVEN_ARTIFACT_VERSION}` distribution folder, open the `binaries` folder.
-.. Copy the `optashift-employee-rostering-webapp-{MAVEN_ARTIFACT_VERSION}.war` to the `sources` folder.
-.. Rename the file to `ROOT.war`. The updated name instructs the application server to deploy the file to the root context of the server.
-+
-. Using the command line, change to the `sources` folder.
-+
-. Create a project using the following command:
-+
-[source]
-----
-oc new-project optashift-demo --display-name="Employee Rostering Demo"
-----
-+
-[NOTE]
-====
-Alternatively, you can use an existing project. In this case, replace all instances of `optashift-demo` in this procedure with your project name.
-====
-+
-. Create a build and deployment configuration. Use the `optashift-employee-rostering-template-binary.yaml` template file to set the OpenShift configuration, such as the route to expose the application to make it accessible to browsers.
-+
-[source]
-----
-oc process -f openshift/templates/optashift-employee-rostering-template-binary.yaml -n optashift-demo | oc create -f - -n optashift-demo
-----
-+
-+
-. Upload the binary file to begin a deployment.
-+
-[source]
-----
-oc start-build employee-rostering --from-file=ROOT.war
-----
-+
-. Use the OpenShift web UI to view the details for the deployed application. Click the link in the Routes section to open the starter application.
-+
-.Openshift web console with deployed Employee Rostering starter application
-image::optashift-rostering/optashift-ER-binary-success.png[]
-+
-
-//.Procedure
-//. Build from local source
-// ./provision.sh setup employee-rostering --binary
-// This doesn't work in current release
-// TODO: revisit deploying from local build once issue is resolved: https://issues.jboss.org/browse/BXMSPROD-1
