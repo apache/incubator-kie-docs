@@ -1,0 +1,35 @@
+[id='ba-openshift-overview-con']
+= Overview of {PRODUCT} on {OPENSHIFT}
+If you have an OpenShift environment, you can deploy {PRODUCT} into this environment.
+
+In this solution, components of {PRODUCT} are deployed as separate OpenShift pods. You can scale each of the pods up and down individually, providing as few or as many containers as necessary for a particular component. You can use standard OpenShift methods to manage the pods and balance the load.
+
+The following key components are available as pods running in OpenShift:
+
+* {KIE_SERVER}, also known as _Execution Server_ or _KIE Server_, is the infrastructure element that runs a process or a group of processes. All process logic runs on execution servers.
++
+A database server is normally required for {KIE_SERVER}. You can provide a database server in another OpenShift pod or configure an execution server on OpenShift to use any other database server. Alternatively, {KIE_SERVER} can use an H2 database; in this case, the pod cannot be scaled. 
++
+You can freely scale up a {KIE_SERVER} pod, providing as many copies, running on the same host or different hosts, as necessary. As you scale a pod up or down, all its copies run the same processes and use the same database server. OpenShift provides load balancing and a request can be handled by any of the pods.
++
+To run a different set of processes, deploy a separate {KIE_SERVER} pod, which can also be scaled up or down. You can have as many separate replicated {KIE_SERVER} pods as necessary.
++
+* {CENTRAL} is a web-based interactive environment for authoring processes. It also provides a management and monitoring console. You can use {CENTRAL} to develop processes, deploy processes to {KIE_SERVERS}, and monitor the execution.
++
+{CENTRAL} is a centralized application. However, you can configure it for high availability, where multiple pods run and share the same data. (In the current version, the high-availability functionality is a technology preview).
++
+{CENTRAL} includes a Git repository that holds the source for the processes that you develop on it. It also includes a built-in Maven repository. Depending on configuration, {CENTRAL} can place the compiled processes (KJAR files) into the built-in Maven repository or (if configured) into an external Maven repository.
++
+* {CENTRAL} Monitoring is a web-based management and monitoring console. It can manage deployment of processes to {KIE_SERVERS} and provide monitoring information, but does not include authoring capabilities. You can use this component to manage staging and production environments.
++
+* Smart Router is an optional layer between {KIE_SERVERS} and other components that interact with them. It is required if you want {CENTRAL} or {CENTRAL} Monitoring to interact with several different {KIE_SERVERS}. Also, when your environment includes many processes running on different {KIE_SERVERS}, Smart Router provides a single endpoint to all client applications. A client application can make a REST API call requiring any process. Smart Router automatically determines which {KIE_SERVER} must be called for any particular request.
+
+You can arrange these and other components into various environment configurations within OpenShift. You can use the templates provided with {PRODUCT} to deploy the most common combinations.
+
+The following environment types are typical:
+  
+* _Authoring_: An environment for creating and modifying processes using {CENTRAL}. It consists of pods that provide {CENTRAL} for the authoring work and a {KIE_SERVER} for test execution of the processes. For instructions about deploying this environment, see {URL_DEPLOYING_AUTHORING_ON_OPENSHIFT}[{DEPLOYING_AUTHORING_ON_OPENSHIFT}].
+* _Managed deployment_: An environment for running existing processes for staging and production purposes. This environment includes several groups of {KIE_SERVER} pods; you can deploy and undeploy processes on every such group and also scale the group up or down as necessary. Use {CENTRAL} Monitoring to deploy, run, and stop the processes and to monitor their execution. For instructions about deploying this environment, see {URL_DEPLOYING_MANAGED_ON_OPENSHIFT}[{DEPLOYING_MANAGED_ON_OPENSHIFT}]. 
+* _Deployment with immutable servers_: An alternate environment for running existing processes for staging and production purposes. In this environment, when you deploy a {KIE_SERVER} pod, it builds an image that loads and starts a process or group of processes. You cannot stop any process on the pod or add any new process to the pod. If you want to use another version of a process or modify the configuration in any other way, you deploy a new server image and displace the old one. In this system, you can use typical container-based integration workflows and do not need to use any other tools to manage the pods. Optionally, you can use {CENTRAL} Monitoring to monitor the performance of the environment and to stop and restart some of the process instances, but not to deploy additional processes to any {KIE_SERVER} or undeploy any existing ones (you can not add or remove containers). For instructions about deploying this environment, see {URL_DEPLOYING_IMMUTABLE_ON_OPENSHIFT}[{DEPLOYING_IMMUTABLE_ON_OPENSHIFT}].
+
+To deploy a {PRODUCT} environment on OpenShift, you can use the templates that are provided with {PRODUCT}. You can modify the templates to ensure that your environment suits your needs.
