@@ -5,11 +5,8 @@ This section highlights new features in {PRODUCT} {PRODUCT_VERSION}.
 
 == {CENTRAL}
 
-=== High availability
-High availability and clustering for {CENTRAL} is now configured with JMS and NFS storage.
-
 === Process Designer
-An improved Process Designer interface includes the most common BPMN2 nodes as well as form generation, case management extensions, and the ability to export to PNG, PDF, SVG, and BPMN2. The legacy Process Designer is still available for full functionality. 
+An improved Process Designer interface includes the most common BPMN2 nodes as well as form generation and the ability to export to PNG, PDF, SVG, and BPMN2. The legacy Process Designer is still available for full functionality. 
 
 === Improved navigation
 
@@ -42,46 +39,28 @@ The following columns have been added to the corresponding pages:
 * *Task list:* Last update, correlation key (of the associated process instance ID), process instance description (of the associated process instance).
 * *Jobs page:* Name of the associated process (if any), ID of the associated process instance (if any), Description of the associated process instance (if any).
 
-=== Advanced search filter
+=== Search filter
 You can now search for specific data by using the *Search* tab on the Jobs, Process Instances, Task Administration, and Execution Errors pages.
 
-=== New Task and Task Administration pages
-The former Task List page has been divided into the Task and Administration pages. The Task page is used by task operators to work with their assigned (or potentially assigned) tasks. The Task Administration page is used by administrators to manage tasks assigned to other users. This page is only available for users with admin or process-admin roles. It is similar to the Admin filter tab on the former Task List page.
+=== New Task Inbox and Task Administration pages
+The former Task List page has been divided into the Task Inbox and Task Administration pages. The Task Inbox page is used by task operators to work with their assigned (or potentially assigned) tasks. The Task Administration page is used by administrators to manage tasks assigned to other users. This page is only available for users with `admin` or `process-admin` roles. It is similar to the *Admin filter* tab on the former Task List page.
+
+=== High availability
+High availability and clustering for {CENTRAL} is now configured with JMS and NFS storage.
+
+=== Enabling the Content Management System (CMS) page
+{PRODUCT} settings allow you to enable the CMS page.
+
+.Procedure
+. Go to *Settings*:> *Roles*:> *admin*.
+. Expand *Pages* and click the *Read* field to enable *Page Authoring*.
 
 === Error Handling
-While running a process instance or a job, the system now detects and stores execution errors such as exceptions after the maximum number of retries has been exceeded. If an error occurs, the system generates an event that contains the following data:
+While running a process instance or a job, the system now detects and stores execution errors such as exceptions after the maximum number of retries has been exceeded. 
 
---
-[cols="1,2",options="header"]
-|===
-| Data
-| Fields
+The process instance list includes a new column that displays the number of errors per process instance which are not marked as acknowledged. 
 
-.3+| Process model
-| processModelID
-| processModelVersion
-| processModelName
-
-.2+| Process instance that has failed
-| processInstanceID
-| customProcessID
-
-.5+| Activity that has failed
-| activityID
-| activityName
-| activityType
-| iteration
-| status
-
-.2+| Error data
-| errorMessage: Message with the error that has occurred.
-| errorStack: Stack with error detail.
-|===
---
-
-The process instance list includes a new column that displays the number of errors per process instance which are not marked as acknowledged. When you select the column, a window appears which enables you to navigate to the new Error page.
-
-The Execution Errors page lists any errors that occur during process instances or executor service jobs on a {KIE_SERVER}. Use this page to help troubleshoot issues. It is visible to users with the admin and process-admin roles.
+The Execution Errors page lists any errors that occur during process instances or executor service jobs on a {KIE_SERVER}. Use this page to help troubleshoot issues. It is visible to users with the `admin` and `process-admin` roles.
 
 === Improved validation in the deployment descriptor designer
 
@@ -110,6 +89,16 @@ Property reactivity is enabled by default in Drools 7.0. If you expect property 
 </configuration>
 ----
 
+=== Work Item archetype
+
+To help users build custom service tasks (work items), {PRODUCT} comes with the Work Item archetype that generates the majority of items required to build a custom service task.  The archetype includes the following:
+
+* A Work Item Definition (WID) file
+* The Work Item Handler implementation class
+* The Work Item Handler test class
+
+The Maven assembly (zip) packages everything at build time so it can be consumed by the Service Repository and therefore be used from within the Web Designer.
+
 === Process API and task administration API
 A process administration API and task administration API have been introduced to simplify some of the more complex administrator use cases.
 You can use the process administration API to perform the following tasks:
@@ -121,14 +110,11 @@ You can use the process administration API to perform the following tasks:
 * List timer instances
 * Trigger nodes
 
-You can use the task administration API to do the following:
+You can use the task administration API to perform the following tasks:
 
 * Add and remove potential owners and excluded owners and business administrators
 * Add and remove task inputs and outputs
 * List, create, and cancel escalations and notifications
-
-=== UserTaskService 
-UserTaskService updates task metadata and variables in single operation. This feature is available through KIE Server REST and JMS API.
 
 === Advanced task routing
 When tasks are assigned to a group of users, you can use pluggable task assignment strategies to automatically assign tasks to a suitable individual immediately. This enables more efficient task allocation, based on all properties associated with the task. For example, such as potential owners and task priority but also task data that includes information such as geography, required skills, and so on. You can use business rules to define the assignment logic, making it easy to customize this to your needs.
@@ -145,10 +131,13 @@ Initial integration with NoSQL has been introduced. This is based on additional 
 The Quartz scheduler service has been improved to fetch jobs only for deployments (KIE containers) that are currently available in the running system. 
 
 == {KIE_SERVER}
-The {KIE_SERVER} (also known as kie-server) has been extended to support core engine features and offers a remote API for these operations. In addition, the following architectural changes were introduced.
+The {KIE_SERVER} (also known as the KIE server) has been extended to support core engine features and offers a remote API for these operations. In addition, the following architectural changes were introduced.
 
-=== Separate {CENTRAL} from execution server
-{CENTRAL} now delegates all of its requests to the execution server. The main advantage is that {CENTRAL} can now be used to monitor any set of execution servers. By linking the execution server to {CENTRAL}, the process and task monitoring interfaces in {CENTRAL} can now connect to this execution server and show all relevant information. When multiple independent execution servers are used, you can either connect to a specific one or use the smart router to aggregate information across multiple servers. 
+=== Separate {CENTRAL} from {KIE_SERVER}
+{CENTRAL} now delegates all of its requests to the {KIE_SERVER}. The main advantage is that {CENTRAL} can now be used to monitor any set of {KIE_SERVERS}. By linking the {KIE_SERVER} to {CENTRAL}, the process and task monitoring interfaces in {CENTRAL} can now connect to this {KIE_SERVER}  and show all relevant information. When multiple independent {KIE_SERVERS} are used, you can either connect to a specific one or use the smart router to aggregate information across multiple servers. 
+
+=== UserTaskService 
+UserTaskService updates task metadata and variables in single operation. This feature is available through KIE Server REST and JMS API.
 
 === Smart router
 Smart router (also known as the KIE server router) includes the following enhancements:
@@ -169,32 +158,19 @@ You can now use aliases instead of container IDs in the remote REST APIs of the 
 //For on-premise deployments, use the standard {PRODUCT} `war` file.
 //====
 
-=== Work Item archetype
-
-To help users build custom service tasks (work items), {PRODUCT} comes with the Work Item archetype that generates the majority of items required to build a custom service task.  The archetype includes the following:
-
-* A Work Item Definition (WID) file
-* The Work Item Handler implementation class
-* The Work Item Handler test class
-
-The Maven assembly (zip) packages everything at build time so it can be consumed by the Service Repository and therefore be used from within the Web Designer.
-
-=== KIE Server Maven plugins
-KIE Server has been enhanced with additional Maven plugins that enable interaction with the KIE Server and KIE Controller REST API directly from within a build. This interaction facilitates easier integration with CI/CD pipelines when building KJars so they can be directly deployed to the execution environment (both managed and unmanaged KIE Servers).
+=== {KIE_SERVER} Maven plugins
+{KIE_SERVER} has been enhanced with additional Maven plugins that enable interaction with the {KIE_SERVER} and the Process Automation Manager controller REST API directly from within a build. This interaction facilitates easier integration with CI/CD pipelines when building KJars so they can be directly deployed to the execution environment (both managed and unmanaged {KIE_SERVER}).
 
 == {PLANNER}
 
 === @PlanningPin
-To pin down an assignment and force {PLANNER} to leave it untouched, add the @PlanningPin annotation on a planning entity’s boolean property and make it true for those entities that are immovable.
+To pin down an assignment and force {PLANNER} to leave it untouched, add the `@PlanningPin` annotation on a planning entity’s boolean property and make it true for those entities that are immovable.
 
 === Conference scheduling
 You can assign each conference talk to a time slot and a room. Timeslots can overlap. Save data in or extract data from an `*.xlsx` file that can be edited with LibreOffice or Microsof Excel.
 
-=== PlannerBenchmark
-PlannerBenchmark has a new method benchmarkAndShowReportInBrowser() to automatically open the benchmark report in the default browser after the benchmark has finished.
-
 === Guided decision tables integration
-{PLANNER} now integrates with the guided decision tables designer. Modify the score with built-in {PLANNER} actions that can be accessed in the Action BRL fragment column type. The Workbench examples now include the dinnerparty project, which uses a guided decision table to define score constraints.
+{PLANNER} now integrates with the guided decision tables designer. You can modify the score with built-in {PLANNER} actions that can be accessed in the Action BRL fragment column type. The Workbench examples now include the Dinner Party project, which uses a guided decision table to define score constraints.
 
 === Guided rule designer integration
 {PLANNER} now integrates with the guided rule designer. You can modify the score with a built-in {PLANNER} action.
@@ -205,20 +181,17 @@ PlannerBenchmark has a new method benchmarkAndShowReportInBrowser() to automatic
 === Multi-threaded partitioned search 
 {PLANNER} now has support for solving a single data set by partitioning across multiple threads. This enhancement makes use of multiple CPU cores for a single problem. Partitioned search can implement geo-fencing for Vehicle Routing use cases.
 
-=== Solution interface
-The Solution interface is deprecated. Your solution class requires only the `@PlanningSolution` annotation.
-
 === Score type
 You no longer need to define the score type in the solver configuration. {PLANNER} now determines it automatically from the domain model.
 
 === Enhanced solver configuration designer
-  The {PLANNER} designer now supports adding all termination types, including composite termination. The `Phase configuration` section enables you to tweak `Construction Heuristic` settings and select the `Local Search` algorithm to optimize your planning problem.
+The {PLANNER} designer now supports adding all termination types, including composite termination. The `Phase configuration` section enables you to tweak `Construction Heuristic` settings and select the `Local Search` algorithm to optimize your planning problem.
 
 === Difficulty comparator definition
 The {PLANNER} domain designer can now specify a planning entity difficulty. Navigate through the object hierarchy and define the sorting attributes. Several construction heuristic algorithms use this information to construct a better initial solution.
 
-=== {PLANNER} execution server
-The {PLANNER} execution server now supports real-time planning.
+=== {PLANNER} Planner Server
+The {PLANNER} Planner Server now supports real-time planning.
 
 == New component names
 The following components have been renamed in {PRODUCT} {PRODUCT_VERSION}:
