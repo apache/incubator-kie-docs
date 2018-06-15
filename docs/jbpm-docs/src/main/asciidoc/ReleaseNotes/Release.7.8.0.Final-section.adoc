@@ -1,0 +1,167 @@
+[[_jbpmreleasenotes720]]
+
+= New and Noteworthy in jBPM 7.8.0
+:imagesdir: ..
+
+The following features were added to jBPM 7.8
+
+== CMMN 1.1 native execution
+
+jBPM version 7.8 introduces native support for execution of CMMN 1.1 cases. It provides main constructs support and does not aim
+at full specification coverage. Constructs that are currently available are:
+
+- tasks (human task, process task, decision task, case task)
+- discretionary tasks (same as above)
+- stages
+- milestones
+- case file items
+- sentries (both entry and exit)
+
+Not all attributes of tasks are supported - required, repeat and manual activation are currently not supported. Although most of the
+behaviour can still be achieved using different constructs.
+Sentries for individual tasks are limited to entry criteria while entry and exit are supported for stages and milestones.
+
+Decision task by default maps to DMN decision although ruleflow group based is also possible with simplified syntax -
+decisionRef should be set to ruleflow-group attribute.
+
+Event listeners are not supported as they do not bring much value for execution and instead CaseEventListener support in jBPM should
+be used as substitute.
+
+jBPM does not provide any modeling capabilities for CMMN and focuses purely on execution of the model.
+
+Even with the support of CMMN jBPM still promotes BPMN2 and the most powerful way of
+designing your case definition where you can take advantage of the both specifications.
+
+== Single zip distribution of jBPM
+
+Version 7.8 introduces simplified distribution to let people start very quickly. It is a single zip distribution that requires
+just three steps:
+
+<1> download
+<2> unzip
+<3> run
+
+[source]
+----
+
+ curl https://download.jboss.org/jbpm/release/7.8.0.Final/jbpm-server-7.8.0.Final-dist.zip --output jbpm-server-distribuion.zip  <1>
+
+ unzip jbpm-server-distribuion.zip -d jbpm-server <2>
+
+ jbpm-server/bin/standalone.sh <3>
+----
+
+
+that's all that is needed to get fully configured and running jBPM distribution that includes:
+
+- WildFly server
+- jBPM console (aka workbench)
+- KIE Server
+- jBPM case management showcase
+- jBPM Service repository
+
+Everything configured to work together smoothly and you can access them at following locations:
+
+- jBPM console - http://localhost:8080/jbpm-console
+- KIE Server - http://localhost:8080/kie-server/services/rest/server
+- KIE Server Swagger docs - http://localhost:8080/kie-server/docs
+- jBPM case management - http://localhost:8080/jbpm-casemgmt
+- jBPM Service repository - http://localhost:8080/repository
+
+In addition, this distribution simplifies switching to other databases - MySQL and PostgreSQL. As simple as just running a script
+from within jbpm-server/bin directory
+
+[source]
+----
+./jboss-cli.sh --file=jbpm-mysql-config.cli      (Unix / Linux)
+
+jboss-cli.bat --file=jbpm-mysql-config.cli     (Windows)
+----
+
+To read more have a look at http://mswiderski.blogspot.com/2018/06/single-zip-distribution-for-jbpm.html[this article].
+
+== Pluggable Startup strategy in KIE Server
+
+KIE server has be equipped with additional pluggable mechanism that allows to control the startup behaviour. Main use case is to allow
+finer control over what KIE containers are deployed and in what order. Primary usage pattern is to allow to use monitoring application
+(workbench) to manage processes and tasks on immutable KIE Servers. That means they are not under control of the KIE Server Controller
+but rather decide themselves what containers should be deployed.
+
+There are two out of the box strategies provided:
+
+- ControllerBasedStartupStrategy - default startup strategy that will favour controller configuration whenever is given and thus override
+any local configuration. In case controller endpoint is not present it will fallback to what is known in the local server state file
+- LocalContainersStartupStrategy - strategy that will always deploy containers configured in the server state file regardless of
+the controller configuration although when controller endpoint is given it will connect to it.
+
+Users can implement they own startup strategies by implementing `org.kie.server.services.api.StartupStrategy` interface and then packaging
+it in ServiceLoader way - it needs to have services file that defines the implementation class which is then used upon startup of the
+server via discovery mechanism.
+
+To specify which startup strategy should be used a system property `org.kie.server.startup.strategy` should be set
+to the name of the class (simple name) implementing given strategy.
+
+Example:
+-Dorg.kie.server.startup.strategy=ControllerBasedStartupStrategy
+
+== Custom queries as data set editor in workbench
+
+Custom queries are really powerful features and frequently used. jBPM 7.8 introduces a data set editor to allow use of it
+in workbench environment. This editor allows to build data sets that can later on be used to build pages and dashboards based on
+actual information retrieved from KIE servers on runtime.
+
+These data sets are scoped to server templates and by that will only target particular subset of KIE Servers. Moreover by using KIE Server
+as the source of data, it removes the need to directly access databases which (especially in cloud environments) might not be desired
+or even possible. Additionally, these queries are executed in user context (user performing the query is actually user who is logged
+into workbench) which makes the results tailored to given user - important from security point of view - will only see data that is
+authorised to see.
+
+To learn more have a look at http://mswiderski.blogspot.com/2018/04/data-set-editor-for-kie-server-custom.html[this article].
+
+== Support for FEEL language as expressions for sequence flows
+
+Drools provides support for DMN and FEEL language from the early days of version 7. jBPM added support for decision evaluation
+some time ago too. Now it was time to add FEEL language support for sequence flows of the process definition.
+Users who work with DMN can unify the language used for expressing condition logic to just single one - FEEL.
+
+== Milestone condition support for multiple instances
+
+Milestone used in specific situation where there are multiple instances of the same milestone node active at the same time
+requires additional check upon match. This is to allow extra filtering of matches to find the right instance to be completed.
+
+This advanced use case manifests itself when users model logic for multi instance activation where just simple rule is not enough.
+An example of it is to have a stage that includes milestone and each of the stage deals with other types of document to be processed.
+Milestone in that stage tracks progress of the document, although it should track individual documents of each stage. So an extra validation
+on the milestone is required.
+And for that exact scenario a `MatchVariable` was introduced. This is an extra parameter on milestone itself (next to condition) that specifies
+name of the variable it should compare with matched items. So if the stage has a variable documentType and then the rule in milestone is as follows:
+
+[source, text]
+----
+$caseData : CaseData()
+$documentType : DocumentType(uploaded == true) from $caseData.getData(docName)
+----
+
+user can set `MatchVariable` parameter to `documentType` to compare the activation item (`$documentType`) with `documentType`
+variable taken from stage instance and only if this match that milestone instance will be completed.
+
+
+== Case instance migration
+
+Similar as there is support for process instance migration, version 7.8 introduces case instance migration. This essentially
+allows to move given case instance from one definition to another - in other words migrate to another case project version.
+This instance migration ensures that all active process instances for given case instance are migrated at the same time, thus
+it's required to provide mapping of case definition and process definitions at the time when doing migration.
+
+Same as for process instance migration, there is optional parameter for mapping nodes from old to new version of case or process
+definition.
+
+== Even more improvements around service repository and work items
+
+jBPM 7.8 continues with improvements for service repository and work items to make them as simple as possible to be build and used.
+It's very powerful feature that is underused usually due to the difficult entry level... but that is now the past. The future looks much
+brighter than ever. Have a look at http://mswiderski.blogspot.com/2018/04/jbpm-work-items-are-really-simple.html[this article] to
+see how easy it is to build your own service tasks and make use of them in your processes.
+
+After that, read up http://mswiderski.blogspot.com/2018/04/jbpm-work-items-repository-tips-tricks.html[these tips and tricks]
+ how to get even more from it.
