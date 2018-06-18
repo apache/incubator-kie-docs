@@ -11,25 +11,59 @@ After you create rules in {CENTRAL}, you can build and deploy your project and e
 . Open the `pom.xml` file of your client application and add the following dependencies, if not added already:
 +
 --
-* `kie-ci`: Enables your client application to build {CENTRAL} project data locally using `ReleaseId`
-* `kie-server-client`: Enables your client application to interact with assets on {KIE_SERVER}
+* `kie-ci`: Enables your client application to load {CENTRAL} project data locally using `ReleaseId`
+* `kie-server-client`: Enables your client application to interact remotely with assets on {KIE_SERVER}
+* `slf4j`: (Optional) Enables your client application to use Simple Logging Facade for Java (SLF4J) to return debug logging information after you interact with {KIE_SERVER}
 
+ifdef::PAM[]
 [source,xml]
 ----
+// For local execution:
 <dependency>
   <groupId>org.kie</groupId>
   <artifactId>kie-ci</artifactId>
 </dependency>
+
+// For remote execution on Process Server:
 <dependency>
   <groupId>org.kie.server</groupId>
   <artifactId>kie-server-client</artifactId>
 </dependency>
+
+// For debug logging (optional):
+<dependency>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-simple</artifactId>
+</dependency>
 ----
+endif::PAM[]
+ifdef::DM[]
+[source,xml]
+----
+// For local execution:
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+</dependency>
+
+// For remote execution on Decision Server:
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+</dependency>
+
+// For debug logging (optional):
+<dependency>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-simple</artifactId>
+</dependency>
+----
+endif::DM[]
 
 NOTE: If the Bill of Materials (BOM) in {PRODUCT} is not specified in your dependency management, then you need to also specify the `<version>` value for these artifacts. For more information about Maven dependencies and the BOM in {PRODUCT}, see link:https://access.redhat.com/solutions/3405361[What is the mapping between {PRODUCT} and Maven library version?].
 
 --
-. Ensure also that the dependencies for artifacts containing model classes are defined the same way in the client application `pom.xml` file as they appear in the `pom.xml` file of the deployed project. If dependencies for model classes differ between the client application and your projects, execution errors can occur.
+. Ensure that the dependencies for artifacts containing model classes are defined in the client application `pom.xml` file exactly as they appear in the `pom.xml` file of the deployed project. If dependencies for model classes differ between the client application and your projects, execution errors can occur.
 +
 --
 For example, the following is a `Person` class dependency as it appears in both the client and deployed project `pom.xml` files:
@@ -37,12 +71,18 @@ For example, the following is a `Person` class dependency as it appears in both 
 [source,xml]
 ----
 <dependency>
- <groupId>com.person</groupId>
- <artifactId>Person</artifactId>
- <version>1.0.0</version>
+  <groupId>com.person</groupId>
+  <artifactId>Person</artifactId>
+  <version>1.0.0</version>
 </dependency>
 ----
 --
+. If you added the `slf4j` dependency to the client application `pom.xml` file for debug logging, create a `simplelogger.properties` file on the relevant classpath (for example, in `src/main/resources/META-INF` in Maven) with the following content:
++
+[source,java]
+----
+org.slf4j.simpleLogger.defaultLogLevel=debug
+----
 . In your client application, create a `.java` main class containing the necessary imports and a `main()` method to load the knowledge base, insert facts, and execute the rules.
 +
 --
@@ -111,6 +151,7 @@ To test this rule on {KIE_SERVER}, configure the `.java` class with the imports 
 ----
 import java.util.ArrayList;
 import java.util.List;
+
 import org.kie.api.command.BatchExecutionCommand;
 import org.kie.api.command.Command;
 import org.kie.api.KieServices;
@@ -140,12 +181,18 @@ public class RulesTest {
       p.setHourlyRate(10);
 
       // Insert the person into the session:
-      commandList.add(KieServices.Factory.get().getCommands().newInsert(p));
+      commandList.add(KieServices.Factory.get().getCommands().newInsert(p,"personReturnId"));
 
       // Fire all rules:
-      commandList.add(KieServices.Factory.get().getCommands().newFireAllRules());
+      commandList.add(KieServices.Factory.get().getCommands().newFireAllRules("numberOfFiredRules"));
       BatchExecutionCommand batch = KieServices.Factory.get().getCommands().newBatchExecution(commandList,
 				"$KIE_SESSION");
+
+      // Use rule services client to send request:
+      RuleServicesClient ruleClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
+      ServiceResponse<ExecutionResults> executeResponse = rulesClient.executeCommandsWithResults(containerName,
+batchCommand);
+      System.out.println("number of fired rules:" + executeResponse.getResult().getValue("numberOfFiredRules"));
     }
 
     catch (Throwable t) {
@@ -174,6 +221,7 @@ java -classpath "./$DEPENDENCIES/*:." RulesTest
 ----
 --
 . Review the rule execution status in the command line and in the server log. If any rules do not execute as expected, review the configured rules in the project and the main class configuration to validate the data provided.
+
 endif::[]
 ifeval::["{context}" == "execute-assets"]
 = Executing assets deployed to {KIE_SERVER}
