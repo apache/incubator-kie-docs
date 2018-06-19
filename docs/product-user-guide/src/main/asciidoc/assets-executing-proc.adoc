@@ -71,7 +71,7 @@ For example, the following is a `Person` class dependency as it appears in both 
 [source,xml]
 ----
 <dependency>
-  <groupId>com.person</groupId>
+  <groupId>com.sample</groupId>
   <artifactId>Person</artifactId>
   <version>1.0.0</version>
 </dependency>
@@ -90,6 +90,12 @@ For example, a `Person` object in a project contains getter and setter methods t
 
 [source,java]
 ----
+package com.sample;
+
+import com.sample.Person;
+
+dialect "java"
+
 rule "Wage"
   when
     Person(hourlyRate * wage > 100)
@@ -114,9 +120,9 @@ public class RulesTest {
     try {
       // Identify the project in the local repository:
       ReleaseId rid = new ReleaseId();
-        rid.setGroupId("com.myspace");
-        rid.setArtifactId("MyProject");
-        rid.setVersion("1.0.0");
+      rid.setGroupId("com.myspace");
+      rid.setArtifactId("MyProject");
+      rid.setVersion("1.0.0");
 
       // Load the knowledge base:
       KieServices ks = KieServices.Factory.get();
@@ -135,6 +141,7 @@ public class RulesTest {
 
       // Fire all rules:
       kSession.fireAllRules();
+      kSession.dispose();
     }
 
     catch (Throwable t) {
@@ -144,33 +151,46 @@ public class RulesTest {
 }
 ----
 
-To test this rule on {KIE_SERVER}, configure the `.java` class with the imports and rule execution details similarly to the local example, and additionally include KIE services configuration and KIE services client details:
+To test this rule on {KIE_SERVER}, configure the `.java` class with the imports and rule execution information similarly to the local example, and additionally specify KIE services configuration and KIE services client details:
 
 .Execute rules on {KIE_SERVER}
 [source,java]
 ----
+package com.sample;
+
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.kie.api.command.BatchExecutionCommand;
 import org.kie.api.command.Command;
 import org.kie.api.KieServices;
+import org.kie.api.runtime.ExecutionResults;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.api.model.ServiceResponse;
 import org.kie.server.client.KieServicesClient;
 import org.kie.server.client.KieServicesConfiguration;
 import org.kie.server.client.KieServicesFactory;
 import org.kie.server.client.RuleServicesClient;
 
+import com.sample.Person;
+
 public class RulesTest {
+  private static final String containerName = "testProject";
+  private static final String sessionName = "myStatelessSession";
+
   public static final void main(String[] args) {
     try {
-      // Identify KIE services configuration and client:
-      KieServicesConfiguration config = KieServicesFactory
-        .newRestConfiguration("http://$SERVER:$PORT/kie-server/services/rest/server", "$USER", "$PASSWORD");
-        config.setMarshallingFormat(MarshallingFormat.JSON);
-      KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
+      // Define KIE services configuration and client:
+      KieServicesConfiguration config = KieServicesFactory.newRestConfiguration("http://$HOST:$PORT/kie-server/services/rest/server", "$USERNAME", "$PASSWORD");
+      config.setMarshallingFormat(MarshallingFormat.JAXB);
+      Set<Class<?>> allClasses = new HashSet<Class<?>>();
+      allClasses.add(Person.class);
+      config.addExtraClasses(allClasses);
+      KieServicesClient kieServicesClient = KieServicesFactory.newKieServicesClient(config);
 
       // Set up the fact model:
       List<Command> commandList = new ArrayList<Command>();
@@ -180,18 +200,16 @@ public class RulesTest {
       p.setLastName("Summers");
       p.setHourlyRate(10);
 
-      // Insert the person into the session:
-      commandList.add(KieServices.Factory.get().getCommands().newInsert(p,"personReturnId"));
+      // Insert Person into the session:
+      commandList.add(KieServices.Factory.get().getCommands().newInsert(p, "personReturnId"));
 
       // Fire all rules:
       commandList.add(KieServices.Factory.get().getCommands().newFireAllRules("numberOfFiredRules"));
-      BatchExecutionCommand batch = KieServices.Factory.get().getCommands().newBatchExecution(commandList,
-				"$KIE_SESSION");
+      BatchExecutionCommand batch = KieServices.Factory.get().getCommands().newBatchExecution(commandList, sessionName);
 
       // Use rule services client to send request:
       RuleServicesClient ruleClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
-      ServiceResponse<ExecutionResults> executeResponse = rulesClient.executeCommandsWithResults(containerName,
-batchCommand);
+      ServiceResponse<ExecutionResults> executeResponse = ruleClient.executeCommandsWithResults(containerName,batch);
       System.out.println("number of fired rules:" + executeResponse.getResult().getValue("numberOfFiredRules"));
     }
 
@@ -253,7 +271,7 @@ For example, the following is a `Person` class dependency as it appears in both 
 [source,xml]
 ----
 <dependency>
- <groupId>com.person</groupId>
+ <groupId>com.sample</groupId>
  <artifactId>Person</artifactId>
  <version>1.0.0</version>
 </dependency>
