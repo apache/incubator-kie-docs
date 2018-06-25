@@ -22,18 +22,21 @@ ifdef::PAM[]
 <dependency>
   <groupId>org.kie</groupId>
   <artifactId>kie-ci</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
 </dependency>
 
 // For remote execution on Process Server:
 <dependency>
   <groupId>org.kie.server</groupId>
   <artifactId>kie-server-client</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
 </dependency>
 
 // For debug logging (optional):
 <dependency>
   <groupId>org.slf4j</groupId>
   <artifactId>slf4j-simple</artifactId>
+  <version>1.8.0-beta2</version>
 </dependency>
 ----
 endif::PAM[]
@@ -44,23 +47,26 @@ ifdef::DM[]
 <dependency>
   <groupId>org.kie</groupId>
   <artifactId>kie-ci</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
 </dependency>
 
 // For remote execution on Decision Server:
 <dependency>
   <groupId>org.kie.server</groupId>
   <artifactId>kie-server-client</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
 </dependency>
 
 // For debug logging (optional):
 <dependency>
   <groupId>org.slf4j</groupId>
   <artifactId>slf4j-simple</artifactId>
+  <version>1.8.0-beta2</version>
 </dependency>
 ----
 endif::DM[]
 
-NOTE: If the Bill of Materials (BOM) in {PRODUCT} is not specified in your dependency management, then you need to also specify the `<version>` value for these artifacts. For more information about Maven dependencies and the BOM in {PRODUCT}, see link:https://access.redhat.com/solutions/3405361[What is the mapping between {PRODUCT} and Maven library version?].
+NOTE: For available versions of these artifacts, search the group ID and artifact ID in the link:https://mvnrepository.com/[MVNRepository] online. For more information about Maven dependencies and using the Bill of Materials (BOM) in {PRODUCT}, see link:https://access.redhat.com/solutions/3405361[What is the mapping between {PRODUCT} and Maven library version?].
 
 --
 . Ensure that the dependencies for artifacts containing model classes are defined in the client application `pom.xml` file exactly as they appear in the `pom.xml` file of the deployed project. If dependencies for model classes differ between the client application and your projects, execution errors can occur.
@@ -116,6 +122,7 @@ import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 
 public class RulesTest {
+
   public static final void main(String[] args) {
     try {
       // Identify the project in the local repository:
@@ -179,21 +186,28 @@ import org.kie.server.client.RuleServicesClient;
 import com.sample.Person;
 
 public class RulesTest {
+
   private static final String containerName = "testProject";
   private static final String sessionName = "myStatelessSession";
 
   public static final void main(String[] args) {
     try {
       // Define KIE services configuration and client:
-      KieServicesConfiguration config = KieServicesFactory.newRestConfiguration("http://$HOST:$PORT/kie-server/services/rest/server", "$USERNAME", "$PASSWORD");
-      config.setMarshallingFormat(MarshallingFormat.JAXB);
       Set<Class<?>> allClasses = new HashSet<Class<?>>();
       allClasses.add(Person.class);
+      String serverUrl = "http://$HOST:$PORT/kie-server/services/rest/server";
+      String username = "$USERNAME";
+      String password = "$PASSWORD";
+      KieServicesConfiguration config =
+        KieServicesFactory.newRestConfiguration(serverUrl,
+                                                username,
+                                                password);
+      config.setMarshallingFormat(MarshallingFormat.JAXB);
       config.addExtraClasses(allClasses);
-      KieServicesClient kieServicesClient = KieServicesFactory.newKieServicesClient(config);
+      KieServicesClient kieServicesClient =
+        KieServicesFactory.newKieServicesClient(config);
 
       // Set up the fact model:
-      List<Command> commandList = new ArrayList<Command>();
       Person p = new Person();
       p.setWage(12);
       p.setFirstName("Tom");
@@ -201,15 +215,17 @@ public class RulesTest {
       p.setHourlyRate(10);
 
       // Insert Person into the session:
-      commandList.add(KieServices.Factory.get().getCommands().newInsert(p, "personReturnId"));
+      KieCommands kieCommands = KieServices.Factory.get().getCommands();
+      List<Command> commandList = new ArrayList<Command>();
+      commandList.add(kieCommands.newInsert(p, "personReturnId"));
 
       // Fire all rules:
-      commandList.add(KieServices.Factory.get().getCommands().newFireAllRules("numberOfFiredRules"));
-      BatchExecutionCommand batch = KieServices.Factory.get().getCommands().newBatchExecution(commandList, sessionName);
+      commandList.add(kieCommands.newFireAllRules("numberOfFiredRules"));
+      BatchExecutionCommand batch = kieCommands.newBatchExecution(commandList, sessionName);
 
       // Use rule services client to send request:
       RuleServicesClient ruleClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
-      ServiceResponse<ExecutionResults> executeResponse = ruleClient.executeCommandsWithResults(containerName,batch);
+      ServiceResponse<ExecutionResults> executeResponse = ruleClient.executeCommandsWithResults(containerName, batch);
       System.out.println("number of fired rules:" + executeResponse.getResult().getValue("numberOfFiredRules"));
     }
 
