@@ -1,0 +1,61 @@
+[id='externaldb-build-proc']
+= Building a custom {KIE_SERVER} image for an external database
+
+If you want to use an external database server for a {KIE_SERVER} and this server is not MySQL nor PostgreSQL, you must build a custom {KIE_SERVER} image with drivers for this server before deploying your environment.
+
+You can use this build procedure to provide drivers for the following database servers:
+
+* Microsoft SQL Server
+* MariaDB
+* IBM DB2
+* Oracle Database
+* Sybase
+
+For the supported versions of the database servers, see https://access.redhat.com/articles/3405381#TestedConfigurations70[Red Hat Process Automation Manager 7 Supported Configurations].
+
+.Prerequisites
+. You have logged on to your project in the OpenShift environment using the `oc` command.
+. For IBM DB2, Oracle Database, or Sybase, you have downloaded the JDBC driver from the database server vendor.
+
+.Procedure
+. For IBM DB2, Oracle Database, or Sybase, provide the JDBC driver JAR in a local directory or on an HTTP server. Within the local directory or HTTP server, the following paths are expected:
++
+** For IBM DB2, `<local_path_or_url>/com/ibm/db2/jcc/db2jcc4/10.5/db2jcc4-10.5.jar`
+** For Oracle Database, `<local_path_or_url>/com/oracle/ojdbc7/12.1.0.1/ojdbc7-12.1.0.1.jar`
+** for Sybase, `<local_path_or_url>/com/sysbase/jconn4/16.0_PL05/jconn4-16.0_PL05.jar`
++
+Where `<local_path_or_url>` is the path to the local directory or the URL for the HTTP server where the driver is provided.
++
+. To install the source code for the custom build, download the `rhpam-7.0.0.GA-openshift-templates.zip` product deliverable file from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page for {PRODUCT} {PRODUCT_VERSION}. Unzip the file and, using the command line, change to the `templates/contrib/jdbc` directory of the unzipped file.
+. Change to the following subdirectory:
++
+** For Microsoft SQL Server, `mssql-driver-image`
+** For MariaDB, `mariadb-driver-image`
+** For IBM DB2, `db2-driver-image`
+** For Oracle Database, `oracle-driver-image`
+** For Sybase, `sybase-driver-image`
++
+. Run the following command:
++ 
+** For Microsoft SQL Server or MariaDB:
++
+[subs="verbatim,macros"]
+----
+../build.sh
+----
++
+** For IBM DB2, Oracle Database, or Sybase:
++
+[subs="verbatim,macros"]
+----
+../build.sh --artifact-repo=<local_path_or_url>
+----
++
+Where `<local_path_or_url>` is the path to the local directory or the URL for the HTTP server where the driver is provided. For example:
++
+----
+../build.sh --artifact-repo=/home/builder/drivers
+../build.sh --artifact-repo=http://nexus.example.com/nexus/content/groups/public
+----
+
+
