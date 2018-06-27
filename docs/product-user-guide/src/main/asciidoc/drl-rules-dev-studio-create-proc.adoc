@@ -49,100 +49,70 @@ my-project
  `-- pom.xml
 ----
 +
+--
 Notice the following elements:
-+
+
 * A `Sample.drl` rule file in the `src/main/resources` directory, containing an example `Hello World` and `GoodBye` rules.
-* A `DroolsTest.java` file under the `src/main/java` directory in the `com.sample` package. The `DroolsTest` class can be used to execute rules.
+* A `DroolsTest.java` file under the `src/main/java` directory in the `com.sample` package. The `DroolsTest` class can be used to execute the `Sample.drl` rule.
 * The `Drools Library` directory, which acts as a custom class path containing JAR files necessary for execution.
 
-. Create a fact model with all necessary data objects for the DRL file.
+You can edit the existing `Sample.drl` file and `DroolsTest.java` files with new configurations as needed, or create new rule and object files. In this procedure, you are creating a new rule and new Java objects.
+--
+. Create a Java object on which the rule or rules will operate.
 +
-The `DroolsTest.java` file contains a sample Java object `Message` with getter and setter methods. You can edit this class or create a different Java object. In this example, a class `Person` containing methods to set and retrieve the first name, last name, hourly rate, and wage of a person is used.
-+
-[source,java]
-----
-public static class Person {
-
-  private String firstName;
-  private String lastName;
-  private Integer hourlyRate;
-  private Integer wage;
-
-  public String getFirstName() {
-    return firstName;
-  }
-
-  public void setFirstName(String firstName) {
-    this.firstName = firstName;
-  }
-
-  public String getLastName() {
-    return lastName;
-  }
-
-  public void setLastName(String lastName) {
-    this.lastName = lastName;
-  }
-
-  public Integer getHourlyRate() {
-    return hourlyRate;
-  }
-
-  public void setHourlyRate(Integer hourlyRate) {
-    this.hourlyRate = hourlyRate;
-  }
-
-  public Integer getWage(){
-    return wage;
-  }
-
-  public void setWage(Integer wage){
-    this.wage = wage;
-  }
-}
-----
-
-. Update the `main()` method to pass the Java object to a rule.
-+
-The `DroolsTest.java` file contains a `main()` method that loads the knowledge base, inserts facts, and executes rules. The following method update passes the object `Person` to a rule:
+In this example, a `Person.java` file is created in `my-project/src/main/java/com.sample`. The `Person` class contains getter and setter methods to set and retrieve the first name, last name, hourly rate, and the wage of a person:
 +
 [source,java]
 ----
-public static final void main(String[] args) {
-  try {
-    // Load the knowledge base:
-    KieServices ks = KieServices.Factory.get();
-    KieContainer kContainer = ks.getKieClasspathContainer();
-    KieSession kSession = kContainer.newKieSession("ksession-rules");
+  public class Person {
+    private String firstName;
+    private String lastName;
+    private Integer hourlyRate;
+    private Integer wage;
 
-    // Go!
-    Person p = new Person();
-    p.setWage(12);
-    p.setFirstName("Tom");
-    p.setLastName("Summers");
-    p.setHourlyRate(10);
+    public String getFirstName() {
+      return firstName;
+    }
 
-    kSession.insert(p);
-    kSession.fireAllRules();
+    public void setFirstName(String firstName) {
+      this.firstName = firstName;
+    }
+
+    public String getLastName() {
+      return lastName;
+    }
+
+    public void setLastName(String lastName) {
+      this.lastName = lastName;
+    }
+
+    public Integer getHourlyRate() {
+      return hourlyRate;
+    }
+
+    public void setHourlyRate(Integer hourlyRate) {
+      this.hourlyRate = hourlyRate;
+    }
+
+    public Integer getWage(){
+      return wage;
+    }
+
+    public void setWage(Integer wage){
+      this.wage = wage;
+    }
   }
-
-  catch (Throwable t) {
-    t.printStackTrace();
-  }
-}
 ----
+. Click *File* -> *Save* to save the file.
+. Create a rule file in `.drl` format in `my-project/src/main/resources/rules`. The DRL file must contain at minimum a package specification, an import list of data objects to be used by the rule or rules, and one or more rules with `when` conditions and `then` actions.
 +
-To load the knowledge base, get a `KieServices` instance and a class-path-based `KieContainer` and build the `KieSession` with the `KieContainer`. In the previous example, a session `ksession-rules` matching the one defined in `kmodule.xml` file is passed.
-+
-. Create a DRL file containing at minimum a package specification, an import list of data objects to be used by the rule or rules, and one or more rules with `when` conditions and `then` actions.
-+
-The rule file `Sample.drl` contains an example of two rules. You can edit this file or create a new one.
+The following `Wage.drl` file contains a `Wage` rule that imports the `Person` class, calculates the wage and hourly rate values, and displays a message based on the result:
 +
 [source,java]
 ----
-package com.sample
+package com.sample;
 
-import com.sample.DroolsTest.Person;
+import com.sample.Person;
 
 dialect "java"
 
@@ -155,8 +125,55 @@ rule "Wage"
     System.out.println("You are rich!");
 end
 ----
+. Click *File* -> *Save* to save the file.
+. Create a main class and save it to the same directory as the Java object that you created. The main class will load the knowledge base and execute rules.
++
+NOTE: You can also add the `main()` method and `Person` class within a single Java object file, similar to the `DroolsTest.java` sample file.
++
 
-. Go to *File* -> *Save* to save the file.
+. In the main class, add the required `import` statements to import KIE services, a KIE container, and a KIE session. Then load the knowledge base, insert facts, and execute the rule from the `main()` method that passes the fact model to the rule.
++
+In this example, a `RulesTest.java` file is created in `my-project/src/main/java/com.sample` with the required imports and `main()` method:
++
+[source,java]
+----
+package com.sample;
+
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+
+public class RulesTest {
+  public static final void main(String[] args) {
+    try {
+      // Load the knowledge base:
+      KieServices ks = KieServices.Factory.get();
+      KieContainer kContainer = ks.getKieClasspathContainer();
+      KieSession kSession = kContainer.newKieSession();
+
+      // Set up the fact model:
+      Person p = new Person();
+      p.setWage(12);
+      p.setFirstName("Tom");
+      p.setLastName("Summers");
+      p.setHourlyRate(10);
+
+      // Insert the person into the session:
+      kSession.insert(p);
+
+      // Fire all rules:
+      kSession.fireAllRules();
+      kSession.dispose();
+    }
+
+    catch (Throwable t) {
+      t.printStackTrace();
+    }
+  }
+}
+----
++
+. Click *File* -> *Save* to save the file.
 . After you create and save all DRL assets in your project, right-click your project folder and select *Run As* -> *Java Application* to build the project. If the project build fails, address any problems described in the *Problems* tab of the lower window in Developer Studio, and try again to validate the project until the project builds.
 
 .If the *Run As* -> *Java Application* option is not available
