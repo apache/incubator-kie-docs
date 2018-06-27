@@ -1,0 +1,434 @@
+[id='assets-executing-proc_{context}']
+
+ifeval::["{context}" == "execute-rules"]
+= Executing rules
+
+After you create rules in {CENTRAL}, you can build and deploy your project and execute rules locally or on {KIE_SERVER} to test your rules.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* and click the project name.
+. In the upper-right corner, click *Build* and then *Deploy* to build the project and deploy it to {KIE_SERVER}. If the build fails, address any problems described in the *Alerts* panel at the bottom of the screen. For more information about deploying projects, see {URL_PACKAGING_DEPLOYING_PROJECT}[_{PACKAGING_DEPLOYING_PROJECT}_].
+. Open the `pom.xml` file of your client application and add the following dependencies, if not added already:
++
+--
+* `kie-ci`: Enables your client application to load {CENTRAL} project data locally using `ReleaseId`
+* `kie-server-client`: Enables your client application to interact remotely with assets on {KIE_SERVER}
+* `slf4j`: (Optional) Enables your client application to use Simple Logging Facade for Java (SLF4J) to return debug logging information after you interact with {KIE_SERVER}
+
+Example dependencies for {PRODUCT} {PRODUCT_VERSION} in a client application `pom.xml` file:
+ifdef::PAM[]
+[source,xml]
+----
+// For local execution:
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
+</dependency>
+
+// For remote execution on Process Server:
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
+</dependency>
+
+// For debug logging (optional):
+<dependency>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-simple</artifactId>
+  <version>1.7.25</version>
+</dependency>
+----
+endif::PAM[]
+ifdef::DM[]
+[source,xml]
+----
+// For local execution:
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
+</dependency>
+
+// For remote execution on Decision Server:
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+  <version>7.7.0.Final-redhat-7</version>
+</dependency>
+
+// For debug logging (optional):
+<dependency>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-simple</artifactId>
+  <version>1.7.25</version>
+</dependency>
+----
+endif::DM[]
+
+NOTE: For available versions of these artifacts, search the group ID and artifact ID in the link:https://mvnrepository.com/[MVNRepository] online and select the *Redhat GA* tab where applicable. For more information about Maven dependencies and using the Bill of Materials (BOM) in {PRODUCT}, see link:https://access.redhat.com/solutions/3405361[What is the mapping between {PRODUCT} and Maven library version?].
+
+--
+. Ensure that the dependencies for artifacts containing model classes are defined in the client application `pom.xml` file exactly as they appear in the `pom.xml` file of the deployed project. If dependencies for model classes differ between the client application and your projects, execution errors can occur.
++
+--
+To view the project `pom.xml` in {CENTRAL}, select any existing asset in the project and then in the *Project Explorer* menu on the left side of the screen, click the *Customize View* gear icon and select *Repository View* -> *pom.xml*.
+
+For example, the following is a `Person` class dependency as it appears in both the client and deployed project `pom.xml` files:
+
+[source,xml]
+----
+<dependency>
+  <groupId>com.sample</groupId>
+  <artifactId>Person</artifactId>
+  <version>1.0.0</version>
+</dependency>
+----
+--
+. If you added the `slf4j` dependency to the client application `pom.xml` file for debug logging, create a `simplelogger.properties` file on the relevant classpath (for example, in `src/main/resources/META-INF` in Maven) with the following content:
++
+[source,java]
+----
+org.slf4j.simpleLogger.defaultLogLevel=debug
+----
+. In your client application, create a `.java` main class containing the necessary imports and a `main()` method to load the knowledge base, insert facts, and execute the rules.
++
+--
+For example, a `Person` object in a project contains getter and setter methods to set and retrieve the first name, last name, hourly rate, and the wage of a person. The following `Wage` rule in a project calculates the wage and hourly rate values and displays a message based on the result:
+
+[source,java]
+----
+package com.sample;
+
+import com.sample.Person;
+
+dialect "java"
+
+rule "Wage"
+  when
+    Person(hourlyRate * wage > 100)
+    Person(name : firstName, surname : lastName)
+  then
+    System.out.println("Hello" + " " + name + " " + surname + "!");
+    System.out.println("You are rich!");
+end
+----
+
+To test this rule locally outside of {KIE_SERVER} (if desired), configure the `.java` class to import KIE services, a KIE container, and a KIE session, and then use the `main()` method to fire all rules against a defined fact model:
+
+.Execute rules locally
+[source,java]
+----
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+
+public class RulesTest {
+
+  public static final void main(String[] args) {
+    try {
+      // Identify the project in the local repository:
+      ReleaseId rid = new ReleaseId();
+      rid.setGroupId("com.myspace");
+      rid.setArtifactId("MyProject");
+      rid.setVersion("1.0.0");
+
+      // Load the knowledge base:
+      KieServices ks = KieServices.Factory.get();
+      KieContainer kContainer = ks.newKieContainer(rid);
+      KieSession kSession = kContainer.newKieSession();
+
+      // Set up the fact model:
+      Person p = new Person();
+      p.setWage(12);
+      p.setFirstName("Tom");
+      p.setLastName("Summers");
+      p.setHourlyRate(10);
+
+      // Insert the person into the session:
+      kSession.insert(p);
+
+      // Fire all rules:
+      kSession.fireAllRules();
+      kSession.dispose();
+    }
+
+    catch (Throwable t) {
+      t.printStackTrace();
+    }
+  }
+}
+----
+
+To test this rule on {KIE_SERVER}, configure the `.java` class with the imports and rule execution information similarly to the local example, and additionally specify KIE services configuration and KIE services client details:
+
+.Execute rules on {KIE_SERVER}
+[source,java]
+----
+package com.sample;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.kie.api.command.BatchExecutionCommand;
+import org.kie.api.command.Command;
+import org.kie.api.KieServices;
+import org.kie.api.runtime.ExecutionResults;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.api.model.ServiceResponse;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+import org.kie.server.client.RuleServicesClient;
+
+import com.sample.Person;
+
+public class RulesTest {
+
+  private static final String containerName = "testProject";
+  private static final String sessionName = "myStatelessSession";
+
+  public static final void main(String[] args) {
+    try {
+      // Define KIE services configuration and client:
+      Set<Class<?>> allClasses = new HashSet<Class<?>>();
+      allClasses.add(Person.class);
+      String serverUrl = "http://$HOST:$PORT/kie-server/services/rest/server";
+      String username = "$USERNAME";
+      String password = "$PASSWORD";
+      KieServicesConfiguration config =
+        KieServicesFactory.newRestConfiguration(serverUrl,
+                                                username,
+                                                password);
+      config.setMarshallingFormat(MarshallingFormat.JAXB);
+      config.addExtraClasses(allClasses);
+      KieServicesClient kieServicesClient =
+        KieServicesFactory.newKieServicesClient(config);
+
+      // Set up the fact model:
+      Person p = new Person();
+      p.setWage(12);
+      p.setFirstName("Tom");
+      p.setLastName("Summers");
+      p.setHourlyRate(10);
+
+      // Insert Person into the session:
+      KieCommands kieCommands = KieServices.Factory.get().getCommands();
+      List<Command> commandList = new ArrayList<Command>();
+      commandList.add(kieCommands.newInsert(p, "personReturnId"));
+
+      // Fire all rules:
+      commandList.add(kieCommands.newFireAllRules("numberOfFiredRules"));
+      BatchExecutionCommand batch = kieCommands.newBatchExecution(commandList, sessionName);
+
+      // Use rule services client to send request:
+      RuleServicesClient ruleClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
+      ServiceResponse<ExecutionResults> executeResponse = ruleClient.executeCommandsWithResults(containerName, batch);
+      System.out.println("number of fired rules:" + executeResponse.getResult().getValue("numberOfFiredRules"));
+    }
+
+    catch (Throwable t) {
+      t.printStackTrace();
+    }
+  }
+}
+----
+--
+. Run the configured `.java` class from your project directory. You can run the file in your development platform (such as Red Hat JBoss Developer Studio) or in the command line.
++
+--
+Example Maven execution (within project directory):
+
+[source]
+----
+mvn clean install exec:java -Dexec.mainClass="com.sample.app.RulesTest"
+----
+
+Example Java execution (within project directory)
+
+[source]
+----
+javac -classpath "./$DEPENDENCIES/*:." RulesTest.java
+java -classpath "./$DEPENDENCIES/*:." RulesTest
+----
+--
+. Review the rule execution status in the command line and in the server log. If any rules do not execute as expected, review the configured rules in the project and the main class configuration to validate the data provided.
+
+endif::[]
+ifeval::["{context}" == "execute-assets"]
+= Executing assets deployed to {KIE_SERVER}
+
+After you deploy your project to {KIE_SERVER}, you can use the {KIE_SERVER} Java client `kie-server-client` to execute and validate deployed assets.
+
+.Prerequisite
+You have built and deployed your project in {CENTRAL}.
+
+.Procedure
+. Open the `pom.xml` file of your client application and add the following dependency for `kie-server-client`. This dependency enables your client application to interact with assets on {KIE_SERVER}.
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+</dependency>
+----
+
+NOTE: If the Bill of Materials (BOM) in {PRODUCT} is not specified in your dependency management, then you need to also specify the `<version>` value for this artifact. For more information about Maven dependencies and the BOM in {PRODUCT}, see link:https://access.redhat.com/solutions/3405361[What is the mapping between {PRODUCT} and Maven library version?].
+
+--
+. Ensure also that the dependencies for artifacts containing model classes are defined the same way in the client application `pom.xml` file as they appear in the `pom.xml` file of the deployed project. If dependencies for model classes differ between the client application and your projects, execution errors can occur.
++
+--
+For example, the following is a `Person` class dependency as it appears in both the client and deployed project `pom.xml` files:
+
+[source,xml]
+----
+<dependency>
+ <groupId>com.sample</groupId>
+ <artifactId>Person</artifactId>
+ <version>1.0.0</version>
+</dependency>
+----
+--
+. In your client application, create a `.java` test file and configure the `main()` method with a KIE services configuration, a KIE services client, and any specialized clients from within the KIE services client, such as rule, task, or process services clients. You can use these services to execute deployed assets, stop and start tasks or processes, and perform other actions on {KIE_SERVER}.
++
+The following example uses KIE services and other tools to interact with and execute deployed assets:
+////
+Need to spend some time on the code sample.
+- Maciej's example: https://github.com/mswiderski/jbpm-examples/blob/master/kie-server-test/src/main/java/org/jbpm/test/kieserver/KieExecutionServerClientTest.java#L40
+- Anton's example: https://gist.github.com/agiertli/81c0fba571f38f0d5e2e0749bd7c0cf1
+////
+[source,java]
+----
+import java.util.ArrayList;
+import java.util.List;
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+import org.kie.server.client.RuleServicesClient;
+
+public class KieServerClientTest {
+  public static final void main(String[] args) {
+    try {
+      // Identify KIE services configuration and client:
+      KieServicesConfiguration config = KieServicesFactory
+        .newRestConfiguration("http://$SERVER:$PORT/kie-server/services/rest/server", "$USER", "$PASSWORD");
+        config.setMarshallingFormat(MarshallingFormat.JSON);
+      KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
+
+      boolean deployContainer = true;
+              KieContainerResourceList containers = kieServicesClient.listContainers().getResult();
+              // check if the container is not yet deployed, if not deploy it
+              if (containers != null) {
+                  for (KieContainerResource kieContainerResource : containers.getContainers()) {
+                      if (kieContainerResource.getContainerId().equals(containerId)) {
+                          System.out.println("\t######### Found container " + containerId + " skipping deployment...");
+                          deployContainer = false;
+                          break;
+                      }
+                  }
+              }
+              // deploy container if not there yet
+              if (deployContainer) {
+                  System.out.println("\t######### Deploying container " + containerId);
+                  KieContainerResource resource = new KieContainerResource(containerId, new ReleaseId("org.jbpm", "HR", "1.0"));
+                  kieServicesClient.createContainer(containerId, resource);
+              }
+              // query for all available process definitions
+              QueryServicesClient queryClient = kieServicesClient.getServicesClient(QueryServicesClient.class);
+              List<ProcessDefinition> processes = queryClient.findProcesses(0, 10);
+              System.out.println("\t######### Available processes" + processes);
+
+              ProcessServicesClient processClient = kieServicesClient.getServicesClient(ProcessServicesClient.class);
+              // get details of process definition
+              ProcessDefinition definition = processClient.getProcessDefinition(containerId, processId);
+              System.out.println("\t######### Definition details: " + definition);
+
+              // start process instance
+              Map<String, Object> params = new HashMap<String, Object>();
+              params.put("name", "john");
+              params.put("age", 25);
+              Long processInstanceId = processClient.startProcess(containerId, processId, params);
+              System.out.println("\t######### Process instance id: " + processInstanceId);
+
+              List<NodeInstance> completedNodes = queryClient.findCompletedNodeInstances(processInstanceId, 0, 10);
+              System.out.println("\t######### Completed nodes: " + completedNodes);
+
+              UserTaskServicesClient taskClient = kieServicesClient.getServicesClient(UserTaskServicesClient.class);
+              // find available tasks
+              List<TaskSummary> tasks = taskClient.findTasksAssignedAsPotentialOwner(user, 0, 10);
+              System.out.println("\t######### Tasks: " +tasks);
+
+              // complete task
+              Long taskId = tasks.get(0).getId();
+
+              taskClient.startTask(containerId, taskId, user);
+              taskClient.completeTask(containerId, taskId, user, null);
+
+              // work with rules
+              List<GenericCommand<?>> commands = new ArrayList<GenericCommand<?>>();
+              BatchExecutionCommandImpl executionCommand = new BatchExecutionCommandImpl(commands);
+              executionCommand.setLookup("defaultKieSession");
+
+              InsertObjectCommand insertObjectCommand = new InsertObjectCommand();
+              insertObjectCommand.setOutIdentifier("person");
+              insertObjectCommand.setObject("john");
+
+              FireAllRulesCommand fireAllRulesCommand = new FireAllRulesCommand();
+
+              commands.add(insertObjectCommand);
+              commands.add(fireAllRulesCommand);
+
+              RuleServicesClient ruleClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
+              ruleClient.executeCommands(containerId, executionCommand);
+              System.out.println("\t######### Rules executed");
+
+              completedNodes = queryClient.findCompletedNodeInstances(processInstanceId, 0, 10);
+              System.out.println("\t######### Completed nodes: " + completedNodes);
+
+              List<ProcessInstance> instances = queryClient.findProcessInstances(0, 10);
+              System.out.println("\t######### Active process instances: " + instances);
+
+              // at the end abort process instance
+              processClient.abortProcessInstance(containerId, processInstanceId);
+
+              ProcessInstance processInstance = queryClient.findProcessInstanceById(processInstanceId);
+              System.out.println("\t######### ProcessInstance: " + processInstance);
+
+              System.out.println("Execution completed in " + (System.currentTimeMillis() - start));
+
+          }
+      }
+  }
+----
+--
+. Run the configured `.java` class from your project directory. You can run the file in your development platform (such as Red Hat JBoss Developer Studio) or in the command line.
++
+--
+Example Maven execution (within project directory):
+
+[source]
+----
+mvn clean install exec:java -Dexec.mainClass="com.sample.app.RulesTest"
+----
+
+Example Java execution (within project directory)
+
+[source]
+----
+javac -classpath "./$DEPENDENCIES/*:." RulesTest.java
+java -classpath "./$DEPENDENCIES/*:." RulesTest
+----
+--
+. Review the rule execution status in the command line and in the server log. If any rules do not execute as expected, review the configured rules in the project and the main class configuration to validate the data provided.endif::[]
+endif::[]
