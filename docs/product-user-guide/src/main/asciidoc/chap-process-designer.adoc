@@ -825,6 +825,8 @@ There are three kinds of field types you can use to model your form: simple type
 
 |===
 
+NOTE: The `Document` form field requires additional setup to be accessed from the relevant forms and processes. For information about enabling document attachments, see <<_enabling_document_attachments_in_forms>>.
+
 ``Complex field types`` are designed for work with properties that are not basic types but Java objects.
 To use these field types, it is necessary to create extra forms in order to display and write values to the specified Java objects.
 
@@ -985,28 +987,33 @@ image::7225.png[Parent Form]
 This inserts your subform containing an array of Java objects inside the parent form.
 
 
-[id='_attaching_documents_to_a_form']
-=== Attaching Documents to a Form
+[id='_enabling_document_attachments_in_forms']
+=== Enabling Document Attachments in a Form or Process
 
+{PRODUCT} supports document attachments in forms using the `Document` form field. With the `Document` form field, you can upload documents that are required as part of a form or process. For information about adding fields to forms, see <<_adding_new_fields_to_a_form>>.
 
-Red Hat JBoss BPM Suite enables you to attach documents to a form by using the `Document` form field. To attach a `Document` field to a form, you need to:
+To enable document attachments in forms and processes, follow these steps:
 
-* Set the marshalling strategy.
-* Create a document variable.
-* Map the task inputs and outputs correctly to the variable.
+* Set the document marshalling strategy.
+* Create a document variable in the process.
+* Map the task inputs and outputs to the variable.
 
-.Setting the Marshalling Strategy
-. Set the marshalling strategy in the `_PROJECT_HOME_/META_INF/kie-deployment-descriptor.xml`. You can do so in the {CENTRAL} or by editing the file directly. In {CENTRAL}:
+.Set the Document Marshalling Strategy
+The document marshalling strategy for your project determines where documents are stored for use with forms and processes. The default document marshalling strategy in {PRODUCT} is `org.jbpm.document.marshalling.DocumentMarshallingStrategy`. This strategy uses a `DocumentStorageServiceImpl` class that stores documents locally in your `_PROJECT_HOME_/docs` folder. You can set this document marshalling strategy or a custom document marshalling strategy for your project in Business Central or in the `kie-wb-deployment-descriptor.xml` file directly.
 
-.. In {CENTRAL}, go to *Menu -> Design -> Projects* and click the project name. For example, *Evaluation*.
- .. Click *Settings*.
- .. Click *Project Settings: Project General Settings* -> *Deployment descriptor*.
-.. Under *Marshalling strategies*, click *Add*.
-.. In the *Value* field, click on *Enter Value* and enter: `org.jbpm.document.marshalling.DocumentMarshallingStrategy`.
-.. Set *Resolver type* to *reflection*.
-.. Click *Save* and *Validate* to ensure correctness of your deployment descriptor file.
+. In Business Central, click *Authoring* -> *Project Authoring* and navigate to your project.
+. Click *Open Project Editor* and then click *Project Settings: Project General Settings* -> *Deployment descriptor*.
+. Under *Marshalling strategies*, click *Add*.
+. In the *Identifier* value field, click *Enter Value* and enter `org.jbpm.document.marshalling.DocumentMarshallingStrategy` to use the default document marshalling strategy or enter the identifier of a custom document marshalling strategy.
 +
-Alternatively, if you want to edit `kie-deployment-descriptor.xml` directly, add the `<marshalling-strategies>` tag:
+For more information about custom document marshalling strategies, see <<_marshalling_strategy_for_a_cms>>.
++
+. Set *Resolver type* to *reflection*.
+. Click *Save* and *Validate* to ensure correctness of your deployment descriptor file.
++
+Alternatively, you can navigate to `~/META_INF/kie-wb-deployment-descriptor.xml` in your project and edit the deployment descriptor file directly with the required `<marshalling-strategies>` elements.
++
+Example `kie-wb-deployment-descriptor.xml` file with default document marshalling strategy:
 +
 [source,xml]
 ----
@@ -1027,12 +1034,13 @@ Alternatively, if you want to edit `kie-deployment-descriptor.xml` directly, add
     </marshalling-strategy>
   </marshalling-strategies>
 ----
-+
-After you correctly set the marshalling strategy, create a document process variable. This step is required for the document to be visible in the *Documents* tab of the *Process Management* -> *Process Instances* view in {CENTRAL}.
 
-. In {CENTRAL}, navigate to your business proces and open it in the Business Process Designer.
-. Click on the canvas and click image:3140.png[] to open the *Properties* tab.
-. Next to *Variable Definition*, click on the empty space and click image:6563.png[]. The *Editor for Variable Definitions* dialog opens.
+.Create a Document Variable in the Process
+After you set the document marshalling strategy, create a document variable in the related process. This variable is required for the document to be visible in the *Documents* tab of the *Process Management* -> *Process Instances* view in Business Central.
+
+. In Business Central, navigate to your business process and open it in the Business Process Designer.
+. Click on the canvas and click image:3140.png[] on the right side of the window to open the *Properties* tab.
+. Next to *Variable Definition*, click the empty space and click image:6563.png[]. The *Editor for Variable Definitions* dialog opens.
 . Click *Add Variable* and enter the following values:
 +
 * Name: `document`
@@ -1042,12 +1050,13 @@ After you correctly set the marshalling strategy, create a document process vari
 +
 image::6226.png[]
 
-If you want to view or modify the attachments inside of the task forms, create assignments inside of the task inputs and outputs:
+.Map Task Inputs and Outputs to the Document Variable
+If you want to view or modify the attachments inside of the task forms, create assignments inside of the task inputs and outputs.
 
-. In {CENTRAL}, navigate to your business proces and open it in the Business Process Designer.
-. Click on a User Task and click image:3140.png[] to open the *Properties* tab.
-. Next to *Assignments*, click on the empty space and click image:6563.png[]. The *Data I/O* dialog windowue opens.
-. Next to *Data Inputs and Assignments*, click *Add* and enter the values:
+. In Business Central, navigate to your business process and open it in the Business Process Designer.
+. Click on a User Task and click image:3140.png[] on the right side of the window to open the *Properties* tab.
+. Next to *Assignments*, click the empty space and click image:6563.png[]. The *Data I/O* dialog window opens.
+. Next to *Data Inputs and Assignments*, click *Add* and enter the following values:
 +
 --
 * Name: `taskdoc_in`
@@ -1055,53 +1064,277 @@ If you want to view or modify the attachments inside of the task forms, create a
 * Source: `document`
 --
 +
-. Next to Data Outputs and Assignments, click *Add* and enter the values:
-+
----
+. Next to *Data Outputs and Assignments*, click *Add* and enter the following values:
 +
 --
 * Name: `taskdoc_out`
 * Data Type: `Object`
 * Target: `document`
---
----
-+
+
 Note that the `Source` and `Target` fields contain the name of the process variable you created earlier.
-+
+--
 . Click *Save*.
 . In the Process Designer, click image:development-guide-6565.png[] and select *Generate all Forms*.
 . Click *Save* to save the process.
 
-You can now build and deploy your project. You can see the `Document` attachment in the *Documents* tab of the *Process Management* -> *Process Instances* view.
+Now, when you build and deploy your project, you can see any configured `Document` attachments in the *Documents* tab of the *Process Management* -> *Process Instances* view.
 
 image::6224.png[]
 
-[float]
-==== Pluggable Variable Persistence
+[id='_marshalling_strategy_for_a_cms']
+==== Using a Custom Document Marshalling Strategy for a Content Management System (CMS)
 
+The document marshalling strategy for your project determines where documents are stored for use with forms and processes. The default document marshalling strategy in {PRODUCT} is `org.jbpm.document.marshalling.DocumentMarshallingStrategy`. This strategy uses a `DocumentStorageServiceImpl` class that stores documents locally in your `_PROJECT_HOME_/docs` folder. If you want to store form and process documents in a custom location, such as in a centralized content management system (CMS), add a custom document marshalling strategy to your project. You can set this document marshalling strategy in Business Central or in the `kie-deployment-descriptor.xml` file directly.
 
-New with this release is also the ability for you to store your document in a location of your choice.
-This is defined as _Pluggable Variable Persistence_ and this enables you to store these documents automatically in a centralized content management system (CMS) of choice, behind the scenes.
+. Create a custom marshalling strategy `.java` file that includes an implementation of the `org.kie.api.marshalling.ObjectMarshallingStrategy` interface. This interface enables you to implement the variable persistence required for your custom document marshalling strategy.
++
+--
+The following methods in this interface help you create your strategy:
 
-To implement your custom persistence strategy, start by defining your __Marshaling Strategy__.
-This strategy is declared to the Process Engine by the use of deployment descriptors (see [ref]_{ADMIN_GUIDE}_) using the `<marshalling-strategy>` element.
-This element should name a type that provides an implementation of the `org.kie.api.marshalling`
- interface.
+* [method]``boolean accept(Object object)``: Determines if the given object can be marshalled by the strategy.
+* [method]``byte[] marshal(Context context, ObjectOutputStream os, Object object)``: Marshals the given object and returns the marshalled object as `byte[]``.
+* [method]``Object unmarshal(Context context, ObjectInputStream is, byte[] object, ClassLoader classloader)``: Reads the object received as `byte[]`` and returns the unmarshalled object.
+* [method]``void write(ObjectOutputStream os, Object object)``: Same as [method]``marshal`` method, provided for backward compatibility.
+* [method]``Object read(ObjectInputStream os)``: Same as [method]``unmarshal``, provided for backward compatibility.
 
-The following methods in this interface help you create your strategy.
+Example `ObjectMarshallingStrategy` implementation for storing and retrieving data from a Content Management Interoperability Services (CMIS) system:
+[source,java]
+----
+package org.jbpm.integration.cmis.impl;
 
-* [method]``public boolean accept(Object object)``: Determines if the given object can be marshalled by the strategy.
-* [method]``byte[] marshal(Context context, ObjectOutputStream os, Object object)``: Marshals the given object and returns the marshalled object as byte[].
-* [method]``Object unmarshal(Context context, ObjectInputStream is, byte[] object, ClassLoader classloader)``: Reads the object received as byte[] and returns the unmarshalled object
-* [method]``void write(ObjectOutputStream os, Object object)``: same as [method]``marshal`` method, provided for backwards compatibility.
-* [method]``Object read(ObjectInputStream os)``: same as [method]``unmarshal``, provided for backwards compatibility.
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashMap;
 
+import org.apache.chemistry.opencmis.client.api.Folder;
+import org.apache.chemistry.opencmis.client.api.Session;
+import org.apache.chemistry.opencmis.commons.data.ContentStream;
+import org.apache.commons.io.IOUtils;
+import org.drools.core.common.DroolsObjectInputStream;
+import org.jbpm.document.Document;
+import org.jbpm.integration.cmis.UpdateMode;
 
-For example, if you create a custom strategy that stores your uploaded documents in Google Drive, your implementation class should not only implement the methods of the `org.kie.api.marshalling`
- package, but this implementation should also be made available to the Process Engine, by putting the classes in its classpath (and declaring the type in the deployment descriptors).
+import org.kie.api.marshalling.ObjectMarshallingStrategy;
 
-There is a default marshalling strategy that simply saves the uploaded documents in the file system under a folder called `docs`.
-This default implementation is defined by the [class]``DocumentStorageService`` class and is implemented through the [class]``DocumentStorageServiceImpl`` class.
+public class OpenCMISPlaceholderResolverStrategy extends OpenCMISSupport implements ObjectMarshallingStrategy {
+
+	private String user;
+	private String password;
+	private String url;
+	private String repository;
+	private String contentUrl;
+	private UpdateMode mode = UpdateMode.OVERRIDE;
+
+	public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository) {
+		this.user = user;
+		this.password = password;
+		this.url = url;
+		this.repository = repository;
+	}
+
+	public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository, UpdateMode mode) {
+		this.user = user;
+		this.password = password;
+		this.url = url;
+		this.repository = repository;
+		this.mode = mode;
+	}
+
+	   public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository, String contentUrl) {
+	        this.user = user;
+	        this.password = password;
+	        this.url = url;
+	        this.repository = repository;
+	        this.contentUrl = contentUrl;
+	    }
+
+	    public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository, String contentUrl, UpdateMode mode) {
+	        this.user = user;
+	        this.password = password;
+	        this.url = url;
+	        this.repository = repository;
+	        this.contentUrl = contentUrl;
+	        this.mode = mode;
+	    }
+
+	public boolean accept(Object object) {
+		if (object instanceof Document) {
+			return true;
+		}
+		return false;
+	}
+
+	public byte[] marshal(Context context, ObjectOutputStream os, Object object) throws IOException {
+		Document document = (Document) object;
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			if (document.getContent() != null) {
+				String type = getType(document);
+				if (document.getIdentifier() == null || document.getIdentifier().isEmpty()) {
+					String location = getLocation(document);
+
+					Folder parent = findFolderForPath(session, location);
+					if (parent == null) {
+						parent = createFolder(session, null, location);
+					}
+					org.apache.chemistry.opencmis.client.api.Document doc = createDocument(session, parent, document.getName(), type, document.getContent());
+					document.setIdentifier(doc.getId());
+					document.addAttribute("updated", "true");
+				} else {
+					if (document.getContent() != null && "true".equals(document.getAttribute("updated"))) {
+						org.apache.chemistry.opencmis.client.api.Document doc = updateDocument(session, document.getIdentifier(), type, document.getContent(), mode);
+
+						document.setIdentifier(doc.getId());
+						document.addAttribute("updated", "false");
+					}
+				}
+			}
+			ByteArrayOutputStream buff = new ByteArrayOutputStream();
+	        ObjectOutputStream oos = new ObjectOutputStream( buff );
+	        oos.writeUTF(document.getIdentifier());
+	        oos.writeUTF(object.getClass().getCanonicalName());
+	        oos.close();
+	        return buff.toByteArray();
+		} finally {
+			session.clear();
+		}
+	}
+
+	public Object unmarshal(Context context, ObjectInputStream ois, byte[] object, ClassLoader classloader) throws IOException, ClassNotFoundException {
+		DroolsObjectInputStream is = new DroolsObjectInputStream( new ByteArrayInputStream( object ), classloader );
+		String objectId = is.readUTF();
+		String canonicalName = is.readUTF();
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			org.apache.chemistry.opencmis.client.api.Document doc = (org.apache.chemistry.opencmis.client.api.Document) findObjectForId(session, objectId);
+			Document document = (Document) Class.forName(canonicalName).newInstance();
+			document.setAttributes(new HashMap<String, String>());
+
+			document.setIdentifier(objectId);
+			document.setName(doc.getName());
+			document.setLastModified(doc.getLastModificationDate().getTime());
+			document.setSize(doc.getContentStreamLength());
+			document.addAttribute("location", getFolderName(doc.getParents()) + getPathAsString(doc.getPaths()));
+			if (doc.getContentStream() != null && contentUrl == null) {
+				ContentStream stream = doc.getContentStream();
+				document.setContent(IOUtils.toByteArray(stream.getStream()));
+				document.addAttribute("updated", "false");
+				document.addAttribute("type", stream.getMimeType());
+			} else {
+			    document.setLink(contentUrl + document.getIdentifier());
+			}
+			return document;
+		} catch(Exception e) {
+			throw new RuntimeException("Cannot read document from CMIS", e);
+		} finally {
+			is.close();
+			session.clear();
+		}
+	}
+
+	public Context createContext() {
+		return null;
+	}
+
+	// For backward compatibility with previous serialization mechanism
+	public void write(ObjectOutputStream os, Object object) throws IOException {
+		Document document = (Document) object;
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			if (document.getContent() != null) {
+				String type = document.getAttribute("type");
+				if (document.getIdentifier() == null) {
+					String location = document.getAttribute("location");
+
+					Folder parent = findFolderForPath(session, location);
+					if (parent == null) {
+						parent = createFolder(session, null, location);
+					}
+					org.apache.chemistry.opencmis.client.api.Document doc = createDocument(session, parent, document.getName(), type, document.getContent());
+					document.setIdentifier(doc.getId());
+					document.addAttribute("updated", "false");
+				} else {
+					if (document.getContent() != null && "true".equals(document.getAttribute("updated"))) {
+						org.apache.chemistry.opencmis.client.api.Document doc = updateDocument(session, document.getIdentifier(), type, document.getContent(), mode);
+
+						document.setIdentifier(doc.getId());
+						document.addAttribute("updated", "false");
+					}
+				}
+			}
+			ByteArrayOutputStream buff = new ByteArrayOutputStream();
+	        ObjectOutputStream oos = new ObjectOutputStream( buff );
+	        oos.writeUTF(document.getIdentifier());
+	        oos.writeUTF(object.getClass().getCanonicalName());
+	        oos.close();
+		} finally {
+			session.clear();
+		}
+	}
+
+	public Object read(ObjectInputStream os) throws IOException, ClassNotFoundException {
+		String objectId = os.readUTF();
+		String canonicalName = os.readUTF();
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			org.apache.chemistry.opencmis.client.api.Document doc = (org.apache.chemistry.opencmis.client.api.Document) findObjectForId(session, objectId);
+			Document document = (Document) Class.forName(canonicalName).newInstance();
+
+			document.setIdentifier(objectId);
+			document.setName(doc.getName());
+			document.addAttribute("location", getFolderName(doc.getParents()) + getPathAsString(doc.getPaths()));
+			if (doc.getContentStream() != null) {
+				ContentStream stream = doc.getContentStream();
+				document.setContent(IOUtils.toByteArray(stream.getStream()));
+				document.addAttribute("updated", "false");
+				document.addAttribute("type", stream.getMimeType());
+			}
+			return document;
+		} catch(Exception e) {
+			throw new RuntimeException("Cannot read document from CMIS", e);
+		} finally {
+			session.clear();
+		}
+	}
+
+}
+----
+--
+. In Business Central, click *Authoring* -> *Project Authoring* and navigate to your project.
+. Click *Open Project Editor* and then click *Project Settings: Project General Settings* -> *Deployment descriptor*.
+. Under *Marshalling strategies*, click *Add*.
+. In the *Identifier* value field, click *Enter Value* and enter the identifier of the custom document marshalling strategy that you created (for example, `org.jbpm.integration.cmis.impl.OpenCMISPlaceholderResolverStrategy`).
+. Set *Resolver type* to *reflection*.
+. Click *Save* and *Validate* to ensure correctness of your deployment descriptor file.
++
+Alternatively, you can navigate to `~/META_INF/kie-wb-deployment-descriptor.xml` in your project and edit the deployment descriptor file directly with the required `<marshalling-strategies>` elements.
++
+Example `kie-deployment-descriptor.xml` file with custom document marshalling strategy:
++
+[source,xml]
+----
+<deployment-descriptor
+    xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <persistence-unit>org.jbpm.domain</persistence-unit>
+  <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+  <audit-mode>JPA</audit-mode>
+  <persistence-mode>JPA</persistence-mode>
+  <runtime-strategy>SINGLETON</runtime-strategy>
+  <marshalling-strategies>
+    <marshalling-strategy>
+      <resolver>reflection</resolver>
+      <identifier>
+        org.jbpm.integration.cmis.impl.OpenCMISPlaceholderResolverStrategy
+      </identifier>
+    </marshalling-strategy>
+  </marshalling-strategies>
+----
+
+. To enable documents stored in a custom location to be attached to forms and processes, create a document variable in the relevant processes and map task inputs and outputs to that document variable in Business Central. For instructions, see <<_enabling_document_attachments_in_forms>>.
 
 [id='_sect_rendering_forms_for_external_use']
 === Rendering Forms for External Use
