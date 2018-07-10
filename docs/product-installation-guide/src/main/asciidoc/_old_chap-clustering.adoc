@@ -19,24 +19,24 @@ You can cluster the following components of {PRODUCT}:
 * Design-time cluster
 ** _Git repository_: virtual-file-system (VFS) repository that holds the business assets.
 * Runtime cluster
-ifdef::BPMS[]
+ifdef::PAM[]
 ** _Intelligent Process Server, or web applications_: the web application nodes must share runtime data.
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 ** _RealTime Decision Server, or Web applications_: the web application nodes must share runtime data.
-endif::BRMS[]
+endif::DM[]
 +
 For instructions on clustering the
-ifdef::BPMS[]
+ifdef::PAM[]
 Intelligent Process Server,
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 RealTime Decision Server,
-endif::BRMS[]
+endif::DM[]
 see <<_exec_server>>, or the  clustering documentation of your container.
-ifdef::BPMS[]
+ifdef::PAM[]
 ** _Back-end database_: database with the state data, such as process instances, KIE sessions, history log, and similar.
-endif::BPMS[]
+endif::PAM[]
 
 == Git Repository Clustering Mechanism
 
@@ -65,20 +65,20 @@ Additional information:
 
 The relationship between Apache Helix and Apache ZooKeeper:
 
-ifdef::BPMS[]
+ifdef::PAM[]
 .Schema of Red Hat JBoss BPM Suite Cluster
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 .Schema of Red Hat JBoss BRMS Cluster
-endif::BRMS[]
+endif::DM[]
 image::3639.png[]
 
 A typical clustering setup involves the following:
 
 . Configuring the cluster using Apache ZooKeeper and Apache Helix. This is required only for design-time clustering.
-ifdef::BPMS[]
+ifdef::PAM[]
 . Configuring the back-end database with Quartz tables. This is required only for processes with timers.
-endif::BPMS[]
+endif::PAM[]
 . Configuring clustering on your container. _{PRODUCT} Installation Guide_ provides only clustering instructions for Red Hat JBoss EAP 6.
 
 [float]
@@ -101,9 +101,9 @@ To install {PRODUCT} in the clustered mode, the JAR installer provides a sample 
 NOTE: The JAR installer provides sample setup only. Adjusting the configuration is necessary for it to suit your project's needs.
 
 Using the JAR installer,
-ifdef::BPMS[]
+ifdef::PAM[]
 described in <<_sect_the_red_hat_jboss_bpm_suite_installer_installation>>,
-endif::BPMS[]
+endif::PAM[]
 you can set up a basic clustering configuration of {PRODUCT}.
 
 The automatic configuration creates:
@@ -124,11 +124,11 @@ Follow the installation process described in <<_installing_red_hat_jboss_brmsbpm
 	* Provide one or more URLs. The installer downloads the files automatically.
 +
 The installer copies the JAR(s) into `_EAP_HOME_/modules` and creates corresponding `module.xml` file.
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .JDBC Driver Setup
 image::7214.png[Configure JDBC provider and drivers]
-endif::BPMS[]
+endif::PAM[]
 
 . Enter the url, username, and password for accessing the database used by Quartz.
 +
@@ -144,10 +144,10 @@ Edit the `domain.xml` file to customize the setup.
 During the installation, Quartz DDL scripts will be run on the database selected in this step. The scripts make changes needed for Quartz to operate, such as adding tables. You can view the scripts in `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/ddl-scripts`. No modifications should be necessary.
 ====
 +
-ifdef::BPMS[]
+ifdef::PAM[]
 .Quartz Database Configuration
 image::7215.png[]
-endif::BPMS[]
+endif::PAM[]
 
 . Click *Next* to initiate the installation.
 +
@@ -294,20 +294,20 @@ To configure clustering on Red Hat JBoss EAP 6, do the following:
 
 . Configure ZooKeeper and Helix according to <<_setting_up_a_cluster>>.
 
-ifdef::BPMS[]
+ifdef::PAM[]
 . Configure Quartz according to <<_setting_up_quartz>>.
-endif::BPMS[]
+endif::PAM[]
 
-ifdef::BPMS[]
+ifdef::PAM[]
 		. Install the JDBC driver. See the https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html/Administration_and_Configuration_Guide/sect-JDBC_Drivers.html#Install_a_JDBC_Driver_with_the_Management_Console[Install a JDBC Driver with the Management Console] chapter of the _Red Hat JBoss EAP Administration and Configuration Guide_.
-endif::BPMS[]
+endif::PAM[]
 
-ifdef::BPMS[]
+ifdef::PAM[]
 . Configure the data source for the server. Based on the mode you use, open `domain.xml` or `standalone.xml`, located at `_EAP_HOME_/_MODE_/configuration`.
 .  Locate the `full` profile, and do the following:
 +
 .. Add the definition of the main data source used by {PRODUCT}.
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .PostgreSQL Data Source Defined as Main Red Hat JBoss BPM Suite Data Source
 ====
@@ -324,8 +324,8 @@ ifdef::BPMS[]
 </datasource>
 ----
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .PostgreSQL Data Source Defined as Main JBoss BRMS Data Source
 ====
@@ -342,9 +342,9 @@ ifdef::BRMS[]
 </datasource>
 ----
 ====
-endif::BRMS[]
+endif::DM[]
 .. Add the definition of the data source for the Quartz service.
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .PostgreSQL Data Source Defined as Quartz Data Source
 ====
@@ -361,8 +361,8 @@ ifdef::BPMS[]
 </datasource>
 ----
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .PostgreSQL Data Source Defined as Quartz Data Source
 ====
@@ -379,7 +379,7 @@ ifdef::BRMS[]
 </datasource>
 ----
 ====
-endif::BRMS[]
+endif::DM[]
 .. Define the data source driver.
 +
 .PostgreSQL Driver Definition
@@ -395,14 +395,14 @@ endif::BRMS[]
 .. If you are deploying {PRODUCT} on Red Hat JBoss EAP 7.0, ensure that the data sources contain schemas. To create the data source schemas, you can use the DDL scripts located in `jboss-bpmsuite-brms-{PRODUCT_VERSION}-supplementary-tools.zip`. If your data source does not contain schemas, ensure your nodes start one at a time.
 +
 Additionally, when deploying on Red Hat JBoss EAP 7.0, open `_EAP_HOME_/domain/business-central.war/WEB-INF/classes/META-INF/persistence.xml` and change the property `hibernate.hbm2ddl.auto="update"` to `hibernate.hbm2ddl.auto="none"`.
-endif::BPMS[]
+endif::PAM[]
 . Configure individual server nodes in the `main-server-group` element in the `_EAP_HOME_/domain/configuration/host.xml` file with properties defined in
-ifdef::BPMS[]
+ifdef::PAM[]
 <<_cluster_properties_BPMS>>.
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 <<_cluster_properties_BRMS>>.
-endif::BRMS[]
+endif::DM[]
 +
 When configuring a Red Hat JBoss EAP cluster with Apache ZooKeeper, a different number of Red Hat JBoss EAP nodes than Apache ZooKeeper nodes is possible. However, having the same node count for both ZooKeeper and Red Hat JBoss EAP is considered best practice.
 +
@@ -603,7 +603,7 @@ If the SSH daemon is enabled, it uses this property as the port number.
 |===
 --
 
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 --
 .Cluster nodeOne Configuration
@@ -698,8 +698,8 @@ ifdef::BPMS[]
 ----
 ====
 --
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 --
 .Cluster nodeOne Configuration
@@ -789,7 +789,7 @@ ifdef::BRMS[]
 ----
 ====
 --
-endif::BRMS[]
+endif::DM[]
 
 . Add management users as instructed in the _Administration and Configuration Guide_ for Red Hat JBoss EAP and application users as instructed in _{PRODUCT} Administration and Configuration Guide_.
 // change on purpose - cd = change directory
@@ -811,18 +811,18 @@ On Windows:
 
 Deploy the Business Central application to your servers:
 
-ifdef::BPMS[]
+ifdef::PAM[]
 . Change the predefined persistence of the application to the required database (PostgreSQL): in `persistence.xml` change the following:
 +
 .. `jta-data-source` name to the source defined on the application server (`java:jboss/datasources/psbpmsDS`).
 .. Hibernate dialect to be match the data source dialect (`org.hibernate.dialect.PostgreSQLDialect`).
 
 . Log in as the management user to the server *Administration* console of your domain and add the new deployments using the *Runtime view* of the console. Once the deployment is added to the domain, assign it to the correct server group (`main-server-group`).
-endif::BPMS[]
+endif::PAM[]
 
-ifdef::BRMS[]
+ifdef::DM[]
 . Log in as the management user to the server *Administration* console of your domain and add the new deployments using the *Runtime view* of the console. Once the deployment is added to the domain, assign it to the correct server group (`main-server-group`).
-endif::BRMS[]
+endif::DM[]
 
 [NOTE]
 ====
@@ -831,22 +831,22 @@ It is important users explicitly check deployment unit readiness with every clus
 When a deployment unit is created on a cluster node, it takes some time before it is distributed among all cluster members. Deployment status can be checked using the UI and REST, however, if the query goes to the node where the deployment was originally issued, the answer is `deployed`. Any request targeting this deployment unit sent to a different cluster member fails with `DeploymentNotFoundException`.
 ====
 
-ifdef::BPMS[]
+ifdef::PAM[]
 [id='_exec_server']
 === Clustering the Intelligent Process Server
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 [id='_exec_server']
 === Clustering the Realtime Decision Server
-endif::BRMS[]
+endif::DM[]
 
 The
-ifdef::BPMS[]
+ifdef::PAM[]
 Intelligent Process Server
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 Realtime Decision Server
-endif::BRMS[]
+endif::DM[]
 is a lightweight and scalable component. Clustering it provides many benefits. For example:
 
 * You can partition your resources based on deployed containers.
@@ -858,31 +858,31 @@ is a lightweight and scalable component. Clustering it provides many benefits. F
 The basic runtime cluster consists of:
 
 * Multiple Red Hat JBoss EAP instances with
-ifdef::BPMS[]
+ifdef::PAM[]
 Intelligent Process Server
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 Realtime Decision Server
-endif::BRMS[]
+endif::DM[]
 * A controller instance with Business Central
 
 image::kieserver-arch.png[]
 
 This section describes how to start
-ifdef::BPMS[]
+ifdef::PAM[]
 Intelligent Process Server
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 Realtime Decision Server
-endif::BRMS[]
+endif::DM[]
 cluster on Red Hat JBoss EAP 6.4.
 
-ifdef::BPMS[]
+ifdef::PAM[]
 .Creating an Intelligent Process Server Cluster
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 .Creating a Realtime Decision Server Cluster
-endif::BRMS[]
+endif::DM[]
 . Change into `_CONTROLLER_HOME_/bin`.
 . Add a user with the `kie-server` role:
 +
@@ -931,12 +931,12 @@ $ ./standalone.sh
 <5> `org.kie.server.id`: Server identifier that corresponds to template ID defined by the controller instance. Give the same ID to multiple server instances that represent one template.
 +
 The example above is defined for Red Hat JBoss EAP domain mode. For further list of bootstrap switches, see section
-ifdef::BPMS[]
+ifdef::PAM[]
 https://access.redhat.com/documentation/en/red-hat-jboss-bpm-suite/6.4/paged/administration-and-configuration-guide/chapter-3-intelligent-process-server#bootstrap_switches[Bootstrap Switches] of the _{PRODUCT} Administration and Configuration Guide_.
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 https://access.redhat.com/documentation/en/red-hat-jboss-brms/6.4/paged/administration-and-configuration-guide/chapter-3-realtime-decision-server#bootstrap_switches[Bootstrap Switches] of _{PRODUCT} Administration and Configuration Guide_.
-endif::BRMS[]
+endif::DM[]
 . Repeat the previous step for as many servers as you need. To start Red Hat JBoss EAP in the domain mode, execute:
 [source,bash]
 ----
@@ -1040,7 +1040,7 @@ $HELIX_HOME/bin/helix-admin.sh --zkSvr ZOOKEEPER_HOST:ZOOKEEPER_PORT --addCluste
 ----
 HELIX_HOME/bin/helix-admin.sh --zkSvr ZOOKEEPER_HOST:ZOOKEEPER_PORT --addNode <clustername> <name_uniqueID>
 ----
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .Adding Three Cluster Nodes
 ====
@@ -1051,8 +1051,8 @@ ifdef::BPMS[]
 ./helix-admin.sh --zkSvr server1:2181,server2:2182,server3:2183 --addNode bpms-cluster nodeThree:12347
 ----
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .Adding Three Cluster Nodes
 ====
@@ -1063,7 +1063,7 @@ ifdef::BRMS[]
 ./helix-admin.sh --zkSvr server1:2181,server2:2182,server3:2183 --addNode brms-cluster nodeThree:12347
 ----
 ====
-endif::BRMS[]
+endif::DM[]
 
 . Add resources to the cluster.
 +
@@ -1073,7 +1073,7 @@ helix-admin.sh --zkSvr ZOOKEEPER_HOST:ZOOKEEPER_PORT  --addResource <clustername
 ----
 +
 Learn more about state machine configuration at http://helix.apache.org/0.6.5-docs/tutorial_state.html[Helix Tutorial: State Machine Configuration].
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .Adding vfs-repo as Resource
 ====
@@ -1082,8 +1082,8 @@ ifdef::BPMS[]
 ./helix-admin.sh --zkSvr server1:2181,server2:2182,server3:2183 --addResource bpms-cluster vfs-repo 1 LeaderStandby AUTO_REBALANCE
 ----
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .Adding vfs-repo as Resource
 ====
@@ -1092,7 +1092,7 @@ ifdef::BRMS[]
 ./helix-admin.sh --zkSvr server1:2181,server2:2182,server3:2183 --addResource brms-cluster vfs-repo 1 LeaderStandby AUTO_REBALANCE
 ----
 ====
-endif::BRMS[]
+endif::DM[]
 
 . Rebalance the cluster with the three nodes.
 +
@@ -1102,7 +1102,7 @@ helix-admin.sh --zkSvr ZOOKEEPER_HOST:ZOOKEEPER_PORT --rebalance <clustername> <
 ----
 +
 Learn more about rebalancing at http://helix.apache.org/0.6.5-docs/tutorial_rebalance.html[Helix Tutorial: Rebalancing Algorithms].
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .Rebalancing bpms-cluster
 ====
@@ -1111,8 +1111,8 @@ ifdef::BPMS[]
 ./helix-admin.sh --zkSvr server1:2181,server2:2182,server3:2183 --rebalance bpms-cluster vfs-repo 3
 ----
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .Rebalancing brms-cluster
 ====
@@ -1121,17 +1121,17 @@ ifdef::BRMS[]
 ./helix-admin.sh --zkSvr server1:2181,server2:2182,server3:2183 --rebalance brms-cluster vfs-repo 3
 ----
 ====
-endif::BRMS[]
+endif::DM[]
 +
-ifdef::BPMS[]
+ifdef::PAM[]
 In this command, `3` stands for three bpms-cluster nodes.
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 In this command, `3` stands for three brms-cluster nodes.
-endif::BRMS[]
+endif::DM[]
 
 . Start the Helix controller in all the nodes in the cluster.
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .Starting Helix Controller
 ====
@@ -1140,8 +1140,8 @@ ifdef::BPMS[]
 ./run-helix-controller.sh --zkSvr server1:2181,server2:2182,server3:2183 --cluster bpms-cluster 2>&1 > ./controller.log &
 ----
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .Starting Helix Controller
 ====
@@ -1150,7 +1150,7 @@ ifdef::BRMS[]
 ./run-helix-controller.sh --zkSvr server1:2181,server2:2182,server3:2183 --cluster brms-cluster 2>&1 > ./controller.log &
 ----
 ====
-endif::BRMS[]
+endif::DM[]
 
 NOTE: In case you decide to cluster ZooKeeper, add an odd number of instances in order to recover from failure. After a failure, the remaining number of nodes still need to be able to form a majority. For example a cluster of five ZooKeeper nodes can withstand loss of two nodes in order to fully recover. One ZooKeeper instance is still possible, replication will work, however no recover possibilities are available if it fails.
 
@@ -1159,18 +1159,18 @@ NOTE: In case you decide to cluster ZooKeeper, add an odd number of instances in
 
 To start your cluster, see <<starting_cluster>>. To stop your cluster, see <<_stop_the_cluster>>.
 
-ifdef::BPMS[]
+ifdef::PAM[]
 
 [id='_setting_up_quartz']
 === Setting Quartz
 
 NOTE: If you are not using Quartz (timers) in your business processes, or if you are not using the
-ifdef::BPMS[]
+ifdef::PAM[]
 Intelligent Process Server,
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 Realtime Decision Server,
-endif::BRMS[]
+endif::DM[]
 skip this section. If you want to replicate timers in your business process, use the Quartz component.
 
 Before you can configure the database on your application server, you need to prepare the database for Quartz to create Quartz tables, which will hold the timer data, and the Quartz definition file.
@@ -1178,28 +1178,28 @@ Before you can configure the database on your application server, you need to pr
 To configure Quartz:
 
 . Configure the database. Make sure to use one of the supported non-JTA data sources. Since Quartz needs a non-JTA data source, you cannot use the Business Central data source. In the example code, PostgreSQL with the user
-ifdef::BPMS[]
+ifdef::PAM[]
 `bpms`
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 `brms`
-endif::BRMS[]
+endif::DM[]
 and password
-ifdef::BPMS[]
+ifdef::PAM[]
 `bpms`
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 `brms`
-endif::BRMS[]
+endif::DM[]
 is used.
-ifdef::BPMS[]
+ifdef::PAM[]
 The database must be connected to your application server.
-endif::BPMS[]
+endif::PAM[]
 
 . Create Quartz tables on your database to allow timer events synchronization. To do so, use the DDL script for your database, which is available in the extracted supplementary ZIP archive in `_QUARTZ_HOME_/docs/dbTables`.
 
 . Create the Quartz configuration file `quartz-definition.properties` in `_JBOSS_HOME_/_MODE_/configuration/` directory and define the Quartz properties.
-ifdef::BPMS[]
+ifdef::PAM[]
 +
 .Quartz Configuration File for PostgreSQL Database
 ====
@@ -1243,8 +1243,8 @@ org.quartz.dataSource.notManagedDS.jndiURL=jboss/datasources/quartzNotManagedDS
 ----
 Note the configured data sources that will accommodate the two Quartz schemes at the very end of the file.
 ====
-endif::BPMS[]
-ifdef::BRMS[]
+endif::PAM[]
+ifdef::DM[]
 +
 .Quartz Configuration File for PostgreSQL Database
 ====
@@ -1288,7 +1288,7 @@ org.quartz.dataSource.notManagedDS.jndiURL=jboss/datasources/quartzNotManagedDS
 ----
 Note the configured datasources that will accommodate the two Quartz schemes at the very end of the file.
 ====
-endif::BRMS[]
+endif::DM[]
 +
 [NOTE]
 ====
@@ -1306,7 +1306,7 @@ The recommended interval for cluster discovery is 20 seconds and is set in the `
 The `org.quartz.jobStore.driverDelegateClass` property that defines the database dialect. If you use Oracle, set it to `org.quartz.impl.jdbcjobstore.oracle.OracleDelegate`.
 
 . Provide the absolute path to your `quartz-definition.properties` file in the `org.quartz.properties` property. For further details, see <<_cluster_properties_BPMS>>.
-endif::BPMS[]
+endif::PAM[]
 
 Note: To configure the number of retries and delay for the Quartz trigger, you can update the following system properties: 
 
