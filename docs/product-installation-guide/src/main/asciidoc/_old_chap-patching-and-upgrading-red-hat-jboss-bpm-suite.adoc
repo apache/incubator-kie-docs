@@ -1,22 +1,52 @@
-[id='_chap_patching_and_upgrading']
-= Patching and Upgrading {PRODUCT}
+[id='patches-and-upgrades-con']
+= Patches and upgrades
 
-[id='_about_patches_and_upgrades']
-== About Patches and Upgrades
 
-{PRODUCT} patches can be either an asynchronous update, or a planned update:
+`Major.Minor.Patch`
+
+
+
+Major release migrations
+
+A major upgrade or migration is required when an application is moved from one major release to another, for example, from JBoss EAP 6 to JBoss EAP 7. This type of migration is not addressed in this guide.
+
+For instructions on how to migrate from previous releases of JBoss EAP, see the Migration Guide.
+
+Minor release upgrades
+
+JBoss EAP periodically provides point releases, which are minor updates that include bug fixes, security fixes, and new features. Minor updates are not applied via patching. If you plan to upgrade from one JBoss EAP point release to another, for example, from JBoss EAP 7.0 to JBoss EAP 7.1, code changes should not be required for applications that follow the Java EE specification and do not use any private, unsupported, or tech preview modules.
+
+For instructions on how to upgrade from one JBoss EAP 7 point release to another, see the upgrading chapter.
+
+Patch updates
+
+JBoss EAP also periodically provides individual or cumulative patches that contain bug and security fixes. Cumulative patches increment the minor release version by the last digit, for example from 7.0.1 to 7.0.2. These patches do not require migration and should not impact the server configuration files. The patch management system for ZIP/installer installations can also rollback the patch and server configuration.
+
+{PRODUCT} patches can be either asynchronous or planned updates:
 
 * _Asynchronous updates_: Individual patches which are released outside the normal update cycle of the existing product. These may include security patches, as well as other individual patches provided by Red Hat Global Support Services (GSS) to fix specific issues.
 * _Planned updates_: The cumulative patches of an existing product, which includes all previously developed updates for that version of the product.
 
+For instructions on how to patch JBoss EAP, see the patching chapter.
+
+
+.Subscribing to JBoss Security Announcements
+
+The JBoss team at Red Hat maintains a mailing list for security announcements for Red Hat JBoss Middleware products. You can subscribe to this mailing list to be notified of security-related announcements that affect JBoss EAP.
+
+
+
+[id='applying-patches-proc']
+= Applying patches in {PRODUCT}
+
 To download {PRODUCT} patches:
 
-. Navigate to the 
+. Navigate to the
 ifdef::PAM[]
-https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?product=bpm.suite&downloadType=distributions&version={PRODUCT_VERSION}[Software Downloads] 
+https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?product=bpm.suite&downloadType=distributions&version={PRODUCT_VERSION}[Software Downloads]
 endif::PAM[]
 ifdef::DM[]
-https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?product=brms&downloadType=distributions&version={PRODUCT_VERSION}[Software Downloads] 
+https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?product=brms&downloadType=distributions&version={PRODUCT_VERSION}[Software Downloads]
 endif::DM[]
 section of the Customer Portal.
 . Click *Security Advisories*.
@@ -27,14 +57,13 @@ The following files are included as part of a Red Hat JBoss BRMS and Red Hat JBo
 * Red Hat JBoss BPM Suite customers -- `jboss-bpmsuite-_VERSION_-patch.zip`.
 * Maven repository updates (same for both Red Hat JBoss BRMS and Red Hat JBoss BPM Suite customers) -- `jboss-brms-bpmsuite-_VERSION_-incremental-maven-repository.zip`.
 
-[id='_applying_patches_in_red_hat_jboss_bpm_suite_6.3']
-== Applying Patches in {PRODUCT} {PRODUCT_VERSION}
+
 [IMPORTANT]
 ====
 6.4 Update 6 introduces a small change into the database schema. You must apply the `bpms-6.4-to-7.0.sql` script to your database before you run Red Hat JBoss BPM Suite or Red Hat JBoss BRMS 6.4.6. This script is located in the `upgrade-scripts/<database-type>` directory, available from the Red Hat JBOSS BPM Suite 6.4 Update 6 and the Red Hat JBOSS BRMS 6.4 Update 6 zip files which you can download from the Red Hat Customer Portal.
 ====
 
-In {PRODUCT}, the client patching tool is distributed as a ZIP file that includes `.sh` and `.bat` scripts, allowing for easy and automatic application of updates to an existing {PRODUCT} 6.1 (or better) installation. 
+In {PRODUCT}, the client patching tool is distributed as a ZIP file that includes `.sh` and `.bat` scripts, allowing for easy and automatic application of updates to an existing {PRODUCT} 6.1 (or better) installation.
 
 IMPORTANT: The patching tool is for use with {PRODUCT} 6.1 or better, and should not be used for earlier versions. For more information, see the https://access.redhat.com/articles/1455733[Maintenance Release Changes in BRMS and BPM Suite 6.1+] article at Red Hat Knowledgebase.
 
@@ -74,10 +103,54 @@ The quickstarts and migration tool are also included in the patch and are availa
 
 NOTE: Only updates for Red Hat JBoss BRMS or Red Hat JBoss BPM Suite are included in the patch distribution. Patches to EAP itself must be applied using the EAP patching mechanism. See the https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html/Installation_Guide/chap-Patching_and_Upgrading_JBoss_EAP_6.html[Red Hat JBoss EAP Installation Guide].
 
+
+_Patching Other Platforms and Applications_
+
+Use the following commands for updating other supported platforms and common applications in {PRODUCT}.
+
+IMPORTANT: On a Microsoft Windows system, run `./apply-updates.bat` instead of `./apply-updates.sh`.
+
+.Patch EAP 6._x_ Business Central WAR
+[source]
+----
+$ ./apply-updates.sh PATH/jboss-eap-6.4/standalone/deployments/business-central.war eap6.x-bc
+----
+
+.Patch Generic KIE Server WAR
+[source]
+----
+$ ./apply-updates.sh PATH_TO_TOMCAT_HOME/webapps/kie-server.war generic-kie-server
+----
+
+.Patch Whole WebLogic 12c Bundle
+[source]
+----
+$ ./apply-updates.sh PATH_TO_UNZIPPED_wlsc12c_BUNDLE wls12c
+----
+
+.Patch Planner Engine Bundle
+[source]
+----
+$ ./apply-updates.sh PATH_TO_UNZIPPED_PLANNER_BUNDLE planner-engine
+----
+
+.Patch IBM WebSphere Application Server Bundle
+[source]
+----
+$ ./apply-updates.sh PATH_TO_UNZIPPED_WAS_BUNDLE was8
+----
+
+NOTE: When patching the IBM WebSphere Application Server, do _not_ extract the target WAR files.
+
+See <<applying-patches-proc>> and <<upgrading-to-latest-minor-release-proc>> for more information.
+
+
+
 [float]
 === Backup Feature
 
 Before applying any updates, the client script takes a backup of the specified distribution. It copies the distribution file or directory into the `backup/CURRENT_TIMESTAMP` subdirectory. The top-level backup directory is created at the same filesystem level as the `apply-updates` script.
+
 
 [float]
 === Blacklist Feature
@@ -118,49 +191,10 @@ $ ls styles
 base.css base.css.removed
 ----
 
-[id='_patching_other_platforms_and_applications']
-== Patching Other Platforms and Applications
 
-Use the following commands for updating other supported platforms and common applications in {PRODUCT}.
 
-IMPORTANT: On a Microsoft Windows system, run `./apply-updates.bat` instead of `./apply-updates.sh`.
-
-.Patch EAP 6._x_ Business Central WAR
-[source]
-----
-$ ./apply-updates.sh PATH/jboss-eap-6.4/standalone/deployments/business-central.war eap6.x-bc
-----
-
-.Patch Generic KIE Server WAR
-[source]
-----
-$ ./apply-updates.sh PATH_TO_TOMCAT_HOME/webapps/kie-server.war generic-kie-server
-----
-
-.Patch Whole WebLogic 12c Bundle
-[source]
-----
-$ ./apply-updates.sh PATH_TO_UNZIPPED_wlsc12c_BUNDLE wls12c
-----
-
-.Patch Planner Engine Bundle
-[source]
-----
-$ ./apply-updates.sh PATH_TO_UNZIPPED_PLANNER_BUNDLE planner-engine
-----
-
-.Patch IBM WebSphere Application Server Bundle
-[source]
-----
-$ ./apply-updates.sh PATH_TO_UNZIPPED_WAS_BUNDLE was8
-----
-
-NOTE: When patching the IBM WebSphere Application Server, do _not_ extract the target WAR files.
-
-See <<_applying_patches_in_red_hat_jboss_bpm_suite_6.3>> and <<_upgrading_to_latest_minor_release>> for more information.
-
-[id='_upgrading_to_latest_minor_release']
-== Upgrading to Latest Minor Release
+[id='upgrading-to-latest-minor-release-proc']
+== Upgrading to the latest minor release of {PRODUCT}
 
 Apart from supporting upgrade to the latest micro release, {PRODUCT} also supports upgrading between minor releases. For example, upgrading from:
 
