@@ -1,0 +1,120 @@
+[id='patches-applying-proc']
+= Applying patches to {PRODUCT}
+
+You can apply patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal. These patches help you keep your {PRODUCT} distribution current with latest bug fixes and security updates.
+
+.Prerequisite
+Your {PRODUCT} and {KIE_SERVER} instances are not running. Do not apply patch updates while you are running an instance of {PRODUCT} or {KIE_SERVER}.
+
+.Procedure
+. Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required), and select the product and version from the drop-down options.
++
+--
+Example:
+
+* *Product:* {PRODUCT_SHORT}
+* *Version:* {PRODUCT_VERSION}.1
+--
+. Click *Patches*, download *{PRODUCT} [VERSION] Patch Update*, and extract the downloaded `{PRODUCT_INIT}-$VERSION-patch.zip` file to a temporary directory.
++
+If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then also download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing Maven repository directory.
++
+. If you want to preserve any files from being updated by the patch, navigate to the extracted `{PRODUCT_INIT}-$VERSION-patch` folder, open the `blacklisted.txt` file, and add the relative paths to the files that you do not want updated.
++
+--
+When a file is listed in the `blacklist.txt` file, the patch update script does not replace the file with the new version but instead leaves the file in place and in the same location adds the new version with a `.new` suffix appended.
+
+For example, after running the patch tool, both these files will exist in the `styles` folder, continuing with the `blacklist.txt` file in the example above.
+
+Example files to be excluded in `blacklisted.txt` file:
+[source]
+----
+bin/kie.policy
+bin/security.policy
+----
+
+The contents of the blacklisted file directory after the update:
+[source]
+----
+$ ls bin
+kie.policy kie.policy.new
+security.policy security.policy.new
+----
+
+If there are files that are no longer being distributed but you want to preserve them, put them into the `blacklist.txt` file as well. The patch update tool will not delete these files, and instead create an empty marker file with the suffix `removed`. You can then choose to either keep or delete these files manually.
+
+Continuing with the previous example, if the `base.css` file was removed and you had this file listed in the `blacklist.txt` file, then after the patch tool has run, the contents of the styles directory would be similar to:
+
+[source]
+----
+$ ls bin
+kie.policy kie.policy.removed
+security.policy security.policy.removed
+----
+--
+. In your command terminal, navigate to the temporary directory where you extracted the `{PRODUCT_INIT}-$VERSION-patch.zip` file and run the `apply-updates` script in the following format:
++
+--
+IMPORTANT: Make sure that your {PRODUCT} and {KIE_SERVER} instances are not running before you apply patch updates. Do not apply patch updates while you are running an instance of {PRODUCT} or {KIE_SERVER}.
+
+On Linux or Unix-based systems:
+[source]
+----
+$ ./apply-updates.sh $DISTRO_PATH $DISTRO_TYPE
+----
+
+On Windows:
+[source]
+----
+$ ./apply-updates.bat $DISTRO_PATH $DISTRO_TYPE
+----
+
+The `$DISTRO_PATH` portion is the path to the relevant distribution directory and the `$DISTRO_TYPE` portion is the type of distribution that you are updating with this patch.
+
+The following distribution types are supported in {PRODUCT} patches:
+
+* {URL_COMPONENT_CENTRAL}-eap7-deployable
+* kie-server-ee7
+ifdef::DM[]
+* kie-server-jws
+endif::DM[]
+* controller-ee7
+ifdef::DM[]
+* controller-jws
+endif::PAM[]
+
+For example, the following command applies the extracted patch update to {CENTRAL} for a {PRODUCT} distribution on {EAP}:
+
+[source]
+----
+./apply-updates.sh ~EAP_HOME/standalone/deployments/decision-central.war decision-central-eap7-deployable
+----
+
+NOTE: Only updates for {PRODUCT} are included in the {PRODUCT} patch distribution. Patches to {EAP} must be applied using {EAP} patch distributions. For more information about {EAP} patching, see the {EAP} https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html/patching_and_upgrading_guide/[Patching and upgrading guide].
+
+The patch update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-patch` folder with a copy of the specified distribution, and proceeds with the update.
+--
+. After the update completes, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL} to verify your data.
++
+If you encounter any errors, you can restore the previous version of the updated distribution found in the `backup` folder within the `{PRODUCT_INIT}-$VERSION-patch` folder, and then try again to run the patch update.
+
+
+=== Ignoring files during patch updates
+
+{PRODUCT} patch updates include a `blacklist.txt` file with a list of files that the `apply-updates` script will ignore by default the update process. You can edit this file to list other files, such as configuration files, that you want to preserve from being overwritten automatically by the update.
+
+
+
+To specify the blacklisted files, open the file `blacklist.txt` present within the patch distribution. Enter the relative path to the files that must not be updated. Each file must be specified on a line by itself.
+
+[source]
+----
+# Lines with a '#' are comment lines, like this one.
+# Blank lines are ignored.
+
+# We have made changes to the web.xml that must be preserved:
+WEB-INF/web.xml
+
+# This file has custom modifications:
+styles/base.css
+----
