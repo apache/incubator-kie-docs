@@ -1,0 +1,101 @@
+[id='clustering-ps-configure-domain-proc']
+= Configuring a {EAP} 7.1 domain-mode cluster for {KIE_SERVER}
+By using domain mode with a cluster, you can centrally manage and publish configurations for your servers. Domain mode provides a central location to store and publish configurations. Complete the steps in this section to configure a {EAP} cluster in domain mode to use with {KIE_SERVER}.
+
+.Procedure
+. Install the JDBC driver on all {EAP} instances that are part of this cluster. For more information, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/configuration_guide/#jdbc_drivers["JDBC Drivers"] section of the _{EAP} 7.1 Configuration Guide_.
+. On the the master node of the cluster (where you will run the domain controller), open the `_EAP_HOME_/domain/configuration/domain.xml` file in a text editor.
+
+. Make the following changes for each server group in the `server-groups` element:
+.. Specify the `server-group name` and `jvm` name.
+.. To enable high availability, change the `profile` to `"full-ha"` and the `socket-binding-group` to `"full-ha-sockets"`.
++
+[source]
+----
+<server-group name="some-server-group" profile="full-ha">
+    <jvm name="some-jvm">
+        <heap size="1000m" max-size="1000m"/>
+    </jvm>
+    <socket-binding-group ref="full-ha-sockets"/>
+</server-group>
+----
+
+. Edit the `data-stores` property and the `timer-service thread-pool-name` above it.
++
+The `datasource-jndi-name` is the JNDI name of the database specified at the beginning of this procedure. You can enter any name for the value of the `partition` property. Replace the  `"default-data-store"` attribute value with `"ejb_timer_ds"`· Set the value of `refresh-interval` to specify how often the EJB timer connects to the database to synchronize and load tasks to be processed:
++
+[source,xml]
+----
+<timer-service thread-pool-name="default" default-data-store="ejb_timer_ds">
+<data-stores>      
+    <database-data-store name="ejb_timer_ds" datasource-jndi-name="java:jboss/datasources/ejb_timer" database="postgresql" partition="ejb_timer_part" refresh-interval="30000"/>       
+</data-stores> 
+</timer-service>
+----
+
+. Add the {KIE_SERVER} and EJB timer data sources to the `full-ha` profile. In these examples, `<DATABASE>` is the name of the database, `<SERVER_NAME>` is the host name of the JNDI database, and `<USER_NAME>` and `<USER_PWD>` are the credentials for that database.
+ifdef::PAM[]
+* Add the data source to allow {KIE_SERVER} to connect to the database, for example:
++
+[source,xml]
+----
+<xa-datasource jndi-name="java:/jboss/datasources/rhpam" pool-name="rhpam-RHPAM" use-java-context="true" enabled="true"> 
+  <xa-datasource-property name="DatabaseName"><DATABASE></xa-datasource-property>
+  <xa-datasource-property name="PortNumber">5432</xa-datasource-property> 
+  <xa-datasource-property name="ServerName"><SERVER_NAME></xa-datasource-property> 
+  <driver>postgresql</driver>  
+  <security>
+    <user-name><USER_NAME></user-name> 
+    <password><USER_PWD></password> 
+</security> 
+</xa-datasource>
+----
+* Add the data source to enable the EJB timer, for example:
++
+[source,xml]
+----
+<xa-datasource jndi-name="java:jboss/datasources/ejb_timer" pool-name="ejb_timer" use-java-context="true" enabled="true">
+    <xa-datasource-property name="DatabaseName"><DATABASE></xa-datasource-property> 
+    <xa-datasource-property name="PortNumber">5432</xa-datasource-property> 
+    <xa-datasource-property name="ServerName"><SERVER_NAME></xa-datasource-property> 
+    <driver>postgresql</driver>
+    <transaction-isolation>TRANSACTION_READ_COMMITTED</transaction-isolation> 
+    <xa-pool> 
+        <min-pool-size>10</min-pool-size> 
+        <max-pool-size>10</max-pool-size>
+    </xa-pool>   
+    <security> 
+        <user-name><USER_NAME></user-name> 
+        <password><USER_PWD></password> 
+    </security> 
+</xa-datasource>
+----
+endif::PAM[]
+. In the `security-setting` element of the `activemq` subsystem in the `"full-ha"` profile, add the `kie-server` role:
++
+[source]
+----
+<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">
+    <server name="default">
+        <security-setting name="#">
+            <role name="guest" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
+            <role name="kie-server" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
+        </security-setting>
+---- 
+. Add the following properties to the `<system-properties>` element:
++
+* `org.kie.server.persistence.ds`: The JNDI name of your data source. For {PRODUCT}, this is `java:/jboss/datasources/rhpam`
+* `org.kie.server.persistence.dialect`: The hibernate dialect for your database
++
+The following dialects are supported:
++ 
+* DB2: `org.hibernate.dialect.DB2Dialect`
+* MSSQL: `org.hibernate.dialect.SQLServer2012Dialect`
+* MySQL: `org.hibernate.dialect.MySQL5InnoDBDialect`
+* MariaDB: `org.hibernate.dialect.MySQL5InnoDBDialect`
+* Oracle: `org.hibernate.dialect.Oracle10gDialect`
+* PostgreSQL: `org.hibernate.dialect.PostgreSQL82Dialect`
+* PostgreSQL plus: `org.hibernate.dialect.PostgresPlusDialect`
+* Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
+
+
