@@ -1,7 +1,8 @@
 [id='patches-applying-proc']
-= Applying patches to {PRODUCT}
 
-You can apply patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal. These patches help you keep your {PRODUCT} distribution current with latest bug fixes and security updates.
+= Applying patch updates to {PRODUCT}
+
+Patch updates of {PRODUCT} typically include the latest security updates and bug fixes. A patch update tool is provided with new patch releases to update the product version to the newer patch release, such as from {PRODUCT} {PRODUCT_VERSION}.0 or {PRODUCT_VERSION}.1 to {PRODUCT} {PRODUCT_VERSION}.2. Standard patch updates contain all previously released patch updates for that version of the product, so you do not need to apply each patch update incrementally in order to apply the latest update. However, to keep your {PRODUCT} distribution current with the latest fixes, consider applying patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal.
 
 .Prerequisite
 Your {PRODUCT} and {KIE_SERVER} instances are not running. Do not apply patch updates while you are running an instance of {PRODUCT} or {KIE_SERVER}.
@@ -17,39 +18,32 @@ Example:
 --
 . Click *Patches*, download *{PRODUCT} [VERSION] Patch Update*, and extract the downloaded `{PRODUCT_INIT}-$VERSION-patch.zip` file to a temporary directory.
 +
-If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then also download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing Maven repository directory.
+NOTE: If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then also download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
 +
-. If you want to preserve any files from being updated by the patch, navigate to the extracted `{PRODUCT_INIT}-$VERSION-patch` folder, open the `blacklisted.txt` file, and add the relative paths to the files that you do not want updated.
+
+. If you want to preserve any files from being updated by the patch, navigate to the extracted `{PRODUCT_INIT}-$VERSION-patch` folder, open the `blacklisted.txt` file, and add the relative paths to the files that you do not want to be updated.
 +
 --
-When a file is listed in the `blacklist.txt` file, the patch update script does not replace the file with the new version but instead leaves the file in place and in the same location adds the new version with a `.new` suffix appended.
-
-For example, after running the patch tool, both these files will exist in the `styles` folder, continuing with the `blacklist.txt` file in the example above.
+When a file is listed in the `blacklist.txt` file, the patch update script does not replace the file with the new version but instead leaves the file in place and in the same location adds the new version with a `.new` suffix appended. If you blacklist files that are no longer being distributed, the patch update tool creates an empty marker file with the suffix `removed`. You can then choose to retain, merge, or delete these new files manually.
 
 Example files to be excluded in `blacklisted.txt` file:
 [source]
 ----
-bin/kie.policy
-bin/security.policy
+WEB-INF/web.xml  // Custom file
+styles/base.css  // Obsolete custom file kept for record
 ----
 
-The contents of the blacklisted file directory after the update:
+The contents of the blacklisted file directories after the update:
 [source]
 ----
-$ ls bin
-kie.policy kie.policy.new
-security.policy security.policy.new
+$ ls WEB-INF
+web.xml web.xml.new
 ----
-
-If there are files that are no longer being distributed but you want to preserve them, put them into the `blacklist.txt` file as well. The patch update tool will not delete these files, and instead create an empty marker file with the suffix `removed`. You can then choose to either keep or delete these files manually.
-
-Continuing with the previous example, if the `base.css` file was removed and you had this file listed in the `blacklist.txt` file, then after the patch tool has run, the contents of the styles directory would be similar to:
 
 [source]
 ----
-$ ls bin
-kie.policy kie.policy.removed
-security.policy security.policy.removed
+$ ls styles
+base.css base.css.removed
 ----
 --
 . In your command terminal, navigate to the temporary directory where you extracted the `{PRODUCT_INIT}-$VERSION-patch.zip` file and run the `apply-updates` script in the following format:
@@ -94,27 +88,7 @@ NOTE: Only updates for {PRODUCT} are included in the {PRODUCT} patch distributio
 
 The patch update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-patch` folder with a copy of the specified distribution, and proceeds with the update.
 --
-. After the update completes, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL} to verify your data.
+. After the update completes, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL}.
+. In the top-right corner of {CENTRAL}, click your profile name and click *About* to verify the updated product version number.
 +
 If you encounter any errors, you can restore the previous version of the updated distribution found in the `backup` folder within the `{PRODUCT_INIT}-$VERSION-patch` folder, and then try again to run the patch update.
-
-
-=== Ignoring files during patch updates
-
-{PRODUCT} patch updates include a `blacklist.txt` file with a list of files that the `apply-updates` script will ignore by default the update process. You can edit this file to list other files, such as configuration files, that you want to preserve from being overwritten automatically by the update.
-
-
-
-To specify the blacklisted files, open the file `blacklist.txt` present within the patch distribution. Enter the relative path to the files that must not be updated. Each file must be specified on a line by itself.
-
-[source]
-----
-# Lines with a '#' are comment lines, like this one.
-# Blank lines are ignored.
-
-# We have made changes to the web.xml that must be preserved:
-WEB-INF/web.xml
-
-# This file has custom modifications:
-styles/base.css
-----
