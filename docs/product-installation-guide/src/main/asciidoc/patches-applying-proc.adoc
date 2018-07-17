@@ -2,7 +2,7 @@
 
 = Applying patch updates to {PRODUCT}
 
-Patch updates of {PRODUCT} typically include the latest security updates and bug fixes. A patch update tool is provided with new patch releases to update the product version to the newer patch release, such as from {PRODUCT} {PRODUCT_VERSION}.0 or {PRODUCT_VERSION}.1 to {PRODUCT} {PRODUCT_VERSION}.2. Standard patch updates contain all previously released patch updates for that version of the product, so you do not need to apply each patch update incrementally in order to apply the latest update. However, to keep your {PRODUCT} distribution current with the latest fixes, consider applying patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal.
+Patch updates of {PRODUCT} typically include the latest security updates and bug fixes. A patch update tool is provided with new patch releases to update the product version to the newer patch release, such as from {PRODUCT} {PRODUCT_VERSION}.0 or {PRODUCT_VERSION}.1 to {PRODUCT} {PRODUCT_VERSION}.2. Standard patch updates contain all previously released patch updates for that version of the product, so you do not need to apply each patch update incrementally in order to apply the latest update. However, to keep your {PRODUCT} distribution current with the latest fixes, apply patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal.
 
 .Prerequisite
 Your {PRODUCT} and {KIE_SERVER} instances are not running. Do not apply patch updates while you are running an instance of {PRODUCT} or {KIE_SERVER}.
@@ -18,13 +18,29 @@ Example:
 --
 . Click *Patches*, download *{PRODUCT} [VERSION] Patch Update*, and extract the downloaded `{PRODUCT_INIT}-$VERSION-patch.zip` file to a temporary directory.
 +
-NOTE: If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then also download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
-+
+[NOTE]
+====
+If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then also download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
+
+Example:
+ifdef::DM[]
+[source]
+----
+$ unzip -o rhdm-7.0.1-incremental-maven-repository.zip -d $REPO_PATH/rhdm-7.0.0.GA-maven-repository/maven-repository/
+----
+endif::DM[]
+ifdef::PAM[]
+[source]
+----
+$ unzip -o rhpam-7.0.1-incremental-maven-repository.zip -d $REPO_PATH/rhpam-7.0.0-maven-repository/maven-repository/
+----
+endif::PAM[]
+====
 
 . If you want to preserve any files from being updated by the patch, navigate to the extracted `{PRODUCT_INIT}-$VERSION-patch` folder, open the `blacklisted.txt` file, and add the relative paths to the files that you do not want to be updated.
 +
 --
-When a file is listed in the `blacklist.txt` file, the patch update script does not replace the file with the new version but instead leaves the file in place and in the same location adds the new version with a `.new` suffix appended. If you blacklist files that are no longer being distributed, the patch update tool creates an empty marker file with the suffix `removed`. You can then choose to retain, merge, or delete these new files manually.
+When a file is listed in the `blacklist.txt` file, the patch update script does not replace the file with the new version but instead leaves the file in place and in the same location adds the new version with a `.new` suffix. If you blacklist files that are no longer being distributed, the patch update tool creates an empty marker file with a `.removed` suffix. You can then choose to retain, merge, or delete these new files manually.
 
 Example files to be excluded in `blacklisted.txt` file:
 [source]
@@ -67,28 +83,44 @@ The `$DISTRO_PATH` portion is the path to the relevant distribution directory an
 
 The following distribution types are supported in {PRODUCT} patches:
 
-* {URL_COMPONENT_CENTRAL}-eap7-deployable
-* kie-server-ee7
+* `{URL_COMPONENT_CENTRAL}-eap7-deployable`
+* `kie-server-ee7`
 ifdef::DM[]
-* kie-server-jws
+* `kie-server-jws`
 endif::DM[]
-* controller-ee7
+* `controller-ee7`
 ifdef::DM[]
-* controller-jws
-endif::PAM[]
+* `controller-jws`
+endif::DM[]
 
-For example, the following command applies the extracted patch update to {CENTRAL} for a {PRODUCT} distribution on {EAP}:
+For example, the following commands apply the extracted patch update to {CENTRAL} and {KIE_SERVER} for a full {PRODUCT} distribution on {EAP}:
 
+ifdef::DM[]
 [source]
 ----
 ./apply-updates.sh ~EAP_HOME/standalone/deployments/decision-central.war decision-central-eap7-deployable
+
+./apply-updates.sh ~EAP_HOME/standalone/deployments/decision-central.war controller-ee7
+
+./apply-updates.sh ~EAP_HOME/standalone/deployments/kie-server.war kie-server-ee7
 ----
+endif::DM[]
+ifdef::PAM[]
+[source]
+----
+./apply-updates.sh ~EAP_HOME/standalone/deployments/business-central.war business-central-eap7-deployable
+
+./apply-updates.sh ~EAP_HOME/standalone/deployments/business-central.war controller-ee7
+
+./apply-updates.sh ~EAP_HOME/standalone/deployments/kie-server.war kie-server-ee7
+----
+endif::PAM[]
 
 NOTE: Only updates for {PRODUCT} are included in the {PRODUCT} patch distribution. Patches to {EAP} must be applied using {EAP} patch distributions. For more information about {EAP} patching, see the {EAP} https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html/patching_and_upgrading_guide/[Patching and upgrading guide].
 
-The patch update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-patch` folder with a copy of the specified distribution, and proceeds with the update.
+The patch update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-patch` folder with a copy of the specified distribution, and then proceeds with the update.
 --
 . After the update completes, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL}.
 . In the top-right corner of {CENTRAL}, click your profile name and click *About* to verify the updated product version number.
 +
-If you encounter any errors, you can restore the previous version of the updated distribution found in the `backup` folder within the `{PRODUCT_INIT}-$VERSION-patch` folder, and then try again to run the patch update.
+If you encounter any patching errors or notice any missing data in {CENTRAL}, you can restore the previous version of the updated distribution found in the `backup` folder within the `{PRODUCT_INIT}-$VERSION-patch` folder, and then try again to run the patch update.
