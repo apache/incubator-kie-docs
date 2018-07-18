@@ -2,10 +2,18 @@
 
 = Applying patch updates to {PRODUCT}
 
-Patch updates of {PRODUCT} typically include the latest security updates and bug fixes. A patch update tool is provided with new patch releases to update the product version to the newer patch release, such as from {PRODUCT} {PRODUCT_VERSION}.0 or {PRODUCT_VERSION}.1 to {PRODUCT} {PRODUCT_VERSION}.2. Standard patch updates contain all previously released patch updates for that version of the product, so you do not need to apply each patch update incrementally in order to apply the latest update. However, to keep your {PRODUCT} distribution current with the latest fixes, apply patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal.
+*<@Piotr,@Martin (2 of 5): Updated intro to clarify. Better?>*
+
+Patch updates of {PRODUCT} typically include the latest security updates and bug fixes. Scheduled patch updates contain all previously released patch updates for that minor version of the product, so you do not need to apply each patch update incrementally in order to apply the latest update. For example, you can update {PRODUCT} {PRODUCT_VERSION}.0 or {PRODUCT_VERSION}.1 to {PRODUCT} {PRODUCT_VERSION}.2. However, to keep your {PRODUCT} distribution current with the latest fixes, apply patch updates to {PRODUCT} as they become available in the Red Hat Customer Portal.
+
+Automated patch tools are often provided with patch releases to facilitate updating certain components of {PRODUCT}, such as {CENTRAL}, {KIE_SERVER}, and the headless Process Automation Manager controller. Other {PRODUCT} artifacts, such as the {ENGINE} and standalone {CENTRAL}, are released as new artifacts with each patch update and you must re-install them to apply the update.
+
+NOTE: Only updates for {PRODUCT} are included in {PRODUCT} patch updates. Patches to {EAP} must be applied using {EAP} patch distributions. For more information about Red Hat JBoss EAP patching, see the Red Hat JBoss EAP For more information about {EAP} patching, see the {EAP} https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html/patching_and_upgrading_guide/[Patching and upgrading guide].
 
 .Prerequisite
 Your {PRODUCT} and {KIE_SERVER} instances are not running. Do not apply patch updates while you are running an instance of {PRODUCT} or {KIE_SERVER}.
+
+*<@Piotr,@Martin (3 of 5): Revised/restructured the procedure extensively. Correct now?>*
 
 .Procedure
 . Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required), and select the product and version from the drop-down options.
@@ -18,26 +26,9 @@ Example:
 --
 . Click *Patches*, download *{PRODUCT} [VERSION] Patch Update*, and extract the downloaded `{PRODUCT_INIT}-$VERSION-patch.zip` file to a temporary directory.
 +
-[NOTE]
-====
-If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then also download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
-
-Example:
-ifdef::DM[]
-[source]
-----
-$ unzip -o rhdm-7.0.1-incremental-maven-repository.zip -d $REPO_PATH/rhdm-7.0.0.GA-maven-repository/maven-repository/
-----
-endif::DM[]
-ifdef::PAM[]
-[source]
-----
-$ unzip -o rhpam-7.0.1-incremental-maven-repository.zip -d $REPO_PATH/rhpam-7.0.0-maven-repository/maven-repository/
-----
-endif::PAM[]
-====
-
-. If you want to preserve any files from being updated by the patch, navigate to the extracted `{PRODUCT_INIT}-$VERSION-patch` folder, open the `blacklisted.txt` file, and add the relative paths to the files that you do not want to be updated.
+This patch update tool automates the update of certain components of {PRODUCT}, such as {CENTRAL}, {KIE_SERVER}, and the headless Process Automation Manager controller. Use this update tool first to apply updates and then install any other patch updates or new release artifacts that are relevant to your {PRODUCT} distribution.
++
+. If you want to preserve any files from being updated by the patch update tool, navigate to the extracted `{PRODUCT_INIT}-$VERSION-patch` folder, open the `blacklisted.txt` file, and add the relative paths to the files that you do not want to be updated.
 +
 --
 When a file is listed in the `blacklist.txt` file, the patch update script does not replace the file with the new version but instead leaves the file in place and in the same location adds the new version with a `.new` suffix. If you blacklist files that are no longer being distributed, the patch update tool creates an empty marker file with a `.removed` suffix. You can then choose to retain, merge, or delete these new files manually.
@@ -81,46 +72,60 @@ $ ./apply-updates.bat $DISTRO_PATH $DISTRO_TYPE
 
 The `$DISTRO_PATH` portion is the path to the relevant distribution directory and the `$DISTRO_TYPE` portion is the type of distribution that you are updating with this patch.
 
-The following distribution types are supported in {PRODUCT} patches:
+The following distribution types are supported in {PRODUCT} patch update tool:
 
-* `{URL_COMPONENT_CENTRAL}-eap7-deployable`
-* `kie-server-ee7`
+* `{URL_COMPONENT_CENTRAL}-eap7-deployable`: Updates {CENTRAL} (`{URL_COMPONENT_CENTRAL}.war`)
+* `kie-server-ee7`: Updates {KIE_SERVER} (`kie-server.war`)
 ifdef::DM[]
-* `kie-server-jws`
+* `kie-server-jws`: Updates {KIE_SERVER} on Red Hat JBoss Web Server (`kie-server.war`)
 endif::DM[]
-* `controller-ee7`
+* `controller-ee7`: Updates the headless Process Automation Manager controller (`controller.war`)
 ifdef::DM[]
-* `controller-jws`
+* `controller-jws`: Updates the headless Process Automation Manager controller on Red Hat JBoss Web Server (`controller.war`)
 endif::DM[]
 
-For example, the following commands apply the extracted patch update to {CENTRAL} and {KIE_SERVER} for a full {PRODUCT} distribution on {EAP}:
-
-ifdef::DM[]
-[source]
+Example patch update to {CENTRAL} and {KIE_SERVER} for a full {PRODUCT} distribution on {EAP}:
+[source,subs="attributes+"]
 ----
-./apply-updates.sh ~EAP_HOME/standalone/deployments/decision-central.war decision-central-eap7-deployable
-
-./apply-updates.sh ~EAP_HOME/standalone/deployments/decision-central.war controller-ee7
+./apply-updates.sh ~EAP_HOME/standalone/deployments/{URL_COMPONENT_CENTRAL}.war {URL_COMPONENT_CENTRAL}-eap7-deployable
 
 ./apply-updates.sh ~EAP_HOME/standalone/deployments/kie-server.war kie-server-ee7
+----
+
+Example patch update to headless Process Automation Manager controller, if used:
+[source]
+----
+./apply-updates.sh ~EAP_HOME/standalone/deployments/controller.war controller-ee7
+----
+
+The patch update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-patch` folder with a copy of the specified distribution, and then proceeds with the update.
+
+*<@Piotr,@Martin (4 of 5): The step and description below better/correct?>*
+--
+. After the update tool completes, return to the *Software Downloads* page of the Red Hat Customer Portal where you downloaded the patch update tool and install any other patch updates or new release artifacts that are relevant to your {PRODUCT} distribution.
++
+--
+For example, if you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, then download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
+
+Example:
+ifdef::DM[]
+[source,subs="attributes+"]
+----
+$ unzip -o rhdm-7.0.1-incremental-maven-repository.zip -d $REPO_PATH/rhdm-7.0.0.GA-maven-repository/maven-repository/
 ----
 endif::DM[]
 ifdef::PAM[]
 [source]
 ----
-./apply-updates.sh ~EAP_HOME/standalone/deployments/business-central.war business-central-eap7-deployable
-
-./apply-updates.sh ~EAP_HOME/standalone/deployments/business-central.war controller-ee7
-
-./apply-updates.sh ~EAP_HOME/standalone/deployments/kie-server.war kie-server-ee7
+$ unzip -o rhpam-7.0.1-incremental-maven-repository.zip -d $REPO_PATH/rhpam-7.0.0-maven-repository/maven-repository/
 ----
 endif::PAM[]
 
-NOTE: Only updates for {PRODUCT} are included in the {PRODUCT} patch distribution. Patches to {EAP} must be applied using {EAP} patch distributions. For more information about {EAP} patching, see the {EAP} https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html/patching_and_upgrading_guide/[Patching and upgrading guide].
-
-The patch update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-patch` folder with a copy of the specified distribution, and then proceeds with the update.
+You can likewise download and extract directly to existing directories any other new artifacts, such as for the {ENGINE} and standalone {CENTRAL}.
 --
-. After the update completes, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL}.
-. In the top-right corner of {CENTRAL}, click your profile name and click *About* to verify the updated product version number.
+. After you finish applying all relevant updates, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL}.
+. Verify that all project data is present and accurate in {CENTRAL}, and in the top-right corner of the {CENTRAL} window, click your profile name and click *About* to verify the updated product version number.
 +
-If you encounter any patching errors or notice any missing data in {CENTRAL}, you can restore the previous version of the updated distribution found in the `backup` folder within the `{PRODUCT_INIT}-$VERSION-patch` folder, and then try again to run the patch update.
+*<@Piotr,@Martin (5 of 5): This correct below, about restoring to previous artifacts in case of patching errors?>*
++
+If you encounter any patching errors or notice any missing data in {CENTRAL}, you can restore the contents in the `backup` folder within the `{PRODUCT_INIT}-$VERSION-patch` folder to revert the patch update tool changes. You can also re-install the relevant release artifacts from your previous version of {PRODUCT} in the Red Hat Customer Portal. After restoring your previous distribution, you can try again to run the patch update.
