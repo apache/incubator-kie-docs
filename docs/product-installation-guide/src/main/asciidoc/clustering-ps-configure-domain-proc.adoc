@@ -33,16 +33,36 @@ The `datasource-jndi-name` is the JNDI name of the database specified at the beg
 </timer-service>
 ----
 +
-The `database` attribute can have the following supported values:
+The following table lists the supported databases and the corresponsing `database` attribute value:
 +
-* hsql
-* postgresql
-* mysql (I guess this should be used for mariadb as well)
-* oracle
-* db2
-* mssql
-* sybase (this db is currently not supported with rhpam)
-* Permalink
+[cols="1,1", frame="all", options="header"]
+|===
+|Database
+|Attribute value
+
+
+|Hyper SQL
+|`hsql`
+
+|PostgreSQL
+|`postgresql`
+
+|Oracle
+|`oracle`
+
+
+|IBM DB2
+|`db2`
+
+
+|Hyper SQL
+|`mssql`
+
+|MySQL and MariaDB
+|`mssql`
+
+|===
+
 
 . Add the {KIE_SERVER} and EJB timer data sources to the `full-ha` profile. In these examples, `<DATABASE>` is the name of the database, `<SERVER_NAME>` is the host name of the JNDI database, and `<USER_NAME>` and `<USER_PWD>` are the credentials for that database.
 ifdef::PAM[]
@@ -82,7 +102,15 @@ ifdef::PAM[]
 </xa-datasource>
 ----
 endif::PAM[]
-. In the `security-setting` element of the `activemq` subsystem in the `"full-ha"` profile, add the `kie-server` role:
++
+[WARNING]
+====
+You must use two different databases for {KIE_SERVER} runtime data and EJB timer data.
+====
++
+.  In the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` element, make the following changes:
+.. Replace `<cluster password="${jboss.messaging.cluster.password:CHANGE ME!!}"/>` with `<cluster user="<CLUSTER_USER>" password="<CLUSTER_PWD>"/>` where `<CLUSTER_USER>` is the user used by EAP to form a messaging cluster and `<CLUSTER_PWD>` is the password for that user.
+.. In the `security-setting` element add the `kie-server` role:
 +
 [source]
 ----
@@ -93,6 +121,7 @@ endif::PAM[]
             <role name="kie-server" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
         </security-setting>
 ---- 
+
 
 . Add the following properties to the `<system-properties>` element:
 +
@@ -109,5 +138,18 @@ The following dialects are supported:
 ** PostgreSQL: `org.hibernate.dialect.PostgreSQL82Dialect`
 ** PostgreSQL plus: `org.hibernate.dialect.PostgresPlusDialect`
 ** Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
++
+. Save the `domain.xml` file.
 
 
+. Complete the following steps in the `host.xml` file on the master node and in the `host-slave.xml` file on each slave node:
+.. Open the `_EAP_HOME_/domain/configuration/host.xml` or `_EAP_HOME_/domain/configuration/host-slave.xml` file in a text editor.
+.. Add the following property to the `<system-properties>` element:
++
+[source]
+----
+<system-properties>
+   <property name="org.jbpm.ejb.timer.tx" value="true"/>  
+</system-properties>
+----
+.. Save the `host.xml` and `host-slave.xml` files.
