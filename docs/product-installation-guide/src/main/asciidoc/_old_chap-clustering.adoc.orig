@@ -1,10 +1,303 @@
-[id='cluster-custom-config-proc']
+[id='_chap_clustering']
+= Clustering
 
-= Clustering the deployment ZIP installation
+You can create two types of {PRODUCT} clusters:
 
-When using {EAP} clustering, a single {EAP} domain controller exists with other {EAP} slaves connecting to it as management users. You can deploy {CENTRAL} and dashbuilder as a management user on a domain controller, and the WAR deployments will be distributed to other members of the {EAP} cluster.
+Design-Time Clustering::
+Allows you to share assets in the Git repository, such as processes, rules, data objects, and others, with all the {PRODUCT} nodes in your cluster. It is suitable in case of concerns about a single point of failure and high availability during the development process. Design-time clustering makes use of _Apache Helix_ and _Apache ZooKeeper_.
++
+Design-time clustering is not required for runtime execution.
 
-To configure clustering on {EAP} 7.1, do the following:
+Runtime Clustering::
+Allows you to use the clustering capabilities of your container, such as Red Hat JBoss EAP. Runtime clustering does not require you to manage any Apache Helix or Apache ZooKeeper nodes. _Quartz Enterprise Job Scheduler_ is supported if you use timers in your application.
+
+[NOTE]
+====
+If you use the Websphere Application Server, Quartz setup is not necessary. Instead, use clustered EJB Timers. For more information, see the https://access.redhat.com/solutions/2175471[How to setup BPM Suite Timers to work in Websphere Application Server clustering] support article.
+====
+
+You can cluster the following components of {PRODUCT}:
+
+* Design-time cluster
+** _Git repository_: virtual-file-system (VFS) repository that holds the business assets.
+* Runtime cluster
+ifdef::PAM[]
+** _Intelligent Process Server, or web applications_: the web application nodes must share runtime data.
+endif::PAM[]
+ifdef::DM[]
+** _RealTime Decision Server, or Web applications_: the web application nodes must share runtime data.
+endif::DM[]
++
+For instructions on clustering the
+ifdef::PAM[]
+Intelligent Process Server,
+endif::PAM[]
+ifdef::DM[]
+RealTime Decision Server,
+endif::DM[]
+see <<_exec_server>>, or the  clustering documentation of your container.
+ifdef::PAM[]
+** _Back-end database_: database with the state data, such as process instances, KIE sessions, history log, and similar.
+endif::PAM[]
+
+== Git Repository Clustering Mechanism
+
+To cluster the Git repository, {PRODUCT} uses:
+
+// The additional info was requested by Alessandro. Please, do not delete as superfluous.
+
+Apache Helix::
+Provides cluster management functionality that allows you to synchronize and replicate data among the nodes in your cluster. Apache Helix cluster is managed by Apache ZooKeeper. With Apache Helix, you can define a cluster, add nodes to the cluster, remove nodes from the cluster, and perform other cluster-management tasks.
++
+Additional information:
+
+* Apache Helix needs to be configured on a single node only. The configuration is then stored and distributed by ZooKeeper.
+* Apache Helix cluster is administered by the `helix-admin.sh` script. See Apache Helix http://helix.apache.org/0.6.5-docs/tutorial_admin.html[documentation] for the list of commands as well as alternative ways of managing Apache Helix cluster.
+* Apache Helix cluster needs exactly one controller, which must be aware of all the nodes. See Apache Helix http://helix.apache.org/0.6.5-docs/tutorial_controller.html[controller] documentation and Apache Helix http://helix.apache.org/Architecture.html[architecture] documentation.
+
+Apache ZooKeeper::
+Allows you to synchronize and replicate data from the Apache Helix cluster. An Apache ZooKeeper cluster is known as an _ensemble_ and requires a majority of the servers to be functional for the service to be available.
++
+However, an ensemble is not required for any type of clustering. Only a single instance of ZooKeeper is required to allow {PRODUCT} to replicate its data; the ZooKeeper ensemble serves to provide redundancy and protect against the failure of ZooKeeper itself.
++
+Additional information:
+
+* For more information about failure recovery, see Apache ZooKeeper https://zookeeper.apache.org/doc/r3.4.8/zookeeperAdmin.html#sc_dataFileManagement[Data File Management].
+* For a list of commands, see Apache ZooKeeper https://zookeeper.apache.org/doc/r3.4.8/zookeeperAdmin.html#sc_zkCommands[ZooKeeper Commands: The Four Letter Words].
+
+The relationship between Apache Helix and Apache ZooKeeper:
+
+ifdef::PAM[]
+.Schema of Red Hat JBoss BPM Suite Cluster
+endif::PAM[]
+ifdef::DM[]
+.Schema of Red Hat JBoss BRMS Cluster
+endif::DM[]
+image::3639.png[]
+
+A typical clustering setup involves the following:
+
+. Configuring the cluster using Apache ZooKeeper and Apache Helix. This is required only for design-time clustering.
+ifdef::PAM[]
+. Configuring the back-end database with Quartz tables. This is required only for processes with timers.
+endif::PAM[]
+. Configuring clustering on your container. _{PRODUCT} Installation Guide_ provides only clustering instructions for Red Hat JBoss EAP 6.
+
+[float]
+== Clustering Maven Repositories
+
+Various Business Central operations publish JAR files to the Business Central's internal Maven Repository.
+
+This repository exists on the application server file-system as regular files and is not cluster aware. This folder is not synchronized across the various nodes in the cluster and must be synchronized using external tools like `rsync`.
+
+An alternative to the use of an external synchronization tool is to set the system property `org.guvnor.m2repo.dir` on each cluster node to point to a SAN or NAS. In such case, clustering of the Maven repository folder is not needed.
+
+[id='_configuring_clustering_on_red_hat_jboss_eap']
+== Clustering on Red Hat JBoss EAP
+
+To install {PRODUCT} in the clustered mode, the JAR installer provides a sample setup. You can configure clustering with the deployable ZIP for EAP as well.
+
+[id='_clustering_jar_installer']
+=== Clustering Using the JAR Installer
+
+NOTE: The JAR installer provides sample setup only. Adjusting the configuration is necessary for it to suit your project's needs.
+
+Using the JAR installer,
+ifdef::PAM[]
+described in <<_sect_the_red_hat_jboss_bpm_suite_installer_installation>>,
+endif::PAM[]
+you can set up a basic clustering configuration of {PRODUCT}.
+
+The automatic configuration creates:
+
+* ZooKeeper ensemble with three ZooKeeper nodes
+* A Helix cluster
+* Two Quartz datastores (one managed, one unmanaged)
+
+This {PRODUCT} setup consists of two EAP nodes that share a Maven repository, use Quartz for coordinating timed tasks, and have `business-central.war`, `dashbuilder.war`, and `kie-server.war` deployed. To customize the setup to fit your scenario, or to use clustering with the deployable ZIP, see <<_clustering_custom_configuration>> and the clustering documentation of your container.
+
+Follow the installation process described in <<_installing_red_hat_jboss_brmsbpm_suite_using_the_installer>>.
+
+. In *Configure runtime environment*, select *Install clustered configuration* and click *Next*.
+. Select the JDBC vendor for your database.
+. Provide the corresponding driver JAR(s):
++
+	* Select one or more files on the filesystem.
+	* Provide one or more URLs. The installer downloads the files automatically.
++
+The installer copies the JAR(s) into `_EAP_HOME_/modules` and creates corresponding `module.xml` file.
+ifdef::PAM[]
++
+.JDBC Driver Setup
+image::7214.png[Configure JDBC provider and drivers]
+endif::PAM[]
+
+. Enter the url, username, and password for accessing the database used by Quartz.
++
+The installer creates:
+
+* The Quartz definition file in `_EAP_HOME_/domain/configuration/quartz-definition.properties`
+* Two Quartz data sources in  `_EAP_HOME_/domain/domain.xml`
++
+Edit the `domain.xml` file to customize the setup.
++
+[NOTE]
+====
+During the installation, Quartz DDL scripts will be run on the database selected in this step. The scripts make changes needed for Quartz to operate, such as adding tables. You can view the scripts in `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/ddl-scripts`. No modifications should be necessary.
+====
++
+ifdef::PAM[]
+.Quartz Database Configuration
+image::7215.png[]
+endif::PAM[]
+
+. Click *Next* to initiate the installation.
++
+[IMPORTANT]
+====
+When using the JAR installer, the `war` archives are automatically created from the applications in `_EAP_HOME_/standalone/deployments/`. That means additional space is necessary as the applications exist both in uncompressed and compressed state in the storage during the installation.
+====
++
+Three ZooKeeper instances are created in `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/` in directories `zookeeper-one`, `zookeeper-two`, and `zookeeper-three`.
+
+
+After the installation finishes, do not start the server from the installer. To make Apache Helix aware of the cluster nodes, Apache ZooKeeper instances, and start the cluster:
+
+<<<<<<< 4ba84cd920e9802ddf8ee4aeda71d5d28853b27a
+. Change into `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/helix-core`.
+. Execute the lanuch script:
+=======
+. Change into `_EAP_HOME_/jboss-brms-bpmsuite-6.3-supplementary-tools/helix-core`.
+. Execute the launch script:
+>>>>>>> Getting rid of typos.
++
+On UNIX systems:
++
+----
+./startCluster.sh
+----
++
+On Windows:
++
+----
+./startCluster.bat
+----
+. Change into `_EAP_HOME_/bin`.
+. Execute the following script to start Red Hat JBoss EAP:
++
+On UNIX systems:
++
+----
+./domain.sh
+----
++
+On Windows:
++
+----
+./domain.bat
+----
+
+[id='starting_cluster']
+=== Starting a Cluster
+
+The `startCluster.sh` script in `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/helix-core` initializes and starts the cluster. Once initialized, further usage of `startCluster.sh` results in errors. If you installed {PRODUCT} cluster with the installer:
+
+* `ZOOKEEPER_HOME` is located in `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/zookeeper-_NUMBER_`
+* `HELIX_HOME` is located in  `_EAP_HOME_/jboss-brms-bpmsuite-{PRODUCT_VERSION}-supplementary-tools/helix-core`
+
+To start a cluster:
+
+. Start all your ZooKeeper servers, for example:
++
+On UNIX systems:
++
+----
+./ZOOKEEPER_HOME_ONE/bin/zkServer.sh start &
+./ZOOKEEPER_HOME_TWO/bin/zkServer.sh start &
+./ZOOKEEPER_HOME_THREE/bin/zkServer.sh start &
+----
++
+On Windows:
++
+----
+ZOOKEEPER_HOME_ONE/bin/zkServer.cmd start
+ZOOKEEPER_HOME_TWO/bin/zkServer.cmd start
+ZOOKEEPER_HOME_THREE/bin/zkServer.cmd start
+----
+
+. Make the Helix Controller aware of the ZooKeeper instance(s). For example:
++
+----
+./HELIX_HOME/bin/run-helix-controller.sh --zkSvr localhost:2181,localhost:2182,localhost:2183 --cluster bpms-cluster 2>&1 > /tmp/controller.log &
+----
+
+. Change into `_EAP_HOME_/bin` and start Red Hat JBoss EAP:
++
+On UNIX systems:
++
+----
+./domain.sh
+----
++
+On Windows:
++
+----
+./domain.bat
+----
+. You can access your {PRODUCT} nodes. For example, if you created {PRODUCT} cluster by using the installer, you can access your nodes at:
++
+----
+localhost:8080/business-central
+localhost:8230/business-central
+----
+
+[id='_stop_the_cluster']
+=== Stopping a Cluster
+
+To stop your cluster, stop the components in the reversed order from starting it:
+
+. Stop the instance of Red Hat JBoss EAP, or the container you are using.
+. Stop the Helix Controller process.
++
+On UNIX systems, find the PID of the process:
++
+----
+ps aux|grep HelixControllerMain
+----
++
+Once you have the PID, terminate the process:
++
+----
+kill -15 <pid of HelixControllerMain>
+----
++
+On Windows, use the Task Manager to stop the process.
++
+. Stop the ZooKeeper server(s). For each server instance, execute:
++
+On UNIX systems:
++
+----
+./ZOOKEEPER_HOME_ONE/bin/zkServer.sh stop
+./ZOOKEEPER_HOME_TWO/bin/zkServer.sh stop
+./ZOOKEEPER_HOME_THREE/bin/zkServer.sh stop
+----
++
+On Windows:
++
+----
+ZOOKEEPER_HOME_ONE/bin/zkServer.cmd stop
+ZOOKEEPER_HOME_TWO/bin/zkServer.cmd stop
+ZOOKEEPER_HOME_THREE/bin/zkServer.cmd stop
+----
+
+
+[id='_clustering_custom_configuration']
+=== Custom Configuration (Deployable ZIP)
+
+When using Red Hat JBoss EAP clustering, a single Red Hat JBoss EAP domain controller exists with other Red Hat JBoss EAP slaves connecting to it as management users. You can deploy Business Central and dashbuilder as a management user on a domain controller, and the WAR deployments will be distributed to other members of the Red Hat JBoss EAP cluster.
+
+To configure clustering on Red Hat JBoss EAP 6, do the following:
 
 . Configure ZooKeeper and Helix according to <<_setting_up_a_cluster>>.
 
@@ -13,7 +306,7 @@ ifdef::PAM[]
 endif::PAM[]
 
 ifdef::PAM[]
-		. Install the JDBC driver. See the https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html/Administration_and_Configuration_Guide/sect-JDBC_Drivers.html#Install_a_JDBC_Driver_with_the_Management_Console[Install a JDBC Driver with the Management Console] chapter of the {EAP} Administration and Configuration Guide_.
+		. Install the JDBC driver. See the https://access.redhat.com/documentation/en-US/JBoss_Enterprise_Application_Platform/6.4/html/Administration_and_Configuration_Guide/sect-JDBC_Drivers.html#Install_a_JDBC_Driver_with_the_Management_Console[Install a JDBC Driver with the Management Console] chapter of the _Red Hat JBoss EAP Administration and Configuration Guide_.
 endif::PAM[]
 
 ifdef::PAM[]
@@ -23,7 +316,7 @@ ifdef::PAM[]
 .. Add the definition of the main data source used by {PRODUCT}.
 ifdef::PAM[]
 +
-.PostgreSQL Data Source Defined as Main {PRODUCT} Data Source
+.PostgreSQL Data Source Defined as Main Red Hat JBoss BPM Suite Data Source
 ====
 [source,xml]
 ----
@@ -106,9 +399,9 @@ endif::DM[]
 ----
 ====
 
-.. If you are deploying {PRODUCT} on {EAP} 7.1, ensure that the data sources contain schemas. To create the data source schemas, you can use the DDL scripts located in `jboss-bpmsuite-brms-{PRODUCT_VERSION}-supplementary-tools.zip`. If your data source does not contain schemas, ensure your nodes start one at a time.
+.. If you are deploying {PRODUCT} on Red Hat JBoss EAP 7.0, ensure that the data sources contain schemas. To create the data source schemas, you can use the DDL scripts located in `jboss-bpmsuite-brms-{PRODUCT_VERSION}-supplementary-tools.zip`. If your data source does not contain schemas, ensure your nodes start one at a time.
 +
-Additionally, when deploying on Red Hat {EAP} 7.1, open `_EAP_HOME_/domain/business-central.war/WEB-INF/classes/META-INF/persistence.xml` and change the property `hibernate.hbm2ddl.auto="update"` to `hibernate.hbm2ddl.auto="none"`.
+Additionally, when deploying on Red Hat JBoss EAP 7.0, open `_EAP_HOME_/domain/business-central.war/WEB-INF/classes/META-INF/persistence.xml` and change the property `hibernate.hbm2ddl.auto="update"` to `hibernate.hbm2ddl.auto="none"`.
 endif::PAM[]
 . Configure individual server nodes in the `main-server-group` element in the `_EAP_HOME_/domain/configuration/host.xml` file with properties defined in
 ifdef::PAM[]
@@ -118,7 +411,7 @@ ifdef::DM[]
 <<_cluster_properties_BRMS>>.
 endif::DM[]
 +
-When configuring a {EAP} cluster with Apache ZooKeeper, a different number of {EAP} nodes than Apache ZooKeeper nodes is possible. However, having the same node count for both ZooKeeper and {EAP} is considered best practice.
+When configuring a Red Hat JBoss EAP cluster with Apache ZooKeeper, a different number of Red Hat JBoss EAP nodes than Apache ZooKeeper nodes is possible. However, having the same node count for both ZooKeeper and Red Hat JBoss EAP is considered best practice.
 ifdef::PAM[]
 +
 [id='_cluster_properties_BPMS']
@@ -435,7 +728,7 @@ ifdef::DM[]
 ====
 endif::DM[]
 
-. Add management users as instructed in the _Administration and Configuration Guide_ for {EAP} and application users as instructed in _{PRODUCT} Administration and Configuration Guide_.
+. Add management users as instructed in the _Administration and Configuration Guide_ for Red Hat JBoss EAP and application users as instructed in _{PRODUCT} Administration and Configuration Guide_.
 // change on purpose - cd = change directory
 . Change to `_EAP_HOME_/bin` and start the application server in domain mode:
 +
@@ -453,7 +746,7 @@ On Windows:
 
 . Check that the nodes are available.
 
-Deploy the {CENTRAL} application to your servers:
+Deploy the Business Central application to your servers:
 
 ifdef::PAM[]
 . Change the predefined persistence of the application to the required database (PostgreSQL): in `persistence.xml` change the following:
@@ -470,7 +763,7 @@ endif::DM[]
 
 [NOTE]
 ====
-Make sure to explicitly check deployment unit readiness with every cluster member.
+It is important users explicitly check deployment unit readiness with every cluster member.
 
 When a deployment unit is created on a cluster node, it takes some time before it is distributed among all cluster members. Deployment status can be checked using the UI and REST, however, if the query goes to the node where the deployment was originally issued, the answer is `deployed`. Any request targeting this deployment unit sent to a different cluster member fails with `DeploymentNotFoundException`.
 ====
@@ -481,7 +774,7 @@ ifdef::PAM[]
 endif::PAM[]
 ifdef::DM[]
 [id='_exec_server']
-=== Clustering the Realtime {KIE_SERVER}
+=== Clustering the Realtime Decision Server
 endif::DM[]
 
 The
@@ -489,7 +782,7 @@ ifdef::PAM[]
 Intelligent Process Server
 endif::PAM[]
 ifdef::DM[]
-Realtime {KIE_SERVER}
+Realtime Decision Server
 endif::DM[]
 is a lightweight and scalable component. Clustering it provides many benefits. For example:
 
@@ -501,14 +794,14 @@ is a lightweight and scalable component. Clustering it provides many benefits. F
 
 The basic runtime cluster consists of:
 
-* Multiple {EAP} instances with
+* Multiple Red Hat JBoss EAP instances with
 ifdef::PAM[]
 Intelligent Process Server
 endif::PAM[]
 ifdef::DM[]
-Realtime {KIE_SERVER}
+Realtime Decision Server
 endif::DM[]
-* A controller instance with {CENTRAL}
+* A controller instance with Business Central
 
 image::kieserver-arch.png[]
 
@@ -517,15 +810,15 @@ ifdef::PAM[]
 Intelligent Process Server
 endif::PAM[]
 ifdef::DM[]
-Realtime {KIE_SERVER}
+Realtime Decision Server
 endif::DM[]
-cluster on {EAP} 6.4.
+cluster on Red Hat JBoss EAP 6.4.
 
 ifdef::PAM[]
 .Creating an Intelligent Process Server Cluster
 endif::PAM[]
 ifdef::DM[]
-.Creating a Realtime {KIE_SERVER} Cluster
+.Creating a Realtime Decision Server Cluster
 endif::DM[]
 . Change into `_CONTROLLER_HOME_/bin`.
 . Add a user with the `kie-server` role:
@@ -574,14 +867,14 @@ $ ./standalone.sh
 <4> `org.kie.server.controller.pwd`: Password for controller authentication. Uses `kieserver1!` by default.
 <5> `org.kie.server.id`: Server identifier that corresponds to template ID defined by the controller instance. Give the same ID to multiple server instances that represent one template.
 +
-The example above is defined for {EAP} domain mode. For further list of bootstrap switches, see section
+The example above is defined for Red Hat JBoss EAP domain mode. For further list of bootstrap switches, see section
 ifdef::PAM[]
 https://access.qa.redhat.com/documentation/en/red-hat-jboss-bpm-suite/6.4/paged/administration-and-configuration-guide/chapter-3-intelligent-process-server#bootstrap_switches[Bootstrap Switches] of the _{PRODUCT} Administration and Configuration Guide_.
 endif::PAM[]
 ifdef::DM[]
 https://access.qa.redhat.com/documentation/en/red-hat-jboss-brms/6.4/paged/administration-and-configuration-guide/chapter-3-realtime-decision-server#bootstrap_switches[Bootstrap Switches] of _{PRODUCT} Administration and Configuration Guide_.
 endif::DM[]
-. Repeat the previous step for as many servers as you need. To start {EAP} in the domain mode, execute:
+. Repeat the previous step for as many servers as you need. To start Red Hat JBoss EAP in the domain mode, execute:
 [source,bash]
 ----
 $ ./SERVER_HOME/bin/domain.sh
@@ -596,10 +889,10 @@ After connecting the servers to your controller, check the controller log:
 13:54:40,348 INFO  [org.kie.server.controller.rest.RestKieServerControllerImpl] (http-localhost/127.0.0.1:8080-2) Server with id 'HR' connected
 ----
 
-Alternatively, to verify in controller {CENTRAL}:
+Alternatively, to verify in controller Business Central:
 
-. Log into the controller {CENTRAL}.
-. Click *Deploy* -> *{KIE_SERVER}s*.
+. Log into the controller Business Central.
+. Click *Deploy* -> *Execution Servers*.
 . View the remote servers connected to each template.
 
 
@@ -611,10 +904,10 @@ Alternatively, to verify in controller {CENTRAL}:
 
 [NOTE]
 ====
-If you do not use {CENTRAL}, skip this section.
+If you do not use Business Central, skip this section.
 ====
 
-To cluster your Git (VFS) repository in {CENTRAL}:
+To cluster your Git (VFS) repository in Business Central:
 
 . Download the `jboss-bpmsuite-brms-_VERSION_-supplementary-tools.zip`, which contains Apache ZooKeeper, Apache Helix, and Quartz DDL scripts.
 . Unzip the archive: the `ZooKeeper` directory (`_ZOOKEEPER_HOME_`) and the `Helix` directory (`_HELIX_HOME_`) are created.
@@ -796,7 +1089,7 @@ NOTE: In case you decide to cluster ZooKeeper, add an odd number of instances in
 
 === Starting and Stopping a Cluster
 
-To start your cluster, see COMMENT: add xref starting_cluster>>. To stop your cluster, see COMMENT: add xref.
+To start your cluster, see <<starting_cluster>>. To stop your cluster, see <<_stop_the_cluster>>.
 
 ifdef::PAM[]
 
@@ -808,7 +1101,7 @@ ifdef::PAM[]
 Intelligent Process Server,
 endif::PAM[]
 ifdef::DM[]
-Realtime {KIE_SERVER},
+Realtime Decision Server,
 endif::DM[]
 skip this section. If you want to replicate timers in your business process, use the Quartz component.
 
@@ -816,7 +1109,7 @@ Before you can configure the database on your application server, you need to pr
 
 To configure Quartz:
 
-. Configure the database. Make sure to use one of the supported non-JTA data sources. Since Quartz needs a non-JTA data source, you cannot use the {CENTRAL} data source. In the example code, PostgreSQL with the user
+. Configure the database. Make sure to use one of the supported non-JTA data sources. Since Quartz needs a non-JTA data source, you cannot use the Business Central data source. In the example code, PostgreSQL with the user
 ifdef::PAM[]
 `bpms`
 endif::PAM[]
