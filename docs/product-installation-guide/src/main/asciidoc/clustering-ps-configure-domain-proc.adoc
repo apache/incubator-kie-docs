@@ -20,9 +20,11 @@ By using domain mode with a cluster, you can centrally manage and publish config
 </server-group>
 ----
 
-. Edit the `data-stores` property and the `timer-service thread-pool-name` above it.
+. Edit the `data-stores` property and the `timer-service thread-pool-name` above it:
 +
-The `datasource-jndi-name` is the JNDI name of the database specified at the beginning of this procedure. You can enter any name for the value of the `partition` property. Replace the  `default-data-store` attribute value with `ejb_timer_ds`· Set the value of `refresh-interval` to specify how often in milliseconds the EJB timer connects to the database to synchronize and load tasks to be processed:
+* The `datasource-jndi-name` is the JNDI name of the database specified at the beginning of this procedure. 
+* You can enter any name for the value of the `partition` property. However, a node will only see timers from other nodes that have the same partition name. Grouping nodes into partitions by assigning partition names enables you to break a large cluster up into several smaller clusters. Doing this should improve performance. For example, instead of having a cluster of 100 nodes, where all 100 nodes are trying to execute and refresh the same timers, you can create 20 clusters of 5 nodes by giving every group of 5 a different partition name.
+* Replace the  `default-data-store` attribute value with `ejb_timer_ds`· *Set the value of `refresh-interval` in milliseconds to specify how often the EJB timer connects to the database to synchronize and load tasks to be processed.
 +
 [source,xml]
 ----
@@ -41,7 +43,7 @@ The following table lists the supported databases and the corresponsing `databas
 |Attribute value
 
 
-|Hyper SQL
+|Hyper SQL (for demonstration purposes only, not supported)
 |`hsql`
 
 |PostgreSQL
@@ -50,19 +52,17 @@ The following table lists the supported databases and the corresponsing `databas
 |Oracle
 |`oracle`
 
-
 |IBM DB2
 |`db2`
 
 
-|Hyper SQL
+|Microsoft SQL Server
 |`mssql`
 
 |MySQL and MariaDB
-|`mssql`
+|`mysql`
 
 |===
-
 
 . Add the {KIE_SERVER} and EJB timer data sources to the `full-ha` profile. In these examples, `<DATABASE>` is the name of the database, `<SERVER_NAME>` is the host name of the JNDI database, and `<USER_NAME>` and `<USER_PWD>` are the credentials for that database.
 ifdef::PAM[]
@@ -125,8 +125,9 @@ You must use two different databases for {KIE_SERVER} runtime data and EJB timer
 
 . Add the following properties to the `<system-properties>` element:
 +
-* `org.kie.server.persistence.ds`: The JNDI name of your data source. For {PRODUCT}, this is `java:/jboss/datasources/rhpam`
-* `org.kie.server.persistence.dialect`: The hibernate dialect for your database
+* `org.kie.server.persistence.ds`: The JNDI name of your data source. For {PRODUCT}, this is `java:/jboss/datasources/rhpam`.
+* `org.jbpm.ejb.timer.tx" value="true`: Required for clustering timers.
+* `org.kie.server.persistence.dialect`: The hibernate dialect for your database.
 +
 The following dialects are supported:
 + 
@@ -137,19 +138,8 @@ The following dialects are supported:
 ** Oracle: `org.hibernate.dialect.Oracle10gDialect`
 ** PostgreSQL: `org.hibernate.dialect.PostgreSQL82Dialect`
 ** PostgreSQL plus: `org.hibernate.dialect.PostgresPlusDialect`
-** Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
+//** Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
 +
 . Save the `domain.xml` file.
 
 
-. Complete the following steps in the `host.xml` file on the master node and in the `host-slave.xml` file on each slave node:
-.. Open the `_EAP_HOME_/domain/configuration/host.xml` or `_EAP_HOME_/domain/configuration/host-slave.xml` file in a text editor.
-.. Add the following property to the `<system-properties>` element:
-+
-[source]
-----
-<system-properties>
-   <property name="org.jbpm.ejb.timer.tx" value="true"/>  
-</system-properties>
-----
-.. Save the `host.xml` and `host-slave.xml` files.
