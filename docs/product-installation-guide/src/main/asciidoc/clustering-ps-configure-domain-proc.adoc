@@ -20,9 +20,12 @@ By using domain mode with a cluster, you can centrally manage and publish config
 </server-group>
 ----
 
-. Edit the `data-stores` property and the `timer-service thread-pool-name` above it.
+. Edit the `data-stores` property and the `timer-service thread-pool-name` above it:
 +
-The `datasource-jndi-name` is the JNDI name of the database specified at the beginning of this procedure. You can enter any name for the value of the `partition` property. Replace the  `default-data-store` attribute value with `ejb_timer_ds`· Set the value of `refresh-interval` to specify how often the EJB timer connects to the database to synchronize and load tasks to be processed:
+* The `datasource-jndi-name` is the JNDI name of the database specified at the beginning of this procedure. 
+* You can enter any name for the value of the `partition` property. However, a node will only see timers from other nodes that have the same partition name. Grouping nodes into partitions by assigning partition names enables you to break a large cluster up into several smaller clusters. Doing this should improve performance. For example, instead of having a cluster of 100 nodes, where all 100 nodes are trying to execute and refresh the same timers, you can create 20 clusters of 5 nodes by giving every group of 5 a different partition name.
+* Replace the  `default-data-store` attribute value with `ejb_timer_ds`. 
+* Set the value of `refresh-interval` in milliseconds to specify how often the EJB timer connects to the database to synchronize and load tasks to be processed.
 +
 [source,xml]
 ----
@@ -32,6 +35,35 @@ The `datasource-jndi-name` is the JNDI name of the database specified at the beg
 </data-stores> 
 </timer-service>
 ----
++
+The following table lists the supported databases and the corresponsing `database` attribute value:
++
+[cols="1,1", frame="all", options="header"]
+|===
+|Database
+|Attribute value
+
+
+|Hyper SQL (for demonstration purposes only, not supported)
+|`hsql`
+
+|PostgreSQL
+|`postgresql`
+
+|Oracle
+|`oracle`
+
+|IBM DB2
+|`db2`
+
+
+|Microsoft SQL Server
+|`mssql`
+
+|MySQL and MariaDB
+|`mysql`
+
+|===
 
 . Add the {KIE_SERVER} and EJB timer data sources to the `full-ha` profile. In these examples, `<DATABASE>` is the name of the database, `<SERVER_NAME>` is the host name of the JNDI database, and `<USER_NAME>` and `<USER_PWD>` are the credentials for that database.
 ifdef::PAM[]
@@ -71,7 +103,15 @@ ifdef::PAM[]
 </xa-datasource>
 ----
 endif::PAM[]
-. In the `security-setting` element of the `activemq` subsystem in the `"full-ha"` profile, add the `kie-server` role:
++
+[WARNING]
+====
+You must use two different databases for {KIE_SERVER} runtime data and EJB timer data.
+====
++
+.  In the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` element, make the following changes:
+.. Replace `<cluster password="${jboss.messaging.cluster.password:CHANGE ME!!}"/>` with `<cluster user="<CLUSTER_USER>" password="<CLUSTER_PWD>"/>` where `<CLUSTER_USER>` is the user used by {EAP} to form a messaging cluster and `<CLUSTER_PWD>` is the password for that user.
+.. In the `security-setting` element add the `kie-server` role:
 +
 [source]
 ----
@@ -82,10 +122,10 @@ endif::PAM[]
             <role name="kie-server" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
         </security-setting>
 ---- 
-. Add the following properties to the `<system-properties>` element:
-+
-* `org.kie.server.persistence.ds`: The JNDI name of your data source. For {PRODUCT}, this is `java:/jboss/datasources/rhpam`
-* `org.kie.server.persistence.dialect`: The hibernate dialect for your database
+
+. Add the following properties to the `<system-properties>` element and replace the following placeholders:
+* `<JNDI_NAME>` is the JNDI name of your data source. For {PRODUCT}, this is `java:/jboss/datasources/rhpam`.
+* `<DIALECT>` is the hibernate dialect for your database. 
 +
 The following dialects are supported:
 + 
@@ -96,6 +136,15 @@ The following dialects are supported:
 ** Oracle: `org.hibernate.dialect.Oracle10gDialect`
 ** PostgreSQL: `org.hibernate.dialect.PostgreSQL82Dialect`
 ** PostgreSQL plus: `org.hibernate.dialect.PostgresPlusDialect`
-** Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
-
-
+//** Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
++
+[source,xml]
+----
+<system-properties>
+  <property name="org.kie.server.persistence.ds" value="<JNDI_NAME>"/>
+  <property name="org.kie.server.persistence.dialect" value="<DIALECT>"/>
+  <property name="org.jbpm.ejb.timer.tx" value="true"/>
+</system-properties>
+----
++
+. Save the `domain.xml` file.
