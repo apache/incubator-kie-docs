@@ -1,0 +1,33 @@
+[id='error-types-and-filters-ref']
+= Error types and filters
+
+Error handling attempts to catch and handle any kind of error, therefore it needs a way to categorize errors. By doing this, it is able to properly extract information from the error and make it pluggable, as some users may require specific types of errors to be thrown and handled in different ways than what is provided by default.
+
+Error categorization and filtering is based on `ExecutionErrorFilters`. This interface is solely responsible for building instances of `ExecutionError`, which are later stored by way of the `ExecutionErrorStorage` strategy. It has following methods:
+
+* `accept`: indicates if given error can be handled by the filter.
+* `filter`: where the actual filtering, handling, and so on happens.
+* `getPriority`: indicates the priority that is used when calling filters.
+
+As only one filter can process given error, filters use a priority system to avoid having multiple filters returning alternative “views” of the same error. Priority allows more specialized filters to see if the error can be accepted, or otherwise allow another filter to handle it.
+
+`ExecutionErrorFilter` can be provided using the `ServiceLoader` mechanism, which allows the capability of error handling to be easily extended.
+
+{PRODUCT} ships with the following `ExecutionErrorFilters` :
+
+.ExecutionErrorFilters
+[cols="60%,20%,20%",options="header"]
+|===
+|Class name | Type | Priority
+|org.jbpm.runtime.manager.impl.error.filters.ProcessExecutionErrorFilter | Process | 100
+|org.jbpm.runtime.manager.impl.error.filters.TaskExecutionErrorFilter | Task | 80
+|org.jbpm.runtime.manager.impl.error.filters.DBExecutionErrorFilter | DB | 200
+|org.jbpm.executor.impl.error.JobExecutionErrorFilter | Job | 100
+|===
+
+Filters are given a higher execution order based on the lowest value of the priority. In above table, filters are invoked in following order:
+
+. Task
+. Process
+. Job
+. DB
