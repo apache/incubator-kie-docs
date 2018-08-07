@@ -1,0 +1,88 @@
+[id='kie-server-configure-central-proc_{context}']
+= Configuring a {KIE_SERVER} to connect to {CENTRAL}
+
+You can configure a {KIE_SERVER} to connect to {CENTRAL}. You can also configure the name of the server configuration. The server becomes a part of that server configuration and any projects deployed on the server configuration are deployed on the server.
+
+NOTE: If you are deploying {KIE_SERVER} on OpenShift, see
+ifdef::DM[]
+{URL_DM_ON_OPENSHIFT}[_{DM_ON_OPENSHIFT}_]
+endif::DM[]
+ifdef::PAM[]
+{URL_DEPLOYING_MANAGED_ON_OPENSHIFT}[_{DEPLOYING_MANAGED_ON_OPENSHIFT}_]
+endif::PAM[]
+for instructions about configuring it to connect to {CENTRAL}.
+
+.Prerequisite
+{KIE_SERVER} is installed. For installation options, see {URL_PLANNING_INSTALL}[_{PLANNING_INSTALL}_].
+
+.Procedure
+. Create a `settings.xml` file for connecting to the Maven repository that {CENTRAL} uses. If you have not changed the configuration of {CENTRAL}, it uses its own built-in Maven repository. Use the following contents for `settings.xml`:
++
+[source,xml,subs="attributes+"]
+----
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+  <servers>
+    <server>
+      <id>remote-repo</id>
+      <username>user</username>
+      <password>pwd</password>
+    </server>
+  </servers>
+  <profiles>
+    <profile>
+      <id>additional-maven-repos</id>
+      <repositories>
+        <repository>
+          <id>remote-repo</id>
+          <url>http://centralhost:centralport/{URL_COMPONENT_CENTRAL}/maven2/</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+  <activeProfiles>
+    <activeProfile>additional-maven-repos</activeProfile>
+  </activeProfiles>
+</settings>
+----
++
+--
+Replace the following values:
+
+* *user:* The user name for a user who can log in to {CENTRAL}
+* *pwd:* The password for the user who can log in to {CENTRAL}
+* *centralhost:* The host name for {CENTRAL}
+* *centralport:* The port for {CENTRAL}
+
+If {CENTRAL} is deployed on OpenShift, remove `{URL_COMPONENT_CENTRAL}` from the URL.
+--
+. Save the file in a known location, for example, `/opt/maven/settings.xml`.
+. In your {PRODUCT} installation directory, navigate to the `standalone-full.xml` file. For example, if you use a {EAP} installation for {PRODUCT}, go to `$EAP_HOME/standalone/configuration/standalone-full.xml`.
+. Open `standalone-full.xml` and under the `<system-properties>` tag, set the following properties:
++
+--
+* *org.kie.server.controller.user:* The user name of a user who can log in to the {CENTRAL}.
+* *org.kie.server.controller.pwd:* The password of the user who can log in to the {CENTRAL}.
+* *org.kie.server.controller:* The URL for connecting to the API of {CENTRAL}.
+
+Normally, the URL is `\http://<centralhost>:<centralport>/{URL_COMPONENT_CENTRAL}/rest/controller`, where `<centralhost>` and `<centralport>` are the host name and port for {CENTRAL}. If {CENTRAL} is deployed on OpenShift, remove `{URL_COMPONENT_CENTRAL}/` from the URL.
+
+* *org.kie.server.location:* The URL for connecting to the API of {KIE_SERVER}. Normally, the URL is `\http://<serverhost>:<serverport>/kie-server/services/rest/server`, where `<serverhost>` and `<serverport>` are the host name and port for {KIE_SERVER}.
+* *org.kie.server.id:* The name of a server configuration. If this server configuration does not exist in {CENTRAL}, it is created automatically when {KIE_SERVER} connects to {CENTRAL}.
+* *kie.maven.settings.custom:* The full path to the `settings.xml` file for connecting to the Maven repository.
+
+For example:
+
+[source,xml,subs="attributes+"]
+----
+<property name="org.kie.server.controller.user" value="central_user"/>
+<property name="org.kie.server.controller.password" value="central_password"/>
+<property name="org.kie.server.controller" value="http://central.example.com:8080/{URL_COMPONENT_CENTRAL}/rest/controller"/>
+<property name="org.kie.server.location" value="http://kieserver.example.com:8080/kie-server/services/rest/server"/>
+<property name="org.kie.server.id" value="production-servers"/>
+<property name="kie.maven.settings.custom" value="/opt/maven/settings.xml"/>
+----
+--
+. Start or restart the {KIE_SERVER}.
