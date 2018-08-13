@@ -59,3 +59,63 @@ Please note that the following data is not available when the deployment unit is
 
 - Process instance diagram: As the actual image is hosted as part of the container resources, it is not possible to display the diagram.
 - Process instance variables: Only variables that changed its value during the process execution are listed.
+
+== CaseData type information is auto-imported into the process context
+
+Prior to version 7.10 whenever referring to CaseData type a fully qualified class name has to be given. This applies to:
+
+- Milestone conditions
+- Stage (activation and completion) conditions
+
+This has now been improved to allow short and direct reference to CaseData instead of `org.kie.api.runtime.process.CaseData` and CaseAssignment instead
+of `org.kie.api.runtime.process.CaseAssignment`.
+
+== Stage name to trigger adhoc fragments
+
+Initially to trigger adhoc fragments within given stage that required to use the identifier of the stage, 7.10 brings in additional option to refer to stage by name.
+This simplifies usability of the trigger operations and allow more human friendly approach.
+
+== Parameterized stage names
+
+In addition to referring to stages by names, stages can now have parameterized names which will allow to distinguish them between each other in situations
+when there are multiple stage instances of the same stage (definition). This makes it possible to trigger ad hoc fragments in particular stage instance when
+referring to it my name and the name is unique due to use of parameters in the stage definition - `Stage #{variable}`
+
+== Archetypes
+
+jBPM 7.10 introduces new maven archetypes to easily generate:
+
+- KJAR projects outside of workbench - allows to generate regular project and case project
+- service project - a fully featured service based on SpringBoot and equipped with business automation capabilities (kie server apis)
+
+NOTE: Work in progress - This is an initial delivery which will be significantly improved over the coming weeks to provide comprehensive
+solution to build business applications with jBPM as one of the capabilities.
+
+Take a look at following documentation to learn more about these archetypes -
+https://github.com/kiegroup/droolsjbpm-knowledge/blob/master/kie-archetypes/kie-kjar-archetype/README.md[kjar archetype]
+and https://github.com/kiegroup/droolsjbpm-knowledge/blob/master/kie-archetypes/kie-service-spring-boot-archetype/README.md[service archetype].
+
+== Process instance migration with timers
+
+This is a worth noting bug fix that affects process instances with timers within subprocesses. Prior to this version such timers were simply canceled and
+not rescheduled after migrating process instances. This has been fixed and thus it is strongly recommended to upgrade to version 7.10 as soon as possible
+if you plan to migrate active process instances and there are timers within subprocesses.
+
+== JPA entities can be used as case file variables
+
+Case file follows same approach for externalizing data storage, meaning different type of data can be stored in different systems. With 7.10 it is now
+possible to use JPA entities as case file variables that will be stored in separate database columns.
+
+The only requirement is to configure the marshaller in deployment descriptor
+
+[source]
+----
+.withJpa("org.jbpm.persistence.patient.example")
+----
+
+and the complete registration of the marshaller is:
+
+[source]
+----
+org.jbpm.casemgmt.impl.marshalling.CaseMarshallerFactory.builder().withDoc().withJpa("org.jbpm.persistence.patient.example").get()
+----
