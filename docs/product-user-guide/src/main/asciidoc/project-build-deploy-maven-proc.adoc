@@ -1,0 +1,107 @@
+[id='project-build-deploy-maven-proc_{context}']
+= Packaging and deploying a project in Maven
+
+If you want to deploy a Maven project outside of {CENTRAL} to a configured {KIE_SERVER}, you can edit the project `pom.xml` file to package your project as a KJAR file and add a `kmodule.xml` file with the KIE base and KIE session configurations for the assets in your project.
+
+.Prerequisites
+* You have a Mavenized project that contains {PRODUCT} business assets.
+* {KIE_SERVER} is installed and `kie-server` user access is configured. For installation options, see {URL_PLANNING_INSTALL}[_{PLANNING_INSTALL}_].
+
+.Procedure
+. In the `pom.xml` file of your Maven project, set the packaging type to `kjar` and add the `kie-maven-plugin` build component:
++
+--
+[source,xml,subs="attributes+"]
+----
+<packaging>kjar</packaging>
+...
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.kie</groupId>
+      <artifactId>kie-maven-plugin</artifactId>
+      <version>${{PRODUCT_INIT}.version}</version>
+      <extensions>true</extensions>
+    </plugin>
+  </plugins>
+</build>
+----
+
+The `kjar` packaging type activates the `kie-maven-plugin` component to validate and pre-compile artifact resources. The `<version>` is the Maven artifact version for {PRODUCT} currently used in your project (for example, {MAVEN_ARTIFACT_VERSION}). These settings are required to properly package the Maven project for deployment.
+--
+. In the `~/resources` directory of your Maven project, create a `META-INF/kmodule.xml` metadata file with at least the following content:
++
+--
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://www.drools.org/xsd/kmodule">
+</kmodule>
+----
+
+This `kmodule.xml` file is a KIE module descriptor that is required for all {PRODUCT} projects. You can use the KIE module to define one or more KIE bases and one or more KIE sessions from each KIE base.
+
+For more information about `kmodule.xml` configuration, see xref:project-kmodule-configure-proc_packaging-deploying[].
+--
+. In the relevant resource in your Maven project, configure a `.java` class to create a KIE container and a KIE session to load the knowledge base:
++
+--
+[source,java]
+----
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+
+public void testApp() {
+
+  // Load the knowledge base:
+  KieServices ks = KieServices.Factory.get();
+  KieContainer kContainer = ks.getKieClasspathContainer();
+  KieSession kSession = kContainer.newKieSession();
+
+}
+----
+
+In this example, the KIE container reads the files to be built from the class path for a `testApp` project. The `KieServices` API enables you to access all KIE building and runtime configurations.
+
+You can also create the KIE container by passing the project `ReleaseId` to the `KieServices` API. The `ReleaseId` is generated from the `GroupId`, `ArtifactId`, and `Version` (GAV) values in the project `pom.xml` file.
+
+[source,java]
+----
+import org.kie.api.KieServices;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+
+public void testApp() {
+
+  // Identify the project in the local repository:
+  ReleaseId rid = new ReleaseId();
+  rid.setGroupId("com.sample");
+  rid.setArtifactId("my-app");
+  rid.setVersion("1.0.0");
+
+  // Load the knowledge base:
+  KieServices ks = KieServices.Factory.get();
+  KieContainer kContainer = ks.newKieContainer(rid);
+  KieSession kSession = kContainer.newKieSession();
+
+}
+----
+--
+. In a command terminal, navigate to your Maven project directory and run the following commands to build your files for testing and then deploy to the remote Maven repository configured for your project:
++
+--
+Build project locally for testing:
+[source]
+----
+mvn clean install
+----
+
+Deploy project to remote Maven repository:
+[source]
+----
+mvn deploy
+----
+
+If the build fails, address any problems described in the command line error messages and try again to validate the files until the build is successful.
+--
