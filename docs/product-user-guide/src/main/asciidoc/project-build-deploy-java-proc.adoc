@@ -1,0 +1,100 @@
+[id='project-build-deploy-java-proc_{context}']
+= Packaging and deploying a project in a Java application
+
+If you want to deploy a project from within your own Java application to a configured {KIE_SERVER}, you can use a `KieModuleModel` instance to programatically create a `kmodule.xml` file that defines the KIE base and a KIE session, and then add all resources in your project to the KIE virtual file system `KieFileSystem`.
+
+.Prerequisites
+* You have a Java application that contains {PRODUCT} business assets.
+* {KIE_SERVER} is installed and `kie-server` user access is configured. For installation options, see {URL_PLANNING_INSTALL}[_{PLANNING_INSTALL}_].
+
+.Procedure
+. In your client application, use the `KieServices` API to create a `KieModuleModel` instance with the desired KIE base and KIE session. The `KieServices` API enables you to access all KIE building and runtime configurations. The `KieModuleModel` instance generates the `kmodule.xml` file for your project.
++
+For more information about `kmodule.xml` configuration, see xref:project-kmodule-configure-proc_packaging-deploying[].
++
+. Convert your `KieModuleModel` instance into XML and add the XML to `KieFileSystem`.
++
+--
+.Creating `kmodule.xml` programmatically and adding it to `KieFileSystem`
+[source,java]
+----
+import org.kie.api.KieServices;
+import org.kie.api.builder.model.KieModuleModel;
+import org.kie.api.builder.model.KieBaseModel;
+import org.kie.api.builder.model.KieSessionModel;
+import org.kie.api.builder.KieFileSystem;
+
+  KieServices kieServices = KieServices.Factory.get();
+  KieModuleModel kieModuleModel = kieServices.newKieModuleModel();
+
+  KieBaseModel kieBaseModel1 = kieModuleModel.newKieBaseModel("KBase1")
+    .setDefault(true)
+    .setEqualsBehavior(EqualityBehaviorOption.EQUALITY)
+    .setEventProcessingMode(EventProcessingOption.STREAM);
+
+  KieSessionModel ksessionModel1 = kieBaseModel1.newKieSessionModel("KSession1")
+    .setDefault(true)
+    .setType(KieSessionModel.KieSessionType.STATEFUL)
+    .setClockType(ClockTypeOption.get("realtime"));
+
+  KieFileSystem kfs = kieServices.newKieFileSystem();
+  kfs.writeKModuleXML(kieModuleModel.toXML());
+----
+--
+. Add any remaining {PRODUCT} assets that you use in your project to your `KieFileSystem` instance. The artifacts must be in a Maven project file structure.
++
+--
+[source,java]
+----
+import org.kie.api.builder.KieFileSystem;
+
+  KieFileSystem kfs = ...
+  kfs.write("src/main/resources/KBase1/ruleSet1.drl", stringContainingAValidDRL)
+    .write("src/main/resources/dtable.xls",
+      kieServices.getResources().newInputStreamResource(dtableFileStream));
+----
+
+In this example, the project assets are added both as a `String` variable and as a `Resource` instance. You can create the `Resource` instance using the `KieResources` factory, also provided by the `KieServices` instance. The `KieResources` class provides factory methods to convert `InputStream`, `URL`, and `File` objects, or a `String` representing a path of your file system to a `Resource` instance that the `KieFileSystem` can manage.
+
+You can also explicitly assign a `ResourceType` property to a `Resource` object when you add project artifacts to `KieFileSystem`:
+
+[source,java]
+----
+import org.kie.api.builder.KieFileSystem;
+
+  KieFileSystem kfs = ...
+  kfs.write("src/main/resources/myDrl.txt",
+    kieServices.getResources().newInputStreamResource(drlStream)
+      .setResourceType(ResourceType.DRL));
+----
+--
+. Build the content of `KieFileSystem` and create a KIE container to deploy it:
++
+[source,java]
+----
+import org.kie.api.KieServices;
+import org.kie.api.KieServices.Factory;
+import org.kie.api.builder.KieFileSystem;
+import org.kie.api.builder.KieBuilder;
+import org.kie.api.runtime.KieContainer;
+
+  KieServices kieServices = KieServices.Factory.get();
+  KieFileSystem kfs = ...
+  kieServices.newKieBuilder( kfs ).buildAll();
+  KieContainer kieContainer = kieServices
+    .newKieContainer(kieServices.getRepository().getDefaultReleaseId());
+----
+. Run `KieBuilder` to verify that the build was successful:
++
+--
+[source,java]
+----
+import org.kie.api.builder.KieBuilder;
+import org.kie.api.KieServices;
+
+  KieBuilder kieBuilder = kieServices.newKieBuilder( kfs ).buildAll();
+  assertEquals(0, kieBuilder.getResults().getMessages(Message.Level.ERROR).size());
+----
+
+An `ERROR` indicates that the project compilation failed, no `KieModule` was produced, and nothing was added to the `KieRepository` singleton. A `WARNING` or an `INFO` result indicates that the compilation of the project was successful, with information about the build process.
+--
