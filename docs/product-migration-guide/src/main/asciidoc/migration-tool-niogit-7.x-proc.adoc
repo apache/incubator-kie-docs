@@ -1,55 +1,60 @@
-[id='migration-tool-niogit-7.0-proc_{context}']
+[id='migration-tool-niogit-7.x-proc_{context}']
 
 = Using the migration tool on a `.niogit` directory
 
 The `.niogit` directory of your {CENTRAL} distribution contains all {CENTRAL} data. You can use the {CENTRAL} migration tool on your `.niogit` directory to prepare project data and system configurations for migration to {PRODUCT} {PRODUCT_VERSION}.
 
 .Prerequisites
-* {CENTRAL} is not running for either {PRODUCT_OLD} 6.4 or {PRODUCT} {PRODUCT_VERSION}.
+* {CENTRAL} is not running for either {PRODUCT_OLD} or {PRODUCT} {PRODUCT_VERSION}.
 * Java 8 is installed and is available on the path where the project migration tool will be installed.
 
 .Procedure
-. Locate the `bin/.niogit` directory in your current {CENTRAL} distribution for {PRODUCT_OLD} 6.4 and locate the same directory in your new {PRODUCT} {PRODUCT_VERSION} installation.
+. Locate the `bin/.niogit` directory in your current {CENTRAL} distribution for {PRODUCT_OLD} and locate the same directory in your new {PRODUCT} {PRODUCT_VERSION} installation.
 +
 --
 Example:
+ifeval::["{context}" == "non-exec-server"]
 [source]
 ----
 $ ~/$JBOSS_HOME/bin/.niogit
 ----
 
-ifdef::PAM[]
-[source]
+[source,subs="attributes+"]
 ----
-$ ~/$RHPAM_HOME/bin/.niogit
+$ ~/${PRODUCT_INIT_CAP}_HOME/bin/.niogit
 ----
-endif::PAM[]
-ifdef::DM[]
-[source]
+endif::[]
+ifeval::["{context}" == "migrate-7.0-to-7.x"]
+[source,subs="attributes+"]
 ----
-$ ~/$RHDM_HOME/bin/.niogit
+$ ~/${PRODUCT_INIT_CAP}_7.0_HOME/bin/.niogit
 ----
-endif::DM[]
+
+[source,subs="attributes+"]
+----
+$ ~/${PRODUCT_INIT_CAP}_{PRODUCT_VERSION}_HOME/bin/.niogit
+----
+endif::[]
 --
-. In your command terminal, copy the `.niogit` directory from your current {CENTRAL} distribution for {PRODUCT_OLD} 6.4 to the `bin` folder of the new {PRODUCT} {PRODUCT_VERSION} installation directory:
+. In your command terminal, copy the `.niogit` directory from your current {CENTRAL} distribution for {PRODUCT_OLD} to the `bin` folder of the new {PRODUCT} {PRODUCT_VERSION} installation directory:
 +
 --
-ifdef::PAM[]
-[source]
+ifeval::["{context}" == "non-exec-server"]
+[source,subs="attributes+"]
 ----
-cp -r /$JBOSS_HOME/bin/.niogit  /$RHPAM_HOME/bin/
+cp -r /$JBOSS_HOME/bin/.niogit  /${PRODUCT_INIT_CAP}_HOME/bin/
 ----
-endif::PAM[]
-ifdef::DM[]
-[source]
+endif::[]
+ifeval::["{context}" == "migrate-7.0-to-7.x"]
+[source,subs="attributes+"]
 ----
-cp -r /$JBOSS_HOME/bin/.niogit  /$RHDM_HOME/bin/
+cp -r /${PRODUCT_INIT_CAP}_7.0_HOME/bin/.niogit  /${PRODUCT_INIT_CAP}_{PRODUCT_VERSION}_HOME/bin/
 ----
-endif::DM[]
+endif::[]
 
-The copied `.niogit` folder is the directory that the migration tool will prepare for {PRODUCT} {PRODUCT_VERSION}. The original `.niogit` folder remains in your {PRODUCT_OLD} 6.4 installation and will not be modified by the migration tool in this procedure.
+The copied `.niogit` folder is the directory that the migration tool will prepare for {PRODUCT} {PRODUCT_VERSION}. The original `.niogit` folder remains in your {PRODUCT_OLD} installation and will not be modified by the migration tool in this procedure.
 --
-. In the {PRODUCT} {PRODUCT_VERSION} `bin` directory, delete the `.index` directory. You must delete this folder because {PRODUCT} {PRODUCT_VERSION} comes with certain updates that are not compatible with {PRODUCT_OLD} 6.4. The `bin` directory will be re-indexed after the migration when you start {PRODUCT} {PRODUCT_VERSION}.
+. In the {PRODUCT} {PRODUCT_VERSION} `bin` directory, delete the `.index` directory. You must delete this folder because {PRODUCT} {PRODUCT_VERSION} comes with certain updates that are not compatible with {PRODUCT_OLD}. The `bin` directory will be re-indexed after the migration when you start {PRODUCT} {PRODUCT_VERSION}.
 . Note the path to the copied `.niogit` directory for {PRODUCT} {PRODUCT_VERSION}. The path will be required when you run the migration tool.
 . If you have specific `dependencies`, `repositories`, or `pluginRepositories` that you want to add, remove, or update as part of the project migration, create a `pom-migration.json` file containing these elements. When you run the migration tool, the tool will prompt you if you want to include this file in the migration.
 +
@@ -168,46 +173,42 @@ Example `pom-migration.json` file with `dependencies` only:
 +
 --
 On Linux or UNIX-based systems:
-[source]
-ifdef::PAM[]
+[source,subs="attributes+"]
 ----
-$ cd $INSTALL_DIR/rhpam-7.0-migration-tool/bin
-$ ./migration-tool.sh -t $RHPAM_NIOGIT_DIR
+$ cd $INSTALL_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-migration-tool/bin
+$ ./migration-tool.sh -t ${PRODUCT_INIT_CAP}_NIOGIT_DIR
 ----
-endif::PAM[]
-ifdef::DM[]
-----
-$ cd $INSTALL_DIR/rhdm-7.0-migration-tool/bin
-$ ./migration-tool.sh -t $RHDM_NIOGIT_DIR
-----
-endif::DM[]
 
 On Windows:
-[source]
-ifdef::PAM[]
-----
-$ cd $INSTALL_DIR\rhpam-7.0-migration-tool\bin
-$ migration-tool.bat -t $RHPAM_NIOGIT_DIR
-----
-endif::PAM[]
+[source,subs="attributes+"]
 ifdef::DM[]
 ----
-$ cd $INSTALL_DIR\rhdm-7.0-migration-tool\bin
-$ migration-tool.bat -t $RHDM_NIOGIT_DIR
+$ cd $INSTALL_DIR\rhdm-{PRODUCT_VERSION}-migration-tool\bin
+$ migration-tool.bat -t ${PRODUCT_INIT_CAP}_NIOGIT_DIR
 ----
 endif::DM[]
+ifdef::PAM[]
+----
+$ cd $INSTALL_DIR\rhpam-{PRODUCT_VERSION}-migration-tool\bin
+$ migration-tool.bat -t ${PRODUCT_INIT_CAP}_NIOGIT_DIR
+----
+endif::PAM[]
 
 In the command prompt that appears, the following options are displayed:
 
-* *Project structure migration*: Migrates the {PRODUCT_OLD} 6.4 project repository structure to the new project-oriented structure used in {PRODUCT} {PRODUCT_VERSION}.
-* *System configuration directory structure migration*: Migrates the `system.git` repository structure used in {PRODUCT_OLD} 6.4 to the new structure used in {PRODUCT} {PRODUCT_VERSION}. This migration option requires the project structure migration to be executed first.
+* *Project structure migration*: Migrates the {PRODUCT_OLD} project repository structure to the new project-oriented structure used in {PRODUCT} {PRODUCT_VERSION}.
+* *System configuration directory structure migration*: Migrates the `system.git` repository structure used in {PRODUCT_OLD} to the new structure used in {PRODUCT} {PRODUCT_VERSION}. This migration option requires the project structure migration to be executed first.
 ifdef::PAM[]
-* *Forms migration*: Migrates forms created in the {PRODUCT_OLD} 6.4 forms designer to the new forms designer. This migration option requires the project structure migration and system configuration directory structure migration to be executed first.
-* *POMs migration:* Updates `pom.xml` files with dependencies required for {PRODUCT} {PRODUCT_VERSION}. This migration option requires the project structure migration, system configuration directory structure migration, and forms migration to be executed first.
+* *Forms migration*: Migrates forms created in the {PRODUCT_OLD} forms designer to the new forms designer. This migration option requires the project structure migration and system configuration directory structure migration to be executed first.
+endif::PAM[]
+* *POMs migration:* Updates `pom.xml` files with dependencies required for {PRODUCT} {PRODUCT_VERSION}. This migration option requires the
+ifdef::PAM[]
+project structure migration, system configuration directory structure migration, and forms migration
 endif::PAM[]
 ifdef::DM[]
-* *POMs migration:* Updates `pom.xml` files with dependencies required for {PRODUCT} {PRODUCT_VERSION}. This migration option requires the project structure migration and system configuration directory structure migration to be executed first.
+project structure migration and system configuration directory structure migration
 endif::DM[]
+to be executed first.
 * *All:* Runs all migration options in sequence.
 * *Exit:* Exits the migration tool.
 --
