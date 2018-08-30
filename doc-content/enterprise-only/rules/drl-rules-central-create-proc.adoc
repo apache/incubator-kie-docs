@@ -1,0 +1,192 @@
+[id='drl-rules-central-create-proc']
+= Creating DRL rules in {CENTRAL}
+
+You can create and manage DRL rules for your project in {CENTRAL}. In each DRL rule file, you define rule conditions, actions, and other components related to the rule, based on the data objects you create or import in the package.
+
+.Procedure
+. Go to *Menu* -> *Design* -> *Projects* and click the project name.
+. Click *Add Asset* -> *DRL file*.
+. Enter an informative *DRL file* name and select the appropriate *Package*. The package that you specify must be the same package where the required data objects have been assigned or will be assigned.
++
+You can also select *Show declared DSL sentences* if any domain specific language (DSL) assets have been defined in your project. These DSL assets will then become usable objects for conditions and actions that you define in the DRL designer.
++
+. Click *Ok* to create the rule asset.
++
+The new DRL file is now listed in the *DRL* panel of the *Project Explorer*, or in the *DSLR* panel if you selected the *Show declared DSL sentences* option. The package to which you assigned this DRL file is listed at the top of the file.
++
+. In the *Fact types* list in the left panel of the DRL designer, confirm that all data objects and data object fields (expand each) required for your rules are listed. If not, you can either import relevant data objects from other packages by using `import` statements in the DRL file, or
+ifeval::["{context}" == "drl-rules"]
+xref:data-objects-create-proc_drl-rules[create data objects]
+endif::[]
+ifeval::["{context}" == "chap-writing-rules"]
+xref:data-objects-create-proc_chap-data-models[create data objects]
+endif::[]
+within your package.
+. After all data objects are in place, return to the *Model* tab of the DRL designer and define the DRL file with any of the following components:
++
+.Components of a DRL file
+[source]
+----
+package  //automatic
+
+import
+
+function  //optional
+
+query  //optional
+
+declare   //optional
+
+rule
+
+rule
+
+...
+
+----
++
+* `package`: (automatic) This was defined for you when you created the DRL file and selected the package.
+* `import`: Use this to identify the data objects from either this package or another package that you want to use in the DRL file. Specify the package and data object in the format `package.name.object.name`, one import per line.
++
+.Importing data objects
+[source,java]
+----
+import mortgages.mortgages.LoanApplication;
+----
++
+* `function`: (optional) Use this to include a function to be used by rules in the DRL file. Functions put semantic code in your rule source file. Functions are especially useful if an action (`then`) part of a rule is used repeatedly and only the parameters differ for each rule. Above the rules in the DRL file, you can declare the function or import a static method as a function, and then use the function by name in an action (`then`) part of the rule.
++
+.Declaring and using a function with a rule (option 1)
+[source,java]
+----
+function String hello(String applicantName) {
+    return "Hello " + applicantName + "!";
+}
+
+rule "Using a function"
+  when
+    eval( true )
+  then
+    System.out.println( hello( "James" ) );
+end
+----
++
+.Importing and using the function with a rule (option 2)
+[source,java]
+----
+import function my.package.applicant.hello;
+
+rule "Using a function"
+  when
+    eval( true )
+  then
+    System.out.println( hello( "James" ) );
+end
+----
++
+* `query`: (optional) Use this to search the {ENGINE} for facts related to the rules in the DRL file. Queries search for a set of defined conditions and do not require `when` or `then` specifications. Query names are global to the KIE base and therefore must be unique among all other rule queries in the project. To return the results of a query, construct a traditional `QueryResults` definition using `ksession.getQueryResults("name")`, where `"name"` is the query name. This returns a list of query results, which enable you to retrieve the objects that matched the query. Define the query and query results parameters above the rules in the DRL file.
++
+.Query and query results for people under the age of 21, with a rule
+[source,java]
+----
+query "people under the age of 21"
+    person : Person( age < 21 )
+end
+
+QueryResults results = ksession.getQueryResults( "people under the age of 21" );
+System.out.println( "we have " + results.size() + " people under the age  of 21" );
+
+rule "Underage"
+  when
+    application : LoanApplication( )
+    Applicant( age < 21 )
+  then
+    application.setApproved( false );
+    application.setExplanation( "Underage" );
+end
+----
++
+* `declare`: (optional) Use this to declare a new fact type to be used by rules in the DRL file. The default fact type in the `java.lang` package of {PRODUCT} is `Object`, but you can declare other types in DRL files as needed. Declaring fact types in DRL files enables you to define a new fact model directly in the {ENGINE}, without creating models in a lower-level language like Java.
++
+.Declaring and using a new fact type
+[source,java]
+----
+declare Person
+  name : String
+  dateOfBirth : java.util.Date
+  address : Address
+end
+
+rule "Using a declared type"
+  when
+    $p : Person( name == "James" )
+  then   // Insert Mark, who is a customer of James.
+    Person mark = new Person();
+    mark.setName("Mark");
+    insert( mark );
+end
+----
++
+* `rule`: Use this to define each rule in the DRL file. Rules consist of a rule name in the format `rule "name"`, followed by optional attributes that define rule behavior (such as `salience` or `no-loop`), followed by `when` and `then` definitions. The same rule name cannot be used more than once in the same package. The `when` part of the rule contains the conditions that must be met to execute an action. For example, if a bank requires loan applicants to have over 21 years of age, then the `when` condition for an `Underage` rule would be `Applicant( age < 21 )`. The `then` part of the rule contains the actions to be performed when the conditional part of the rule has been met. For example, when the loan applicant is under 21 years old, the `then` action would be `setApproved( false )`, declining the loan because the applicant is under age. Conditions (`when`) and actions (`then`) consist of a series of stated fact patterns with optional constraints, bindings, and other supported DRL elements, based on the available data objects in the package. These patterns determine how defined objects are affected by the rule.
++
+.Rule for loan application age limit
+[source,java]
+----
+rule "Underage"
+  salience 15
+  dialect "mvel"
+  when
+    application : LoanApplication( )
+    Applicant( age < 21 )
+  then
+    application.setApproved( false );
+    application.setExplanation( "Underage" );
+end
+----
++
+At minimum, each DRL file must specify the `package`, `import`, and `rule` components. All other components are optional.
++
+.Sample DRL file with required components and optional rule attributes
+image::rules/drl-rules-sample.png[Sample DRL file with required components]
++
+. After you define all components of the rule, click *Validate* in the upper-right toolbar of the DRL designer to validate the DRL file. If the file validation fails, address any problems described in the error message, review all syntax and components in the DRL file, and try again to validate the file until the file passes.
+. Click *Save* in the DRL designer to save your work.
+
+For more details about adding conditions to DRL rules, see xref:drl-rules-WHEN-proc[].
+
+For more details about adding actions to DRL rules, see xref:drl-rules-THEN-proc[].
+
+////
+// The `global` and `template` keywords apply to DRL files outside of central (like when created with Dev Studio, Java objects, and Maven). I've not included them in those respective sections of this guide (if they're still there at the time of reading this note), because a more advanced section or doc is required to delve in to the various advanced concepts and tasks that can be done with DRL files, based on the Drools community doc and our legacy Dev Guide (chap 9 especially).
+
+Below are notes for when the time comes.
+
+* `global`: (optional) Use this to include a global variable to be used by rules in the DRL file. Global variables typically provide data or services for the rules, such as application services used in rule consequences, and to return data from rules, such as logs or values added in rule consequences. Declare the global variable above the rules in the DRL file, use it in an action (`then`) part of the rule, and then set the global value in the {ENGINE} via REST or kmodule.xml configuration. Specify one global per line.
+
+<Note to include, needs tweaking>Globals are not inserted into the Working Memory, and therefore a global should never be used to establish conditions in rules except when it has a constant immutable value. The {ENGINE} cannot be notified about value changes of globals and does not track their changes. Incorrect use of globals in constraints may yield surprising results - surprising in a bad way.
++
+.Declaring and using a global list with a rule
+[source,java]
+----
+global java.util.List myGlobalList;
+
+rule "Using a global"
+  when
+    eval( true )
+  then
+    myGlobalList.add( "My global list" );
+end
+----
++
+.Setting the global list in the {ENGINE}
+[source,java]
+----
+List list = new ArrayList();
+KieSession kieSession = kiebase.newKieSession();
+kieSession.setGlobal( "myGlobalList", list );
+----
++
+* `template`: <From Michael Anstis:  Within Business Central use of the template keyword in a DRL file would be pretty much pointless, as you say it needs accompanying "data" that cannot be specified with a DRL file asset. However in the three standalone/embedded examples you give (using JBoss Rule Studio, CLI and Maven) the User could quite easily provide "data" and hence leverage the template keyword.
+
+// (Stetson, Jan 29, 2018)
+////

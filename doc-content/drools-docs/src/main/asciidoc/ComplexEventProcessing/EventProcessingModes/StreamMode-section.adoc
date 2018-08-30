@@ -1,0 +1,130 @@
+= Stream Mode
+
+
+The STREAM processing mode is the mode of choice when the application needs to process streams of events.
+It adds a few common requirements to the regular processing, but enables a whole lot of features that make stream event processing a lot simpler.
+
+The main requirements to use STREAM mode are:
+
+* Events in each stream must be time-ordered. I.e., inside a given stream, events that happened first must be inserted first into the engine.
+* The engine will force synchronization between streams through the use of the session clock, so, although the application does not need to enforce time ordering between streams, the use of non-time-synchronized streams may result in some unexpected results.
+
+
+Given that the above requirements are met, the application may enable the STREAM mode using the following API:
+
+[source,java]
+----
+KieBaseConfiguration config = KieServices.Factory.get().newKieBaseConfiguration();
+config.setOption( EventProcessingOption.STREAM );
+----
+
+
+Or, the equivalent property: 
+
+[source]
+----
+drools.eventProcessingMode = stream
+----
+
+
+When using the STREAM, the engine knows the concept of flow of time and the concept of "now", i.e., the engine understands how old events are based on the current timestamp read from the Session Clock.
+This characteristic allows the engine to provide the following additional features to the application:
+
+* Sliding Window support
+* Automatic Event Lifecycle Management
+* Automatic Rule Delaying when using Negative Patterns
+
+
+All these features are explained in the following sections.
+
+== Role of Session Clock in Stream mode
+
+
+When running the engine in CLOUD mode, the session clock is used only to time stamp the arriving events that don't have a previously defined timestamp attribute.
+Although, in STREAM mode, the Session Clock assumes an even more important role.
+
+In STREAM mode, the session clock is responsible for keeping the current timestamp, and based on it, the engine does all the temporal calculations on event's aging, synchronizes streams from multiple sources, schedules future tasks and so on.
+
+Check the documentation on the Session Clock section to know how to configure and use different session clock implementations.
+
+== Negative Patterns in Stream Mode
+
+
+Negative patterns behave different in STREAM mode when compared to CLOUD mode.
+In CLOUD mode, the engine assumes that all facts and events are known in advance (there is no concept of flow of time) and so, negative patterns are evaluated immediately.
+
+When running in STREAM mode, negative patterns with temporal constraints may require the engine to wait for a time period before activating a rule.
+The time period is automatically calculated by the engine in a way that the user does not need to use any tricks to achieve the desired result.
+
+For instance:
+
+.a rule that activates immediately upon matching
+====
+[source]
+----
+rule "Sound the alarm"
+when
+    $f : FireDetected( )
+    not( SprinklerActivated( ) )
+then
+    // sound the alarm
+end
+----
+====
+
+
+The above rule has no temporal constraints that would require delaying the rule, and so, the rule activates immediately.
+The following rule on the other hand, must wait for 10 seconds before activating, since it may take up to 10 seconds for the sprinklers to activate:
+
+.a rule that automatically delays activation due to temporalconstraints
+====
+[source]
+----
+rule "Sound the alarm"
+when
+    $f : FireDetected( )
+    not( SprinklerActivated( this after[0s,10s] $f ) )
+then
+    // sound the alarm
+end
+----
+====
+
+
+This behaviour allows the engine to keep consistency when dealing with negative patterns and temporal constraints at the same time.
+The above would be the same as writing the rule as below, but does not burden the user to calculate and explicitly write the appropriate duration parameter:
+
+.same rule with explicit duration parameter
+====
+[source]
+----
+rule "Sound the alarm"
+    duration( 10s )
+when
+    $f : FireDetected( )
+    not( SprinklerActivated( this after[0s,10s] $f ) )
+then
+    // sound the alarm
+end
+----
+====
+
+
+The following rule expects every 10 seconds at least one "`Heartbeat`" event, if not the rule fires.
+The special case in this rule is that we use the same type of the object in the first pattern and in the negative pattern.
+The negative pattern has the temporal constraint to wait between 0 to 10 seconds before firing and it excludes the Heartbeat bound to $h.
+Excluding the bound Heartbeat is important since the temporal constraint [0s, ...] does not exclude by itself the bound event $h from being matched again, thus preventing the rule to fire.
+
+.excluding bound events in negative patterns
+====
+[source]
+----
+rule "Sound the alarm"
+when
+    $h: Heartbeat( ) from entry-point "MonitoringStream"
+    not( Heartbeat( this != $h, this after[0s,10s] $h ) from entry-point "MonitoringStream" )
+then
+    // Sound the alarm
+end
+----
+====

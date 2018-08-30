@@ -1,0 +1,367 @@
+= Cloud Balancing Example Setup
+
+This chapter describes the process of setting up environment to run
+https://docs.jboss.org/optaplanner/release/latestFinal/optaplanner-docs/html_single/#cloudBalancingProblemDescription[Cloud Balancing]
+example using KIE Workbench and KIE Server.
+At the end of the chapter, the user will be able to submit sample planning problem to the KIE Server and query the best solution.
+
+== Environment Setup
+
+The first step consists of setting up Wildfly instance and deploying KIE artifacts.
+
+=== Download Required Artifacts:
+* Java EE compliant application server. This example uses http://download.jboss.org/wildfly/10.0.0.Final/wildfly-10.0.0.Final.zip[WildFly]
+* KIE Server and KIE Workbench war files from http://www.optaplanner.org/download/download.html[OptaPlanner website]
+
+=== Create New User
+* Unix users:
++
+[source,sh]
+----
+$WILDFLY_HOME/bin/add-user.sh
+----
+* Windows users:
++
+[source,sh]
+----
+$WILDFLY_HOME/bin/add-user.bat
+----
+** User type: application user
+** Username: planner
+** Password: Planner123_
+** Groups: kie-server,admin
+
+=== Deploy KIE Workbench & KIE Server
+* Copy KIE Workbench war to `$WILDFLY_HOME/standalone/deployments/kie-wb.war`
+* Copy KIE Server war to `$WILDFLY_HOME/standalone/deployments/kie-server.war`
+
+=== Start Server
+* Unix users:
++
+[source,sh]
+----
+./bin/standalone.sh --server-config=standalone-full.xml \
+ -Dorg.kie.server.user=planner \
+ -Dorg.kie.server.pwd=Planner123_ \
+ -Dorg.kie.server.controller.user=planner \
+ -Dorg.kie.server.controller.pwd=Planner123_ \
+ -Dorg.kie.server.id=wildfly-kieserver \
+ -Dorg.kie.server.location=http://localhost:8080/kie-server/services/rest/server \
+ -Dorg.kie.server.controller=http://localhost:8080/kie-wb/rest/controller
+----
+* Windows users:
++
+[source,sh]
+----
+./bin/standalone.bat --server-config=standalone-full.xml \
+ -Dorg.kie.server.user=planner \
+ -Dorg.kie.server.pwd=Planner123_ \
+ -Dorg.kie.server.controller.user=planner \
+ -Dorg.kie.server.controller.pwd=Planner123_ \
+ -Dorg.kie.server.id=wildfly-kieserver \
+ -Dorg.kie.server.location=http://localhost:8080/kie-server/services/rest/server \
+ -Dorg.kie.server.controller=http://localhost:8080/kie-wb/rest/controller
+----
+
+=== Open the Workbench in Browser
+Navigate to `http://localhost:8080/kie-wb` in a web browser to access the Workbench. Use credentials defined in the previous step to log in.
+
+== Project Setup
+
+The second step consists of setting up logical structures required to create a new project.
+
+=== Create Organizational Unit
+* Navigate to *Authoring -> Administration -> Organizational Units -> Manage Organizational Units* and click *Add*
+** Name: Cloud department
+** Default Group ID: clouddepartment
+
+=== Create Repository
+* Select *Authoring -> Administration -> Repositories -> New repository*
+** Repository Name: cloudbalancing
+** In Organizational Unit: Cloud department
+
+image::Workbench/QuickStart/org_unit_repository.png[align="center"]
+
+=== Create Project
+* Select *Authoring -> Project Authoring -> New Project -> Advanced setup*
+** Project Name: cloudbalancing
+** Project Description: Assign processes to computers based on available CPU power, memory, network bandwidth and cost
+** Group ID: clouddepartment
+** Artifact ID: cloudbalancing
+** Version: 1.0
+
+== Data Model
+
+This step consists of creating data model for the Cloud Balancing problem. Data objects and their attributes are defined.
+
+=== Create Data Object
+* Select *Create New Asset -> Data Object*
+** Data Object: CloudComputer
+** Package: clouddepartment.cloudbalancing
+
+=== Add Fields
+Add multiple fields of given types.
+
+* Click *Add field*
+** id: long
+** cpuPower: int
+** memory: int
+** networkBandwith: int
+** cost: int
+* Click *Save*
+* Click *Close* icon
+
+image::Workbench/QuickStart/data_object.png[align="center"]
+
+=== Complete the Data Model
+Using the same approach, create CloudProcess and CloudBalance data objects with the following attributes:
+
+* CloudProcess
+** id: long
+** requiredCpuPower: int
+** requiredMemory: int
+** requiredNetworkBandwith: int
+** computer: clouddepartment.cloudbalancing.CloudComputer
+
+* CloudBalance
+** id: long
+** computerList: List<clouddepartment.cloudbalancing.CloudComputer>
+** processList: List<clouddepartment.cloudbalancing.CloudProcess>
+
+== Planner Configuration
+
+This section explains how to enhance the data model created in the previous step with Planner annotations.
+
+=== CloudBalance Data Object
+* Select *CloudBalance*
+** Open *OptaPlanner* dock
+** Check *Planning Solution*
+
+image::Workbench/QuickStart/planning_solution.png[align="center"]
+
+* Select *computerList* field
+** Open *OptaPlanner* dock
+** Check *Planning Value Range Provider*
+** Set *id* to `computerRange`
+* Select *processList* field
+** Open *OptaPlanner* dock
+** Check *Planning Entity Collection*
+* Click *Save*
+* Click *Close* icon
+
+=== CloudProcess
+* Select *CloudProcess*
+** Open *OptaPlanner* dock
+** Check *Planning Entity*
+* Select *computer* field
+** Open *OptaPlanner* dock
+** Check *Planning Variable*
+** Set *valueRangeId* to `computerRange`
+* Click *Save*
+* Click *Close* icon
+
+== Drools Rules
+This section contains constraint definitions for the CloudBalancing problem using two different approaches -
+_Free-form DRL Editor_ and _Guided Rule Editor_.
+
+=== Free-form DRL Editor
+* Select *Create New Asset -> DRL file*
+** DRL file: cloudBalancingScoreRules
+** Package: clouddepartment.cloudbalancing
++
+[source,java]
+----
+package clouddepartment.cloudbalancing;
+
+import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScoreHolder;
+
+import clouddepartment.cloudbalancing.CloudBalance;
+import clouddepartment.cloudbalancing.CloudComputer;
+import clouddepartment.cloudbalancing.CloudProcess;
+
+rule "requiredCpuPowerTotal"
+    when
+        $computer : CloudComputer($cpuPower : cpuPower)
+        accumulate(
+            CloudProcess(
+                computer == $computer,
+                $requiredCpuPower : requiredCpuPower);
+            $requiredCpuPowerTotal : sum($requiredCpuPower);
+            $requiredCpuPowerTotal > $cpuPower
+        )
+    then
+        scoreHolder.addHardConstraintMatch(kcontext, $cpuPower - $requiredCpuPowerTotal);
+end
+
+rule "requiredMemoryTotal"
+    when
+        $computer : CloudComputer($memory : memory)
+        accumulate(
+            CloudProcess(
+                computer == $computer,
+                $requiredMemory : requiredMemory);
+            $requiredMemoryTotal : sum($requiredMemory);
+            $requiredMemoryTotal > $memory
+        )
+    then
+        scoreHolder.addHardConstraintMatch(kcontext, $memory - $requiredMemoryTotal);
+end
+
+rule "requiredNetworkBandwidthTotal"
+    when
+        $computer : CloudComputer($networkBandwidth : networkBandwidth)
+        accumulate(
+            CloudProcess(
+                computer == $computer,
+                $requiredNetworkBandwidth : requiredNetworkBandwidth);
+            $requiredNetworkBandwidthTotal : sum($requiredNetworkBandwidth);
+            $requiredNetworkBandwidthTotal > $networkBandwidth
+        )
+    then
+        scoreHolder.addHardConstraintMatch(kcontext, $networkBandwidth - $requiredNetworkBandwidthTotal);
+end
+----
+* Click *Save*
+* Click *Close* icon
+
+=== Guided Rule Editor
+* Select *Create New Asset -> Guided Rule*
+** Guided Rule: computerCost
+** Package: clouddepartment.cloudbalancing
+
+image::Workbench/QuickStart/guided_rule.png[align="center"]
+
+* Click *Save*
+* Click *Close* icon
+
+== Solver Configuration
+
+The following task is to create Planner Solver configuration to tweak engine parameters.
+
+=== Create Solver Configuration
+* Select *Create New Asset -> Solver configuration*
+** Solver configuration: Cloud Balancing Solver Configuration
+** Package: clouddepartment.cloudbalancing
+** Navigate to *Termination*
+*** Click *Add* and select *Time spent*
+*** Set *Seconds* to `30` to stop the solving process after 30 seconds
+* Click *Save*
+* Click *Close* icon
+
+image::Workbench/QuickStart/solver_config.png[align="center"]
+
+== Build & Deploy
+
+=== Add Kie Container
+* Navigate to *Deploy -> Execution Servers* and click *Add Container*
+** Name: cloudbalancing
+** Group Name: clouddepartment
+** Artifact Id: cloudbalancing
+** Version: 1.0
+
+=== Build Project
+* Navigate to *Authoring -> Project Authoring -> cloudbalancing* and click *Build & Deploy*
+
+=== Start Container
+* Navigate to *Deploy -> Execution Servers*
+** Select container *cloudbalancing* and click *Start*
+
+image::Workbench/QuickStart/container.png[align="center"]
+
+== KIE Server Integration
+This section describes basic steps required to set up Planner & KIE Server integration. A sample Cloud Balancing problem
+instance is submitted to the KIE Server and the result is queried using REST API the server exposes.
+
+All HTTP requests performed in this chapter use the following header:
+
+[source]
+----
+authorization: Basic cGxhbm5lcjpQbGFubmVyMTIzXw==
+X-KIE-ContentType: xstream
+content-type: application/xml
+----
+
+=== Register Solver
+* `PUT http://localhost:8080/kie-server/services/rest/server/containers/cloudbalancing/solvers/cloudBalancingSolver`
+
++
+Request body
++
+[source,xml]
+----
+<solver-instance>
+  <solver-config-file>clouddepartment/cloudbalancing/Cloud Balancing Solver Configuration.solver.xml</solver-config-file>
+</solver-instance>
+----
+
+=== Submit Solution
+
+* `POST http://localhost:8080/kie-server/services/rest/server/containers/cloudbalancing/solvers/cloudBalancingSolver/state/solving`
+
++
+Request body
++
+[source,xml]
+----
+<planning-problem class="clouddepartment.cloudbalancing.CloudBalance" id="1">
+  <id>0</id>
+  <computerList id="2">
+    <clouddepartment.cloudbalancing.CloudComputer id="3">
+      <id>0</id>
+      <cpuPower>24</cpuPower>
+      <memory>96</memory>
+      <networkBandwidth>16</networkBandwidth>
+      <cost>4800</cost>
+    </clouddepartment.cloudbalancing.CloudComputer>
+    <clouddepartment.cloudbalancing.CloudComputer id="4">
+      <id>1</id>
+      <cpuPower>6</cpuPower>
+      <memory>4</memory>
+      <networkBandwidth>6</networkBandwidth>
+      <cost>660</cost>
+    </clouddepartment.cloudbalancing.CloudComputer>
+  </computerList>
+  <processList id="5">
+    <clouddepartment.cloudbalancing.CloudProcess id="6">
+      <id>0</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="7">
+      <id>1</id>
+      <requiredCpuPower>3</requiredCpuPower>
+      <requiredMemory>6</requiredMemory>
+      <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="8">
+      <id>2</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>3</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="9">
+      <id>3</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>2</requiredMemory>
+      <requiredNetworkBandwidth>11</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="10">
+      <id>4</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>1</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+    <clouddepartment.cloudbalancing.CloudProcess id="11">
+      <id>5</id>
+      <requiredCpuPower>1</requiredCpuPower>
+      <requiredMemory>1</requiredMemory>
+      <requiredNetworkBandwidth>5</requiredNetworkBandwidth>
+    </clouddepartment.cloudbalancing.CloudProcess>
+  </processList>
+</planning-problem>
+----
+
+=== Query Best Solution
+* `GET http://localhost:8080/kie-server/services/rest/server/containers/cloudbalancing/solvers/cloudBalancingSolver/bestsolution`
+** Verify that the `computer` attributes of `CloudProcess` instances are assigned

@@ -1,0 +1,35 @@
+[[_jbpmtaskserviceinteraction]]
+= Interacting with the Task Service
+
+
+In order to get access to the Task Service API it is recommended to let the Runtime Manager to make sure that  everything is setup correctly.
+Look at the Runtime Manager section for more information.
+From the API perspective you should be doing something like this: 
+
+[source,java]
+----
+// ...
+
+RuntimeEngine engine = runtimeManager.getRuntimeEngine(EmptyContext.get());
+KieSession kieSession = engine.getKieSession();
+// Start a process
+kieSession.startProcess("CustomersRelationship.customers", params);
+// Do Task Operations
+TaskService taskService = engine.getTaskService();
+List<TaskSummary> tasksAssignedAsPotentialOwner = taskService.getTasksAssignedAsPotentialOwner("mary", "en-UK");
+              
+// Claim Task
+taskService.claim(taskSummary.getId(), "mary");
+// Start Task
+taskService.start(taskSummary.getId(), "mary");
+
+// ...
+----
+
+
+If you use this approach, there is no need to register the Task Service with the Process Engine.
+The Runtime Manager will do that for you automatically.
+If you don't use the Runtime Manager, you will be responsible for setting the LocalHTWorkItemHandler in the session in order to get the Task Service notifying the Process Engine when a task is completed, or the Process Engine notifying that a task has been created. 
+
+In jBPM 6.x the Task Service runs locally to the Process and Rule Engine and for that reason multiple light clients can be created for different Process and Rule Engine's instances.
+All the clients will be sharing the same database (backend storage for the tasks). 

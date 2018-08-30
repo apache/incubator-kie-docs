@@ -1,0 +1,259 @@
+= Error Messages
+
+
+Drools 5 introduces standardized error messages.
+This standardization aims to help users to find and resolve problems in a easier and faster way.
+In this section you will learn how to identify and interpret those error messages, and you will also receive some tips on how to solve the problems associated with them.
+
+== Message format
+
+
+The standardization includes the error message format and to better explain this format, let's use the following example:
+
+.Error Message Format
+image::LanguageReference/error_message.png[align="center"]
+
+*1st Block:* This area identifies the error code.
+
+*2nd Block:* Line and column information.
+
+*3rd Block:* Some text describing the problem.
+
+*4th Block:* This is the first context.
+Usually indicates the rule, function, template or query where the error occurred.
+This block is not mandatory.
+
+*5th Block:* Identifies the pattern where the error occurred.
+This block is not mandatory.
+
+== Error Messages Description
+
+=== 101: No viable alternative
+
+
+Indicates the most common errors, where the parser came to a decision point but couldn't identify an alternative.
+Here are some examples:
+
+====
+[source]
+----
+1: rule one
+2:   when
+3:     exists Foo() 
+4:     exits Bar()  // "exits"
+5:   then
+6: end
+----
+====
+
+The above example generates this message:
+
+* [ERR 101] Line 4:4 no viable alternative at input 'exits' in rule one
+
+
+At first glance this seems to be valid syntax, but it is not (exits != exists). Let's take a look at next example:
+
+====
+[source]
+----
+1: package org.drools.examples;
+2: rule
+3:   when
+4:     Object()
+5:   then
+6:     System.out.println("A RHS");
+7: end
+----
+====
+
+
+Now the above code generates this message:
+
+* [ERR 101] Line 3:2 no viable alternative at input 'WHEN'
+
+
+This message means that the parser encountered the token **WHEN**, actually a hard keyword, but it's in the wrong place since the the rule name is missing.
+
+The error "no viable alternative" also occurs when you make a simple lexical mistake.
+Here is a sample of a lexical problem:
+
+====
+[source]
+----
+1: rule simple_rule
+2:   when
+3:     Student( name == "Andy )
+4:   then
+5: end
+----
+====
+
+
+The above code misses to close the quotes and because of this the parser generates this error message:
+
+* [ERR 101] Line 0:-1 no viable alternative at input '<eof>' in rule simple_rule in pattern Student
+
+
+[NOTE]
+====
+Usually the Line and Column information are accurate, but in some cases (like unclosed quotes), the parser generates a 0:-1 position.
+In this case you should check whether you didn't forget to close quotes, apostrophes or parentheses.
+====
+
+=== 102: Mismatched input
+
+
+This error indicates that the parser was looking for a particular symbol that it didn't ﬁnd at the current input position.
+Here are some samples:
+
+====
+[source]
+----
+1: rule simple_rule
+2:   when
+3:     foo3 : Bar(
+----
+====
+
+
+The above example generates this message:
+
+* [ERR 102] Line 0:-1 mismatched input '<eof>' expecting ')' in rule simple_rule in pattern Bar
+
+
+To fix this problem, it is necessary to complete the rule statement.
+
+[NOTE]
+====
+Usually when you get a 0:-1 position, it means that parser reached the end of source.
+====
+
+
+The following code generates more than one error message:
+
+====
+[source]
+----
+1: package org.drools.examples;
+2:
+3: rule "Avoid NPE on wrong syntax"
+4:   when
+5:     not( Cheese( ( type == "stilton", price == 10 ) || ( type == "brie", price == 15 ) ) from $cheeseList )
+6:   then
+7:     System.out.println("OK");
+8: end
+----
+====
+
+
+These are the errors associated with this source:
+
+* [ERR 102] Line 5:36 mismatched input ',' expecting ')' in rule "Avoid NPE on wrong syntax" in pattern Cheese
+* [ERR 101] Line 5:57 no viable alternative at input 'type' in rule "Avoid NPE on wrong syntax"
+* [ERR 102] Line 5:106 mismatched input ')' expecting 'then' in rule "Avoid NPE on wrong syntax"
+
+
+Note that the second problem is related to the first.
+To fix it, just replace the commas (',') by AND operator ('&&').
+
+[NOTE]
+====
+In some situations you can get more than one error message.
+Try to fix one by one, starting at the first one.
+Some error messages are generated merely as consequences of other errors.
+====
+
+=== 103: Failed predicate
+
+
+A validating semantic predicate evaluated to false.
+Usually these semantic predicates are used to identify soft keywords.
+This sample shows exactly this situation:
+
+====
+[source]
+----
+ 1: package nesting;
+ 2: dialect "mvel"
+ 3:
+ 4: import org.drools.compiler.Person
+ 5: import org.drools.compiler.Address
+ 6: 
+ 7: fdsfdsfds
+ 8: 
+ 9: rule "test something"
+10:   when
+11:     p: Person( name=="Michael" )
+12:   then
+13:     p.name = "other";
+14:     System.out.println(p.name);
+15: end
+----
+====
+
+
+With this sample, we get this error message:
+
+* [ERR 103] Line 7:0 rule 'rule_key' failed predicate: {(validateIdentifierKey(DroolsSoftKeywords.RULE))}? in rule
+
+
+The *fdsfdsfds* text is invalid and the parser couldn't identify it as the soft keyword ``rule``.
+
+[NOTE]
+====
+This error is very similar to 102: Mismatched input, but usually involves soft keywords.
+====
+
+=== 104: Trailing semi-colon not allowed
+
+
+This error is associated with the `eval` clause, where its expression may not be terminated with a semicolon.
+Check this example:
+
+====
+[source]
+----
+1: rule simple_rule
+2:   when
+3:     eval(abc();)
+4:   then
+5: end
+----
+====
+
+
+Due to the trailing semicolon within eval, we get this error message:
+
+* [ERR 104] Line 3:4 trailing semi-colon not allowed in rule simple_rule
+
+
+This problem is simple to fix: just remove the semi-colon.
+
+=== 105: Early Exit
+
+
+The recognizer came to a subrule in the grammar that must match an alternative at least once, but the subrule did not match anything.
+Simply put: the parser has entered a branch from where there is no way out.
+This example illustrates it:
+
+====
+[source]
+----
+1: template test_error
+2:   aa s  11;
+3: end
+----
+====
+
+
+This is the message associated to the above sample:
+
+* [ERR 105] Line 2:2 required (...)+ loop did not match anything at input 'aa' in template test_error
+
+
+To fix this problem it is necessary to remove the numeric value as it is neither a valid data type which might begin a new template slot nor a possible start for any other rule file construct.
+
+== Other Messages
+
+Any other message means that something bad has happened, so please contact the development team.
+

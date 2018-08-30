@@ -1,0 +1,69 @@
+= Sliding Length Windows
+
+
+Sliding Length Windows work the same way as Time Windows, but consider events based on order of their insertion into the session instead of flow of time.
+
+For instance, if the user wants to consider only the last 10 RHT Stock Ticks, independent of how old they are, the pattern would look like this:
+
+[source]
+----
+StockTick( company == "RHT" ) over window:length( 10 )
+----
+
+
+As you can see, the pattern is similar to the one presented in the previous section, but instead of using window:time to define the sliding window, it uses window:length.
+
+Using a similar example to the one in the previous section, if the user wants to sound an alarm in case the average temperature over the last 100 readings from a sensor is above the threshold value, the rule would look like:
+
+.aggregating values over length windows
+====
+[source]
+----
+rule "Sound the alarm in case temperature rises above threshold"
+when
+    TemperatureThreshold( $max : max )
+    Number( doubleValue > $max ) from accumulate(
+        SensorReading( $temp : temperature ) over window:length( 100 ),
+        average( $temp ) )
+then
+    // sound the alarm
+end
+----
+====
+
+
+The engine will keep only consider the last 100 readings to calculate the average temperature.
+
+[IMPORTANT]
+====
+Please note that falling off a length based window is not criteria for event expiration in the session.
+The engine disregards events that fall off a window when calculating that window, but does not remove the event from the session based on that condition alone as there might be other rules that depend on that event.
+====
+
+[IMPORTANT]
+====
+Please note that length based windows do not define temporal constraints for event expiration from the session, and the engine will not consider them.
+If events have no other rules defining temporal constraints and no explicit expiration policy, the engine will keep them in the session indefinitely. 
+====
+
+
+When using a sliding window, alpha constraints are evaluated before the window is considered, but beta (join) constraints are evaluated afterwards.
+This usually doesn't make a difference when time windows are concerned, but it's important when using a length window.
+For example this pattern:
+
+[source]
+----
+StockTick( company == "RHT" ) over window:length( 10 )
+----
+
+
+defines a window of (at most) 10 StockTicks all having company equal to "RHT", while the following one:
+
+[source]
+----
+$s : String()
+StockTick( company == $s ) over window:length( 10 )
+----
+
+
+first creates a window of (at most) 10 StockTicks regardless of the value of their company attribute and then filters among them only the ones having the company equal to the String selected from the working memory.

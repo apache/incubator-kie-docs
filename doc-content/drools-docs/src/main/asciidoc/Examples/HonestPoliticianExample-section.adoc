@@ -1,0 +1,160 @@
+= Honest Politician Example
+
+[source]
+----
+Name: Honest Politician
+Main class: org.drools.examples.honestpolitician.HonestPoliticianExample
+Module: drools-examples
+Type: Java application
+Rules file: HonestPoliticianExample.drl
+Objective: Illustrate the concept of "truth maintenance" based on the logical insertion of facts
+----
+
+
+The Honest Politician example demonstrates truth maintenance with logical assertions.
+The basic premise is that an object can only exist while a statement is true.
+A rule's consequence can logically insert an  object with the `insertLogical()` method.
+This means the object will only remain in the Working Memory as long as the rule that logically inserted  it remains true.
+When the rule is no longer true the object is automatically retracted.
+
+In this example there is the class ``Politician``, with a name and a boolean value for being honest.
+Four politicians with honest state set to true are inserted.
+
+.Class Politician
+====
+[source,java]
+----
+public class Politician {
+    private String name;
+    private boolean honest;
+    ...
+}
+----
+====
+
+.Honest Politician: Execution
+====
+[source,java]
+----
+Politician blair = new Politician("blair", true);
+Politician bush = new Politician("bush", true);
+Politician chirac = new Politician("chirac", true);
+Politician schroder = new Politician("schroder", true);
+    
+ksession.insert( blair );
+ksession.insert( bush );
+ksession.insert( chirac );
+ksession.insert( schroder );
+
+ksession.fireAllRules();
+----
+====
+
+
+The Console window output shows that, while there is at least one honest politician, democracy lives.
+However, as each politician is in turn corrupted by an evil corporation, so that all politicians become dishonest, democracy is dead.
+
+.Honest Politician: Console Output
+====
+[source]
+----
+Hurrah!!! Democracy Lives
+I'm an evil corporation and I have corrupted schroder
+I'm an evil corporation and I have corrupted chirac
+I'm an evil corporation and I have corrupted bush
+I'm an evil corporation and I have corrupted blair
+We are all Doomed!!! Democracy is Dead
+----
+====
+
+
+As soon as there is at least one honest politician in the Working Memory a new `Hope` object is logically asserted.
+This object will only exist while there is at least one honest politician.
+As soon as all politicians are dishonest, the `Hope` object will be automatically retracted.
+This rule is given a salience of 10 to ensure that it fires before any other rule, as at this stage the "Hope is Dead" rule is actually true.
+
+.Honest Politician: Rule "We have an honest politician"
+====
+[source]
+----
+rule "We have an honest Politician"
+    salience 10
+    when
+        exists( Politician( honest == true ) )
+    then
+        insertLogical( new Hope() );
+end
+----
+====
+
+
+As soon as a `Hope` object exists the "Hope Lives" rule matches and fires.
+It has a salience of 10 so that it takes priority over "Corrupt the Honest".
+
+.Honest Politician: Rule "Hope Lives"
+====
+[source]
+----
+rule "Hope Lives"
+    salience 10
+        when
+            exists( Hope() )
+        then
+            System.out.println("Hurrah!!! Democracy Lives");
+end
+----
+====
+
+
+Now that there is hope and we have, at the start, four honest politicians, we have four activations for this rule, all in conflict.
+They will fire in turn, corrupting each politician so that they are no longer honest.
+When all four politicians have been corrupted we have no politicians with the property ``honest == true``.
+Thus, the rule "We have an honest Politician" is no longer true and the object it logical inserted (due to the last execution of ``new Hope()``) is automatically retracted.
+
+.Honest Politician: Rule "Corrupt the Honest"
+====
+[source]
+----
+rule "Corrupt the Honest"
+    when
+        politician : Politician( honest == true )   
+        exists( Hope() )
+    then
+        System.out.println( "I'm an evil corporation and I have corrupted " + politician.getName() );
+        modify ( politician ) { honest = false };
+end
+----
+====
+
+
+With the `Hope` object being automatically retracted, via the truth maintenance system, the conditional element `not` applied to `Hope` is no longer true so that the following rule will match and fire.
+
+.Honest Politician: Rule "Hope is Dead"
+====
+[source]
+----
+rule "Hope is Dead"
+    when
+        not( Hope() )
+    then
+        System.out.println( "We are all Doomed!!! Democracy is Dead" );
+end
+----
+====
+
+
+Let's take a look at the Audit trail for this application:
+
+.Honest Politician Example Audit View
+image::Examples/HonestPoliticianExample/honest_politician_audit.png[align="center"]
+
+
+The moment we insert the first politician we have two activations.
+The rule "We have an honest Politician" is activated only once for the first inserted politician because it uses an `exists` conditional element, which matches once for any number.
+The rule "Hope is Dead" is also activated at this stage, because we have not yet inserted the `Hope` object.
+Rule "We have an honest Politician" fires first, as it has a higher salience than "Hope is Dead", which inserts the `Hope` object.
+(That action is highlighted green.) The insertion of the `Hope` object activates "Hope Lives" and de-activates "Hope is Dead"; it also activates "Corrupt the Honest" for each inserted honest politician.
+Rule "Hope Lives" executes, printing  "Hurrah!!! Democracy Lives". Then, for each politician, rule "Corrupt the Honest" fires, printing "I'm an evil corporation and I have corrupted X", where X is the name of the politician, and modifies the politician's honest value to false.
+When the last honest politician is corrupted, `Hope` is automatically retracted, by the truth maintenance system, as shown by the blue highlighted area.
+The green highlighted area shows the origin of the currently selected blue highlighted area.
+Once the `Hope` fact is retracted, "Hope is dead" activates and fires printing "We are all Doomed!!! Democracy is Dead".

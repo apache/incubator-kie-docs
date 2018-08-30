@@ -1,0 +1,252 @@
+
+= Example: Notifications
+
+Let us start by showing you how to include a simple work item for sending notifications.
+A work item is defined by a unique name and includes additional parameters that describe the work  in more detail.
+Work items can also return information after they have been executed, specified  as results.
+
+Our notification work item could be defined using a work definition with four parameters and  no results.
+For example:  
+
+* Name: "Notification"
+* Parameters:
++
+** From [String type]
+** To [String type]
+** Message [String type]
+** Priority [String type]
+
+
+== The Notification Work Item Definition
+
+=== Creating the work item definition
+
+In this example, let us create an MVEL work item definition that defines a "Notification" work item.
+Using MVEL is the default way to configure work items. This file is placed in the project classpath in a directory called  [path]_META-INF_.
+Note that, imports to the default jBPM data types (in the org.jbpm.process.core.datatype.impl.type package) are added by default
+and do not need to be explicitly defined. If you are using any custom defined data type, an import statement for it
+(using the java standard) is necessary to be added before any work item definitions begin.
+
+The work item configuration file for this example,  [path]_MyWorkDefinitions.wid_, will look like this:
+
+[source,java]
+----
+[
+  // the Notification work item
+  [
+    "name" : "Notification",
+    "parameters" : [
+      "Message" : new StringDataType(),
+      "From" : new StringDataType(),
+      "To" : new StringDataType(),
+      "Priority" : new StringDataType(),
+    ],
+    "displayName" : "Notification",
+    "icon" : "icons/notification.gif"
+  ]
+]
+----
+
+The project directory structure could then look something like this:
+
+[source]
+----
+project/src/main/resources/META-INF/MyWorkDefinitions.wid
+----
+
+We also want to _add_ a specific icon to be used in the process editor  with the work item.
+To add this, you will need [path]_.gif_ or  [path]_.png_ images with a pixel size of 16x16.
+We put them in a directory outside  of the [path]_META-INF_ directory, for example, here:
+
+[source]
+----
+project/src/main/resources/icons/notification.gif
+----
+
+=== Registering the work definition
+
+The jBPM Eclipse editor uses the configuration mechanisms supplied by Drools to register work item definition  files.
+That means adding a `drools.workDefinitions` property to the [path]_drools.rulebase.conf_ file in the [path]_META-INF_.
+
+The `drools.workDefinitions` property represents a list of files containing work  item definitions, separated using spaces.
+If you want to _exclude_ all other  work item definitions and only use your definition, you could use the following:
+
+[source]
+----
+drools.workDefinitions = MyWorkDefinitions.wid
+----
+
+However, if you only want to add the newly created node definition to the existing palette  nodes, you can define the `drools.workDefinitions` property as follows:
+
+[source]
+----
+drools.workDefinitions = MyWorkDefinitions.wid WorkDefinitions.conf
+----
+
+We recommended that you use the extension `+.+wid` for your own definitions of  domain specific nodes.
+The `+.+conf` extension used with the default definition file, [path]_WorkDefinitions.conf_, for backward compatibility reasons.
+
+=== Using your new work item in your processes
+
+We've created our work item definition and configured it, so now we can start using it in our processes.
+The process editor contains a separate section in the palette where the different service nodes that have been defined for the project appear.
+
+
+image::DomainSpecificProcesses/NotificationPalette.png[]
+
+
+Using drag and drop, a notification node can be created inside your process.
+The properties can be filled in using the properties view.
+
+Besides any custom properties, the following three properties are available for all work  items:
+
+. ``Parameter Mapping``: Allows you to map the value of a variable in the process  to a parameter of the work item. This allows you to customize the work item based on the current state of the actual process instance (for example, the priority of the notification could be dependent of some process-specific information).
+. ``Result Mapping``: Allows you to map a result (returned once a work item has been executed) to a variable of the process. This allows you to use results in the remainder of the process.
+. ``Wait for completion``: By default, the process waits until the requested work item has been completed before continuing with the process. It is also possible to continue immediately after the work item has been requested (and not waiting for the results) by setting `wait for completion` to false.
+h
+
+
+Here is an example that creates a domain specific node to execute Java, asking for the class and method parameters.
+It includes a custom [path]_java.gif_ icon and  consists of the following files and resulting screenshot:
+
+[source]
+----
+[
+  // the Java Node work item located in:
+  // project/src/main/resources/META-INF/JavaNodeDefinition.wid
+  [
+    "name" : "JavaNode",
+    "parameters" : [
+      "class" : new StringDataType(),
+      "method" : new StringDataType(),
+    ],
+    "displayName" : "Java Node",
+    "icon" : "icons/java.gif"
+  ]
+]
+----
+
+{empty}
+
+[source]
+----
+// located in: project/src/main/resources/META-INF/drools.rulebase.conf
+drools.workDefinitions = JavaNodeDefinition.wid WorkDefinitions.conf
+
+// icon for java.gif located in:
+// project/src/main/resources/icons/java.gif
+----
+
+
+image::DomainSpecificProcesses/JavaNode.png[]
+
+
+[[_sec.example.notifications.workitemhandler]]
+== The `NotificationWorkItemHandler`
+
+=== Creating a new work item handler
+
+Once we've created our `Notification` work item definition (see the sections  above), we can then create a custom implementation of a _work item handler_ that  will contain the logic to send the notification.
+
+In order to execute our _Notification_ work items, we first create a   `NotificationWorkItemHandler` that implements the `WorkItemHandler`  interface:
+
+[source,java]
+----
+package com.sample;
+
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkItemHandler;
+import org.kie.api.runtime.process.WorkItemManager;
+
+public class NotificationWorkItemHandler implements WorkItemHandler {
+
+  public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
+    // extract parameters
+    String from = (String) workItem.getParameter("From");
+    String to = (String) workItem.getParameter("To");
+    String message = (String) workItem.getParameter("Message");
+    String priority = (String) workItem.getParameter("Priority");
+
+    // send email <1>
+    EmailService service = ServiceRegistry.getInstance().getEmailService(); 
+    service.sendEmail(from, to, "Notification", message);
+
+    // notify manager that work item has been completed
+    manager.completeWorkItem(workItem.getId(), null); // <2>
+  }
+
+  public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
+    // Do nothing, notifications cannot be aborted
+  }
+
+}
+----
+
+<1> The ServiceRegistry class is simply a made-up class that we're using for this example. In your 
+own WorkItemHandler implementations, the code containing your domain-specific logic would go here.
+
+<2> Notifying the WorkItemManager instance when your a work item has been completed is crucial. For 
+many synchronous actions, like sending an email in this case, the WorkItemHandler implementation 
+will notify the WorkItemManager in the executeWorkItem(...) method.
+
+This `WorkItemHandler` sends a notification as an email and then  notifies the WorkItemManager that the work item has been completed.
+
+Note that not all work items can be completed directly.
+In cases where executing a work item  takes some time, execution can continue _asynchronously_ and the work item  manager can be notified later.
+
+In these situations, it might also be possible that a work item is _aborted_before it has been completed.
+The `WorkItemHandler.abortWorkItem(...)` method can be  used to specify how to abort such work items.
+
+[TIP]
+====
+Remember, if the `WorkItemManager` is not notified about the completion, the  process engine will never be notified that your service node has completed.
+====
+
+=== Registering the work item handler
+
+`WorkItemHandler` instances need to  be registered with the  `WorkItemManager` in order to be used.
+In this case, we need to register an instance of our `NotificationWorkItemHandler` in order to use it with our process containing a  `Notification` work item.
+We can do that like this:
+
+[source,java]
+----
+StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
+ksession.getWorkItemManager().registerWorkItemHandler(
+  "Notification", // <1>
+  new NotificationWorkItemHandler() // <2>
+);
+----
+<1> This is the drools name of the <task> (or other task type) node. See below for an example.
+<2> This is the instance of our custom work item handler instance!
+
+If we were to look at the BPMN2 syntax for our process with the `Notification`  process, we would see something like the following example.
+Note the use of the  `tns:taskName` attribute in the `<task>` node.
+This is necessary for the  `WorkItemManager` to be able to see which `WorkItemHandler` instance should be used with which task or work item.
+
+[source,xml]
+----
+
+<?xml version="1.0" encoding="UTF-8"?> 
+<definitions id="Definition"
+             xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xs:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd"
+...
+             xmlns:tns="http://www.jboss.org/drools">
+
+...
+
+  <process isExecutable="true" id="myCustomProcess" name="Domain-Specific Process" >
+
+...
+
+    <task id="_5" name="Notification Task" tns:taskName="Notification" >
+
+...
+----
+
+[TIP]
+====
+Different work item handlers could be used depending on the context.
+For example, during  testing or simulation, it might not be necessary to actually execute the work items.
+In this case  specialized dummy work item handlers could be used during testing.
+====

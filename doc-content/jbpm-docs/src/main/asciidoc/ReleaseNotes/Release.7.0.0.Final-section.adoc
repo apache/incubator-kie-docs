@@ -1,0 +1,206 @@
+[[_jbpmreleasenotes700]]
+
+= New and Noteworthy in jBPM 7.0.0
+
+The following features were added to jBPM 7.0
+
+== Process engine
+
+=== Case management
+
+jBPM v7 comes with a lot of improvements to better support 'case management' use cases.  These use cases are different from more traditional business processes since they (typically) require more flexibility and support more unstructured and unplanned work.  Rather than following a nicely predefined plan from start to finish, actions are more ad-hoc decisions, what to do next is more based on the data associated with the case, the end user needs to be given the flexibility to decide what to do next (although recommendations are welcome), etc.
+
+We have added a lot of features to the core engine to be able to support these 'case management' use cases better.  Note that we have added these as an extension of our existing process engine (based on BPMN 2.0 specification) rather than as a separate effort, as we believe that case management is an extension of more traditional BPM, and that there is a spectrum of processes (from well-structured business processes to adaptive cases all the way to completely dynamic use cases) that we want to support with one unified solution.
+
+As a result, the core engine has been extended to support features like:
+
+** Cases have a unique _case identifier_ (which can be customised per case) and a longer life cycle (close, reopen, etc.) 
+** A _Case File_ that is responsible for collecting all data (documents, structured data, etc.) related to a case
+** _Ad hoc fragments_ allow you to model optional paths that might be recommended to end users or automatically triggered by rules
+** _Dynamic tasks_ can be dynamically executed in the context of a specific case instance even though it was not defined upfront in the case definition  
+** _Milestones_ and _Stages_ to better keep track of progress
+** _Case comments_ to be able to have discussions related to a specific case instance
+** _Session per case strategy_ to allow reuse of the same engine (ksession) per case
+
+=== Process and task administration API
+
+A Process and task admin API has been introduced to simplify some of the more complex administrator use cases.
+
+The process admin API allows you to:
+
+** get all process definition nodes
+** cancel node instance
+** retrigger node instance
+** update timer (absolute or relative)
+** list timer instances
+** trigger node
+
+The task admin API allows you to:
+
+** add/remove potential owners, excluded owners and business admins
+** add/remove task inputs and outputs
+** list/create/cancel escalations and notifications
+
+=== Advanced task routing
+
+When tasks are assigned to a group of users, pluggable task assignment strategies can be used to automatically assign tasks to a suitable individual immediately (when the task is being created or later released etc.).  This allows more efficient task allocation, based on basically all properties associated with the task (for example potential owners and task priority but also task data that could include information like geography, required skills, etc.).  Business rules can be used to define the assignment logic, making it easy to customize this to your needs. 
+
+=== Other
+
+** Java requirement was updated to JDK 1.8
+** Business rule task was enhanced to support execution of DMN rules and to externalize rule evaluation on a remote rule decision services
+** Defining which (asynchronous) jobs to execute next based on job priority
+
+== Process Execution Server
+
+The process execution server (also known as kie-server) has been extended to support the core engine features above (related to case management, admin APIs, etc.) and to offer a remote API for these operations.  On top of that, two other important architectural changes were done.
+
+=== Separate workbench from execution server
+
+While in v6 the workbench came with an embedded execution server to execute all the process and task requests that users were performing in the web-based UI, in v7 this embedded execution server has been removed and the workbench delegates all its requests to the kie-server as well.  The main advantage is that the workbench can now be used to monitor any (set of) kie-server(s).  By linking the kie-server to the workbench, the process and task monitoring UIs in the workbench can now connect to this kie-server and show all relevant information.  When multiple independent kie-servers are used, you can either connect to a specific one or use the smart router to aggregate information across multiple servers (see below).  As a result, a few missing features that were not yet available in v6 on kie-server but only on the remote API of the workbench have also been migrated to the kie-server.
+
+=== Smart router
+
+When managing multiple independent process execution servers (for example each only having a few projects deployed, with persistence configured to a separate datasource), it might be difficult to keep track of where all these servers are and to collect information from all of these.  The smart router (also known as kie-server-router) can be used as a proxy:
+
+** requests can be sent to the smart router, it will be able to figure out which of the known kie-server instances the request should be sent to
+** when trying to retrieve information, the smart router can collect information from different servers and aggregate that information for you
+
+So if you have an architecture where you might end up with a lot of independent process execution servers (for example in a cloud environment), the smart router will try to hide some of this complexity for you again.
+
+== Case Management Showcase
+
+A new (web-based) case management showcase application has been added that allows an easy and comprehensive look into the case management capabilities that were added to the core engine. This application gives a quick view at available cases (both definitions and instances) and allows you to interact with them.  To make it possible to deal with any kind of case, the application is generic (so not applied to a specific domain) and:
+
+** Brings visibility to the technical users on case definitions and instances
+** Provides insight in where the case instance is
+** Allows to perform certain operations on a case instance
+
+End-user focused case management applications should be domain-specific: they should be using the terminology the user is familiar with and focus on the tasks the user wants to perform.  As a result, this generic showcase application should more be considered a showcase application to demonstrate some of the capabilities.  However, our generic showcase application is built as a combination of various UI building blocks that each focus on a specific feature.
+
+In this version we can find the following _building blocks_:
+
+* _Case List_.
+Allows sort and filter the case list, perform general case operations and start new cases.
+
+.Case List building block,list de cases that are accesible by the user
+image::ReleaseNotes/CaseManagementCasesList.png[align="center"]
+
+* _Case Details_.
+* _Case Stages_.
+* _Case Comments_.
+* _Case Roles_.
+* _Case Milestones_.
+* _Case Overview_.
+This building block, provides a generic, building block composition and exposes the general
+case actions like 'Complete'.
+
+.Case Overview brings a default building block composition
+image::ReleaseNotes/CaseManagementCaseVisualization.png[align="center"]
+
+This application can be used standalone or can be automatically provisioned by workbench and accessible from within the workbench UI.
+
+.Case Management Showcase access from Workbench
+image::ReleaseNotes/CaseManagementWorkbenchLink.png[align="center"]
+
+IMPORTANT: The Case Management Showcase application launcher is only available from the workbench UI if the application
+has been automatically provisioned or a url has been provided via org.jbpm.casemgmt.showcase.url system property.
+
+== Workbench
+
+Apart from the generic improvements to the workbench (listed below in a separate section), there are also some jBPM-specific enhancements in the workbench.
+
+=== Case management in the workbench
+
+To better support case management, following enhancements were added:
+
+** When creating a new project, you can choose to create a case management project.  This will auto-configure some additional services for you that are typically used in the context of case management.  
+** Our web-based process designer has been extended with a few more properties and custom service tasks to support some of the new features related to case management. 
+
+=== Business Dashboards
+
+The _Business Dashboards_ section in the top menu bar opens up a new perspective which can be used to
+author brand new dashboards.
+
+.Business Dashboards Perspective
+image::ReleaseNotes/ContentManagementPerspective.png[align="center"]
+
+From this very new perspective, aside from creating new content, it is also possible to change the layout of the top
+menu bar by adding, removing or moving entries around. The menu entries are linked to existing perspectives and can
+be modified, thus making extremely easy to create and publish new perspectives in the top menu bar.
+
+Altogether, it provides a rich environment which allows for both changes in the application content and its menus. A
+detailed introduction to the new solution can be found at the <<_sect_bam_businessdashboards,Business Dashboards>> section.
+
+IMPORTANT: Notice, the former dashboard tooling was a separated web application. The new solution has been
+completely rewritten from scratch and it is fully integrated in the workbench.
+
+=== New columns available on process instances, tasks and jobs
+
+The following columns have been added to the corresponding perspectives:
+
+** Process instance list perspective: Last update and correlation key.
+** Task list: Last update, correlation key (of the associated process instance ID), process instance description (of the associated process instance).
+** Jobs perspective:  Name of the associated process (if any), ID of the associated process instance (if any), Description of the associated process instance (if any).
+
+These columns are sometimes optional so some of them aren't displayed by default. In order to show them it's necessary to select them in the column picker of the corresponding table.
+
+
+=== Process Designer (Preview)
+
+We are working on a completely *new web-based process designer*, and this release introduces a early preview (where we only support a small subset of the full feature set).
+
+The new jBPM process designer, also known as _Stunner_, is an open-source software that brings to users exciting representation and authoring capabilities for business process diagrams. It is completely focused on, built and designed for end users, providing an easy yet powerful and rich modelling experience.
+
+The following image shows an example of a BPMN2 diagram authoring screen:
+
+.Stunner - BPMN2 Diagram authoring screen
+image::ReleaseNotes/StunnerAuthoringScreen.png[align="center"]
+
+Our long-term experience along with the community and customers' feedback have allowed us to bring the most state-of-the-art modelling tool.
+
+Built as an open-source library, it is intended for developers as well, providing useful customization and extensibility capabilities.
+
+[IMPORTANT]
+====
+The following two process designers are included in the workbench: the already existing JBPM Designer and the Stunner, the new one. It is important to notice that the previously existing jBPM Designer is still being considered the full BPMN compliant process designer for production and regular use, meanwhile Stunner is available as a _preview feature_, supporting only a few BPMN elements. More amazing features are still on progress.
+====
+
+[NOTE]
+====
+image:ReleaseNotes/StunnerNewAssetPopup.png[align="right",float="right"] The new jBPM process designer (Stunner) can be only used when creating new BPMN diagrams from scratch, being associated with the _Business Process (Preview)_ resources.
+====
+
+Some of the key features currently available are:
+
+- Visual authoring and representation capabilities for diagrams
+- Runtime server and client side processing, validation, and constraint features
+- Rich client multi-platform support
+- Rich set of client features - complex shapes, toolboxes, poly-line support, animations, layout alignment and distribution, keyboard integration and much more
+- Rich set of client components - viewer, editor and preview authoring modes, components palette, visual diagram structure , property editors, and toolbars
+- Properties rendering and authoring capabilities by extensible an form mechanism
+- Easy extensibility of data models, behaviors, validations, constraints, and shapes
+- Additional serialization formats
+- Native workbench integration
+- Built-in support for HTML5 & canvas
+- Built-in BPMN2 support
+
+
+=== Form Modeler (Preview)
+
+jBPM v7 includes a preview of the new Form Modeler. This new version comes with an improved _Look and Feel_ and improvements to simplify the form creation and rendering.
+
+Some of the new features are:
+
+** Form Layout based on Bootstrap Grid System
+** _Drag & Drop_ Form Editor to simplify the form composition
+** New widget library including TextBoxes, TextAreas, DatePickers, ListBoxes, Radios, Nested Forms
+** Supports both simple Data Types (such as String, numbers, boolean) and Data Objects created using the Data Modeler
+** Ability to easily generate forms for Data Objects and Business Processes. Improved way to modify field bindings over the previous jBPM Form Modeler
+** Field validation based on http://beanvalidation.org/1.1/spec/[Bean Validation]
+
+.New Form Editor (Preview)
+image::ReleaseNotes/Forms-FormEditor.png[align="center"]
+
+.New forms are fully integrated on the jBPM runtime
+image::ReleaseNotes/Forms-jBPMIntegration.png[align="center"]
