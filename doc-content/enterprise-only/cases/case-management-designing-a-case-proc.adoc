@@ -1,0 +1,120 @@
+[id='case-management-designing-a-case-proc']
+= Designing a case
+
+Cases are designed using the process designer in {CENTRAL}. The case design is the basis of case management and sets out the specific goals and tasks for each case. The case flow can be modified dynamically during run time by adding dynamic tasks or processes.
+
+To demonstrate how to design a case, {PRODUCT} includes the IT Orders sample project in {CENTRAL}, which includes the following case definition:
+
+image::cases/itorders-orderhardware-process.png[IT Orders case design]
+
+You can refer to and interact with this case definition by importing the sample project in {CENTRAL}. 
+
+.Prerequisite 
+You have followed the procedure in <<case-management-creating-a-case-proc>> to create a new case in {CENTRAL}.
+
+.Procedure
+. In the *Assets* window, click *Add Asset* in the upper-right corner of the project perspective and select *Case definition*. 
+
+. Complete the required information in the *Create new Case definition* window:
++
+* `name`: The name of the case. This is usually the subject of the case or project that is being case managed.
+* `package`: The location in which case file is to be created.
+* `Case ID prefix (optional)`: A configurable prefix that enables you to easily distinguish different types of cases. The prefix is followed by a generated ID in the format `ID-XXXXXXXXXX`, where `XXXXXXXXXX` is a generated number that provides a unique ID for the case instance. If a prefix is not provided, the default prefix is `CASE` and generates instances with the following identifiers: 
++
+`CASE-0000000001`
++
+`CASE-0000000002`
++
+`CASE-0000000003`
++
+If a prefix is set to something else, such as `IT` for example, the following identifiers are generated:
++
+`IT-0000000001`
++
+`IT-0000000002`
++
+`IT-0000000003`
+
++
+. Click *Ok* to open the process designer.
++
+The designer creates a `WorkDefinition` file that includes the work items required for case definition. These appear as usable objects in the process designer *Object Library*, accessible by clicking the image:cases/3898.png[left arrows] in the upper-left corner of the designer.
++ 
+Verify that the process designer includes the `Milestones` and `Cases` objects by either checking the *Object Library* dock on the left side of the process designer, or by checking the `WorkDefinition` file under *Work Item Definitions* in the *Project Explorer* window on the left side of {CENTRAL}.
+. Define process-level and case-level variables.
++
+Click the image:cases/3897.png[] arrow on the right side of the designer to open the *Properties* panel. Click the down arrow next to `Variable Definitions` to open the `Editor for Variable Definitions`.
++
+.IT Orders variables
+image::cases/case-variables.png[Editor for IT Orders variables]
++
+In the IT Orders sample project, you can see that certain variables are identified as `Case File`. A case file variable is stored in the case file itself and promotes reuse of the case file data rather than copying it across multiple process instances. For example, the `hwSpec` variable is available to all processes within the case and is accessible directly from the case file even after the case instance is closed. 
++
+For more information about the case file, see 
+ifeval::["{context}" == "case-management-getting-started"]
+<<case-management-case-file-con-case-management-getting-started>>
+endif::[]
+ifeval::["{context}" == "case-management-design"]
+<<case-management-case-file-con-case-management-design>>
+endif::[]
+.
+
+. To define the roles involved in the case, click image:cases/3897.png[] to open the *Properties* menu on the right side of the designer and open the *Editor for Case Roles*. Click *Add Case Role* to add case roles.  
++
+The IT Orders sample case management project includes the following roles:
++
+
+.ITOrders Case Roles
+image::cases/case_roles.png[Case Roles]
+
++
+* `owner`: The employee who is making the hardware order request. There can be only one person assigned to this role.
+* `manager`: The employee's manager; the person who will approve or deny the requested hardware. The role cardinality is set to `1`, which means that only one person or group can be assigned to this role.
+* `supplier`: The available suppliers of IT hardware in the system. There is usually more than one supplier.
+
++
+
+For more information about creating case roles, see 
+ifeval::["{context}" == "case-management-getting-started"]
+<<case-management-roles-con-case-management-getting-started>>
+endif::[]
+ifeval::["{context}" == "case-management-design"]
+<<case-management-roles-con-case-management-design>>
+endif::[]
+.
+
+. Define the work item to be triggered when a new case starts.
++
+Because case definition is an ad hoc process definition, it does not require an explicit start node. Nodes that have no incoming connections are marked as `Adhoc Autostart` and are automatically triggered when a new case instance is started.
++
+By default, the process designer includes a `Milestone` object configured as `Adhoc autostart` in the palette. Modify this object or replace it with another work item such as a user task or script task to be triggered when a new case is started.
++
+In the IT Orders example, the `Prepare hardware spec` user task and the `Milestone 1: Order placed` milestones are configured as `Adhoc autostart`, and are automatically triggered when a new case instance is started.
+
+. Define a subprocess.
++
+In the IT Orders example, the `place-order` process is a separate business process that is carried out by the supplier. This is a reusable process that occurs during the course of case execution. 
++
+.. From the project menu, click *Add Asset* -> *Business Process* to create a new business process. Define the name and package for the new process and click *Ok*. 
+.. Define the process that is a subprocess within the case. For example, the IT Orders `Place order` process is a simple user task that applies to the supplier group and receives the relevant order data and case variables directly from the case file.
+
+. Add a milestone to the case definition by selecting `Milestone` from the *Object Library* and dragging it on to the process designer. 
+. Create an evaluation condition for the milestone based on a case file variable that determines when the milestone is completed. From the *Properties* menu on the right, open the *Data Inputs and Assignments* window and click *Add* to add a new condition.
++
+In the IT Orders case, the status of `Milestone 1: Order placed` depends on the condition `org.kie.api.runtime.process.CaseData(data.get("ordered") == true)`. This means that a case variable named `ordered` exists with the value `true`, and it is configured on the milestone in the following way:
++
+image::cases/milestone-evaluation-condition.png[Milestone evaluation condition configuration]
++
+For more information about the milestones in the IT Orders case, see 
+ifeval::["{context}" == "case-management-getting-started"]
+<<case-management-itorders-milestones-ref-case-management-getting-started>>.
+endif::[]
+ifeval::["{context}" == "case-management-design"]
+{URL_GETTING_STARTED_CASES}[_{GETTING_STARTED_CASES}_].
+endif::[]
++
+To learn more about milestones, see <<case-management-milestones-con-{context}>>.
+
+The IT Orders case can be closed after all milestone sequences are completed. However, due to the ad hoc nature of cases, the case could be reopened if, for example, the order was never received by the customer or the item is faulty. Tasks can be re-triggered or added to the case definition as required, even during run time.
+
+For more information about ad hoc processes, see <<case-management-adhoc-con-{context}>>.

@@ -1,0 +1,301 @@
+
+= Others
+
+== Variables
+
+While the flow chart focuses on specifying the control flow of the process, it is usually also necessary to look at the process from a data perspective.
+Throughout the execution of a process, data can be retrieved, stored, passed on and used.
+
+For storing runtime data, during the execution of the process, process variables can be used.
+A variable is defined by a name and a data type.
+This could be a basic data type, such as boolean, int, or String, or any kind of Object subclass (it must implement Serializable interface).  Variables can be defined inside a variable __scope__.
+The top-level scope is the variable scope of the process itself.
+Subscopes can be defined using a Sub-Process.
+Variables that are defined in a subscope are only accessible for nodes within that scope.
+
+Whenever a variable is accessed, the process will search for the appropriate variable scope that defines the variable.
+Nesting of variable scopes is allowed.
+A node will always search for a variable in its parent container.
+If the variable cannot be found, it will look in that one's parent container, and so on, until the process instance itself is reached.
+If the variable cannot be found, a read access yields null, and a write access produces an error message, with the process continuing its execution.
+
+Variables can be used in various ways:
+
+* Process-level variables can be set when starting a process by providing a map of parameters to the invocation of the `startProcess` method.
+  These parameters will be set as variables on the process scope.
+* Script actions can access variables directly, simply by using the name of the variable as a local parameter in their script.
+  For example, if the process defines a variable of type "org.jbpm.Person" in the process, a script in the process could access this directly:
++
+[source,java]
+----
+
+// call method on the process variable "person"
+person.setAge(10);
+----
++
+Changing the value of a variable in a script can be done through the knowledge context:
++
+[source,java]
+----
+kcontext.setVariable(variableName, value);
+----
+* Service tasks (and reusable sub-processes) can pass the value of process variables to the outside world (or another process instance) by mapping the variable to an outgoing parameter.
+  For example, the parameter mapping of a service task could define that the value of the process variable x should be mapped to a task parameter y right before the service is being invoked.
+  You can also inject the value of process variable into a hard-coded parameter String using ``__\#{expression}__``.
+  For example, the description of a human task could be defined as `You need to contact person #{person.getName()}` (where person is a process variable), which will replace this expression by the actual name of the person when the service needs to be invoked.
+  Similarly results of a service (or reusable sub-process) can also be copied back to a variable using a result mapping.
+* Various other nodes can also access data.
+  Event nodes for example can store the data associated to the event in a variable, etc.
+  Check the properties of the different node types for more information.
+* Process variables can be accessed also from the Java code of your application.
+  It is done by casting of `ProcessInstance` to ``WorkflowProcessInstance``.
+  See the following example:
++
+[source,java]
+----
+
+variable = ((WorkflowProcessInstance) processInstance).getVariable("variableName");
+----
++
+To list all the process variables see the following code snippet:
++
+[source,java]
+----
+
+org.jbpm.process.instance.ProcessInstance processInstance = ...;
+VariableScopeInstance variableScope = (VariableScopeInstance) processInstance.getContextInstance(VariableScope.VARIABLE_SCOPE);
+Map<String, Object> variables = variableScope.getVariables();
+----
++
+Note that when you use persistence then you have to use a command based approach to get all process variables:
++
+[source,java]
+----
+
+Map<String, Object> variables = ksession.execute(new GenericCommand<Map<String, Object>>() {
+    public Map<String, Object> execute(Context context) {
+        KieSession ksession = ((KnowledgeCommandContext) context).getStatefulKnowledgesession();
+        org.jbpm.process.instance.ProcessInstance processInstance = (org.jbpm.process.instance.ProcessInstance) ksession.getProcessInstance(piId);
+        VariableScopeInstance variableScope = (VariableScopeInstance) processInstance.getContextInstance(VariableScope.VARIABLE_SCOPE);
+        Map<String, Object> variables = variableScope.getVariables();
+        return variables;
+    }
+});
+----
+
+
+Finally, processes (and rules) all have access to globals, i.e.
+globally defined variables and data in the Knowledge Session.
+Globals are directly accessible in actions just like variables.
+Globals need to be defined as part of the process before they can be used.
+You can for example define globals by clicking the globals button when specifying an action script in the Eclipse action property editor.
+You can also set the value of a global from the outside using  `ksession.setGlobal(name, value)` or from inside process scripts using  ``kcontext.getKieRuntime().setGlobal(name,value);``.
+
+== Scripts
+
+Action scripts can be used in different ways: 
+
+* Within a Script Task,
+* As entry or exit actions, with a number of nodes. 
+
+Actions have access to globals and the variables that are defined for the process and the predefined variable ``kcontext``.
+This variable is of type https://docs.jboss.org/jbpm/v6.0.1/javadocs/org/kie/api/runtime/process/ProcessContext.html[
+		ProcessContext] and can be used for several tasks:
+
+* Getting the current node instance (if applicable).  The node instance could be queried for data, such as its name and type.
+  You can also cancel the current node instance.
++
+[source,java]
+----
+NodeInstance node = kcontext.getNodeInstance();
+String name = node.getNodeName();
+----
+* Getting the current process instance.
+  A process instance can be queried for data (name, id, processId, etc.), aborted or signaled an internal event.
++
+[source,java]
+----
+ProcessInstance proc = kcontext.getProcessInstance();
+proc.signalEvent( type, eventObject );
+----
+
+* Getting or setting the value of variables.
+* Accessing the Knowledge Runtime allows you do things like starting a process, signaling (external) events, inserting data, etc.
+
+jBPM supports multiple dialects, like Java, JavaScript and MVEL.
+Java actions should be valid Java code, same for JavaScript.
+MVEL actions can use the business scripting language MVEL to express the action.
+MVEL accepts any valid Java code but additionally provides support for nested accesses of parameters (e.g., `person.name` instead of ``person.getName()``), and many other scripting improvements.
+Thus, MVEL expressions are more convenient for the business user.
+For example, an action that prints out the name of the person in the "requester" variable of the process would look like this:
+
+[source]
+----
+// Java dialect
+System.out.println( person.getName() );
+
+// JavaScript dialect
+print(person.name + '\n);
+
+//  MVEL dialect
+System.out.println( person.name );
+----
+
+== Constraints
+
+Constraints can be used in various locations in your processes, for example in a diverging gateway.
+jBPM supports two types of constraints:
+
+* _Code constraints_ are boolean expressions, evaluated directly whenever they are reached.
+  We support multiple  dialects for expressing these code constraints: Java, JavaScript and MVEL.
+  All code constraints have direct access to the globals and variables defined in the process.
+  Here is an example of a valid Java code constraint, `person` being a variable in the process:
++
+[source,java]
+----
+return person.getAge() > 20;
+----
++
+A similar example of a valid MVEL code constraint is:
++
+[source]
+----
+return person.age > 20;
+----
++
+And for JavaScript:
++
+[source]
+----
+person.age > 20
+----
+* _Rule constraints_ are equals to normal Drools rule conditions.
+  They use the Drools Rule Language syntax to express possibly complex constraints.
+  These rules can, like any other rule, refer to data in the Working Memory.
+  They can also refer to globals directly.
+  Here is an example of a valid rule constraint:
++
+[source]
+----
+Person( age > 20 )
+----
++
+This tests for a person older than 20 being in the Working Memory.
+
+
+Rule constraints do not have direct access to variables defined inside the process.
+It is however possible to refer to the current process instance inside a rule constraint, by adding the process instance to the Working Memory and matching for the process instance in your rule constraint.
+We have added special logic to make sure that a variable `processInstance` of type `WorkflowProcessInstance`    will only match to the current process instance and not to other process instances in the Working Memory.
+Note that you are however responsible yourself to insert the process instance into the session and, possibly, to update it, for example, using Java code or an on-entry or on-exit or explicit action in your process.
+The following example of a rule constraint will search for a person with the same name as the value stored in the variable "name" of the process:
+
+[source]
+----
+processInstance : WorkflowProcessInstance()
+Person( name == ( processInstance.getVariable("name") ) )
+# add more constraints here ...
+----
+
+== Timers
+
+Timers wait for a predefined amount of time, before triggering, once or repeatedly.
+They can be used to trigger certain logic after a certain period, or to repeat some action at regular intervals.
+
+=== Configure timer with delay and period
+
+A Timer node is set up with a delay and a period.
+The delay specifies the amount of time to wait after node activation before triggering the timer the first time.
+The period defines the time between subsequent trigger activations.
+A period of 0 results in a one-shot timer.
+
+The (period and delay) expression should be of the form [#d][#h][#m][#s][#[ms]].  You can specify the amount of days, hours, minutes, seconds and milliseconds (which is the default if you don't specify anything).  For example, the expression "1h" will wait one hour before triggering the timer (again).
+
+=== Configure timer with CRON like expression
+
+Timer events can be configured with CRON like expression when timeCycle is used as timer event definition.
+Important is that the language attribute of timeCycle definition must be set to __cron__.
+With that such cycle of a timer is controlled in the same way as CRON jobs.
+CRON like expression is supported for:
+
+
+
+* start event timers
+* intermediate event timers
+* boundary event timers 
+
+Following is an example of a definition of a boundary timer with CRON like expression
+
+[source,xml]
+----
+<bpmn2:boundaryEvent id="1" name="Send Update Timer" attachedToRef="_77A94B54-8B7C-4F8A-84EE-C1D310A343A6" cancelActivity="false">
+   <bpmn2:outgoing>2</bpmn2:outgoing>
+   <bpmn2:timerEventDefinition id="_erIyiJZ7EeSDh8PHobjSSA">
+     <bpmn2:timeCycle xsi:type="bpmn2:tFormalExpression" id="_erIyiZZ7EeSDh8PHobjSSA" language="cron">0/1 * * * * ?</bpmn2:timeCycle>
+   </bpmn2:timerEventDefinition>
+</bpmn2:boundaryEvent>
+----
+
+This timer will fire every second and will continue until activity this boundary event is attached to is active.
+
+=== Configure timer ISO-8601 date format
+
+since version 6 timers can be configured with valid http://en.wikipedia.org/wiki/ISO_8601[
+      ISO8601] date format that supports both one shot timers and repeatable timers.
+Timers can be defined as date and time representation, time duration or repeating intervals
+
+* Date - 2013-12-24T20:00:00.000+02:00 - fires exactly at Christmas Eve at 8PM
+* Duration - PT1S - fires once after 1 second
+* Repeatable intervals - R/PT1S - fires every second, no limit, alternatively R5/PT1S will fire 5 times every second
+
+=== Configure timer with process variables
+
+The timer service is responsible for making sure that timers get triggered at the appropriate times.
+Timers can also be canceled, meaning that the timer will no longer be triggered.
+
+Timers can be used in two ways inside a process:
+
+* A Timer Event may be added to the process flow.
+  Its activation starts the timer, and when it triggers, once or repeatedly, it activates the Timer node's successor.
+  Subsequently, the outgoing connection of a timer with a positive period is triggered multiple times.
+  Canceling a Timer node also cancels the associated timer, after which no more triggers will occur.
+* Timers can be associated with a Sub-Process or tasks as a boundary event. 
+
+=== Update timer within running process instance
+
+In some cases timer that has been already scheduled should be rescheduled to accomodate new requirements (prolong or shorten timer expiration time, change delay, period or repeat limit).
+
+As this involves several low level steps, jBPM comes with a dedicated command to perform these operations as atomic operation to make sure all is done within same transaction. 
+[source,java]
+----
+org.jbpm.process.instance.command.UpdateTimerCommand
+----
+
+Following timer events are supported to be updated:
+
+* boundary timer event
+* intermediate timer event
+
+Timers can be rescheduled by providing following information to the UpdateTimerCommand
+
+* processInstanceId - mandatory
+* timer node name - mandatory
+
+Next one of following three parameters set needs to be used:
+
+* delay
+* period and repeatLimit
+* delay, period and repeatLimit
+
+Example on how to updated timer event:
+
+
+[source]
+----
+// first start process instance and record its id
+long id = kieSession.startProcess(BOUNDARY_PROCESS_NAME).getId();
+
+//set timer delay to 3s
+kieSession.execute(new UpdateTimerCommand(id, BOUNDARY_TIMER_ATTACHED_TO_NAME, 3));
+----
+
+Important is that the update command is executed via ksession executor to ensure it's done in transaction (when persistence is used).

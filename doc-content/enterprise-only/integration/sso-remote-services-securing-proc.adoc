@@ -1,0 +1,42 @@
+[id='sso-remote-services-securing-proc']
+= Securing {CENTRAL} file system services using RH-SSO
+
+To consume other remote services such as file systems (for example, a remote GIT service), you must specify the correct RH-SSO login module. 
+
+.Procedure
+. Generate a JSON configuration file:
+.. Navigate to the *RH-SSO Admin Console* located at http://localhost:8080/auth/admin.
+.. Click *Clients*. 
+.. Create a new client with the following settings:
++
+  * Set *Client ID* as `kie-git`.
+  * Set *Access Type* as `confidential`.
+  * Disable the *Standard Flow Enabled* option.
+  * Enable the *Direct Access Grants Enabled* option.
++
+image::integration/kie_git_client_settings.png[]
+.. Click *Save*.
+.. Click the *Installation* tab at the top of the client configuration screen and choose *Keycloak OIDC JSON* as a *Format Option*.
+.. Click *Download*.
+. Move the downloaded JSON file to an accessible directory in the server's file system or add it to the application class path.
+. Specify the correct RH-SSO login module in the `_EAP_HOME_/standalone/configuration/standalone.xml` and `standalone-full.xml` files. By default, the security domain in {PRODUCT} is set to `other`. Replace the default values of the `login-module` in this security domain with the values in the following example:
++
+[source,xml]
+----
+<security-domain name="other" cache-type="default">
+  <authentication>
+    <login-module code="org.keycloak.adapters.jaas.DirectAccessGrantsLoginModule" flag="required">
+      <module-option name="keycloak-config-file" value="$EAP_HOME/kie-git.json"/>
+    </login-module>
+  </authentication>
+</security-domain>
+----
++
+. The JSON file specified in the `module-option` element contains a client used for securing the remote services. Replace the `$_EAP_HOME_/kie-git.json` value of the `module-option` element with the absolute path or the class path (`classpath:/_EXAMPLE_PATH_/kie-git.json`) to this JSON configuration file.
++
+At this point, all users authenticated through the RH-SSO server can clone internal GIT repositories. In the following command, change `USER_NAME` to a RH-SSO user, for example `admin`:
++
+[source]
+----
+git clone ssh://USER_NAME@localhost:8001/system
+----

@@ -1,0 +1,275 @@
+[[_jbpmreleasenotes770]]
+
+= New and Noteworthy in jBPM 7.7.0
+
+The following features were added to jBPM 7.7
+
+== jBPM executor redesigned
+
+up to version 7.7, jBPM executor used default mechanism based on polling. It periodically polls data base to check if there are any jobs to be
+executed. This does not scale too good and was main motivation to approach redesign. With version 7.7, jBPM executor is enhanced to remove polling mechanism
+and instead relies on specialised ScheduledThreadPoolExecutor that respects job's priority.
+
+This allows to have really efficient processing with less load on the data base (and less locks on data base). New mechanism does cover all
+possible types of jobs including retries and requeues. With additional JMS trigger (that was already present since version 6.3) this provides
+complete and fast asynchronous job processing solution.
+To read up more on this see http://mswiderski.blogspot.com/2018/02/redesigned-jbpm-executor.html[this article] and async section in the docs.
+
+== UserInfo interface allows to get user id by email
+
+Small addition to UserInfo interface (and its default implementations) was provided to allow to find user id by email address. This is the reverse
+operation that was already there - get email address by user id. With this, email integration (such as completing task by email) can be
+easily implemented.
+
+== Service Level Agreement (SLA) tracking for processes and cases
+
+SLA tracking has been added to jBPM to allow to easily keep track of the execution of:
+
+- processes
+- cases
+- individual activities of the process/case
+
+This allows administrators to be always up to date with what is happening with running processes and be notified when SLA are violated.
+More can be found in http://mswiderski.blogspot.com/2018/02/track-your-processes-and-activities.html[SLA overview article] and
+http://mswiderski.blogspot.com/2018/02/react-to-sla-violations-in-cases.html[SLA with cases article].
+
+== Case stages activation condition
+
+Case stages (ad hoc subprocesses) are equipped (next to completion condition) with activation condition. This means that ad hoc stage
+can be automatically activated when defined condition is met. Conditions should be defined as rule expressions and usually refer to
+case file data, although are not limited to that.
+
+== NoSQL integration
+
+Initial integration with NoSQL (and not only that) has been introduced. This is based on additional so called Emitters that can be
+implemented to receive notifications when process engine executes processes. In general, this allows users to plugin their own
+emitters that will be responsible for sending data to externals data stores.
+Note that this is integration and not replacement of persistence layer of jBPM. You can read up more about it in
+http://mswiderski.blogspot.com/2017/08/nosql-enters-jbpm-as-experiment-so-far.html[this article] and if would like to see an implementation
+based on Elasticsearch, take a look at http://mswiderski.blogspot.com/2017/08/elasticsearch-empowers-jbpm.html[this article] 
+
+== Process Designer (Preview)
+
+The new version of the jBPM Process Designer (_Stunner_) provides lots of new features, plus some other stability and usability improvements as well.
+
+image:ReleaseNotes/StunnerBPMNShapes-7.0.0.png[align="center", title="Example of a BPMN process"]
+
+Here is a summary of some of the most relevant new features and improvements included on this release:
+
+** Palette visual and structural re-design
+
+image:ReleaseNotes/StunnerPalette-7.0.0.png[align="center", title="BPMN palette re-design"]
+
+** Visual enhancements for shape states
+
+image:ReleaseNotes/StunnerHighlightState-7.7.0.png[align="center", title="Highlight state"]
+
+image:ReleaseNotes/StunnerStateInvalid-7.7.0.png[align="center", title="Invalid state"]
+
+** Shape resize constraints capabilities
+** Increased the available modelling area size
+** Improved docking related capabilities (boundary shapes)
+*** Enhanced the usability by doing automatic adjustment (snap) to the docking magnets while dragging the boundary shapes
+*** Ability to dock boundary shapes directly when dragging from the palette
+** UI Exporting capabilities improved
+*** Export into BPMN2
+*** Export into an SVG image
+** Added new drop-down selector field type with filtering capabilities
+** Support for connector's bend-points (eg: move points, add/remove points)
+
+image:ReleaseNotes/StunnerBendpoints-7.7.0.png[align="center", title="Connector's bend-points"]
+
+** Added new connector type that renders as a regular poly-line
+** Process import/export capabilities
+** Toolbar re-design
+
+image:ReleaseNotes/StunnerToolbar-7.0.0.png[align="center", title="Toolbar re-design"]
+
+** Automatic migration capabilities between both process designers
+** Keyboard mappings improved (eg: arrow key)
+** Form generation capabilities
+** BPMN2
+*** Support for service tasks
+*** Support for event sub-process
+*** Support for ad-hoc sub-process
+*** Support for multiple instance sub-process
+*** Support for parallel gateway
+*** Shapes re-design
+*** Icons re-design
+*** Support for interrupting events (start events)
+*** Included brand new marshaller and unmarshaller implementations, which rely on the Eclipse BPMN2 domain model, and new complete suite of unitary tests (still experimental)
+
+
+== jBPM Manage section redesign
+
+The entire admin console screens have been re-designed focusing on:
+
+** Create new layout and re-styling existent elements.
+** Revise master/detail navigation
+** Review and improve quick filter creation
+** Review and improve saved filters
+** Rename top level menus
+
+
+=== New layout
+
+A new layout have been created as part of the admin console screens re-design. The new layout of jBPM Manage section
+contains the following new areas:
+
+image::ReleaseNotes/ConsoleLayout_7.7.0.png[align="center", title="Console screen new layout defined areas "]
+
+** (1) Breadcrumb area: Contains breadcrumbs and the server template selector.
+** (2) Filters area: Contains the dock for filter creation and dock with saved filters
+
+The new docks are placed in the expandable panel on the left side of the screen.
+The selections made inside any of the docks are immediately reflected in the table on the right.
+
+That panels can be expanded or collapsed using the standard workbench docks controls.
+
+image::ReleaseNotes/ConsoleItemListDocks_7.7.0.png[align="center", title="Different status of screen depending on the selected dock panel"]
+
+** (3) Manage screen selector.
+
+The new drop-down offers navigation to the all manage screens: Process Definitions, Process Instances, Tasks, Execution Errors
+and Jobs have been created. This selector allows the user to switch process admin screens quickly and easily.
+
+image::ReleaseNotes/ConsoleManageSelector_7.7.0.png[title="Manage screen selector"]
+
+** (4) Toolbar area.
+
+This toolbar has been designed to contain each screen specific actions and provides different kinds of visualizations:
+icons for common actions like 'Refresh' that are self-explained, buttons for primary actions and it's prepared for containing
+kebab with a list of actions.
+
+** (5)  Filter status area.
+
+As in previous version shows the currently applied filters and provides options to clear individual filters or to clear
+them all. The new feature introduced is the ability to save the currently applied filter as a new saved filter, which
+becomes available in Saved filters dock (see Filters area above)
+
+** (6)  The list table area.
+
+The previous table layout has been redesigned to list-like layout, matching with PatternFly guidelines.
+Some of the changes that have been added:
+
+-- New styles are applied to the different list elements.
+
+-- The page size selector and the pagination footer has been re-styled and placed closer to the list.
+
+-- PatternFly standards applied to list item's actions. Perform actions on individual list items using the kebab button
+ control. When there are more than one available actions the kebab groups the available actions. There are different
+ areas at kebab: primary actions first and separately the navigation to other screens ones
+
+image::ReleaseNotes/ConsoleItemList_7.7.0.png[align="center", title="Item list new design"]
+
+
+=== Revised master/detail navigation
+
+The different management screens have been redesigned to change the way to open the item detail. When the user selects
+an item by clicking on the the list row to drill into the details, the item details are shown in full screen and
+the master list disappears, instead of being open in a right side panel as was in the previous versions
+
+image::ReleaseNotes/ConsoleItemDetails_7.7.0.png[align="center", title="Item detail opened"]
+
+Some changes have been introduced for that purpose:
+
+** Migrated details views to full screen/adjust styling and breadcrumbs
+** Moved process model popup in process definition and instance to tab in details ( process definitions and process instances)
+** Moved actions to the new layout toolbar.
+** Re-styling the tabs items details to be shown in full screen mode
+** Navigate back to list view using “X” close button or breadcrumbs
+
+
+=== Reviewed and improved quick filter creation
+
+The quick filter bar have been placed to the dock panel and reorganized in vertical disposition.
+
+A new type of basic filters has been introduced to allow multiple value selection. It's using checkboxes controls to set
+ the different values. The resulting restriction of selecting different values is retrieve
+ the items that match with one of selected values.
+
+image::ReleaseNotes/ConsoleItemListFilters_7.7.0.png[align="center", title="Filters dock opened"]
+
+This new type of filter has been applied on this following fields:
+
+** Process instances: State (Active, Aborted,..) and Errors (With errors, Without errors)
+** Task: Status (Completed, Created, ..)
+** Execution Errors: Type (DB, Task, Process, Job)
+** Jobs: Status (Canceled, Completed,..)
+
+=== Reviewed and improved saved filters
+
+Different changes have been done in this area:
+
+** Migrated filter tabs to 'Saved filters' dock, in side panel that shows the list of stored filters.
+** Moved the 'Add advanced filter' that opens the previous creation filter popup, to 'Filters' dock.
+** The 'Saved filters' dock allows manage the stored filters:
+
+*** Filters can be deleted
+*** The defaults filters can be always restored as in the previous version with the 'Restore default filters' button.
+*** Filters can be applied: When a user selects one filter, that is applied on the current list and the 'Active filters'
+ displays the restrictions contained in that filter.
+
+image::ReleaseNotes/ConsoleItemListSavedFilters_7.7.0.png[align="center", title="Saved filters dock opened"]
+
+** The user has now the ability to modify/complete filters and save it to be reused later. The new way to save filter
+is selecting 'Save filters' at 'Active filters' bar. A name for the new stored filter is requested and a new filter
+with the current restrictions is added to 'Saved filters' list.
+
+It's not allowed to have filters with the same name. When the user tries to save a filter with an existing name, currently an error is shown.
+
+image::ReleaseNotes/ConsoleItemListSavedFiltersError_7.7.0.png[align="center", title="Not allowed save filter with the same existing filter name"]
+
+
+=== Reviewed Reports section design allowing to work with master / detail
+
+The reports screen has been separated in two sections: Task reports and Process reports.
+
+This new screens are using the new layout, The item details are opened in full screen mode too and the breadcrumb has been
+added to allow the navigation and keep consistency with the other console screens.
+
+The new layout toolbar has been filled with the action to change between dashboard and table view.
+
+image::ReleaseNotes/ConsoleProcessReports_7.7.0.png[align="center", title="New process report screen, showing dashboards"]
+
+image::ReleaseNotes/ConsoleProcessReportsTable_7.7.0.png[align="center", title="New process report screen, showing items in table"]
+
+
+=== Renamed top level menus
+
+Some naming adjustments have been done to the top level menu:
+
+** 'Task Administration' -> 'Tasks'
+
+** 'Task List' -> 'Task Inbox'
+
+** 'Process & Task Reports' -> two new options:  'Process Reports' and  'Task Reports'
+
+image::ReleaseNotes/ConsoleNewTopLevelMenu_7.7.0.png[align="center", title="Updated top level menu"]
+
+
+== Other specific changes on Admin console screens
+
+=== Process Definitions
+
+** Navigation to process instantes has been placed at process definitions list.
+** View 'Process model' has been placed as a new tab 'Diagram' on the process definition detail.
+
+=== Process Instances
+
+** View 'Process model' has been placed as a new tab 'Diagram' on the process definition detail.
+** Signal and abort actions are exposed as a primary actions at new layout toolbar.
+
+=== Task ( previously Tasks Administration)
+
+** In the previous version Tasks were only displayed when the current user was part of the following system properties
+in Kie Server: org.jbpm.ht.admin.user (default: Administrator) or org.jbpm.ht.admin.group (default: Administrators).
+With the current implementation  when this criteria isn't met, this screen retrieve the list of tasks where the logged user or
+any of its groups have 'Business Administrator' relationship with them.
+
+** An error count column added to task information. Same as the error column in process instance list. Also add navigation link (View Errors).
+
+=== Task details
+** Removed 'Process Context' tab. Leaving the navigation to process instance screen at task list.
+** 'Process Instance Id' and 'Process Definition Id' have been placed at 'Details' tab
+** Reviewed styles on primary actions buttons

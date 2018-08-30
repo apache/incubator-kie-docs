@@ -1,0 +1,153 @@
+= Browsing graphs of objects with OOPath
+
+
+When the field of a fact is a collection it is possible to bind and reason over all the items in that collection on by one using the `from` keyword.
+Nevertheless, when it is required to browse a graph of object the extensive use of the `from` conditional element may result in a verbose and cubersome syntax like in the following example: 
+
+.Browsing a graph of objects with from
+====
+[source]
+----
+rule "Find all grades for Big Data exam" when
+      $student: Student( $plan: plan )
+      $exam: Exam( course == "Big Data" ) from $plan.exams
+      $grade: Grade() from $exam.grades
+      then /* RHS */ end
+----
+====
+
+
+In this example it has been assumed to use a domain model consisting of a `Student` who has a `Plan` of study: a `Plan` can have zero or more ``Exam``s and an `Exam` zero or more ``Grade``s.
+Note that only the root object of the graph (the `Student` in this case) needs to be in the working memory in order to make this works.
+
+By borrowing ideas from XPath, this syntax can be made more succinct, as XPath has a compact notation for navigating through related elements while handling collections and filtering constraints.
+This XPath-inspired notation has been called `OOPath` since it is explictly intended to browse graph of objects.
+Using this notation the former example can be rewritten as it follows: 
+
+.Browsing a graph of objects with OOPath
+====
+[source]
+----
+rule "Find all grades for Big Data exam" when
+      Student( $grade: /plan/exams[course == "Big Data"]/grades )
+      then /* RHS */ end
+----
+====
+
+
+Formally, the core grammar of an `OOPath` expression can be defined in EBNF notation in this way.
+
+[source]
+----
+OOPExpr = [ID ( ":" | ":=" )] ( "/" | "?/" ) OOPSegment { ( "/" | "?/" | "." ) OOPSegment } ;
+OOPSegment = ID ["#" ID] ["[" ( Number | Constraints ) "]"]
+----
+
+
+In practice an `OOPath` expression has the following features.
+
+* It has to start with `/` or with a `?/` in case of a completely non-reactive OOPath (see below).
+* It can dereference a single property of an object with the `$$.$$` operator
+* It can dereference a multiple property of an object using the `/` operator. If a collection is returned, it will iterate over the values in the collection
+* While traversing referenced objects it can filter away those not satisfying one or more constraints, written as predicate expressions between square brackets like in:
++
+
+[source]
+----
+Student( $grade: /plan/exams[ course == "Big Data" ]/grades )
+----
+* During oopath traversal it is also possible to downcast the traversed object to a subclass of the class declared in the generic
+collection. In this way subsequent constraints can also safely access to properties declared only in that subclass like in:
++
+
+[source]
+----
+Student( $grade: /plan/exams#AdvancedExam[ course == "Big Data", level > 3 ]/grades )
+----
+Objects that are not instances of the class specificed in this inline cast will be automatically filtered away.
+* A constraint can also have a beckreference to an object of the graph traversed before the currently iterated one. For example the following OOPath:
++
+
+[source]
+----
+Student( $grade: /plan/exams/grades[ result > ../averageResult ] )
+----
++
+will match only the grades having a result above the average for the passed exam.
+* A constraint can also recursively be another OOPath as it follows:
++
+
+[source]
+----
+Student( $exam: /plan/exams[ /grades[ result > 20 ] ] )
+----
+* Items can also be accessed by their index by putting it between square brackets like in:
++
+
+[source]
+----
+Student( $grade: /plan/exams[0]/grades )
+----
++
+To adhere to Java convention OOPath indexes are 0-based, compared to XPath 1-based
+
+
+== Reactive and Non-Reactive OOPath
+
+
+At the moment Drools is not able to react to updates involving a deeply nested object traversed during the evaluation of an `OOPath` expression.
+To make these objects reactive to changes it is then necessary to make them extend the class ``org.drools.core.phreak.ReactiveObject``.
+It is planned to overcome this limitation by implementing a mechanism that automatically instruments the classes belonging to a specific domain model.
+
+Having extendend that class, the domain objects can notify the engine when one of its field has been updated by invoking the inherited method `notifyModification` as in the following example:
+
+.Notifying the engine that an exam has been moved to a different course
+====
+[source]
+----
+public void setCourse(String course) {
+        this.course = course;
+        notifyModification(this);
+        }
+----
+====
+
+
+In this way when using an OOPath like the following:
+
+[source]
+----
+Student( $grade: /plan/exams[ course == "Big Data" ]/grades )
+----
+
+
+if an exam is moved to a different course, the rule is re-triggered and the list of grades matching the rule recomputed.
+
+It is also possible to have reactivity only in one subpart of the OOPath as in:
+
+[source]
+----
+Student( $grade: /plan/exams[ course == "Big Data" ]?/grades )
+----
+
+
+Here, using the `?/` separator instead of the `/` one, the engine will react to a change made to an exam, or if an exam is added to the plan, but not if a new grade is added to an existing exam.
+Of course if a OOPath chunk is not reactive, all remaining part of the OOPath from there till the end of the expression will be non-reactive as well.
+For instance the following OOPath
+
+[source]
+----
+Student( $grade: ?/plan/exams[ course == "Big Data" ]/grades )
+----
+
+
+will be completely non-reactive.
+For this reason it is not allowed to use the `?/` separator more than once in the same OOPath so an expression like:
+
+[source]
+----
+Student( $grade: /plan?/exams[ course == "Big Data" ]?/grades )
+----
+
+
+will cause a compile time error.

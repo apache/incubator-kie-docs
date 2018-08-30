@@ -1,0 +1,690 @@
+= Type Declaration
+
+.meta_data
+image::LanguageReference/meta_data.png[align="center"]
+
+
+.type_declaration
+image::LanguageReference/type_declaration.png[align="center"]
+
+
+Type declarations have two main goals in the rules engine: to allow the declaration of new types, and to allow the declaration of metadata for types.
+
+* *Declaring new types:* Drools works out of the box with plain Java objects as facts. Sometimes, however, users may want to define the model directly to the rules engine, without worrying about creating models in a lower level language like Java. At other times, there is a domain model already built, but eventually the user wants or needs to complement this model with additional entities that are used mainly during the reasoning process.
+* *Declaring metadata:* facts may have meta information associated to them. Examples of meta information include any kind of data that is not represented by the fact attributes and is consistent among all instances of that fact type. This meta information may be queried at runtime by the engine and used in the reasoning process.
+
+
+== Declaring New Types
+
+
+To declare a new type, all you need to do is use the keyword ``declare``, followed by the list of fields, and the keyword ``end``.
+A new fact must have a list of fields, otherwise the engine will look for an existing fact class in the classpath and raise an error if not found.
+
+.Declaring a new fact type: Address
+====
+[source]
+----
+declare Address
+   number : int
+   streetName : String
+   city : String
+end
+----
+====
+
+
+The previous example declares a new fact type called ``Address``.
+This fact type will have three attributes: ``number``, `streetName` and ``city``.
+Each attribute has a type that can be any valid Java type, including any other class created by the user or even other fact types previously declared.
+
+For instance, we may want to declare another fact type ``Person``:
+
+.declaring a new fact type: Person
+====
+[source]
+----
+declare Person
+    name : String
+    dateOfBirth : java.util.Date
+    address : Address
+end
+----
+====
+
+
+As we can see on the previous example, `dateOfBirth` is of type ``java.util.Date``, from the Java API, while `address` is of the previously defined fact type Address.
+
+You may avoid having to write the fully qualified name of a class every time you write it by using the `import` clause, as previously discussed.
+
+.Avoiding the need to use fully qualified class names by using import
+====
+[source]
+----
+import java.util.Date
+
+declare Person
+    name : String
+    dateOfBirth : Date
+    address : Address
+end
+----
+====
+
+
+When you declare a new fact type, Drools will, at compile time, generate bytecode that implements a Java class representing the fact type.
+The generated Java class will be a one-to-one Java Bean mapping of the type definition.
+So, for the previous example, the generated Java class would be:
+
+.generated Java class for the previous Person fact typedeclaration
+====
+[source,java]
+----
+public class Person implements Serializable {
+    private String name;
+    private java.util.Date dateOfBirth;
+    private Address address;
+
+    // empty constructor
+    public Person() {...}
+
+    // constructor with all fields 
+    public Person( String name, Date dateOfBirth, Address address ) {...}
+
+    // if keys are defined, constructor with keys
+    public Person( ...keys... ) {...}
+
+    // getters and setters
+    // equals/hashCode
+    // toString
+}
+----
+====
+
+
+Since the generated class is a simple Java class, it can be used transparently in the rules, like any other fact.
+
+.Using the declared types in rules
+====
+[source]
+----
+rule "Using a declared Type"
+when< 
+    $p : Person( name == "Bob" )
+then
+    // Insert Mark, who is Bob's mate.
+    Person mark = new Person();
+    mark.setName("Mark");
+    insert( mark );
+end
+----
+====
+
+=== Declaring enumerative types
+
+
+DRL also supports the declaration of enumerative types.
+Such type declarations require the additional keyword __enum__, followed by a comma separated list of admissible values terminated by a semicolon. 
+
+====
+[source]
+----
+rule "Using a declared Type"
+when 
+    $p : Person( name == "Bob" )
+then
+    // Insert Mark, who is Bob's mate.
+    Person mark = new Person();
+    mark.setName("Mark");
+    insert( mark );
+end
+----
+====
+
+
+The compiler will generate a valid Java enum, with static methods valueOf() and values(), as well as instance methods ordinal(), compareTo() and name().
+
+Complex enums are also partially supported, declaring the internal fields similarly to a regular type declaration.
+Notice that as of version 6.x, enum fields do _NOT_ support other declared types or enums
+
+====
+[source]
+----
+declare enum DaysOfWeek
+   SUN("Sunday"),MON("Monday"),TUE("Tuesday"),WED("Wednesday"),THU("Thursday"),FRI("Friday"),SAT("Saturday");
+
+   fullName : String
+end
+----
+====
+
+
+Enumeratives can then be used in rules
+
+.Using declarative enumerations in rules
+====
+[source]
+----
+rule "Using a declared Enum"
+when
+   $p : Employee( dayOff == DaysOfWeek.MONDAY )
+then
+   ...
+end
+----
+====
+
+== Declaring Metadata
+
+
+Metadata may be assigned to several different constructions in Drools: fact types, fact attributes and rules.
+Drools uses the at sign ('@') to introduce metadata, and it always uses the form:
+
+[source]
+----
+@metadata_key( metadata_value )
+----
+
+
+The parenthesized _metadata_value_ is optional.
+
+For instance, if you want to declare a metadata attribute like ``author``, whose value is __Bob__, you could simply write:
+
+.Declaring a metadata attribute
+====
+[source]
+----
+@author( Bob )
+----
+====
+
+
+Drools allows the declaration of any arbitrary metadata attribute, but some will have special meaning to the engine, while others are simply available for querying at runtime.
+Drools allows the declaration of metadata both for fact types and for fact attributes.
+Any metadata that is declared before the attributes of a fact type are assigned to the fact type, while metadata declared after an attribute are assigned to that particular attribute.
+
+.Declaring metadata attributes for fact types and attributes
+====
+[source]
+----
+import java.util.Date
+
+declare Person
+    @author( Bob )
+    @dateOfCreation( 01-Feb-2009 )
+
+    name : String @key @maxLength( 30 )
+    dateOfBirth : Date 
+    address : Address
+end
+----
+====
+
+
+In the previous example, there are two metadata items declared for the fact type (``@author`` and ``@dateOfCreation``) and two more defined for the name attribute (``@key`` and ``@maxLength``). Please note that the `@key` metadata has no required value, and so the parentheses and the value were omitted.:
+
+=== Predefined class level annotations
+
+
+Some annotations have predefined semantics that are interpreted by the engine.
+The following is a list of some of these predefined annotations and their meaning.
+
+==== @role( <fact | event> )
+
+
+The @role annotation defines how the engine should handle instances of that type: either as regular facts or as events.
+It accepts two possible values:
+
+* fact : this is the default, declares that the type is to be handled as a regular fact.
+* event : declares that the type is to be handled as an event.
+
+
+The following example declares that the fact type StockTick in a stock broker application is to be handled as an event.
+
+.declaring a fact type as an event
+====
+[source]
+----
+import some.package.StockTick
+
+declare StockTick
+    @role( event )
+end
+----
+====
+
+
+The same applies to facts declared inline.
+If StockTick was a fact type declared in the DRL itself, instead of a previously existing class, the code would be:
+
+.declaring a fact type and assigning it the event role
+====
+[source]
+----
+declare StockTick 
+    @role( event )
+
+    datetime : java.util.Date
+    symbol : String
+    price : double
+end
+----
+====
+
+==== @typesafe( <boolean> )
+
+
+By default all type declarations are compiled with type safety enabled; @typesafe( false ) provides a means to override this behaviour by permitting a fall-back, to type unsafe evaluation where all constraints are generated as MVEL constraints and executed dynamically.
+This can be important when dealing with collections that do not have any generics or mixed type collections.
+
+==== @timestamp( <attribute name> )
+
+
+Every event has an associated timestamp assigned to it.
+By default, the timestamp for a given event is read from the Session Clock and assigned to the event at the time the event is inserted into the working memory.
+Although, sometimes, the event has the timestamp as one of its own attributes.
+In this case, the user may tell the engine to use the timestamp from the event's attribute instead of reading it from the Session Clock.
+
+[source]
+----
+@timestamp( <attributeName> )
+----
+
+
+To tell the engine what attribute to use as the source of the event's timestamp, just list the attribute name as a parameter to the @timestamp tag.
+
+.declaring the VoiceCall timestamp attribute
+====
+[source]
+----
+declare VoiceCall
+    @role( event )
+    @timestamp( callDateTime )
+end
+----
+====
+
+==== @duration( <attribute name> )
+
+
+Drools supports both event semantics: point-in-time events and interval-based events.
+A point-in-time event is represented as an interval-based event whose duration is zero.
+By default, all events have duration zero.
+The user may attribute a different duration for an event by declaring which attribute in the event type contains the duration of the event.
+
+[source]
+----
+@duration( <attributeName> )
+----
+
+
+So, for our VoiceCall fact type, the declaration would be:
+
+.declaring the VoiceCall duration attribute
+====
+[source]
+----
+declare VoiceCall
+    @role( event )
+    @timestamp( callDateTime )
+    @duration( callDuration )
+end
+----
+====
+
+==== @expires( <time interval> )
+
+[IMPORTANT]
+====
+This tag is only considered when running the engine in STREAM mode.
+Also, additional discussion on the effects of using this tag is made on the Memory Management section.
+It is included here for completeness.
+====
+
+
+Events may be automatically expired after some time in the working memory.
+Typically this happens when, based on the existing rules in the knowledge base, the event can no longer match and activate any rules.
+Although, it is possible to explicitly define when an event should expire.
+
+[source]
+----
+@expires( <timeOffset> )
+----
+
+
+The value of _timeOffset_ is a temporal interval in the form:
+
+[source]
+----
+[#d][#h][#m][#s][#[ms]]
+----
+
+
+Where _[ ]_ means an optional parameter and _\#_ means a numeric value.
+
+So, to declare that the VoiceCall facts should be expired after 1 hour and 35 minutes after they are inserted into the working memory, the user would write:
+
+.declaring the expiration offset for the VoiceCall events
+====
+[source]
+----
+declare VoiceCall
+    @role( event )
+    @timestamp( callDateTime )
+    @duration( callDuration )
+    @expires( 1h35m )
+end
+----
+====
+
+
+The @expires policy will take precedence and override the implicit expiration offset calculated from temporal constraints and sliding windows in the knowledge base.
+
+==== @propertyChangeSupport
+
+
+Facts that implement support for property changes as defined in the Javabean(tm) spec, now can be annotated so that the engine register itself to listen for changes on fact properties.
+The boolean parameter that was used in the insert() method in the Drools 4 API is deprecated and does not exist in the drools-api module.
+
+.@propertyChangeSupport
+====
+[source]
+----
+declare Person
+    @propertyChangeSupport
+end
+----
+====
+
+==== @propertyReactive
+
+
+Make this type property reactive.
+See Fine grained property change listeners section for details.
+
+=== Predefined attribute level annotations
+
+
+As noted before, Drools also supports annotations in type attributes.
+Here is a list of predefined attribute annotations.
+
+==== @key
+
+
+Declaring an attribute as a key attribute has 2 major effects on generated types:
+
+
+
+. The attribute will be used as a key identifier for the type, and as so, the generated class will implement the equals() and hashCode() methods taking the attribute into account when comparing instances of this type.
+. Drools will generate a constructor using all the key attributes as parameters.
+
+For instance:
+
+.example of @key declarations for a type
+====
+[source]
+----
+declare Person
+    firstName : String @key
+    lastName : String @key
+    age : int
+end
+----
+====
+
+
+For the previous example, Drools will generate equals() and hashCode() methods that will check the firstName and lastName attributes to determine if two instances of Person are equal to each other, but will not check the age attribute.
+It will also generate a constructor taking firstName and lastName as parameters, allowing one to create instances with a code like this:
+
+.creating an instance using the key constructor
+====
+[source]
+----
+Person person = new Person( "John", "Doe" );
+----
+====
+
+==== @position
+
+
+Patterns support positional arguments on type declarations.
+
+Positional arguments are ones where you don't need to specify the field name, as the position maps to a known named field.
+i.e.
+Person( name == "mark" ) can be rewritten as Person( "mark"; ). The semicolon ';' is important so that the engine knows that everything before it is a positional argument.
+Otherwise we might assume it was a boolean expression, which is how it could be interpreted after the semicolon.
+You can mix positional and named arguments on a pattern by using the semicolon ';' to separate them.
+Any variables used in a positional that have not yet been bound will be bound to the field that maps to that position.
+
+====
+[source]
+----
+declare Cheese
+    name : String
+    shop : String
+    price : int
+end
+----
+====
+
+The default order is the declared order, but this can be overridden using @position
+
+====
+[source]
+----
+declare Cheese
+    name : String @position(1)
+    shop : String @position(2)
+    price : int @position(0)
+end
+----
+====
+
+The @Position annotation, in the org.drools.definition.type package, can be used to annotate original pojos on the classpath.
+Currently only fields on classes can be annotated.
+Inheritance of classes is supported, but not interfaces of methods yet.
+
+Example patterns, with two constraints and a binding.
+Remember semicolon ';' is used to differentiate the positional section from the named argument section.
+Variables and literals and expressions using just literals are supported in positional arguments, but not variables.
+
+====
+[source]
+----
+Cheese( "stilton", "Cheese Shop", p; )
+Cheese( "stilton", "Cheese Shop"; p : price )
+Cheese( "stilton"; shop == "Cheese Shop", p : price )
+Cheese( name == "stilton"; shop == "Cheese Shop", p : price )
+----
+====
+
+@Position is inherited when beans extend each other; while not recommended, two fields may have the same @position value, and not all consecutive values need be declared.
+If a @position is repeated, the conflict is solved using inheritance (fields in the superclass have the precedence) and the declaration order.
+If a @position value is missing, the first field without an explicit @position (if any) is selected to fill the gap.
+As always, conflicts are resolved by inheritance and declaration order.
+
+====
+[source]
+----
+declare Cheese
+    name : String 
+    shop : String @position(2)
+    price : int @position(0)
+end
+
+declare SeasonedCheese extends Cheese
+    year : Date @position(0)
+    origin : String @position(6)
+    country : String    
+end
+----
+====
+
+In the example, the field order would be : price (@position 0 in the superclass), year (@position 0 in the subclass), name (first field with no @position), shop (@position 2), country (second field without @position), origin.
+
+== Declaring Metadata for Existing Types
+
+
+Drools allows the declaration of metadata attributes for existing types in the same way as when declaring metadata attributes for new fact types.
+The only difference is that there are no fields in that declaration.
+
+For instance, if there is a class org.drools.examples.Person, and one wants to declare metadata for it, it's possible to write the following code:
+
+.Declaring metadata for an existing type
+====
+[source]
+----
+import org.drools.examples.Person
+
+declare Person
+    @author( Bob )
+    @dateOfCreation( 01-Feb-2009 )
+end
+----
+====
+
+
+Instead of using the import, it is also possible to reference the class by its fully qualified name, but since the class will also be referenced in the rules, it is usually shorter to add the import and use the short class name everywhere.
+
+.Declaring metadata using the fully qualified class name
+====
+[source]
+----
+declare org.drools.examples.Person
+    @author( Bob )
+    @dateOfCreation( 01-Feb-2009 )
+end
+----
+====
+
+== Parametrized constructors for declared types
+
+
+Generate constructors with parameters for declared types.
+
+Example: for a declared type like the following:
+
+====
+[source]
+----
+declare Person
+    firstName : String @key
+    lastName : String @key
+    age : int
+end
+----
+====
+
+The compiler will implicitly generate 3 constructors: one without parameters, one with the @key fields, and one with all fields.
+
+[source]
+----
+Person() // parameterless constructor
+Person( String firstName, String lastName )
+Person( String firstName, String lastName, int age )
+----
+
+== Non Typesafe Classes
+
+
+@typesafe( <boolean>) has been added to type declarations.
+By default all type declarations are compiled with type safety enabled; @typesafe( false ) provides a means to override this behaviour by permitting a fall-back, to type unsafe evaluation where all constraints are generated as MVEL constraints and executed dynamically.
+This can be important when dealing with collections that do not have any generics or mixed type collections.
+
+== Accessing Declared Types from the Application Code
+
+
+Declared types are usually used inside rules files, while Java models are used when sharing the model between rules and applications.
+Although, sometimes, the application may need to access and handle facts from the declared types, especially when the application is wrapping the rules engine and providing higher level, domain specific user interfaces for rules management.
+
+In such cases, the generated classes can be handled as usual with the Java Reflection API, but, as we know, that usually requires a lot of work for small results.
+Therefore, Drools provides a simplified API for the most common fact handling the application may want to do.
+
+The first important thing to realize is that a declared fact will belong to the package where it was declared.
+So, for instance, in the example below, `Person` will belong to the `org.drools.examples` package, and so the fully qualified name of the generated class will be ``org.drools.examples.Person``.
+
+.Declaring a type in the org.drools.examples package
+====
+[source]
+----
+package org.drools.examples
+
+import java.util.Date
+
+declare Person
+    name : String
+    dateOfBirth : Date
+    address : Address
+end
+----
+====
+
+
+Declared types, as discussed previously, are generated at knowledge base compilation time, i.e., the application will only have access to them at application run time.
+Therefore, these classes are not available for direct reference from the application.
+
+Drools then provides an interface through which users can handle declared types from the application code: ``org.drools.definition.type.FactType``.
+Through this interface, the user can instantiate, read and write fields in the declared fact types.
+
+.Handling declared fact types through the API
+====
+[source,java]
+----
+// get a reference to a knowledge base with a declared type:
+KieBase kbase = ...
+
+// get the declared FactType
+FactType personType = kbase.getFactType( "org.drools.examples",
+                                         "Person" );
+
+// handle the type as necessary:
+// create instances:
+Object bob = personType.newInstance();
+
+// set attributes values
+personType.set( bob,
+                "name",
+                "Bob" );
+personType.set( bob,
+                "age",
+                42 );
+
+// insert fact into a session
+KieSession ksession = ...
+ksession.insert( bob );
+ksession.fireAllRules();
+
+// read attributes
+String name = personType.get( bob, "name" );
+int age = personType.get( bob, "age" );
+----
+====
+
+
+The API also includes other helpful methods, like setting all the attributes at once, reading values from a Map, or reading all attributes at once, into a Map.
+
+Although the API is similar to Java reflection (yet much simpler to use), it does not use reflection underneath, relying on much more performant accessors implemented with generated bytecode.
+
+== Type Declaration 'extends'
+
+
+Type declarations now support 'extends' keyword for inheritance
+
+In order to extend a type declared in Java by a DRL declared subtype, repeat the supertype in a declare statement without any fields.
+
+====
+[source]
+----
+import org.people.Person
+
+declare Person end
+
+declare Student extends Person
+    school : String
+end
+
+declare LongTermStudent extends Student
+    years : int
+    course : String
+end
+----
+====

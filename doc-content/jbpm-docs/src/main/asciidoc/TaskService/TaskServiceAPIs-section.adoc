@@ -1,0 +1,116 @@
+[[_jbpmtaskserviceapi]]
+= Task Service API
+
+
+The human task service exposes a Java API for managing the life cycle of tasks.
+This allows clients  to integrate (at a low level) with the human task service.
+Note that end users should probably not  interact with this low-level API directly, but use one of the more user-friendly task clients (see below)  instead.
+These clients offer a graphical user interface to request task lists, claim and complete tasks,  and manage tasks in general.
+The task clients listed below use the Java API to internally interact with  the human task service.
+Of course, the low-level API is also available so that developers can use it in  their code to interact with the human task service directly. 
+
+A task service (interface org.kie.api.task.TaskService) offers the following methods (among others) for  managing the life cycle of human tasks: 
+
+[source,java]
+----
+
+              ...
+              
+              void start( long taskId, String userId );
+
+              void stop( long taskId, String userId );
+
+              void release( long taskId, String userId );
+
+              void suspend( long taskId, String userId );
+
+              void resume( long taskId, String userId );
+
+              void skip( long taskId, String userId );
+
+              void delegate(long taskId, String userId, String targetUserId);
+
+              void complete( long taskId, String userId, Map<String, Object> results );
+              
+              ...
+----
+
+
+If you take a look at the method signatures you will notice that almost all of these methods take the following arguments: 
+
+* taskId: The id of the task that we are working with. This is usually extracted from the currently  selected task in the user task list in the user interface. 
+* userId: The id of the user that is executing the action. This is usually the id of the user that is logged in into the application. 
+
+
+There is also an internal interface that you should check for more methods to interact with the Task Service, this interface is internal until it gets tested.
+Future version of the External (public) interface can include some of the methods proposed in the InternalTaskService interface.
+If you want to make use of the methods provided by this interface you need to manually cast to InternalTaskService.
+One method that can be useful from this interface is getTaskContent(): 
+
+[source,java]
+----
+
+               Map<String, Object> getTaskContent( long taskId );
+----
+
+
+This method saves you from doing all the boiler plate of getting the ContentMarshallerContext to unmarshall the serialized version of the task content.
+If you only want to use the stable/public API's you can just copy what this method does: 
+
+[source,java]
+----
+
+              Task taskById = taskQueryService.getTaskInstanceById(taskId);
+              Content contentById = taskContentService.getContentById(taskById.getTaskData().getDocumentContentId());
+              ContentMarshallerContext context = getMarshallerContext(taskById);
+              Object unmarshalledObject = ContentMarshallerHelper.unmarshall(contentById.getContent(), context.getEnvironment(), context.getClassloader());
+              if (!(unmarshalledObject instanceof Map)) {
+                  throw new IllegalStateException(" The Task Content Needs to be a Map in order to use this method and it was: "+unmarshalledObject.getClass());
+      
+              }
+              Map<String, Object> content = (Map<String, Object>) unmarshalledObject;
+              return content;
+----
+
+
+Because the content of the Task can be any Object, the previous method assume that you are storing a Map of objects to work.
+If you are storing other than a Map you should do the correspondent checks. 
+
+
+== Task event listener
+
+Task service supports task listeners to be invoked upon various life cycle events happening on given task instance. In majority of cases task event listeners are used to intercept certain operation to perform additional logic - like storing task information in separate tables for business activity monitoring needs. 
+
+Task event listeners are pluggable and users can provide their own implementation of `org.kie.api.task.TaskLifeCycleEventListener` interface. There are beforeTask* and afterTask* methods that are invoked upon given event occured on a task instance.
+
+TaskEvent (`org.kie.api.task.TaskEvent`) is the only argument available to the listener that provides access to:
+
+* Task instance that the event correspond to
+* TaskContext that provides access to services for further processing needs such as TaskPersistenceContext
+
+In many cases implementors of task event listener need to have access to task variables (either input or output or both) to perform required operations. It can be done as described above (using various services and content marshaller helper) though that in many cases leads to code duplication in multiple listeners thus an extended support was added in 6.5 to simply use TaskContext to obtain that information.
+
+[source,java]
+----
+loadTaskVariables(Task task);
+----
+
+Method `loadTaskVariables` can be used to populate both input and output variables of a given task by simple and single method call. That method is "no op" in case task variables are already set on a task.
+
+To improve performance task variables are automatically set when they are available - usually given by caller on task service:
+
+* when task is created it usually has input variables, these variables are then set on Task instance so there is no need to use loadTaskVariables method as only task input variables are available when task is being created - applies to beforeTaskAdded and afterTaskAdded events handling
+* when task is completed it usually has output variables, these variables are set on a task so there is no need to use loadTaskVariables method if only task output variables are required.
+
+Other than that loadTaskVariables should be used to populate task variables.
+
+[NOTE]
+It's enough to call it once (like in beforeTask) method of the listener as they will be available to both beforeTask* and afterTask* methods then.
+
+== Data model of task service
+
+
+Below is the data base model used by task service with all tables and their relationship illustrated. 
+
+image::TaskService/task_schema.png[align="center"]
+
