@@ -6,6 +6,7 @@ On August 31, 2018, this `kie-docs` repository that contains KIE community and R
 
 ```
 $ cd ~/kie-docs/
+$ git checkout <branch-other-than-master>
 $ git branch -d master
 $ git fetch --all
 $ git checkout --track <upstream-repo-name>/master
