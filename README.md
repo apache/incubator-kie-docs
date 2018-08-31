@@ -21,14 +21,10 @@ $ git push --set-upstream <fork-name> master
 
 Note the following changes that apply to KIE community documentation as a result of the repository update:
 
-* **New `kie-docs` repository structure:** The `kie-docs` repository has been restructured to prepare for an improved content building tool coming soon (Aura) and to enable shared content between KIE community and Red Hat Business Automation enterprise documentation. For details about the new `kie-docs` structure, see [Contributing to KIE documentation](http://ccs-jenkins.gsslab.brq.redhat.com:8080/job/doc-Red_Hat_JBoss_BxMS_Contribution_Guide_Public-branch-master/lastSuccessfulBuild/artifact/index.html#ref_kie-docs-repo).
+* **New `kie-docs` repository structure:** The `kie-docs` repository has been restructured to prepare for an improved content building tool coming soon (Aura) and to enable shared content between KIE community and Red Hat Business Automation enterprise documentation. Within the `doc-content` directory, the community `drools-docs`, `jbpm-docs`, and `optaplanner-wb-es-docs` folders continue to be in a Maven structure as before that supports a `mvn clean install -Dfull` build. All content files in community folders are or can now be used in enterprise assembly builds from the `assemblies` folder for the Red Hat Customer Portal. Content files in the `enterprise-only` folder either apply only to Red Hat Business Automation products or are files that have not yet been reconciled with community content. Each content folder contains sub-directories divided roughly by subject matter.
 * **Centralized `_images` directory:** Going forward, save all new images to only the central `kie-docs/_images` directory instead of in separate sub-directories within the community content folders. Existing images have been moved already, or deleted if unused. Any images that you save outside of that central images folder will not be rendered in the output.
 * **Removed `:imagesdir:` declaration in modules:** Going forward, do not specify an `:imagesdir:` declaration in any module files or in any KIE community `index.adoc` assembly files. The images directory specification is now configured globally in the KIE community project `pom.xml` settings, and directs to the central `kie-docs/_images` directory. Only Red Hat Business Automation `main.adoc` assembly files require an `:imagesdir:` specification.
 
-# Contributing to KIE documentation
-
-For guidelines on contributing to this `kie-docs` documentation repository, see [Contributing to KIE documentation](http://ccs-jenkins.gsslab.brq.redhat.com:8080/job/doc-Red_Hat_JBoss_BxMS_Contribution_Guide_Public-branch-master/lastSuccessfulBuild/artifact/index.html).
-
 # Developing Drools and jBPM
 
-For guidelines on contributing to a `kiegroup` project, see [droolsjbpm-build-bootstrap/README.md](https://github.com/kiegroup/droolsjbpm-build-bootstrap/blob/master/README.md).
+For guidelines on contributing to a `kiegroup` development project, see [droolsjbpm-build-bootstrap/README.md](https://github.com/kiegroup/droolsjbpm-build-bootstrap/blob/master/README.md).
