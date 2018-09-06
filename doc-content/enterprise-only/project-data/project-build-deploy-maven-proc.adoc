@@ -29,6 +29,31 @@ If you want to deploy a Maven project outside of {CENTRAL} to a configured {KIE_
 
 The `kjar` packaging type activates the `kie-maven-plugin` component to validate and pre-compile artifact resources. The `<version>` is the Maven artifact version for {PRODUCT} currently used in your project (for example, {MAVEN_ARTIFACT_VERSION}). These settings are required to properly package the Maven project for deployment.
 --
+. Add the following dependencies to the `pom.xml` file to generate an executable rule model from your rule assets:
++
+--
+* `drools-canonical-model`: Enables an executable canonical representation of a rule set model that is independent from {PRODUCT}
+* `drools-model-compiler`: Compiles the executable model into {PRODUCT} internal data structures so that it can be executed by the {ENGINE}
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-canonical-model</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-model-compiler</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+----
+
+Executable rule models are embeddable models that provide a Java-based representation of a rule set for execution at build time. The executable model is a more efficient alternative to the standard asset packaging in {PRODUCT} and enables KIE containers and KIE bases to be created more quickly, especially when you have large lists of DRL (Drools Rule Language) files and other {PRODUCT} assets.
+
+For more information about executable rule models, see {URL_DRL_RULES}#executable-model-con_execute-rules["Executable rule models" in _{DRL_RULES}_].
+--
 . In the `~/resources` directory of your Maven project, create a `META-INF/kmodule.xml` metadata file with at least the following content:
 +
 --
@@ -88,20 +113,34 @@ public void testApp() {
 }
 ----
 --
-. In a command terminal, navigate to your Maven project directory and run the following commands to build your files for testing and then deploy to the remote Maven repository configured for your project:
+. In a command terminal, navigate to your Maven project directory and run the following command to build the project from an executable model:
 +
 --
-Build project locally for testing:
 [source]
 ----
-mvn clean install
+mvn clean install -DgenerateModel=<VALUE>
 ----
 
-Deploy project to remote Maven repository:
+The `-DgenerateModel=<VALUE>` property enables the project to be built as a model-based KJAR instead of a DRL-based KJAR, so that rule assets are built in an executable rule model.
+
+Replace `<VALUE>` with one of three values:
+
+* `YES`: Generates the executable model corresponding to the DRL files in the original project and excludes the DRL files from the generated KJAR.
+* `WITHDRL`: Generates the executable model corresponding to the DRL files in the original project and also adds the DRL files to the generated KJAR for documentation purposes (the KIE base is built from the executable model regardless).
+* `NO`: Does not generate the executable model.
+
+Example build command:
+
 [source]
 ----
-mvn deploy
+mvn clean install -DgenerateModel=YES
 ----
 
 If the build fails, address any problems described in the command line error messages and try again to validate the files until the build is successful.
 --
+. After you successfully build and test the project locally, deploy the project to the remote Maven repository:
++
+[source]
+----
+mvn deploy
+----
