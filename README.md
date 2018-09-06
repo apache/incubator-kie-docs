@@ -28,3 +28,5 @@ Note the following changes that apply to KIE community documentation as a result
 # Developing Drools and jBPM
 
 For guidelines on contributing to a `kiegroup` development project, see [droolsjbpm-build-bootstrap/README.md](https://github.com/kiegroup/droolsjbpm-build-bootstrap/blob/master/README.md).
+
+Testing generated community artifacts on jenkins
