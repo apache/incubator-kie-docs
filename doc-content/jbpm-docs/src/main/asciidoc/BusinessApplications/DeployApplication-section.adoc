@@ -1,0 +1,58 @@
+= Deploy business application
+
+Business applications are designed to run in pretty much any environment but for production
+the usual target is cloud based runtimes that allow scalability and operational efficiency.
+
+Business application deployable components are composed of services. Every application can consists of
+one or more services that are deployed in isolation and in many cases will follow different release cycle.
+
+== Docker deployment
+
+Business applications are by default configured with option to deploy service as docker container.
+
+This is done in very similar way as launching the service locally - via launch.sh/bat script.
+
+NOTE: You must have Docker installed on your machine to make this work!
+
+To deploy your application as docker container just go into service project (_{your business application name}-service_)
+and invoke
+
+`./launch.sh clean install -Ddocker -Ph2` for Linux/Unix
+
+`./launch.bat clean install -Ddocker -Ph2` for Windows
+
+NOTE: When building with docker proper data base profile needs to be selected as well - this is done via -P{db}
+so the image and the application gets proper JDBC driver selected.
+
+The launch script will perform the build with docker profile (see pom.xml in the business assets project
+and service project for details). The significant difference that is done for docker container
+is that the business assets project will generate an offline maven repository with the project itself and
+all its dependencies. Next this maven repository will be included in the docker image itself and maven
+(used by business automation capability) will work in offline mode - meaning no access to internet will
+be attempted.
+
+Once the build is complete launch script will directly create container and start it, this should be done once
+the following line is printed to console
+
+[source, bash]
+----
+Launching the application as docker container...
+d40e4cdb662d3b1d9ddee27c5a843be31cb6e7dc4936b0fc1937ce8e48f440ae
+----
+
+the second line is the container id that can be later on used to interact with the container, for instance
+to follow the logs
+
+[source, bash]
+----
+docker logs -f d40e4cdb662d3b1d9ddee27c5a843be31cb6e7dc4936b0fc1937ce8e48f440ae
+----
+
+the business application will be accessible at the same port as configured by default that is 8090
+
+=== Using external data base
+
+Currently business application that requires external data base needs to provide the data base in advance -
+before the application is launched and properly configured within the application configuration files.
+
+Further releases will improve this by relying on docker compose/OpenShift templates.
