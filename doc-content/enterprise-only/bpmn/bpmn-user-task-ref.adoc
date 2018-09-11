@@ -1,3 +1,183 @@
 [id='bpmn-user-task-ref']
 = User task
 
+image::BPMN2/bpmn-user-task.png[]
+
+User tasks are tasks in the process workflow that cannot be performed automatically by the system and therefore requires an intervention of a human user, the actor.
+
+On execution, the User Task element is instantiated as a task that appears in the list of tasks of one or multiple actors. If a User Task element defines the `Groups` attribute, it is displayed in task lists of all users that are members of the group. Any user who is a member of the group can claim the task.
+
+Once claimed, the task disappears from the task list of the other users.
+
+User Task is implemented as a domain-specific task and serves as a base for your custom tasks. 
+
+[float]
+== Actions
+
+The following actions can be performed on a User Task:
+
+* Delegate
+* Forward
+* Claim
+* Start
+* Save
+* Complete
+
+[float]
+== Properties
+
+Actors::
+A comma-separated list of users who can perform the generated task.
+
+Content::
+The data associated with this task. This attribute does not affect TaskService behavior.
+
+CreatedBy::
+The name of the user or ID of the process that created the task.
+
+Groups::
+A comma-separated list of groups who can perform the generated task.
+
+Locale::
+The locale for which the element is defined. This property is not used by the {PRODUCT} engine at the moment.
+
+//Notifications::
+//A definition of notification applied to the User Task. For further information, see <<_notification>>. Not in PAM 7.1.
+
+Priority::
+An integer value defining the User Task priority. The value influences the User Task ordering in the user Task list and the simulation outcome.
+
+//Reassignment::
+//The definition of escalation applied to the User Task. For further information, see <<_reassignment>>. Not in PAM 7.1.
+
+
+ScriptLanguage::
+The language of the script. Choose between [property]``Java``, [property]``MVEL``, or `Javascript`.
+
+Skippable::
+A Boolean value that defines if the User Task can be skipped. If ``true``, the actor of the User Task can decide not to complete it and the User Task is never executed.
+
+Task Name::
+Name of the User Task generated during runtime. It is displayed in the task list in {CENTRAL}.
+
+
+Any other displayed attributes are used by features not restricted to the User Task element and are described in the chapters dealing with the particular mechanism.
+
+
+== User Task lifecycle
+
+
+When a User Task element is triggered during process execution, a User Task instance is created. The User Task instance execution is preformed by the User Task service of the Task Execution Engine. The Process instance continues the execution only when the associated User Task has been completed or aborted.
+
+The user task has the following life cycle: 
+
+* When the process instance enters the User Task element, the User Task is the `Created` stage.
+* This is usually a transient state and the User Task enters the `Ready` state immediately. The task appears in the task list of all the actors that are allowed to execute the task.
+* When one of the actors claims the User Task, the User Task becomes ``Reserved``. If a User Task has only one potential actor, it is automatically assigned to that actor upon creation.
+* When the user who has claimed the User Task starts the execution by clicking *Start* in the task *Work* tab, the User Task status changes to ``InProgress``.
+* When the user has performed the task and clicked *Complete*, the status changes to `Completed` or `Failed` depending on the execution outcome.
+
+The User Task lifecycle can include other statuses if the User Task is reassigned (delegated or escalated), revoked, suspended, stopped, or skipped.
+
+//For further details, on the User Task lifecycle see the http://download.boulder.ibm.com/ibmdl/pub/software/dw/specs/ws-bpel4people/WS-HumanTask_v1.pdf[Web Services Human Task] specification.
+
+////
+[id='_reassignment']
+==== Reassignment
+
+GH: Notifications not in 7.1.
+
+The reassignment mechanism implements the escalation and delegation capabilities for User Tasks, that is, automatic reassignment of a User Task to another actor or group after a User Task has remained inactive for a certain amount of time.
+
+A reassignment can start if a User Task is in one of the following states for a defined amount of time:
+
+* When not started: `READY` or `RESERVED`.
+* When not completed: `IN_PROGRESS`.
+
+When the conditions defined in the reassignment are met, the User Task is reassigned to the users or groups defined in the reassignment.
+If the actual owner is included in the new users or groups definition, the User Task is set to the `READY` state.
+
+Reassignment is defined in the `Reassignment` property of User Task elements. The property can take an arbitrary number of reassignment definitions with the following parameters:
+
+* [parameter]``Users``: A comma-separated list of user IDs that are reassigned to the task on escalation. It can be a String or an expression, such as `#{user-id}`.
+* [parameter]``Groups``: A comma separated list of group IDs that are reassigned to the task on escalation. It can be a String or an expression, such as `#{user-id}`.
+* [parameter]``Expires At``: A time definition when escalation is triggered. It can be a String or an expression, such as `#{expiresAt}`. For further information about time format, see <<_timing>>.
+* [parameter]``Type``: A state in which the task needs to be at the given `Expires At` time so that the escalation is triggered.
+////
+
+////
+
+[id='_notification']
+==== Notification  
+
+GH: Notifications not in 7.1.
+
+The notification mechanism provides the capability to send an e-mail notification if a User Task is in one of the following states for the specified time:
+
+* When not started: `READY` or `RESERVED`.
+* When not completed: `IN_PROGRESS`.
+
+
+A notification is defined in the `Notification` property of User Task elements. The property accepts an arbitrary number of notification definitions with the following parameters:
+
+* [parameter]``Type``: The state in which the User Task needs to be at the given `Expires At` time so that the notification is triggered.
+* [parameter]``Expires At``: A time definition when notification is triggered. It can be a String value or expression, such as  `#{expiresAt}`. For information about time format, see <<_timing>>.
+* [parameter]``From``: The user or group ID of users used in the `From` field of the email notification message. It can be a String or expression.
+* [parameter]``To Users``: A comma-separated list of user IDs to which the notification is sent. It can be a String or expression, such as `#{user-id}`.
+* [parameter]``To Groups``: A comma separated list of group IDs to which the notification is be sent. It can be a String or expression, such as `#{group-id}`.
+* [parameter]``Reply To``: A user or group ID that receives any replies to the notification. It can be a String or expression, such as `#{group-id}`.
+* [parameter]``Subject``: The subject of the email notification. It can be a String or an expression.
+* [parameter]``Body``: The body of the email notification. It can be a String or an expression.
+
+
+[float]
+===== Available variables
+
+
+A notification can reference process variables by using the ``#{processVariable}`` syntax. Similarly, task variables use the ``${taskVariable}`` syntax.
+
+In addition to custom task variables, the notification mechanism can use the following local task variables:
+
+* [var]``taskId``: The internal ID of the User Task instance.
+* [var]``processInstanceId``: The internal ID of task's parent process instance.
+* [var]``workItemId``: The internal ID of a work item that created the User Task.
+* [var]``processSessionId``: The knowledge session ID of the parent process instance.
+* [var]``owners``: A list of users and groups that are potential owners of the User Task.
+* [var]``doc``: A map that contains task variables.
+
+
+.Body of notification with variables
+====
+[source,xml]
+----
+<html>
+	<body>
+		<b>${owners[0].id} you have been assigned to a task (task-id ${taskId})</b><br>
+		You can access it in your task
+		<a href="http://localhost:8080/jbpm-console/app.html#errai_ToolSet_Tasks;Group_Tasks.3">inbox</a><br/>
+		Important technical information that can be of use when working on it<br/>
+		- process instance id - ${processInstanceId}<br/>
+		- work item id - ${workItemId}<br/>
+
+		<hr/>
+
+		Here are some task variables available
+		<ul>
+			<li>ActorId = ${doc['ActorId']}</li>
+			<li>GroupId = ${doc['GroupId']}</li>
+			<li>Comment = ${doc['Comment']}</li>
+		</ul>
+		<hr/>
+		Here are all potential owners for this task
+		<ul>
+		$foreach{orgEntity : owners}
+			<li>Potential owner = ${orgEntity.id}</li>
+		$end{}
+		</ul>
+
+		<i>Regards from jBPM team</i>
+	</body>
+</html>
+----
+====
+////
