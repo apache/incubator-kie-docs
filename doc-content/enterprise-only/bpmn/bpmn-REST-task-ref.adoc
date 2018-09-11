@@ -1,0 +1,177 @@
+[id='_rest_task']
+= REST Task
+
+image::BPMN2/bpmn-rest-task.png[]
+
+You can use a `REST` task in your process to perform REST calls, which outputs the response as an object.
+
+[float]
+== Input Attributes
+
+Url::
+Target URL to be invoked. This attribute is mandatory.
++
+It is often necessary to configure the URL attribute with an expression. This gives you the ability to change the URL dynamically throughout the runtime. For example:
++
+[source]
+----
+http://DOMAIN:PORT/restService/getCars?brand=#{carBrand}
+
+----
+In this example, carBrand  is replaced by the value of the `carBrand` process variable during runtime.
+
+Method::
+The method of the request, such as `GET`, `POST`, or other. The default method is `GET`.
+
+ContentType::
+The data type if you are sending data. The supported data types are `application/json` and `application/xml`. This attribute is mandatory for `POST` and `PUT` requests. If you want to use this attribute, map it as a data input variable in the *Data I/O* dialogue of the task.
+
+Content::
+The data you want to send. This attribute is mandatory for `POST` and `PUT` requests. This is an optional parameter. If you want to use it, map it as a data input variable in the *Data I/O* dialogue of the task.
+
+ConnectTimeout::
+The connection timeout. The default value is 60 seconds.
+
+ReadTimeout::
+The timeout on response. The default value is 60 seconds.
++
+Username::
+The user name for authentication. This attribute overrides the handler initialization user name.
++
+Password::
+The password for authentication. This attribute overrides the handler initialization password.
++
+User name and password for basic authentication can be passed at construction time using the following:
++
+[source,java]
+----
+RESTWorkItemHandler(String username, String password);
+----
+
+AuthUrl::
+The URL that is handling authentication when using the `AuthenticationType.FORM_BASED` authentication method.
++
+Use the following constructor for `FORM_BASED` authentication:
++
+[source,java]
+----
+public RESTWorkItemHandler(String username, String password, String authUrl, ClassLoader classLoader) {
+  this();
+  this.username = username;
+  this.password = password;
+  this.type = AuthenticationType.FORM_BASED;
+  this.authUrl = authUrl;
+  this.classLoader = classLoader;
+}
+----
+
++
+The following is an example of how the constructor must be used in *Deployment descriptor*:
++
+[source,java]
+----
+new org.jbpm.process.workitem.rest.RESTWorkItemHandler("username","password","http://mydomain.com/my-j-security-check-url",classLoader)
+----
++
+
+IMPORTANT: *AuthUrl* configuration requires the typical implementation for `FORM_BASED` authentication in Java EE servers, and therefore should point to the `j_security_check` URL. Similarly, inputs for user name and password must be bound to `j_username` and `j_password` when using `FORM_BASED` authentication, otherwise authentication may fail.
+
+ResultClass::
+This attribute determines the class to which the value from the `Result` attribute will be converted.  If not provided, the default value is `String`.
+
+HandleResponseErrors::
+An optional parameter that instructs the handler to throw errors in case of unsuccessful response codes. For information about how to handle response errors.
+
+[float]
+== Output Attributes
+
+Result::
+The result returned by the REST service.
+
+Status::
+The variable contains a value from interval 200 to 300 if the REST request was successful, or an error response code if the request was unsuccessful. This variable is not mapped by default. If you want to use this variable, map it manually as an output variable of the REST task.
+
+StatusMsg::
+If the service returned an error response, this variable will contain the error response message. This variable is not mapped by default. If you want to use this variable, map it manually as an output variable of the REST task.
+
+All output attributes are `String` by default.
+
+
+////
+[id='restworkitemhandler-ref']
+= RestWorkItemHandler
+
+`RestWorkItemHandler` is capable of interacting with the REST service, and supports both types of services:
+
+* _Secured_: requires authentication.
+* _Open_: does not require authentication.
+
+Authentication methods currently supported are:
+
+* `BASIC`
+* `FORM_BASED`
+
+Authentication information can be given on handler initialization and can be overridden using work item parameters. All other configuration options must be given in the work item parameters map.
+
+
+
+[float]
+[id='_handling_rest_response_error']
+=== Handling REST Response Error
+
+`HandleResponseErrors` can be handled in two ways:
+
+. *In the Process Definition Workflow*
+
+.. `Status`: When `RESTWorkItemHandler` produces a `Status` output variable that includes an HTTP response code. This can be mapped to a process variable and used in a XOR gateway to determine the service outcome.
++
+//image::user-guide-REST1.png[]
++
+.. `StatusMsg`: The output variable `StatusMsg` includes additional messages sent by the server, and is filled only when the HTTP Code is not between 200 and 300.
+
++
+. *Using a Boundary Event*
++
+To enable this feature, set the REST work item input variable `HandleResponseErrors` to `true`.
++
+[IMPORTANT]
+The `HandleResponse` must have a valid boolean expression or be left empty, which is equivalent to `false`. Otherwise, the REST task will throw an exception.
++
+When the REST work item input variable `HandleResponseErrors` is set to `true`, the `RESTWorkItemHandler` handler will, upon receiving an HTTP response code outside of the 200-300 interval, throw the following Java exception:
++
+
+[source,java]
+----
+public RESTServiceException(int status, String response, String endpoint) {
+  super("Unsuccessful response from REST server (status " + status +", endpoint " + endoint +", response " + response +"");
+----
++
+With the `HandleResponseErrors` option enabled, this error can be caught using a boundary event:
++
+//image::user-guide-REST2.png[]
++
+
+The provided example includes:
+
+* A `WorkItemHandlerRuntimeException` `restError` process variable.
+* A `WorkItemHandlerRuntimeException` `BoundaryError` event-defined output variable that has been mapped to the `restError` process variable.
+* A Script task that includes the following code:
++
+[source,java]
+----
+org.jbpm.process.workitem.rest.RESTServiceException x = (org.jbpm.process.workitem.rest.RESTServiceException) restError.getCause().getCause();
+----
+This code allows `RestServiceException` to be extracted from `WorkItemHandlerRuntimeException`. Using `RestServiceException` provides access to the following methods:
+* `getResponse`
+* `getStatus`
+* `getEndpoint`
++
+The next line in the Script task is:
++
+[source,java]
+----
+System.out.println("response:"+x.getResponse());
+----
++
+This provides the full error message as returned by the server.
+////
