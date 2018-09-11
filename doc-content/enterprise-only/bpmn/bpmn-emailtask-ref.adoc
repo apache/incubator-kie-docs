@@ -1,0 +1,118 @@
+[id='bpmn-emailtask-ref']
+= Email Task
+
+image::BPMN2/bpmn-email-task.png[]
+
+The `Email` task sends an email based on the task properties.
+
+
+[float]
+=== Input Attributes
+The following parameters are required by default:
+
+To::
+The email address of the email recipient. Separate multiple addresses by a semicolon (`;`).
+
+From::
+The email address of the sender of the email.
+
+Subject::
+The subject of the email.
+
+Body::
+The HTML body of the email.
+
+The following parameters are optional, and can be configured by mapping values assigned to these properties using `Process Variable to Task Variable` mapping in *Assignments*:
+
+Reply-To::
+Sets the reply recipient address to the `From` address of the received message. Separate multiple addresses by a semicolon (`;`).
+
+Cc::
+The email address of the carbon copy recipient. Separate multiple addresses by a semicolon (`;`).
+
+Bcc::
+The email address of the blind carbon copy recipient. Separate multiple addresses by a semicolon (`;`).
+
+Attachments::
+The URL of the files you want to attach to the email. Multiple attachments can be added to the email using a comma (`,`) to separate each URL in the list.
+
+Debug::
+A boolean value related to the execution of the Email work item. For example:
++
+[source,java]
+----
+"Success" = true
+----
+
+The Email task is completed immediately and cannot be aborted.
+
+
+
+
+////
+[id='registering-emailworkitemhandler-proc']
+= Registering EmailWorkItemHandler
+
+`EmailWorkItemHandler` is the work item handler implementation of the Email Service task. The Email work item is included in the work item definition file by default, however `EmailWorkItemHandler` is not a part of the default `kie-deployment-descriptor.xml` file, and therefore must be explicitly registered by the user.
+
+To register `EmailWorkItemHandler`:
+
+. Open the Project Editor and click *Project Settings: Project General Settings -> Deployment descriptor*  from the menu.
+
+. Scroll down to the Work Item handlers list and click *Add* to add the `EmailWorkItemHandler` to the list. For example:
++
+[source,java]
+----
+new org.jbpm.process.workitem.email.EmailWorkItemHandler("localhost","25","me@localhost","password");
+----
++
+Alternatively, email server parameters can be supplied using a constructor in the `ProcessMain.java` file:
++
+[source,java]
+----
+EmailWorkItemHandler emailWorkItemHandler = new EmailWorkItemHandler("localhost", "1125", "", "",true); ksession.getWorkItemManager().registerWorkItemHandler("Email", emailWorkItemHandler );
+----
+
+[id='configuring-email-deadline-proc']
+= Configuring Deadline
+
+You can configure the Deadline email feature in two ways:
+
+. *Mail Session on Container Level*
++
+With this method, the Deadline email feature uses `EmailSessionProducer` to look up the `mail/jbpmMailSession` using JNDI. The following example is for Red Hat JBoss EAP `standalone.xml`:
++
+[source,xml]
+----
+<system-properties>
+...
+  <property name="org.kie.mail.session" value="java:jboss/mail/mail/jbpmMailSession"/>
+...
+</system-properties>
+...
+<subsystem xmlns="urn:jboss:domain:mail:1.2">
+  <mail-session name="default" jndi-name="mail/jbpmMailSession" >
+    <smtp-server outbound-socket-binding-ref="mail-smtp" tls="true">
+      <login name="email@gmail.com" password="___"/>
+    </smtp-server>
+  </mail-session>
+</subsystem>
+...
+<outbound-socket-binding name="mail-smtp">
+  <remote-destination host="smtp.gmail.com" port="587"/>
+</outbound-socket-binding>
+----
+
+. *Using email.properties*
++
+If the `mail/jbpmMailSession` is not found, {PRODUCT} searches for `/email.properties` on the class path with content similar to the following:
++
+[source]
+----
+mail.smtp.host=localhost
+mail.smtp.port=25
+mail.from=xxx@xxx.com
+mail.replyto=xxx@xxx.com
+----
+
+////
