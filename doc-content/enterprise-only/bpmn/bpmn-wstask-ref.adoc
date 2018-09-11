@@ -1,0 +1,100 @@
+[id='bpmn-wstask-ref']
+= Web service task 
+
+image::BPMN2/bpmn-ws-task.png[]
+
+The web service task implements the `WebServiceWorkItemHandler` class. The web service task serves as a web service client with the web service response stored as `String`. To invoke a web service task from a BPMN process, the correct task type must be used.
+
+[float]
+== Input Attributes
+
+Endpoint::
+The endpoint location of the web service you want to invoke.
+
+Parameter::
+The object or array to be sent for the operation.
+
+Mode::
+Can be `SYNC`, `ASYNC`, or `ONEWAY`.
+
+Interface::
+The name of a service, for example `Weather`.
+
+Namespace::
+The namespace of the web service, such as `http://ws.cdyne.com/WeatherWS/`.
+
+URL::
+The web service URL, such as http://wsf.cdyne.com/WeatherWS/Weather.asmx?WSDL.
+
+Operation::
+The method name to call.
+
+[float]
+== Output Attributes
+
+Result::
+An object with the result.
+
+////
+=== Multiple Parameters
+
+The web service task can be used to invoke a web service method with multiple parameters. To do so, the following changes must be made to the BPMN2 process definitions:
+
+. In the process designer, click image:3897.png[] to open the *Properties* panel.
+. Select the *Variable Definitions* property and create a process variable called `pVar` with the custom type `Object[]`.
+. Click the *WS* task in the process designer and click image:3897.png[] to open the *Properties* panel.
+. Click image:getting-started-guide-6563.png[] next to the *Assignments* property.
+. Change the `Parameter` input variable from `String` to `Custom` and enter `Object[]`. Select `pVar` in the *Source* field. Click *Ok*.
+. In the property panel of the *WS* task, enter the following in the *On Entry Actions* property:
++
+[source,java]
+----
+Object[] params = {"firstParam", "secondParam"}; kcontext.setVariable("pVar", params);
+----
+////
+
+////
+== Custom Objects
+
+In addition to primitive object types, the web service task can use custom objects, such as `Person` or `Employee`.
+
+To use custom objects:
+
+. Create a custom model object using either the data modeler in {CENTRAL}, or using an external tool, such as Red Hat JBoss Developer Studio.
+. Use this custom model class in one of the *WebService* tasks.
+. Generate WSDL for this web service.
+. Use Red Hat JBoss Developer Studio to generate Java classes from the WSDL.
+. Create a `.jar` file that includes the model class generated from the WSDL file. Add `kmodule.xml` under the `META-INF` of the `.jar`.
+. Upload the `.jar` to the Artifact Repository. In {CENTRAL}, add it to the list of project's dependencies that includes the configured web service task. This web service task must have new classes generated, and cannot rely on the original ones.
+. Modify the project configuration using the *Deployment descriptor* as follows:
++
+[source]
+----
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <kbase name="defaultKieBase" default="true" eventProcessingMode="stream" equalsBehavior="identity" packages="*">
+    <ksession name="defaultKieSession" type="stateful" default="true" clockType="realtime">
+      <workItemHandlers>
+        <workItemHandler type="new org.jbpm.process.workitem.webservice.WebServiceWorkItemHandler(ksession, runtimeManager.getEnvironment().getClassLoader())" name="WebService"/>
+      </workItemHandlers>
+    </ksession>
+  </kbase>
+</kmodule>
+----
++
+The above configuration utilizes the `WebServiceWorkItemHandler`.
+
+=== Web service task example
+
+This example demonstrates a process that obtains a weather forecast for given ZIP codes. The process looks as follows:
+
+// image::user-guide-ws-process.png[]
+
+. In the first human task, the process asks for ZIP codes.
+. Next, the result of the first human task is transformed into a collection that is used as an input for the service task with multiple instances.
+. Based on the input collection, the process creates several service task instances for querying the weather forecast service.
+. Once all the service task instances are completed, the result is logged to the console.
+. Another human task then shows the weather forecast for the chosen ZIP codes.
+
+After the process instance is started, the user is prompted to select the mode of the service task: synchronous or asynchronous. Note that the difference between the two can be noticeable depending on the particular service.
+
+////
