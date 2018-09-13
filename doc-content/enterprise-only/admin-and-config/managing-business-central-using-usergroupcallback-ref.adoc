@@ -1,0 +1,55 @@
+[id='managing-business-central-using-usergroupcallback-ref']
+= Using LDAP UserGroupCallback implementation
+
+You can use the LDAP `UserGroupCallback` implementation by configuring the respective LDAP properties in one of the following ways:
+
+* *_programatically_*: build a _Properties_ object with the respective `LDAPUserGroupCallbackImpl` properties and create `LDAPUserGroupCallbackImpl` with the _Properties_ object as its parameter.
++
+[source]
+----
+import org.kie.api.PropertiesConfiguration;
+import org.kie.api.task.UserGroupCallback;
+...
+Properties properties = new Properties();
+properties.setProperty(LDAPUserGroupCallbackImpl.USER_CTX, "ou=People,dc=my-domain,dc=com");
+properties.setProperty(LDAPUserGroupCallbackImpl.ROLE_CTX, "ou=Roles,dc=my-domain,dc=com");
+properties.setProperty(LDAPUserGroupCallbackImpl.USER_ROLES_CTX, "ou=Roles,dc=my-domain,dc=com");
+properties.setProperty(LDAPUserGroupCallbackImpl.USER_FILTER, "(uid={0})");
+properties.setProperty(LDAPUserGroupCallbackImpl.ROLE_FILTER, "(cn={0})");
+properties.setProperty(LDAPUserGroupCallbackImpl.USER_ROLES_FILTER, "(member={0})");
+
+UserGroupCallback ldapUserGroupCallback = new LDAPUserGroupCallbackImpl(properties);
+
+UserGroupCallbackManager.getInstance().setCallback(ldapUserGroupCallback);
+----
+
+* *_declaratively_*: create the `jbpm.usergroup.callback.properties` file in the root of your application or specify the file location as a system property: `-Djbpm.usergroup.callback.properties=FILE_LOCATION_ON_CLASSPATH`
++
+Ensure that you register the LDAP callback when starting the _User Task_ server.
++
+[source]
+----
+#ldap.bind.user=
+#ldap.bind.pwd=
+ldap.user.ctx=ou\=People,dc\=my-domain,dc\=com
+ldap.role.ctx=ou\=Roles,dc\=my-domain,dc\=com
+ldap.user.roles.ctx=ou\=Roles,dc\=my-domain,dc\=com
+ldap.user.filter=(uid\={0})
+ldap.role.filter=(cn\={0})
+ldap.user.roles.filter=(member\={0})
+#ldap.user.attr.id=
+#ldap.roles.attr.id=
+----
+
+[float]
+=== Additional resources
+
+* For information on roles and users, see https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/7.1/html-single/installing_and_configuring_red_hat_process_automation_manager_on_red_hat_jboss_eap_7.1/roles-users-con/[_Roles and users_].
+* For information on integrating LDAP & SSO using RH-SSO, see https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.2/html-single/server_administration_guide/[_Red Hat Single Sign-On Server Administration Guide_].
+* For information on defining the LDAP login domain, see https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/7.1/html-single/managing_and_monitoring_the_process_server/#ldap-login-domain-proc/[_Defining LDAP login domain_].
+* For information on LDAP login module, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/login_module_reference/#ldap_login_module/[_LDAP login module_].
+* For information on LDAPExtended login module, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/login_module_reference/#ldapextended_login_module/[_LDAPExtended login module_].
+* For information on AdvancedLDAP login module, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/login_module_reference/#advancedldap_login_module/[_AdvancedLDAP login module_].
+* For information on AdvancedAdLDAP login module, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/login_module_reference/#advancedadldap_login_module/[_AdvancedAdLDAP login module_].
+* For information on LDAP connectivity options, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/login_module_reference/#ldap_connectivity_options/[_LDAP connectivity options_].
+* For information on LDAPUsers login module, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/login_module_reference/#ldapusers_login_module/[_LDAPUsers login module_].
