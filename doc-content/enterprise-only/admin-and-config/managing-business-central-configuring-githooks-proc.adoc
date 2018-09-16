@@ -1,0 +1,100 @@
+[id='managing-business-central-configuring-githooks-proc']
+= Configuring Git Hooks
+
+{CENTRAL} can automatically push changes to a remote repository using the Git hooks. Once you configure the post-commit hook {CENTRAL} will automatically push your changes to the remote repository.
+
+[NOTE]
+====
+Currently only post-commit hook is supported. Post-commit hooks are triggered after finishing the entire commit process.
+====
+
+.Procedure
+
+. Log in to {CENTRAL}.
+. Go to *Authoring* -> *Administration*.
+. Below the main menu, click *Repositories* -> *Clone repository*.
+. In the displayed Clone repository dialog box, fill in the repository information:
++
+* Repository Name
+* Organizational Unit
+* Git URL: For example, `https://github.com/USERNAME/REPOSITORY_NAME.git`
++
+[IMPORTANT]
+=====
+It is important to use the HTTPS or Git protocol instead of a SCP-style SSH URL. Business Central does not support the basic SSH URL and fails with Invalid URL format.
+=====
++
+* User Name: your Git user name
+* Password: your Git password
+
+. On the terminal, change to the created repository.
++
+[source]
+----
+cd JBOSS_HOME/bin/.niogit/REPOSITORY_NAME.git
+----
+
+. Change the remote URL:
++
+[source]
+----
+git remote set-url origin git@github.com:USERNAME/REPOSITORY_NAME.git
+----
++
+Verify that you can access the remote repository through command line using SSH. For example, the private SSH key for the repository should exist under the `~/.ssh/ directory`.
++
+If you created a new repository, you may encounter the following error:
++
+[source]
+----
+fatal: No such remote 'origin'
+----
++
+To resolve it, add the remote origin URL:
++
+[source]
+----
+git remote add origin git@github.com:USERNAME/REPOSITORY_NAME.git
+----
+
+. Verify that the remote repository was successfully added:
++
+[source]
+----
+git remote -v
+----
++
+The command should list the following:
++
+[source]
+----
+origin  git@github.com:USERNAME/REPOSITORY_NAME.git (fetch)
+origin  git@github.com:USERNAME/REPOSITORY_NAME.git (push)
+----
+
+. Create a file named post-commit with the permissions set to `rwxr--r--` under `JBOSS_HOME/bin/.niogit/REPOSITORY_NAME.git/hooks` with the following content:
++
+[source]
+----
+#!/bin/sh
+git push origin master
+----
+
+. Make sure that the configuration was successful by creating a new guided rule in Business Central:
+
+.. Go to *Authoring* -> *Project Authoring* -> *New Item* -> *Guided Rule*.
+.. Fill in the required information in the displayed Create new Guided Rule window.
+.. Click *Ok*.
++
+{CENTRAL} will push all changes automatically to the remote repository.
+
+You can also specify the system property `org.uberfire.nio.git.hooks`. Its value is a directory with default hook files, which will be copied to the newly created Git repositories. See the following example of a standalone.xml file with this setting below:
+
+[source]
+----
+<system-properties>
+  <property name="org.uberfire.nio.git.hooks" value="/opt/jboss-as/git-hooks">
+  </property>
+  ...
+</system-properties>
+----
