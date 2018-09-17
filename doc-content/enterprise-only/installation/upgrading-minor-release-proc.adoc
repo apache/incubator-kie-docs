@@ -1,0 +1,86 @@
+
+// Use for DM/PAM 7.1
+
+[id='upgrading-minor-release-proc']
+== Upgrading to the latest minor release of {PRODUCT}
+
+Apart from supporting upgrade to the latest micro release, {PRODUCT} also supports upgrading between minor releases. For example, upgrading from:
+
+* {PRODUCT} 6.2.2 to {PRODUCT} 6.3.0
+* {PRODUCT} 6.1.5 to {PRODUCT} 6.3.0
+
+The {PRODUCT} upgrade tool is distributed as ZIP files with naming convention that states the upgrade path. For example,
+ifdef::DM[]
+`jboss-brms-6.2.2-to-6.3.0-patch.zip`
+endif::DM[]
+ifdef::PAM[]
+`jboss-bpmsuite-6.2.2-to-6.3.0-patch.zip`
+endif::PAM[]
+is used to upgrade from 6.2._x_ to the 6.3.0 version. These ZIP files can be downloaded from the https://access.redhat.com/downloads/[Red Hat Customer Portal]:
+
+* Use
+ifdef::DM[]
+`jboss-brms-6.2.2-to-6.3.0-patch.zip` to upgrade from Red Hat JBoss BRMS 6.2.2 to Red Hat JBoss BRMS 6.3.0.
+endif::DM[]
+ifdef::PAM[]
+`jboss-bpmsuite-6.2.2-to-6.3.0-patch.zip` to upgrade from Red Hat JBoss BPM Suite 6.2.2 to Red Hat JBoss BPM Suite 6.3.0.
+endif::PAM[]
+* Use
+ifdef::DM[]
+`jboss-brms-6.1.5-to-6.3.0-patch.zip` to upgrade from Red Hat JBoss BRMS 6.1.5 to Red Hat JBoss BRMS 6.3.0.
+endif::DM[]
+ifdef::PAM[]
+`jboss-bpmsuite-6.1.5-to-6.3.0-patch.zip` to upgrade from Red Hat JBoss BPM Suite 6.1.5 to Red Hat JBoss BPM Suite 6.3.0.
+endif::PAM[]
+
+Each ZIP file contains the following scripts:
+
+* `apply-updates.bat`
+* `apply-updates.sh`
+
+To upgrade to the next minor release using these upgrade scripts, you must specify arguments indicating the path of distribution and the type of distribution you want to upgrade in your command:
+
+[source]
+----
+$ ./apply-updates.sh DISTRIBUTION_PATH DISTRIBUTION_NAME
+----
+
+For example:
+
+[source]
+----
+$ ./apply-updates.sh ~/EAP_HOME/jboss-eap-6.4 eap6.x
+----
+
+The supported distribution types are:
+
+* `eap6._x_`
+* `eap6._x_-bc`
+ifdef::PAM[* `eap6._x_-dashbuilder`]
+* `eap6._x_-kie-server`
+* `generic`
+* `generic-bc`
+ifdef::PAM[* `generic-dashbuilder`]
+* `generic-kie-server`
+* `was8`
+* `was8-bc`
+ifdef::PAM[* `was8-dashbuilder`]
+* `was8-kie-server`
+* `wls12c`
+* `wls12c-bc`
+ifdef::PAM[* `wls12c-dashbuilder`]
+* `wls12c-kie-server`
+ifdef::DM[* `brms-engine`]
+ifdef::PAM[* `bpmsuite-engine`]
+* `planner-engine`
+* `supplementary-tools`
+
+The upgrade tool allows you to upgrade the entire distribution, or only a part of the distribution as per your requirement. For example, for the `eap6._x_` distribution, you can choose to patch the entire `eap6._x_` or choose to patch any of the war files (`eap6._x_-bc`,
+ifdef::PAM[]
+`eap6._x_-dashbuilder`,
+endif::PAM[]
+`eap6._x_-kie-server`) that the patch contains.
+
+Note that the upgrade tool does not upgrade the configuration files if you have your custom updates in them. The upgrade tool checks if the configuration files have any changes. If there are no changes made to the configuration files, the tool replaces the configuration files with the latest version. However, if the tool finds custom changes made to any of the configuration files, it adds those files to blacklist, and does not replace them with the latest version. So you do not need to manually compare the configuration files and place them in the blacklist to ensure that your custom configurations are intact.
+
+NOTE: It is recommended that you add your custom changes to the `.new` files instead of trying to update the current configuration files with changes from the new {PRODUCT} version. For example, if you have custom changes such as data source name/location in the `persistence.xml` file, the recommended approach is to add your custom changes to the `.new` files created by the upgrade tool. Once you have updated the `.new` files with all the required changes, rename them to their original names (without the `.new` suffix). This ensures that the applications pick the updated configuration files containing your custom changes.
