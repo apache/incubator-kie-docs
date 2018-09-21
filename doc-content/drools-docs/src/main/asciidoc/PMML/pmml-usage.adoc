@@ -30,9 +30,9 @@ public void executeModel(KieBase kbase,
   requestData.insert(request);
   resultData.insert(resultHolder);
 
-  List<String> possiblePackageNames = calculatePossiblePackageNames(modelName,
+  List<String> possiblePackageNames = calculatePossiblePackageNames(modelName, // <1>
                                                                     modelPkgName);
-  Class<? extends RuleUnit> ruleUnitClass = getStartingRuleUnit("RuleUnitIndicator",
+  Class<? extends RuleUnit> ruleUnitClass = getStartingRuleUnit("RuleUnitIndicator", // <2>
                                                                 (InternalKnowledgeBase)kbase,
                                                                 possiblePackageNames);
 
@@ -44,6 +44,10 @@ public void executeModel(KieBase kbase,
   }
 }
 ----
+<1> For the purpose of this example the `calculatePossiblePackageNames` method is assumed to belong to
+the same class as our `executeModel` method.
+<2> For the purpose of this example the `getStartingRuleUnit` method is assumed to belong to the same
+class as our `executeModel` method.
 
 As illustrated in the above sample code, using the PMML based rules can be complex;
 and that's for a very simple use-case. But don't get discouraged, there is some good news!
@@ -87,7 +91,7 @@ public class PMML4Result {
     ...
 }
 ----
-<1> When the underlying model was of type MiningModel, the segmentationId is used to differentiate between Segmentations. Multiple Segmentations occur when a Segment within a MiningModel contains a model of type MiningModel
+<1> Used when the model type is MiningModel; the segmentationId is used to differentiate between multiple Segmentations
 <2> Used in conjunction with the segmentationId to identify which Segment generated the results
 <3> Used to maintain ordering of Segments
 <4> Used to determine whether the model was successfully applied. A value of "OK" indicates success.
@@ -119,4 +123,81 @@ public class ParameterInfo<T> { // <1>
 
 == Helper Classes
 As promised, there are some classes to assist in creating the required PMMLRequestData object, and also
-to help fire off the rules using the required RuleExecutor.
+to help fire off the rules using the required RuleUnitExecutor.
+
+.PMML4ExecutionHelper
+This class is at the core of making PMML derived rules easier to use. In the above example code, the
+developer needed to construct and manage the RuleUnitExecutor, all of the data sources, and the input and output
+data objects. The PMML4ExecutionHelper abstracts much of this away.
+
+.Sample using PMML4PMML4ExecutionHelper
+[source,java]
+----
+public void executeModel(KieBase kbase,
+                         Map<String,Object> variables,
+                         String modelName,
+                         String modelPkgName,
+                         String correlationId) {
+   PMML4ExecutionHelper helper = PMML4ExecutionHelperFactory.getExecutionHelper(modelName, kbase);
+   helper.addPossiblePackageName(modelPkgName);
+
+   PMMLRequestData request = new PMMLRequestData(correlationId, modelName);
+   variables.entrySet().forEach(entry -> {
+     request.addRequestParam(entry.getKey(), entry.getValue);
+   });
+
+   PMML4Result resultHolder = helper.submitRequest(request);
+   if ("OK".equals(resultHolder.getResultCode)) {
+     // extract result variables here
+   }
+}
+----
+[NOTE]
+When using the PMML4ExecutionHelper, it is no longer necessary for the developer to figure out the possible package names, nor the RuleUnit class
+
+.PMML4ExecutionHelperFactory
+This factory class is the only way to construct a PMML4ExecutionHelper.
+Below are the methods provided by this factory class, for getting an instance of PMML4ExecutionHelper.
+
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, KieBase kbase)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, KieBase kbase, boolean includeMiningDataSources)
+----
+This first pair are useful when the PMML resource has already been compiled and is being used from an existing KieBase.
+
+
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName,  String classPath, KieBaseConfiguration kieBaseConf)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName,String classPath, KieBaseConfiguration kieBaseConf, boolean includeMiningDataSources)
+----
+This second pair of methods is the first of the "on-the-fly" mechanisms for using a PMML resource that is not already part of a KieBase.
+The `classPath` should point to a PMML file that is on the project's classpath.
+
+
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, byte[] content, KieBaseConfiguration kieBaseConf)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, byte[] content, KieBaseConfiguration kieBaseConf, boolean includeMiningDataSources)
+----
+Like the previous pair of methods, this set of methods allows "on-the-fly" usage of a PMML resource. In this case, the resource is expected to be in the
+form of a byte array.
+
+
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, Resource resource, KieBaseConfiguration kieBaseConf)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, Resource resource, KieBaseConfiguration kieBaseConf, boolean includeMiningDataSources)
+----
+Finally, this pair of methods makes use of a PMML resource, that is in the form of an `org.kie.api.io.Resource` object, to allow
+"on-the-fly" usage.
+
+[NOTE]
+All of the "on-the-fly" methods create a KieContainer for the generated rules and Java classes.
+The container is used as the source of the KieBase that the RuleUnitExecutor uses. The container
+does not get persisted.
