@@ -4,14 +4,14 @@
 == Overview
 
 RuntimeManager has been introduced to simplify and empower usage of knowledge API especially in context of processes.
-It provides configurable strategies that control actual runtime execution (how KieSessions are provided) and by default provides following: 
+It provides configurable strategies that control actual runtime execution (how KieSessions are provided) and by default provides following:
 
-* Singleton - runtime manager maintains single KieSession regardless of number of processes available 
-* Per Request - runtime manager delivers new KieSession for every request 
-* Per Process Instance - runtime manager maintains mapping between process instance and KieSession and always provides same KieSession whenever working with given process instance 
+* Singleton - runtime manager maintains single KieSession regardless of number of processes available
+* Per Request - runtime manager delivers new KieSession for every request
+* Per Process Instance - runtime manager maintains mapping between process instance and KieSession and always provides same KieSession whenever working with given process instance
 
 Runtime Manager is primarily responsible for managing and delivering instances of RuntimeEngine to the caller.
-In turn, RuntimeEngine encapsulates two the most important elements of jBPM engine:
+In turn, RuntimeEngine encapsulates two the most important elements of {ENGINE}:
 
 * KieSession
 * TaskService
@@ -35,32 +35,32 @@ public interface RuntimeManager {
 	 * @return instance of the <code>RuntimeEngine</code>
 	 */
     RuntimeEngine getRuntimeEngine(Context<?> context);
-    
+
     /**
      * Unique identifier of the <code>RuntimeManager</code>
      * @return
      */
     String getIdentifier();
-   
+
     /**
      * Disposes <code>RuntimeEngine</code> and notifies all listeners about that fact.
      * This method should always be used to dispose <code>RuntimeEngine</code> that is not needed
      * anymore. <br/>
      * ksession.dispose() shall never be used with RuntimeManager as it will break the internal
      * mechanisms of the manager responsible for clear and efficient disposal.<br/>
-     * Dispose is not needed if <code>RuntimeEngine</code> was obtained within active JTA transaction, 
+     * Dispose is not needed if <code>RuntimeEngine</code> was obtained within active JTA transaction,
      * this means that when getRuntimeEngine method was invoked during active JTA transaction then dispose of
      * the runtime engine will happen automatically on transaction completion.
      * @param runtime
      */
     void disposeRuntimeEngine(RuntimeEngine runtime);
-    
+
     /**
      * Closes <code>RuntimeManager</code> and releases its resources. Shall always be called when
      * runtime manager is not needed any more. Otherwise it will still be active and operational.
      */
     void close();
-    
+
 }
 ----
 
@@ -75,12 +75,12 @@ public interface RuntimeEngine {
 	 * @return
 	 */
     KieSession getKieSession();
-    
+
     /**
 	 * Returns <code>TaskService</code> configured for this <code>RuntimeEngine</code>
 	 * @return
 	 */
-    TaskService getTaskService();   
+    TaskService getTaskService();
 }
 ----
 
@@ -110,7 +110,7 @@ If you don't specify an identifier on RuntimeManager creation, a default value i
 "default-per-pinstance" for PerProcessInstanceRuntimeManager). That means your application uses the same deployment in its lifecycle.
 If you maintain multiple RuntimeManagers in your application, you need to specify their identifiers.
 For example, jbpm-services (DeploymentService) maintains multiple RuntimeManagers with identifiers of kjar's GAV.
-kie-workbench web application too because it depends on jbpm-services. 
+kie-workbench web application too because it depends on jbpm-services.
 ====
 
 == Strategies
@@ -122,7 +122,7 @@ It has following characteristics that are important to evaluate while considerin
 
 * small memory footprint - single instance of runtime engine and task service
 * simple and compact in design and usage
-* good fit for low to medium load on process engine due to synchronized access
+* good fit for low to medium load on {ENGINE} due to synchronized access
 * due to single KieSession instance all state objects (such as facts) are directly visible to all process instances and vice versa
 * not contextual - meaning when retrieving instances of RuntimeEngine from singleton RuntimeManager Context instance is not important and usually EmptyContext.get() is used although null argument is acceptable as well
 * keeps track of id of KieSession used between RuntimeManager restarts to ensure it will use same session - this id is stored as serialized file on disc in temp location that depends on the environment can be one of following:
@@ -138,7 +138,7 @@ This is sort of "stateless" strategy that provides only request scope state and 
 
 It has following characteristics:
 
-* completely isolated process engine and task service operations for every request
+* completely isolated {ENGINE} and task service operations for every request
 * completely stateless, storing facts makes sense only for the duration of the request
 * good fit for high load, stateless processes (no facts or timers involved that shall be preserved between requests)
 * KieSession is only available during life time of request and at the end is destroyed
@@ -194,7 +194,7 @@ When RuntimeEngine is obtained from RuntimeManager within an active JTA transact
 
 Here is how you can build RuntimeManager and get RuntimeEngine (that encapsulates KieSession and TaskService) from it:
 
-[source,java]
+[source,java,subs="attributes+"]
 ----
 
     // first configure environment that will be used by RuntimeManager
@@ -214,7 +214,7 @@ Here is how you can build RuntimeManager and get RuntimeEngine (that encapsulate
     // on the environment
     KieSession ksession = runtimeEngine.getKieSession();
 
-    // add invocations to the process engine here,
+    // add invocations to the {ENGINE} here,
     // e.g. ksession.startProcess(processId);
 
     // and last dispose the runtime engine
@@ -231,7 +231,7 @@ This example provides simplest (minimal) way of using _RuntimeManager_ and _Runt
 
 The complexity of knowing when to create, dispose, register handlers, etc is taken away from the end user and moved to the runtime manager that knows when/how to perform such operations but still allows to have a fine grained control over this process by providing comprehensive configuration of the RuntimeEnvironment.
 
-[source,java]
+[source,java,subs="attributes+"]
 ----
 
   public interface RuntimeEnvironment {
@@ -241,47 +241,47 @@ The complexity of knowing when to create, dispose, register handlers, etc is tak
 	 * @return
 	 */
     KieBase getKieBase();
-    
+
     /**
      * KieSession environment that shall be used to create instances of <code>KieSession</code>
      * @return
      */
     Environment getEnvironment();
-    
+
     /**
      * KieSession configuration that shall be used to create instances of <code>KieSession</code>
      * @return
      */
     KieSessionConfiguration getConfiguration();
-    
+
     /**
      * Indicates if persistence shall be used for the KieSession instances
      * @return
      */
     boolean usePersistence();
-    
+
     /**
      * Delivers concrete implementation of <code>RegisterableItemsFactory</code> to obtain handlers and listeners
      * that shall be registered on instances of <code>KieSession</code>
      * @return
      */
     RegisterableItemsFactory getRegisterableItemsFactory();
-    
+
     /**
-     * Delivers concrete implementation of <code>UserGroupCallback</code> that shall be registered on instances 
+     * Delivers concrete implementation of <code>UserGroupCallback</code> that shall be registered on instances
      * of <code>TaskService</code> for managing users and groups.
      * @return
      */
     UserGroupCallback getUserGroupCallback();
-    
+
     /**
-     * Delivers custom class loader that shall be used by the process engine and task service instances
+     * Delivers custom class loader that shall be used by the {ENGINE} and task service instances
      * @return
      */
     ClassLoader getClassLoader();
-    
+
     /**
-     * Closes the environment allowing to close all depending components such as ksession factories, etc 
+     * Closes the environment allowing to close all depending components such as ksession factories, etc
      */
     void close();
 ----
@@ -313,13 +313,13 @@ public interface RuntimeEnvironmentBuilder {
 	public RuntimeEnvironment get();
 
 	public RuntimeEnvironmentBuilder classLoader(ClassLoader cl);
-	
+
 	public RuntimeEnvironmentBuilder schedulerService(Object globalScheduler);
 ----
 
 Instances of the RuntimeEnvironmentBuilder can be obtained via RuntimeEnvironmentBuilderFactory that provides preconfigured sets of builder to simplify and help users to build the environment for the RuntimeManager.
 
-[source,java]
+[source,java,subs="attributes+"]
 ----
 public interface RuntimeEnvironmentBuilderFactory {
 
@@ -329,30 +329,30 @@ public interface RuntimeEnvironmentBuilderFactory {
      * @return new instance of <code>RuntimeEnvironmentBuilder</code>
      */
     public RuntimeEnvironmentBuilder newEmptyBuilder();
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newDefaultBuilder();
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * but it does not have persistence for process engine configured so it will only store process instances in memory
+     * but it does not have persistence for {ENGINE} configured so it will only store process instances in memory
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newDefaultInMemoryBuilder();
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
@@ -363,11 +363,11 @@ public interface RuntimeEnvironmentBuilderFactory {
      * @param artifactId artifact id of kjar
      * @param version version number of kjar
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newDefaultBuilder(String groupId, String artifactId, String version);
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
@@ -380,11 +380,11 @@ public interface RuntimeEnvironmentBuilderFactory {
      * @param kbaseName name of the kbase defined in kmodule.xml stored in kjar
      * @param ksessionName name of the ksession define in kmodule.xml stored in kjar
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newDefaultBuilder(String groupId, String artifactId, String version, String kbaseName, String ksessionName);
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
@@ -393,11 +393,11 @@ public interface RuntimeEnvironmentBuilderFactory {
      * This one is tailored to works smoothly with kjars as the notion of kbase and ksessions
      * @param releaseId <code>ReleaseId</code> that described the kjar
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newDefaultBuilder(ReleaseId releaseId);
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
@@ -408,46 +408,46 @@ public interface RuntimeEnvironmentBuilderFactory {
      * @param kbaseName name of the kbase defined in kmodule.xml stored in kjar
      * @param ksessionName name of the ksession define in kmodule.xml stored in kjar
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newDefaultBuilder(ReleaseId releaseId, String kbaseName, String ksessionName);
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * It relies on KieClasspathContainer that requires to have kmodule.xml present in META-INF folder which 
+     * It relies on KieClasspathContainer that requires to have kmodule.xml present in META-INF folder which
      * defines the kjar itself.
      * Expects to use default kbase and ksession from kmodule.
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newClasspathKmoduleDefaultBuilder();
-    
+
     /**
      * Provides default configuration of <code>RuntimeEnvironmentBuilder</code> that is based on:
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * It relies on KieClasspathContainer that requires to have kmodule.xml present in META-INF folder which 
+     * It relies on KieClasspathContainer that requires to have kmodule.xml present in META-INF folder which
      * defines the kjar itself.
      * @param kbaseName name of the kbase defined in kmodule.xml
-     * @param ksessionName name of the ksession define in kmodule.xml   
+     * @param ksessionName name of the ksession define in kmodule.xml
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
-     * 
+     *
      * @see DefaultRuntimeEnvironment
      */
     public RuntimeEnvironmentBuilder newClasspathKmoduleDefaultBuilder(String kbaseName, String ksessionName);
 ----
 
-Besides KieSession Runtime Manager provides access to TaskService too as integrated component of a RuntimeEngine that will always be configured and ready for communication between process engine and task service.
+Besides KieSession Runtime Manager provides access to TaskService too as integrated component of a RuntimeEngine that will always be configured and ready for communication between {ENGINE} and task service.
 
 Since the default builder was used, it will already come with predefined set of elements that consists of:
 
-* Persistence unit name will be set to org.jbpm.persistence.jpa (for both process engine and task service)
+* Persistence unit name will be set to org.jbpm.persistence.jpa (for both {ENGINE} and task service)
 * Human Task handler will be automatically registered on KieSession
 * JPA based history log event listener will be automatically registered on KieSession
 * Event listener to trigger rule task evaluation (fireAllRules) will be automatically registered on KieSession
@@ -466,21 +466,21 @@ To extend it with your own handlers or listeners a dedicated mechanism is provid
 	 * @return map of handlers to be registered - in case of no handlers empty map shall be returned.
 	 */
     Map<String, WorkItemHandler> getWorkItemHandlers(RuntimeEngine runtime);
-    
+
     /**
 	 * Returns new instances of <code>ProcessEventListener</code> that will be registered on <code>RuntimeEngine</code>
 	 * @param runtime provides <code>RuntimeEngine</code> in case listeners need to make use of it internally
 	 * @return list of listeners to be registered - in case of no listeners empty list shall be returned.
 	 */
     List<ProcessEventListener> getProcessEventListeners(RuntimeEngine runtime);
-    
+
     /**
 	 * Returns new instances of <code>AgendaEventListener</code> that will be registered on <code>RuntimeEngine</code>
 	 * @param runtime provides <code>RuntimeEngine</code> in case listeners need to make use of it internally
 	 * @return list of listeners to be registered - in case of no listeners empty list shall be returned.
 	 */
     List<AgendaEventListener> getAgendaEventListeners(RuntimeEngine runtime);
-    
+
     /**
 	 * Returns new instances of <code>WorkingMemoryEventListener</code> that will be registered on <code>RuntimeEngine</code>
 	 * @param runtime provides <code>RuntimeEngine</code> in case listeners need to make use of it internally
@@ -528,7 +528,7 @@ When using RuntimeManager in CDI environment there are dedicated interfaces that
 public interface WorkItemHandlerProducer {
 
     /**
-     * Returns map of (key = work item name, value work item handler instance) of work items 
+     * Returns map of (key = work item name, value work item handler instance) of work items
      * to be registered on KieSession
      * <br/>
      * Parameters that might be given are as follows:
@@ -537,7 +537,7 @@ public interface WorkItemHandlerProducer {
      *  <li>taskService</li>
      *  <li>runtimeManager</li>
      * </ul>
-     * 
+     *
      * @param identifier - identifier of the owner - usually RuntimeManager that allows the producer to filter out
      * and provide valid instances for given owner
      * @param params - owner might provide some parameters, usually KieSession, TaskService, RuntimeManager instances
@@ -589,8 +589,7 @@ Thus all components are provided:
 
 [NOTE]
 ====
-Whenever there is a need to interact with the process engine/task service from within handler or listener, recommended approach is to use RuntimeManager and retrieve RuntimeEngine (and then KieSession and/or TaskService) from it as that will ensure proper state managed according to strategy
+Whenever there is a need to interact with the {ENGINE}/task service from within handler or listener, recommended approach is to use RuntimeManager and retrieve RuntimeEngine (and then KieSession and/or TaskService) from it as that will ensure proper state managed according to strategy
 ====
 
 In addition, some filtering can be applied based on identifier (that is given as argument to the methods) to decide if given RuntimeManager shall receive handlers/listeners or not.
-
