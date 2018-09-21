@@ -1,0 +1,52 @@
+[id='cloudbal-class-process-ref']
+= The `Process` Class
+
+The `Process` class is the class that is modified during solving.
+
+We need to tell {PLANNER_SHORT} that it can change the property ``computer``. To do this, annotate the class with `@PlanningEntity` and annotate the `getComputer()` getter with ``@PlanningVariable``.
+
+Of course, the property `computer` needs a setter too, so {PLANNER_SHORT} can change it during solving.
+
+.CloudProcess.java
+====
+[source,java,options="nowrap"]
+----
+@PlanningEntity(...)
+public class CloudProcess ... {
+
+    private int requiredCpuPower;
+    private int requiredMemory;
+    private int requiredNetworkBandwidth;
+
+    private CloudComputer computer;
+
+    ... // getters
+
+    @PlanningVariable(valueRangeProviderRefs = {"computerRange"})
+    public CloudComputer getComputer() {
+        return computer;
+    }
+
+    public void setComputer(CloudComputer computer) {
+        computer = computer;
+    }
+
+    // ************************************************************************
+    // Complex methods
+    // ************************************************************************
+
+    ...
+
+}
+----
+====
+
+{PLANNER_SHORT} needs to know which values it can choose from to assign to the property ``computer``. Those values are retrieved from the method `CloudBalance.getComputerList()` on the planning solution, which returns a list of all computers in the current data set.
+
+The ``@PlanningVariable``'s `valueRangeProviderRefs` parameter on `CloudProcess.getComputer()` needs to match with the ``@ValueRangeProvider``'s `id` on `CloudBalance.getComputerList()`.
+
+[NOTE]
+====
+You can also use annotations on fields instead of getters.
+====
+
