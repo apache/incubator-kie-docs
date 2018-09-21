@@ -9,7 +9,7 @@ Ths sections extends the KIE Running section, which should be read first, with s
 
 The `EntryPoint` provides the methods around inserting, updating and deleting facts.
 The term "entry point" is related to the fact that we have multiple partitions in a Working Memory and you can choose which one you are inserting into.
-The use of multiple entry points is more common in event processing use cases, but they can be used by pure rule applications as well. 
+The use of multiple entry points is more common in event processing use cases, but they can be used by pure rule applications as well.
 
 The `KieRuntime` interface provides the main interaction with the engine.
 It is available in rule consequences and process actions.
@@ -26,7 +26,7 @@ image::UserGuide/EntryPoint.png[align="center"]
 
 In order for a fact to be evaluated against the rules in a ``KieBase``, it has to be inserted into the session.
 This is done by calling the method ``insert(yourObject)``.
-When a fact is inserted into the session, some of its properties might be immediately evaluated (eager evaluation) and some might be deferred for later evaluation (lazy evaluation). The exact behaviour depends on the rules engine algorithm being used. 
+When a fact is inserted into the session, some of its properties might be immediately evaluated (eager evaluation) and some might be deferred for later evaluation (lazy evaluation). The exact behaviour depends on the {ENGINE} algorithm being used. 
 
 [NOTE]
 ====
@@ -61,7 +61,7 @@ An object instance assertion will only return a new `FactHandle` if the inserted
 In order to remove a fact from the session, the method `delete()` is used.
 When a fact is deleted,  any matches that are active and depend on that fact will be cancelled.
 Note that it is possible to have rules that depend on the nonexistence of a fact, in which case deleting a fact may cause a rule to activate.
-(See the `not` and `exists` keywords). 
+(See the `not` and `exists` keywords).
 
 [NOTE]
 ====
@@ -85,11 +85,11 @@ ksession.delete( stiltonHandle );
 ==== Update
 
 
-The Rule Engine must be notified of modified facts, so that they can be reprocessed.
+The {ENGINE} must be notified of modified facts, so that they can be reprocessed.
 You must use the `update()` method to notify the `WorkingMemory` of changed objects for those objects that are not able to notify the `WorkingMemory` themselves.
 Notice that `update()` always takes the modified object as a second parameter, which allows you to specify new instances for immutable objects.
 On the right hand side of a rule the `modify` statement is recommended, as it makes the changes and notifies the engine in a single statement.
-Alternatively, after changing a fact object's field values through calls of setter methods you must invoke `update` immediately, event before changing another fact, or you will cause problems with the indexing within the rule engine.
+Alternatively, after changing a fact object's field values through calls of setter methods you must invoke `update` immediately, event before changing another fact, or you will cause problems with the indexing within the {ENGINE}.
 The modify statement avoids this problem.
 
 [source,java]
@@ -115,7 +115,7 @@ image::UserGuide/RuleRuntime.png[align="center"]
 
 Queries are used to retrieve fact sets based on patterns, as they are used in rules.
 Patterns may make use of optional parameters.
-Queries can be defined in the Knowledge Base, from where they are called up to return the matching results.
+Queries can be defined in the KIE base, from where they are called up to return the matching results.
 While iterating over the result collection, any identifier bound in the query can be used to access the corresponding fact or fact field by calling the `get` method with the binding variable's name as its argument.
 If the binding refers to a fact object, its FactHandle can be retrieved by calling ``getFactHandle``, again with the variable's name as the parameter.
 
@@ -243,7 +243,7 @@ image::UserGuide/Agenda.png[align="center"]
 
 
 Conflict resolution is required when there are multiple rules on the agenda.
-(The basics to this are covered in chapter "Quick Start".) As firing a rule may have side effects on the working memory, the rule engine needs to know in what order the rules should fire (for instance, firing ruleA may cause ruleB to be removed from the agenda).
+(The basics to this are covered in chapter "Quick Start".) As firing a rule may have side effects on the working memory, the {ENGINE} needs to know in what order the rules should fire (for instance, firing ruleA may cause ruleB to be removed from the agenda).
 
 The default conflict resolution strategies employed by Drools are: Salience and LIFO (last in, first out).
 
@@ -270,7 +270,7 @@ You can also have rules with "auto focus" which means that the focus is taken fo
 Agenda groups are known as "modules" in CLIPS terminology.
 While it best to design rules that do not need control flow, this is not always possible.
 Agenda groups provide a handy way to create a "flow" between grouped rules.
-You can switch the group which has focus either from within the rule engine, or via the API.
+You can switch the group which has focus either from within the {ENGINE}, or via the API.
 If your rules have a clear need for multiple "phases" or "sequences" of processing, consider using agenda-groups for this purpose.
 
 Each time `setFocus()` is called it pushes that Agenda Group onto a stack.
@@ -329,7 +329,7 @@ ksession.getAgenda().getRuleFlowGroup( "Group C" ).clear();
 == Event Model
 
 
-The event package provides means to be notified of rule engine events, including rules firing, objects being asserted, etc.
+The event package provides means to be notified of {ENGINE} events, including rules firing, objects being asserted, etc.
 This allows you, for instance, to separate logging and auditing activities from the main part of your application (and the rules).
 
 The `WorkingMemoryEventManager` allows for listeners to be added and removed, so that events for the working memory and the agenda can be listened to.
@@ -516,7 +516,7 @@ You may also set the "drools.sequential.agenda" property to "sequential" or "dyn
 
 Drools provides two modes for rule execution - passive and active.
 
-As a general guideline, Passive Mode is most suitable for Rule Engine applications which need to explicitly control when the engine shall evaluate and fire the rules, or for CEP applications making use of the Pseudo Clock. Active Mode is most effective for Rule Engine applications which delegate control of when rules are evaluated and fired to the engine, or for typical CEP application making use of the Real Time Clock.
+As a general guideline, Passive Mode is most suitable for {ENGINE} applications which need to explicitly control when the engine shall evaluate and fire the rules, or for CEP applications making use of the Pseudo Clock. Active Mode is most effective for {ENGINE} applications which delegate control of when rules are evaluated and fired to the engine, or for typical CEP application making use of the Real Time Clock.
 
 
 === Passive Mode
@@ -590,7 +590,7 @@ NOTE: Generally, it is not recommended mixing `fireAllRules()` and `fireUntilHal
 ==== Performing KieSession operations atomically when in Active Mode
 
 
-When in Active Mode, the Drools engine is in control of when the rule shall be evaluated and fired; therefore it is important that operations on the KieSession are performed in a thread-safe manner. Additionally, from a client-side perspective, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
+When in Active Mode, the {ENGINE} is in control of when the rule shall be evaluated and fired; therefore it is important that operations on the KieSession are performed in a thread-safe manner. Additionally, from a client-side perspective, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
 
 Drools offers a `submit()` method to group and perform operations on the KieSession as a thread-safe atomic action, while in Active Mode.
 
@@ -656,7 +656,7 @@ session.submit( new KieSession.AtomicAction() {
 == Propagation modes
 
 
-The introduction of PHREAK as default algorithm for the Drools engine made the rules' evaluation lazy.
+The introduction of PHREAK as default algorithm for the {ENGINE} made the rules' evaluation lazy.
 This new Drools lazy behavior allowed a relevant performance boost but, in some very specific cases, breaks the semantic of a few Drools features.
 
 More precisely in some circumstances it is necessary to propagate the insertion of new fact into th session immediately.
@@ -731,7 +731,7 @@ will make the rule R to fire if and only if the Integer is inserted after the St
 == Commands and the CommandExecutor
 
 
-The `CommandFactory` allows for commands to be executed on those sessions, the only difference being that the Stateless Knowledge Session executes `fireAllRules()` at the end before disposing the session.
+The `CommandFactory` allows for commands to be executed on those sessions, the only difference being that the Stateless KIE session executes `fireAllRules()` at the end before disposing the session.
 The currently supported commands are:
 
 * FireAllRules
@@ -745,7 +745,7 @@ The currently supported commands are:
 
 `
 InsertObject` will insert a single object, with an optional "out" identifier. `InsertElements` will iterate an Iterable, inserting each of the elements.
-What this means is that a Stateless Knowledge Session is no longer limited to just inserting objects, it can now start processes or execute queries, and do this in any order.
+What this means is that a Stateless KIE session is no longer limited to just inserting objects, it can now start processes or execute queries, and do this in any order.
 
 .Insert Command
 ====
@@ -887,7 +887,7 @@ A similar output for the <batch-execution> XML sample above would be:
 The `BatchExecutionHelper` provides a configured XStream instance to support the marshalling of Batch Executions, where the resulting XML can be used as a message format, as shown above.
 Configured converters only exist for the commands supported via the Command Factory.
 The user may add other converters for their user objects.
-This is very useful for scripting stateless or stateful knowledge sessions, especially when services are involved.
+This is very useful for scripting stateless or stateful KIE sessions, especially when services are involved.
 
 There is currently no XML schema to support schema validation.
 The basic format is outlined here, and the drools-pipeline module has an illustrative unit test in the `XStreamBatchExecutionTest` unit test.
