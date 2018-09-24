@@ -25,10 +25,9 @@ To simplify unit testing, jBPM includes a helper class called *JbpmJUnitBaseTest
 For example, consider the following "hello world" process containing a start event, a script task and an end event.
 The following JUnit test will create a new session, start the process and then verify whether the process instance completed successfully and whether these three nodes have been executed.
 
-
 image::BPMN2/HelloWorld.png[]
 
-[source,java]
+[source,java,subs="attributes+"]
 ----
 public class ProcessPersistenceTest extends JbpmJUnitBaseTestCase {
 
@@ -41,8 +40,8 @@ public class ProcessPersistenceTest extends JbpmJUnitBaseTestCase {
     public void testProcess() {
         // create runtime manager with single process - hello.bpmn
         createRuntimeManager("hello.bpmn");
- 
-        // take RuntimeManager to work with process engine
+
+        // take RuntimeManager to work with {ENGINE}
         RuntimeEngine runtimeEngine = getRuntimeEngine();
 
         // get access to KieSession instance
@@ -68,7 +67,7 @@ It provides four usage areas:
 ** setUp: executed @Before and configures data source and EntityManagerFactory, cleans up Singleton's session id
 ** tearDown: executed @After and clears out history, closes EntityManagerFactory and data source, disposes RuntimeEngines and RuntimeManager
 
-* Knowledge Base and KnowledgeSession management methods
+* KIE base and KnowledgeSession management methods
 
 ** createRuntimeManager creates RuntimeManager for given set of assets and selected strategy
 ** disposeRuntimeManager disposes RuntimeManager currently active in the scope of test
@@ -101,34 +100,34 @@ It's enough to specify which strategy shall be used whenever creating runtime ma
 [source,java]
 ----
 public class ProcessHumanTaskTest extends JbpmJUnitBaseTestCase {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ProcessHumanTaskTest.class);
 
     public ProcessHumanTaskTest() {
         super(true, false);
     }
-    
+
     @Test
     public void testProcessProcessInstanceStrategy() {
         RuntimeManager manager = createRuntimeManager(Strategy.PROCESS_INSTANCE, "manager", "humantask.bpmn");
         RuntimeEngine runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
         KieSession ksession = runtimeEngine.getKieSession();
         TaskService taskService = runtimeEngine.getTaskService();
-        
+
         int ksessionID = ksession.getId();
         ProcessInstance processInstance = ksession.startProcess("com.sample.bpmn.hello");
 
         assertProcessInstanceActive(processInstance.getId(), ksession);
         assertNodeTriggered(processInstance.getId(), "Start", "Task 1");
-        
+
         manager.disposeRuntimeEngine(runtimeEngine);
         runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get(processInstance.getId()));
-        
+
         ksession = runtimeEngine.getKieSession();
         taskService = runtimeEngine.getTaskService();
-        
+
         assertEquals(ksessionID, ksession.getId());
-        
+
         // let john execute Task 1
         List<TaskSummary> list = taskService.getTasksAssignedAsPotentialOwner("john", "en-UK");
         TaskSummary task = list.get(0);
@@ -137,7 +136,7 @@ public class ProcessHumanTaskTest extends JbpmJUnitBaseTestCase {
         taskService.complete(task.getId(), "john", null);
 
         assertNodeTriggered(processInstance.getId(), "Task 2");
-        
+
         // let mary execute Task 2
         list = taskService.getTasksAssignedAsPotentialOwner("mary", "en-UK");
         task = list.get(0);
@@ -170,13 +169,13 @@ This test case in particular will test whether an exception is raised when the e
 
 image::BPMN2/HelloWorld2.png[]
 
-[source,java]
+[source,java,subs="attributes+"]
 ----
 public void testProcess2() {
 
     // create runtime manager with single process - hello.bpmn
     createRuntimeManager("sample-process.bpmn");
-    // take RuntimeManager to work with process engine
+    // take RuntimeManager to work with {ENGINE}
     RuntimeEngine runtimeEngine = getRuntimeEngine();
 
     // get access to KieSession instance
@@ -224,14 +223,14 @@ Persistence (and setup of data source) is controlled by the super constructor an
 ** super(true, true) - to execute with persistent process management with human tasks persistence
 * super(boolean, boolean, string) - same as super(boolean, boolean) but allows to use another persistence unit name than default (org.jbpm.persistence.jpa)
 
-[source,java]
+[source,java,subs="attributes+"]
 ----
 public class ProcessHumanTaskTest extends JbpmJUnitBaseTestCase {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ProcessHumanTaskTest.class);
 
     public ProcessHumanTaskTest() {
-        // configure this tests to not use persistence for process engine but still use it for human tasks
+        // configure this tests to not use persistence for {ENGINE} but still use it for human tasks
         super(true, false);
     }
 }
