@@ -1,0 +1,146 @@
+[id='pmml-invocation-helper-classes-ref_{context}']
+= PMML execution helper class
+
+{PRODUCT} provides a `PMML4ExecutionHelper` class that helps create the `PMMLRequestData` class required for PMML model execution and that helps execute rules using the `RuleUnitExecutor` class.
+
+The following are examples of a PMML model execution without and with the `PMML4ExecutionHelper` class, as a comparison:
+
+.Example PMML model execution without using `PMML4ExecutionHelper`
+[source,java]
+----
+public void executeModel(KieBase kbase,
+                         Map<String,Object> variables,
+                         String modelName,
+                         String correlationId,
+                         String modelPkgName) {
+    RuleUnitExecutor executor = RuleUnitExecutor.create().bind(kbase);
+    PMMLRequestData request = new PMMLRequestData(correlationId, modelName);
+    PMML4Result resultHolder = new PMML4Result(correlationId);
+    variables.entrySet().forEach( es -> {
+        request.addRequestParam(es.getKey(), es.getValue());
+    });
+
+    DataSource<PMMLRequestData> requestData = executor.newDataSource("request");
+    DataSource<PMML4Result> resultData = executor.newDataSource("results");
+    DataSource<PMMLData> internalData = executor.newDataSource("pmmlData");
+
+    requestData.insert(request);
+    resultData.insert(resultHolder);
+
+    List<String> possiblePackageNames = calculatePossiblePackageNames(modelName,
+                                                                    modelPkgName);
+    Class<? extends RuleUnit> ruleUnitClass = getStartingRuleUnit("RuleUnitIndicator",
+                                                                (InternalKnowledgeBase)kbase,
+                                                                possiblePackageNames);
+
+    if (ruleUnitClass != null) {
+        executor.run(ruleUnitClass);
+        if ( "OK".equals(resultHolder.getResultCode()) ) {
+          // extract result variables here
+        }
+    }
+}
+
+protected Class<? extends RuleUnit> getStartingRuleUnit(String startingRule, InternalKnowledgeBase ikb, List<String> possiblePackages) {
+    RuleUnitRegistry unitRegistry = ikb.getRuleUnitRegistry();
+    Map<String,InternalKnowledgePackage> pkgs = ikb.getPackagesMap();
+    RuleImpl ruleImpl = null;
+    for (String pkgName: possiblePackages) {
+      if (pkgs.containsKey(pkgName)) {
+          InternalKnowledgePackage pkg = pkgs.get(pkgName);
+          ruleImpl = pkg.getRule(startingRule);
+          if (ruleImpl != null) {
+              RuleUnitDescr descr = unitRegistry.getRuleUnitFor(ruleImpl).orElse(null);
+              if (descr != null) {
+                  return descr.getRuleUnitClass();
+              }
+          }
+      }
+    }
+    return null;
+}
+
+protected List<String> calculatePossiblePackageNames(String modelId, String...knownPackageNames) {
+    List<String> packageNames = new ArrayList<>();
+    String javaModelId = modelId.replaceAll("\\s","");
+    if (knownPackageNames != null && knownPackageNames.length > 0) {
+        for (String knownPkgName: knownPackageNames) {
+            packageNames.add(knownPkgName + "." + javaModelId);
+        }
+    }
+    String basePkgName = PMML4UnitImpl.DEFAULT_ROOT_PACKAGE+"."+javaModelId;
+    packageNames.add(basePkgName);
+    return packageNames;
+}
+----
+
+.Example PMML model execution using `PMML4ExecutionHelper`
+[source,java]
+----
+public void executeModel(KieBase kbase,
+                         Map<String,Object> variables,
+                         String modelName,
+                         String modelPkgName,
+                         String correlationId) {
+   PMML4ExecutionHelper helper = PMML4ExecutionHelperFactory.getExecutionHelper(modelName, kbase);
+   helper.addPossiblePackageName(modelPkgName);
+
+   PMMLRequestData request = new PMMLRequestData(correlationId, modelName);
+   variables.entrySet().forEach(entry -> {
+     request.addRequestParam(entry.getKey(), entry.getValue);
+   });
+
+   PMML4Result resultHolder = helper.submitRequest(request);
+   if ("OK".equals(resultHolder.getResultCode)) {
+     // extract result variables here
+   }
+}
+----
+
+When you use the `PMML4ExecutionHelper`, you do not need to specify the possible package names nor the `RuleUnit` class as you would in a typical PMML model execution.
+
+To construct a `PMML4ExecutionHelper` class, you use the `PMML4ExecutionHelperFactory` class to determine how instances of `PMML4ExecutionHelper` are retrieved.
+
+The following are the available `PMML4ExecutionHelperFactory` class methods for constructing a `PMML4ExecutionHelper` class:
+
+PMML4ExecutionHelperFactory methods for PMML assets in a KIE base::
+Use these methods when PMML assets have already been compiled and are being used from an existing KIE base:
++
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, KieBase kbase)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, KieBase kbase, boolean includeMiningDataSources)
+----
+
+PMML4ExecutionHelperFactory methods for PMML assets on the project classpath::
+Use these methods when PMML assets are on the project classpath. The `classPath` argument is the project classpath location of the PMML file:
++
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName,  String classPath, KieBaseConfiguration kieBaseConf)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName,String classPath, KieBaseConfiguration kieBaseConf, boolean includeMiningDataSources)
+----
+
+PMML4ExecutionHelperFactory methods for PMML assets in a byte array::
+Use these methods when PMML assets are in the form of a byte array:
++
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, byte[] content, KieBaseConfiguration kieBaseConf)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, byte[] content, KieBaseConfiguration kieBaseConf, boolean includeMiningDataSources)
+----
+
+PMML4ExecutionHelperFactory methods for PMML assets in a `Resource`::
+Use these methods when PMML assets are in the form of an `org.kie.api.io.Resource` object:
++
+[source,java]
+----
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, Resource resource, KieBaseConfiguration kieBaseConf)
+
+public static PMML4ExecutionHelper getExecutionHelper(String modelName, Resource resource, KieBaseConfiguration kieBaseConf, boolean includeMiningDataSources)
+----
+
+NOTE: The classpath, byte array, and resource `PMML4ExecutionHelperFactory` methods create a KIE container for the generated rules and Java classes. The container is used as the source of the KIE base that the `RuleUnitExecutor` uses. The container is not persisted. The `PMML4ExecutionHelperFactory` method for PMML assets that are already in a KIE base does not create a KIE container in this way.
