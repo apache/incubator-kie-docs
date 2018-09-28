@@ -1,75 +1,128 @@
 [[_drools.testscenarioeditor]]
-= Test Scenario
+= Test scenarios
 
+Test scenarios in {PRODUCT} enable you to validate the functionality of business rules and business rule data before deploying them into a production environment. With a test scenario, you use data from your project to set given conditions and expected results based on one or more defined business rules. When you run the scenario, the expected results and actual results of the rule instance are compared. If the expected results match the actual results, the test is successful. If the expected results do not match the actual results, then the test fails.
 
-Test Scenarios are used to validate that rules and KIE base work as expected.
-When the KIE base evolves, Test Scenarios guard against regression.
+Test scenarios can be executed one at a time or as a group. The group execution contains all the scenarios from one package. Test scenarios are independent, so one scenario cannot affect or modify the other. You can run test scenarios at any time during project development in {CENTRAL}. You do not have to compile or deploy your decision service to run test scenarios.
 
-.Example Test Scenario
-image::Workbench/AuthoringAssets/TestScenario.png[align="center"]
+All data objects related to a test scenario must be in the same project package as the test scenario. Assets in the same package are imported by default. After you create the necessary data objects and the test scenario, you can use the *Data Objects* tab of the test scenarios designer to verify that all required data objects are listed or to import other existing data objects by adding a *New item*.
 
+== Creating and running a test scenario
 
-Given section lists the facts needed for the behaviour.
-Expect section lists the expected changes and actions done by the behaviour.
-Given facts are passed for the Test Scenario before execution.
-During the rule execution, changes in the KIE base are recorded.
-After the execution ends the recorded actions, existing facts in the KIE base and KIE base output is compared against the expectations.
+You can create test scenarios in {CENTRAL} to test the functionality of business rule data before deployment. A basic test scenario must have at least the following data:
 
-.Example Test Scenario after execution
-image::Workbench/AuthoringAssets/TestScenarioAfterRunningIt.png[align="center"]
+* Related data objects
+* *GIVEN* facts
+* *EXPECT* results
 
+With this data, the test scenario can validate the expected and actual results for that rule instance based on the defined facts. You can also add a *CALL METHOD* and any available *globals* to a test scenario, but these scenario settings are optional.
 
-[[_drools.ksessionselector]]
-== KIE session Selector
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* and click the project name.
+. Click *Add Asset* -> *Test Scenario*.
+. Enter an informative *Test Scenario* name and select the appropriate *Package*. The package that you specify must be the same package where the required data objects and rule assets have been assigned or will be assigned.
++
+. Click *Ok* to create the test scenario.
++
+The new test scenario is now listed in the *Test Scenarios* panel of the *Project Explorer*,
++
+. Click the *Data Objects* tab to verify that all data objects required for the rules that you want to test are listed. If not, click *New item* to import the needed data objects from other packages, or
+ifdef::DM,PAM[]
+xref:data-objects-create-proc_test-scenarios[create data objects]
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:_wb.datamodeller[create data objects]
+endif::[]
+within your package.
+. After all data objects are in place, return to the *Model* tab of the test scenarios designer and define the *GIVEN* and *EXPECT* data for the scenario, based on the available data objects.
++
+.The test scenarios designer
+image::project-data/test-scenario-edit.png[]
++
+The *GIVEN* section defines the input facts for the test. For example, if an `Underage` rule in the project declines loan applications for applicants under the age of 21, then the *GIVEN* facts in the test scenario could be `Applicant` with `age` set to some integer less than 21.
++
+The *EXPECT* section defines the expected results based on the *GIVEN* input facts. That is, *GIVEN* the input facts, *EXPECT* these other facts to be valid or entire rules to be activated. For example, with the given facts of an applicant under the age of 21 in the scenario, the *EXPECT* results could be `LoanApplication` with `approved` set to `false` (as a result of the underage applicant), or could be the activation of the `Underage` rule as a whole.
++
+. Optionally, add a *CALL METHOD* and any *globals* to the test scenario:
++
+--
+* *CALL METHOD:* Use this to invoke a method from another fact when the rule execution is initiated. Click *CALL METHOD*, select a fact, and click image:project-data/6187.png[] to select the method to invoke. You can invoke any Java class methods (such as methods from an ArrayList) from the Java library or from a JAR that was imported for the project (if applicable).
+* *globals:* Use this to add any global variables in the project that you want to validate in the test scenario. Click *globals* to select the variable to be validated, and then in the test scenarios designer, click the global name and define field values to be applied to the global variable. If no global variables are available, then they must be created as new assets in {CENTRAL}. Global variables are named objects that are visible to the {ENGINE} but are different from the objects for facts. Changes in the object of a global do not trigger the re-evaluation of rules.
+--
++
+. Click *More* at the bottom of the test scenarios designer to add other data blocks to the same scenario file as needed.
+. After you have defined all *GIVEN*, *EXPECT*, and other data for the scenario, click *Save* in the test scenarios designer to save your work.
+. Click *Run scenario* in the upper-right corner to run this `.scenario` file, or click *Run all scenarios* to run all saved `.scenario` files in the project package (if there are multiple). Although the *Run scenario* option does not require the individual `.scenario` file to be saved, the *Run all scenarios* option does require all `.scenario` files to be saved.
++
+If the test fails, address any problems described in the *Reporting* message at the bottom of the window, review all components in the scenario, and try again to validate the scenario until the scenario passes.
++
+. Click *Save* in the test scenarios designer to save your work after all changes are complete.
 
-.KIE session Selector
-image::Workbench/AuthoringAssets/KSessionSelector.png[align="center"]
+=== Adding GIVEN facts in test scenarios
 
+The *GIVEN* section defines input facts for the test. For example, if an `Underage` rule in the project declines loan applications for applicants under the age of 21, then the *GIVEN* facts in the test scenario could be `Applicant` with `age` set to some integer less than 21.
 
-KIE session selector is used to select the session that the rules are ran against.
-The KIE session needs to be stateful and use the pseudo clock when simulated time is used.
-KIE sessions are defined in the Project Editor, in the KIE bases and Sessions section. 
+.Prerequisite
+All data objects required for your test scenario have been created or imported and are listed in the *Data Objects* tab of the test scenarios designer.
 
-[[_drools.testscenarioeditorgivensection]]
-== Given Section
+.Procedure
+. In the test scenarios designer, click *GIVEN* to open the *New input* window with the available facts.
++
+.Add GIVEN input to the test scenario
+image::project-data/test-scenario-facts.png[Add GIVEN input to the test scenario]
++
+The list includes the following options, depending on the data objects available in the *Data Objects* tab of the test scenarios designer:
 
-.Given popup
-image::Workbench/AuthoringAssets/GivenSection.png[align="center"]
+* *Insert a new fact:* Use this to add a fact and modify its field values. Enter a variable for the fact as the *Fact name*.
+* *Modify an existing fact:* (Appears only after another fact has been added.) Use this to specify a previously inserted fact to be modified in the {ENGINE} between executions of the scenario.
+* *Delete an existing fact:* (Appears only after another fact has been added.) Use this to specify a previously inserted fact to be deleted from the {ENGINE} between executions of the scenario.
+* *Activate rule flow group:* Use this to specify a rule flow group to be activated so that all rules within that group can be tested.
++
+. Choose a fact for the desired input option and click *Add*. For example, set *Insert a new fact:* to *Applicant* and enter `a` or `app` or any other variable for the *Fact name*.
+. Click the fact in the test scenarios designer and select the field to be modified.
++
+.Modify a fact field
+image::project-data/test-scenario-field.png[Modifying a condition]
++
+. Click the edit icon (image:project-data/6191.png[]) and select from the following field values:
++
+--
+* *Literal value:* Creates an open field in which you enter a specific literal value.
+* *Bound variable:* Sets the value of the field to the fact bound to a selected variable. The field type must match the bound variable type.
+* *Create new fact:* Enables you to create a new fact and assign it as a field value of the parent fact. Then you can click the child fact in the test scenarios designer and likewise assign field values or nest other facts similarly.
+--
++
+. Continue adding any other *GIVEN* input data for the scenario and click *Save* in the test scenarios designer to save your work.
 
+=== Adding EXPECT results in test scenarios
 
-* Insert a new fact - Adds a new fact that will be inserted into the KIE base before execution.
-* Modify an existing fact - Allows editing a fact between KIE base executions.
-* Delete an existing fact - Allows removing facts between executions.
-* Activate rule flow group - Allows rules from a rule flow group to be tested, by activating the group in advance.
+The *EXPECT* section defines the expected results based on the *GIVEN* input facts. That is, *GIVEN* the input facts, *EXPECT* other specified facts to be valid or entire rules to be activated. For example, with the given facts of an applicant under the age of 21 in the scenario, the *EXPECT* results could be `LoanApplication` with `approved` set to `false` (as a result of the underage applicant), or could be the activation of the `Underage` rule as a whole.
 
+.Prerequisite
+All data objects required for your test scenario have been created or imported and are listed in the *Data Objects* tab of the test scenarios designer.
 
-[[_drools.testscenarioeditorexpectedsection]]
-== Expect Section
+.Procedure
+. In the test scenarios designer, click *EXPECT* to open the *New expectations* window with the available facts.
++
+.Add EXPECT results to the test scenario
+image::project-data/test-scenario-expected-rules.png[Add EXPECT results to the test scenario]
++
+The list includes the following options, depending on the data in the *GIVEN* section and the data objects available in the *Data Objects* tab of the test scenarios designer:
 
-.Expect popup
-image::Workbench/AuthoringAssets/ExpectSection.png[align="center"]
-
-
-* Rule - Validate that a certain rule fired.
-* Fact value - Validate fact values for a fact created in the Given section.
-* Any fact that matches - Validate that there is at least one fact in the KIE base with the specified field values.
-
-
-[[_drools.testscenarioeditorglobalsection]]
-== Global Section
-
-.Global popup
-image::Workbench/AuthoringAssets/NewGlobal.png[align="center"]
-
-
-* Global - Validate that the global field values.
-
-
-[[_drools.testscenarioeditorinpuotsection]]
-== New Input Section
-
-.New Input popup
-image::Workbench/AuthoringAssets/NewInput.png[align="center"]
-
-
-* Call method on an existing fact - Call a method from a fact in the beginning of the rule execution.
+* *Rule:* Use this to specify a particular rule in the project that is expected to be activated as a result of the *GIVEN* input. Type the name of a rule that is expected to be activated or select it from the list of rules, and then in the test scenarios designer, specify the number of times the rule should be activated.
+* *Fact value:* Use this to select a fact and define values for it that are expected to be valid as a result of the facts defined in the *GIVEN* section. The facts are listed by the *Fact name* previously defined for the *GIVEN* input.
+* *Any fact that matches:* Use this to validate that at least one fact with the specified values exists as a result of the *GIVEN* input.
++
+. Choose a fact for the desired expectation (such as *Fact value:* `application`) and click *Add* or *OK*.
+. Click the fact in the test scenarios designer and select the field to be added and modified.
++
+.Modify a fact field
+image::project-data/test-scenario-field-value.png[Modify a fact field]
++
+. Set the field values to what is expected to be valid as a result of the *GIVEN* input (such as `approved` | `equals` | `false`).
+. Continue adding any other *EXPECT* input data for the scenario and click *Save* in the test scenarios designer to save your work.
+. After you have defined and saved all *GIVEN*, *EXPECT*, and other data for the scenario, click *Run scenario* in the upper-right corner to run this `.scenario` file, or click *Run all scenarios* to run all saved `.scenario` files in the project package (if there are multiple). Although the *Run scenario* option does not require the individual `.scenario` file to be saved, the *Run all scenarios* option does require all `.scenario` files to be saved.
++
+If the test fails, address any problems described in the *Reporting* message at the bottom of the window, review all components in the scenario, and try again to validate the scenario until the scenario passes.
++
+. Click *Save* in the test scenarios designer to save your work after all changes are complete.
