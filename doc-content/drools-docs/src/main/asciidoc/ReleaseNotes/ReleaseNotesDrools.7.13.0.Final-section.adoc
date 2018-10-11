@@ -30,3 +30,38 @@ in the following example:
 ----
 
 where the type is the name of class implementing the `org.kie.api.time.Calendar` interface.
+
+== KieSessions pool
+
+In heavy loaded system `KieSession`s get created and disposed with a very high frequency. In general this operation is not
+extremely time consuming, but when repeated millions of times can become a bottleneck and also require a huge GC effort.
+Some users tried to alleviate this problem with self-made pools and for this reason it has been decided to provide this
+solution out-of-the-box.
+
+To obtain a pool of `KieSession` from a `KieContainer` is enough to invoke on it the method
+
+[source]
+----
+KieContainerSessionsPool KieContainer.newKieSessionsPool(int initialSize)
+----
+
+where `initialSize` is the number of the `KieSession`s that will be initially created in the pool. However, if required by the running
+application, the number of `KieSession`s in the pool will dynamically grow beyond that value. At this point you can create
+`KieSession`s from that pool as you would normally do from a `KieContainer`:
+
+[source]
+----
+KieContainerSessionsPool pool = kContainer.newKieSessionsPool(10);
+KieSession kSession = pool.newKieSession();
+----
+
+Now you can use the KieSession as per normal, and when you call `dispose()` on it, instead of being destroyed, it just
+gets resetted and pushed back into the pool. Note that using this pool will also affect the case when you have one or more
+`StatelessKieSession`s and you keep reusing them with multiple call to the `execute()` method. In fact a  `StatelessKieSession`
+created directly from a `KieContainer` will keep to internally create a new `KieSession` for each `execute()` invocation.
+Conversely if you create the `StatelessKieSession` from the pool it will internally uses the `KieSession`s provided by the
+pool itself. In other words even if you asked a `StatelessKieSession` to the pool, what is actually pooled are the `KieSession`s
+that are wrapped by it.
+
+Once you're done with the pool it is required that you call the `shutdown()` method on it to avoid memory leaks. Alternatively
+calling `dispose()` on the whole `KieContainer` will also automatically shutdown all the pools eventually created from it.
