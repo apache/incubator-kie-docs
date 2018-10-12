@@ -6,9 +6,17 @@ Automated update tools are often provided with both patch updates and new minor 
 
 You can use the same automated update tool to apply both patch updates and minor release upgrades to {PRODUCT} {PRODUCT_VERSION}. Patch updates of {PRODUCT}, such as an update from version {PRODUCT_VERSION} to {PRODUCT_VERSION}.1, include the latest security updates and bug fixes. Minor release upgrades of {PRODUCT}, such as an upgrade from version {PRODUCT_VERSION}.x to 7.2, include enhancements, security updates, and bug fixes.
 
+Before you upgrade to a new minor release, apply the latest patch update to your current version of {PRODUCT} to ensure that the minor release upgrade is successful.
+
+[IMPORTANT]
+====
 ifdef::DM[]
-IMPORTANT: To upgrade from {PRODUCT} 7.0.x to {PRODUCT_VERSION}, you must use a {CENTRAL} migration tool provided with the {PRODUCT} {PRODUCT_VERSION} release to accommodate an improved project data structure in {PRODUCT} {PRODUCT_VERSION}. For migration instructions, see {URL_MIGRATING_70_TO_7X}[_{MIGRATING_70_TO_7X}_].
-endif::[]
+To upgrade from {PRODUCT} 7.0.x to {PRODUCT_VERSION}, you must use a {CENTRAL} migration tool provided with the {PRODUCT} {PRODUCT_VERSION} release to accommodate an improved project data structure in {PRODUCT} {PRODUCT_VERSION}. For migration instructions, see {URL_MIGRATING_70_TO_7X}[_{MIGRATING_70_TO_7X}_].
+endif::DM[]
+ifdef::PAM[]
+To upgrade from {PRODUCT} 7.0.x to {PRODUCT_VERSION}, first update to {PRODUCT} 7.0.2 (latest patch update) and then follow this procedure again to upgrade to {PRODUCT} 7.1.
+endif::PAM[]
+====
 
 NOTE: Only updates for {PRODUCT} are included in {PRODUCT} update tools. Updates to {EAP} must be applied using {EAP} patch distributions. For more information about {EAP} patching, see the {EAP} https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html/patching_and_upgrading_guide/[Patching and upgrading guide].
 
@@ -24,6 +32,9 @@ Example:
 * *Product:* {PRODUCT_SHORT}
 * *Version:* {PRODUCT_VERSION}.1
 --
++
+If you are upgrading to a new minor release of {PRODUCT}, such as an upgrade from version {PRODUCT_VERSION}.x to 7.2, first apply the latest patch update to your current version of {PRODUCT} and then follow this procedure again to upgrade to the new minor release.
++
 . Click *Patches*, download *{PRODUCT} [VERSION] Update*, and extract the downloaded `{PRODUCT_INIT}-$VERSION-update.zip` file to a temporary directory.
 +
 This update tool automates the update of certain components of {PRODUCT}, such as {CENTRAL}, {KIE_SERVER}, and the {HEADLESS_CONTROLLER}. Use this update tool first to apply updates and then install any other updates or new release artifacts that are relevant to your {PRODUCT} distribution.
@@ -74,28 +85,28 @@ The `$DISTRO_PATH` portion is the path to the relevant distribution directory an
 
 The following distribution types are supported in {PRODUCT} update tool:
 
-* `{URL_COMPONENT_CENTRAL}-eap7-deployable`: Updates {CENTRAL} (`{URL_COMPONENT_CENTRAL}.war`)
-* `kie-server-ee7`: Updates {KIE_SERVER} (`kie-server.war`)
+* `{PRODUCT_INIT}-{URL_COMPONENT_CENTRAL}-eap7-deployable`: Updates {CENTRAL} (`{URL_COMPONENT_CENTRAL}.war`)
+* `{PRODUCT_INIT}-kie-server-ee7`: Updates {KIE_SERVER} (`kie-server.war`)
 ifdef::DM[]
-* `kie-server-jws`: Updates {KIE_SERVER} on Red Hat JBoss Web Server (`kie-server.war`)
+* `{PRODUCT_INIT}-kie-server-jws`: Updates {KIE_SERVER} on Red Hat JBoss Web Server (`kie-server.war`)
 endif::DM[]
-* `controller-ee7`: Updates the {HEADLESS_CONTROLLER} (`controller.war`)
+* `{PRODUCT_INIT}-controller-ee7`: Updates the {HEADLESS_CONTROLLER} (`controller.war`)
 ifdef::DM[]
-* `controller-jws`: Updates the {HEADLESS_CONTROLLER} on Red Hat JBoss Web Server (`controller.war`)
+* `{PRODUCT_INIT}-controller-jws`: Updates the {HEADLESS_CONTROLLER} on Red Hat JBoss Web Server (`controller.war`)
 endif::DM[]
 
 Example update to {CENTRAL} and {KIE_SERVER} for a full {PRODUCT} distribution on {EAP}:
 [source,subs="attributes+"]
 ----
-./apply-updates.sh ~EAP_HOME/standalone/deployments/{URL_COMPONENT_CENTRAL}.war {URL_COMPONENT_CENTRAL}-eap7-deployable
+./apply-updates.sh ~EAP_HOME/standalone/deployments/{URL_COMPONENT_CENTRAL}.war {PRODUCT_INIT}-{URL_COMPONENT_CENTRAL}-eap7-deployable
 
-./apply-updates.sh ~EAP_HOME/standalone/deployments/kie-server.war kie-server-ee7
+./apply-updates.sh ~EAP_HOME/standalone/deployments/kie-server.war {PRODUCT_INIT}-kie-server-ee7
 ----
 
 Example update to {HEADLESS_CONTROLLER}, if used:
-[source]
+[source,subs="attributes+"]
 ----
-./apply-updates.sh ~EAP_HOME/standalone/deployments/controller.war controller-ee7
+./apply-updates.sh ~EAP_HOME/standalone/deployments/controller.war {PRODUCT_INIT}-controller-ee7
 ----
 
 The update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VERSION-update` folder with a copy of the specified distribution, and then proceeds with the update.
@@ -103,13 +114,13 @@ The update script creates a `backup` folder in the extracted `{PRODUCT_INIT}-$VE
 . After the update tool completes, return to the *Software Downloads* page of the Red Hat Customer Portal where you downloaded the update tool and install any other updates or new release artifacts that are relevant to your {PRODUCT} distribution.
 +
 For files that already exist in your {PRODUCT} distribution, such as `.jar` files for the {ENGINE} or other add-ons, replace the existing version of the file with the new version from the Red Hat Customer Portal.
-. If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE_BA}-maven-repository.zip`), such as in air-gap environments, download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT_BA}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
+. If you use the standalone *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* artifact (`{PRODUCT_FILE}-maven-repository.zip`), such as in air-gap environments, download *{PRODUCT} [VERSION] Incremental Maven Repository* and extract the downloaded `{PRODUCT_INIT}-$VERSION-incremental-maven-repository.zip` file to your existing `~/maven-repository` directory to update the relevant contents.
 +
 --
 Example Maven repository update:
 [source,subs="attributes+"]
 ----
-$ unzip -o {PRODUCT_INIT_BA}-{PRODUCT_VERSION}.1-incremental-maven-repository.zip -d $REPO_PATH/{PRODUCT_INIT_BA}-{PRODUCT_VERSION}.0-maven-repository/maven-repository/
+$ unzip -o {PRODUCT_INIT}-{PRODUCT_VERSION}.1-incremental-maven-repository.zip -d $REPO_PATH/{PRODUCT_INIT}-{PRODUCT_VERSION}.0-maven-repository/maven-repository/
 ----
 --
 . After you finish applying all relevant updates, start {PRODUCT} and {KIE_SERVER} and log in to {CENTRAL}.
