@@ -19,7 +19,7 @@ You don't really need to do anything (as the necessary dependencies should alrea
 If you would like to manually add the necessary dependencies to your project, first of all, you need the JAR file [path]_jbpm-persistence-jpa.jar_
 , as that contains code for saving the runtime state whenever necessary.
 Next, you also need various other dependencies, depending on the persistence solution and database you are using.
-For the default combination with Hibernate as the JPA persistence provider and using an H2 in-memory database and Bitronix for JTA-based transaction management, the following list of additional dependencies is needed: 
+For the default combination with Hibernate as the JPA persistence provider and using an H2 in-memory database and Narayana for JTA-based transaction management together with Tomcat DBCP for connection pooling capabilities, the following list of additional dependencies is needed:
 
 * jbpm-persistence-jpa (org.jbpm)
 * drools-persistence-jpa (org.drools)
@@ -31,7 +31,9 @@ For the default combination with Hibernate as the JPA persistence provider and u
 * commons-collections (commons-collections)
 * dom4j (dom4j)
 * jta (javax.transaction)
-* btm (org.codehaus.btm)
+* narayana-jta (org.jboss.narayana.jta)
+* tomcat-dbcp (org.apache.tomcat)
+* jboss-transaction-api_1.2_spec (org.jboss.spec.javax.transaction)
 * javassist (javassist)
 * slf4j-api (org.slf4j)
 * slf4j-jdk14 (org.slf4j)
@@ -112,8 +114,8 @@ For more details on how to change this for your own configuration, we refer to t
       <property name="hibernate.max_fetch_depth" value="3"/>
       <property name="hibernate.hbm2ddl.auto" value="update"/>
       <property name="hibernate.show_sql" value="true"/>
-      <property name="hibernate.transaction.jta.platform"
-                value="org.hibernate.service.jta.platform.internal.BitronixJtaPlatform"/>
+      <property name="hibernate.connection.release_mode" value="after_transaction"/>
+            <property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform"/>
     </properties>
   </persistence-unit>
 </persistence>
@@ -139,21 +141,17 @@ For example, if you're deploying to JBoss Application Server v5.x, you can  crea
 ----
 
 
-If you are however executing in a simple Java environment, you can use the `JBPMHelper` class to do this for you (see below for tests only) or the following code fragment could be used to set up a data source (where we are using the H2 in-memory  database in combination with Bitronix in this case).
+If you are however executing in a simple Java environment, you can use the `DataSourceFactory` class from kie-test-util module of drools to do this for you (see below for tests only) or the following code fragment could be used to set up a data source (where we are using the H2 in-memory database in combination with Narayana and Tomcat DBCP in this case).
 
 [source,java]
 ----
-
-PoolingDataSource ds = new PoolingDataSource();
-ds.setUniqueName("jdbc/jbpm-ds");
-ds.setClassName("bitronix.tm.resource.jdbc.lrc.LrcXADataSource");
-ds.setMaxPoolSize(3);
-ds.setAllowLocalTransactions(true);
-ds.getDriverProperties().put("user", "sa");
-ds.getDriverProperties().put("password", "sasa");
-ds.getDriverProperties().put("URL", "jdbc:h2:mem:jbpm-db");
-ds.getDriverProperties().put("driverClassName", "org.h2.Driver");
-ds.init();
+Properties driverProperties = new Properties();
+driverProperties.put("user", "sa");
+driverProperties.put("password", "sa");
+driverProperties.put("url", "jdbc:h2:mem:jbpm-db;MVCC=true");
+driverProperties.put("driverClassName", "org.h2.Driver");
+driverProperties.put("className", "org.h2.jdbcx.JdbcDataSource");
+PoolingDataSourceWrapper pdsw = DataSourceFactory.setupPoolingDataSource("jdbc/jbpm-ds", driverProperties);
 ----
 
 == Configuring the engine to use persistence using `JBPMHelper` - for tests only
