@@ -2,7 +2,7 @@
 
 = {KIE_SERVER} ZIP installation
 
-{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). This section explains how to use the ZIP file to install {KIE_SERVER} on an existing Red Hat JBoss Web Server 5.0 instance.
+{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). This section explains how to use the ZIP file to install {KIE_SERVER} on an existing Red Hat JBoss Web Server 5.0.1 server instance.
 
 [NOTE]
 ====
@@ -10,30 +10,19 @@ To use the installer JAR file to install {KIE_SERVER}, see <<assembly_installing
 ====
 
 .Prerequisites
-* A backed-up Red Hat JBoss Web Server 5.0 or higher server installation is available. The base directory of the JBoss Web Server installation is referred to as `__JWS_HOME__`. 
+* A backed-up Red Hat JBoss Web Server 5.0.1 server installation is available. The base directory of the JBoss Web Server installation is referred to as `__JWS_HOME__`. 
 * Sufficient user permissions to complete the installation are granted.
-* The 
-ifdef::PAM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
-endif::PAM[]
-ifdef::DM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
-endif::DM[]
- file. To download this file:
-+
---
-.. Click *Download* next to *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* on the *Product Downloads* page of the https://access.redhat.com[Red Hat Customer Portal].
-.. Unzip the `{PRODUCT_FILE}-add-ons.zip` file. The 
-ifdef::PAM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
-endif::PAM[]
-ifdef::DM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
-endif::DM[]
- file is in the unzipped directory.
---
 
 .Procedure
+. Download the `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file:
+.. Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required), and select the product and version from the drop-down options:
+* *Product:* {PRODUCT_SHORT}
+* *Version:* {PRODUCT_VERSION}
+
+.. Click *Download* next to *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`).
+.. Unzip the `{PRODUCT_FILE}-add-ons.zip` file. The
+`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
+ file is in the unzipped directory.
 . Extract the 
 ifdef::PAM[]
 `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
@@ -41,22 +30,21 @@ endif::PAM[]
 ifdef::DM[]
 `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
 endif::DM[]
- archive to a temporary directory. In the following examples this directory is called `__TEMP_DIR__`.
+ archive to a temporary directory. In the following examples, this directory is called `__TEMP_DIR__`.
 . Copy the 
 ifdef::PAM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-{URL_COMPONENT_KIE_SERVER}-jws/kie-server.war`
+`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war`
 endif::PAM[]
 ifdef::DM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-{URL_COMPONENT_KIE_SERVER}-jws/kie-server.war`
+`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war`
 endif::DM[]
  directory to the `_JWS_HOME_/tomcat/webapps` directory.
 +
 WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the Red Hat JBoss Web Server instance.
 . Remove the `.war` extensions from the `kie-server.war` folder.
 . Open the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file in a text editor.
-. Add users and roles to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT}. 
-//For a list of supported roles, see <<dm-roles-con>>.  
-`<USER_NAME>` and `<USER_PWD>` is a user and password combination of your choice:
+. Add users and roles to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT} and `<USER_NAME>` and `<USER_PWD>` is a user and password combination of your choice:
+
 +
 [source]
 ----
@@ -72,16 +60,41 @@ If a user has more than one role, as shown in the following example, separate th
 <role rolename="kie-server"/>
 <user username={PRODUCT_INIT}User password="user1234" roles="admin,kie-server"/>
 ----
-. In the `_JWS_HOME_/tomcat/bin` directory, create a readable `setenv.sh` file with the following content:
+. Complete one of the following steps in the `_JWS_HOME_/tomcat/bin` directory:
 +
-`CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk"`
+* On Linux or UNIX, create the `setenv.sh` file with the following content:
 +
-[IMPORTANT]
-====
-On Microsoft Windows, add the following values to the `setenv.bat` file:
+ifdef::PAM[]
+[source]
+----
+CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk"
+----
+endif::PAM[]
+ifdef::DM[]
+[source]
+----
+CATALINA_OPTS="-Xmx1024m 
+ -Dorg.jboss.logging.provider=jdk 
+ -Dorg.jbpm.server.ext.disabled=true 
+ -Dorg.jbpm.ui.server.ext.disabled=true
+ -Dorg.jbpm.case.server.ext.disabled=true"
+----
+endif::DM[]
+* On Windows, add the following content to the `setenv.bat` file:
++
+ifdef::PAM[]
+[source]
+----
+set CATALINA_OPTS=-Xmx1024m -Dorg.jboss.logging.provider=jdk
+----
+endif::PAM[]
+ifdef::DM[]
+[source]
+----
+set CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk -Dorg.jbpm.server.ext.disabled=true -Dorg.jbpm.ui.server.ext.disabled=true -Dorg.jbpm.case.server.ext.disabled=true
+----
+endif::DM[]
 
-`set "CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk`
-==== 
 . To start JBoss Web Server, enter one of the following commands in the `_JWS_HOME_/tomcat/bin` directory:
 +
 ** On Linux or UNIX-based systems:
