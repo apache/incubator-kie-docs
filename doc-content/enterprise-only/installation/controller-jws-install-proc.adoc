@@ -1,35 +1,21 @@
 [id='controller-jws-install-proc']
-= Installing the {HEADLESS_CONTROLLER}
+= Downloading and installing the {HEADLESS_CONTROLLER}
 
 You can configure {KIE_SERVER} to run in managed or unmanaged mode. If {KIE_SERVER} is unmanaged, you must manually create and maintain KIE containers (deployment units). If {KIE_SERVER} is managed, the {CONTROLLER} manages the {KIE_SERVER} configuration and you interact with the {CONTROLLER} to create and maintain KIE containers.
 
 The {CONTROLLER} is integrated with {CENTRAL}. If you install {CENTRAL}, use the *Execution Server* page to create and maintain KIE containers. However, if you do not install {CENTRAL}, you can install the {HEADLESS_CONTROLLER} and use the REST API or the {KIE_SERVER} Java Client API to interact with it.
 
 .Prerequisites
-* A Red Hat JBoss Web Server 5.0 or higher server installation is available. The base directory of the JBoss Web Server installation is referred to as `__JWS_HOME__`.
+* A Red Hat JBoss Web Server 5.0.1 server installation is available. The base directory of the JBoss Web Server installation is referred to as `__JWS_HOME__`.
 * Sufficient user permissions to complete the installation are granted.
-* The
-ifdef::PAM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip` file is downloaded.
-endif::PAM[]
-ifdef::DM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip` file is downloaded.
-endif::DM[]
-To download this file:
-+
---
-.. Click *Download* next to *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* on the *Product Downloads* page of the https://access.redhat.com[Red Hat Customer Portal].
-.. Unzip the
-ifdef::PAM[]
-`{PRODUCT_FILE}-add-ons.zip` file.
-endif::PAM[]
-ifdef::DM[]
-`{PRODUCT_FILE}-add-ons.zip` file.
-endif::DM[]
-This file is in the unzipped directory.
---
 
 .Procedure
+. Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required), and select the product and version from the drop-down options:
+
+* *Product:* {PRODUCT_SHORT}
+* *Version:* {PRODUCT_VERSION}
+. Download *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (the `{PRODUCT_FILE}-add-ons.zip` file).
+. Unzip the `{PRODUCT_FILE}-add-ons.zip` file. The `{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-ee7.zip` file is in the unzipped directory.
 . Extract the
 ifdef::PAM[]
 `{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip`
@@ -47,7 +33,11 @@ ifdef::DM[]
 endif::DM[]
  directory to the `_JWS_HOME_/tomcat/webapps` directory.
 +
-WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the Red Hat JBoss Web Server instance.
+[NOTE] 
+====
+Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the Red Hat JBoss Web Server instance.
+====
+
 . Remove the `.war` extensions from the `controller.war` folder.
 . Copy the contents of the
 ifdef::PAM[]
@@ -55,7 +45,7 @@ ifdef::PAM[]
 endif::PAM[]
 ifdef::DM[]
 `__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws/SecurityPolicy/`
-endif::DM[]
+endif::DM[] 
  directory to `__JWS_HOME__/bin`. When asked to overwrite files, select *Yes*.
 . Add the `kie-server` role and user to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example,  `<USERNAME>` and `<PASSWORD>` are the user name and password of your choice:
 +
@@ -65,8 +55,11 @@ endif::DM[]
 <user username="<USER_NAME>" password="<PASSWORD>" roles="kie-server"/>
 ----
 
-. In the `_JWS_HOME_/tomcat/bin` directory of the instance running {KIE_SERVER}, create a readable `setenv.sh` file with the following content:
+. Complete one of the following tasks in the `_JWS_HOME_/tomcat/bin` directory of the instance running {KIE_SERVER}:
 +
+* On Linux or UNIX, create the `setenv.sh` file with the following content:
++
+ifdef::PAM[]
 [source]
 ----
 CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk
@@ -76,6 +69,48 @@ CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk
  -Dorg.kie.server.location=http://<HOST>:<PORT>/kie-server/services/rest/server
  -Dorg.kie.server.controller=http://<HOST>:<PORT>/controller/rest/controller"
 ----
+endif::PAM[]
+ifdef::DM[]
+[source]
+----
+CATALINA_OPTS="-Xmx1024m 
+ -Dorg.jbpm.server.ext.disabled=true 
+ -Dorg.jbpm.ui.server.ext.disabled=true 
+ -Dorg.jbpm.case.server.ext.disabled=true 
+ -Dorg.kie.server.controller.user=<CONTROLLER_USER> 
+ -Dorg.kie.server.controller.pwd=<CONTROLLER_PWD> 
+ -Dorg.kie.server.id=<KIE_SERVER_ID>
+ -Dorg.kie.server.location=http://<HOST>:<PORT>/kie-server/services/rest/server
+ -Dorg.kie.server.controller=http://<HOST>:<PORT>/controller/rest/controller"
+----
+endif::DM[]
+* On Windows, add the following content to the `setenv.bat` file:
++
+ifdef::PAM[]
+[source]
+----
+set CATALINA_OPTS=-Xmx1024m -Dorg.jboss.logging.provider=jdk
+ -Dorg.kie.server.controller.user=<CONTROLLER_USER> 
+ -Dorg.kie.server.controller.pwd=<CONTROLLER_PWD> 
+ -Dorg.kie.server.id=<KIE_SERVER_ID>
+ -Dorg.kie.server.location=http://<HOST>:<PORT>/kie-server/services/rest/server
+ -Dorg.kie.server.controller=http://<HOST>:<PORT>/controller/rest/controller
+----
+endif::PAM[]
+ifdef::DM[]
+[source]
+----
+set CATALINA_OPTS= -Xmx1024m 
+ -Dorg.jbpm.server.ext.disabled=true 
+ -Dorg.jbpm.ui.server.ext.disabled=true 
+ -Dorg.jbpm.case.server.ext.disabled=true 
+ -Dorg.kie.server.controller.user=<CONTROLLER_USER> 
+ -Dorg.kie.server.controller.pwd=<CONTROLLER_PWD> 
+ -Dorg.kie.server.id=<KIE_SERVER_ID>
+ -Dorg.kie.server.location=http://<HOST>:<PORT>/kie-server/services/rest/server
+ -Dorg.kie.server.controller=http://<HOST>:<PORT>/controller/rest/controller
+----
+endif::DM[]
 
 . In the `_JWS_HOME_/tomcat/bin` directory of the instance running the {HEADLESS_CONTROLLER}, create a readable `setenv.sh` file with the following content:
 +
