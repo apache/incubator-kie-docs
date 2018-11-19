@@ -1,0 +1,79 @@
+[id='clustering-bc-configure-standalone_proc']
+= Configuring and running {CENTRAL} in a cluster
+Configure the {CENTRAL} cluster with Elasticsearch and the AMQ Broker, then start the cluster. 
+
+[NOTE] 
+====
+These steps describe a basic cluster configuration. For more complex configurations, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.2.beta/html-single/configuration_guide/[_Red Hat JBoss EAP 7.2 Configuration Guide_].
+====
+
+.Prerequisites
+
+* Elasticsearch is installed as described in <<clustering-elasticsearch-proc_{context}>>.
+* {EAP} is installed on each node of the cluster as described in <<clustering-download-eap-bc-proc>>.
+* An NFS server with a mounted partition is available.
+
+.Procedure
+. Open the `_EAP_HOME_/standalone/configuration/standalone-full-ha.xml` file in a text editor.
+. Make the following changes for each server group in the `server-groups` element:
+.. Specify the `server-group name` and `jvm` name.
+.. To enable high availability, change the `profile` to `"full-ha"` and the `socket-binding-group` to `"full-ha-sockets"`.
+.. To prevent {CENTRAL} from running out of memory, increase the JVM maximum heap size to `1500m`.
++
+[source]
+----
+<server-group name="some-server-group" profile="full-ha">
+    <jvm name="some-jvm">
+        <heap size="1000m" max-size="1500m"/>
+    </jvm>
+    <socket-binding-group ref="full-ha-sockets"/>
+</server-group>
+----
+. Edit or add the following properties to the `<system-properties>` element and replace the following placeholders:
+* `<ELASTICSEARCH_NODE_IP>` is the IP addresses where Elasticseach is installed.
+* `<JMS_USER>` is a {EAP} application user. It is the user that {CENTRAL} uses to connect to the  embedded JMS broker. 
+* `<JMS_USER_PASSWORD>` is the password for `<JMS_USER>`.
++
+[source,xml]
+----
+<system-properties>
+  <property name="appformer-jms-connection-mode" value="REMOTE"/>
+  <property name="appformer-jms-username" value="<AMQ_USER>  "/>
+  <property name="appformer-jms-password" value="<AMQ_USER_PASSWORD>"/>
+  <property name="appformer-jms-url" value="tcp://<AMQ_BROKER_IP_ADDRESS>:61616?ha=true&retryInterval=1000&retryIntervalMultiplier=1.0&reconnectAttempts=-1"/>
+  <property name="org.appformer.ext.metadata.elastic.port" value="9300"/>
+  <property name="org.appformer.ext.metadata.elastic.host" 
+      value="<ELASTICSEARCH_NODE_IP>"/>
+  <property name="org.appformer.ext.metadata.elastic.cluster" 
+      value="kie-cluster"/>
+  <property name="org.appformer.ext.metadata.index" value="elastic"/> 
+  <property name="org.appformer.ext.metadata.elastic.retries" value="10"/>
+  <property name="appformer-jms-connection-factory" value="java:/ConnectionFactory"/> 
+  <property name="org.uberfire.nio.git.dir" value="<SHARED_NETWORK_FOLDER>"/>
+</system-properties>
+----
+.  In the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` element, make the following changes:
+.. Replace `<cluster password="${jboss.messaging.cluster.password:CHANGE ME!!}"/>` with `<cluster user="<CLUSTER_USER>" password="<CLUSTER_PWD>"/>` where `<CLUSTER_USER>` is the user used by {EAP} to form a messaging cluster and `<CLUSTER_PWD>` is the password for that user.
+.. In the `security-setting` element , add the role of the `<JMS_USER>` to a new `role-name` element, for example:
++
+[source]
+----
+<security-setting name="#">
+    <role name="guest" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
+    <role name="admin" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
+</security-setting>
+----
+. Save the `standalone-full-ha.xml` file.
+. To start the cluster, navigate to `__EAP_HOME__/bin` and enter one of the following commands:
+** On Linux or UNIX-based systems:
++
+[source,bash]
+----
+$ ./standalone.sh -c standalone-full.xml
+----
+** On Windows:
++
+[source,bash]
+----
+standalone.bat -c standalone-full.xml
+----
