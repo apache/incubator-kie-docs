@@ -1,0 +1,237 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-case-admin-ref_{context}']
+= Case instance administration
+
+//The {KIE_SERVER} REST API supports the following endpoints for case instance administration. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+== [GET] /server/admin/cases/instances
+
+Returns case instances without authentication checks.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`status`
+|Open (`1`), closed (`2`), or cancelled (`3`) case instances (default: `1`, open)
+|Array [integer]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|`sort`
+|Sort column for results
+|String
+|Optional
+
+|`sortOrder`
+|Ascending (`true`) or descending (`false`) sort order for results
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/admin/cases/instances?page=0&pageSize=10&sortOrder=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "instances": [
+    {
+      "case-id": "IT-0000000006",
+      "case-description": "Order for IT hardware",
+      "case-owner": "baAdmin",
+      "case-status": 1,
+      "case-definition-id": "itorders.orderhardware",
+      "container-id": "itorders_1.0.0-SNAPSHOT",
+      "case-started-at": 1540474204152,
+      "case-completed-at": null,
+      "case-completion-msg": "",
+      "case-sla-compliance": 0,
+      "case-sla-due-date": null,
+      "case-file": null,
+      "case-milestones": null,
+      "case-stages": null,
+      "case-roles": null
+    },
+    {
+      "case-id": "IT-0000000007",
+      "case-description": "Order for IT hardware",
+      "case-owner": "baAdmin",
+      "case-status": 1,
+      "case-definition-id": "itorders.orderhardware",
+      "container-id": "itorders_1.0.0-SNAPSHOT",
+      "case-started-at": 1540486490427,
+      "case-completed-at": null,
+      "case-completion-msg": "",
+      "case-sla-compliance": 0,
+      "case-sla-due-date": null,
+      "case-file": null,
+      "case-milestones": null,
+      "case-stages": null,
+      "case-roles": null
+    },
+    {
+      "case-id": "IT-0000000008",
+      "case-description": "Order for IT hardware",
+      "case-owner": "baAdmin",
+      "case-status": 1,
+      "case-definition-id": "itorders.orderhardware",
+      "container-id": "itorders_1.0.0-SNAPSHOT3",
+      "case-started-at": 1540491516562,
+      "case-completed-at": null,
+      "case-completion-msg": "",
+      "case-sla-compliance": 0,
+      "case-sla-due-date": null,
+      "case-file": null,
+      "case-milestones": null,
+      "case-stages": null,
+      "case-roles": null
+    },
+    {
+      "case-id": "IT-0000000009",
+      "case-description": "Order for IT hardware",
+      "case-owner": "baAdmin",
+      "case-status": 1,
+      "case-definition-id": "itorders.orderhardware",
+      "container-id": "itorders_1.0.0-SNAPSHOT4",
+      "case-started-at": 1540492038543,
+      "case-completed-at": null,
+      "case-completion-msg": "",
+      "case-sla-compliance": 0,
+      "case-sla-due-date": null,
+      "case-file": null,
+      "case-milestones": null,
+      "case-stages": null,
+      "case-roles": null
+    },
+    {
+      "case-id": "IT-0000000011",
+      "case-description": "Order for IT hardware",
+      "case-owner": "baAdmin",
+      "case-status": 1,
+      "case-definition-id": "itorders.orderhardware",
+      "container-id": "itorders_1.0.0-SNAPSHOT6",
+      "case-started-at": 1540496734746,
+      "case-completed-at": null,
+      "case-completion-msg": "",
+      "case-sla-compliance": 0,
+      "case-sla-due-date": null,
+      "case-file": null,
+      "case-milestones": null,
+      "case-stages": null,
+      "case-roles": null
+    }
+  ]
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/cases/instances/{caseId}
+
+Migrates a specified case instance to another KIE container and case definition.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the case instance is located
+|String
+|Required
+
+|`caseId`
+|ID of the case instance to be migrated (example: `IT-0000000006`)
+|String
+|Required
+
+|`targetContainerId`
+|ID of the KIE container where the new process definition is located, to which the process instance will be migrated
+|String
+|Required
+
+|*body*
+|A `ProcessMapping` map containing the current and new process definitions (required) and a `NodeMapping` map containing the current and new node IDs (optional) in a `key: value` format (the key is the current process or node and the value is the new process or node)
+|Request body
+|Required
+|===
+
+.Example request body with process mapping (JSON)
+[source,json]
+----
+{
+  "ProcessMapping": {
+    "itorders.orderhardware": "itorders.orderhardware2"
+  },
+  "NodeMapping": {
+    "_CD02ADDD-FDE8-46A9-BFAF-79CD8DA3EA39": "_8E266769-E6A8-4D46-9EEA-D564234BF7E9"
+  }
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "case-id": "IT-0000000006",
+  "case-migration-successful": true,
+  "case-migration-start": {
+    "java.util.Date": 1540526940760
+  },
+  "case-migration-end": {
+    "java.util.Date": 1540526940867
+  },
+  "case-migration-reports": [
+    {
+      "migration-successful": true,
+      "migration-start": {
+        "java.util.Date": 1540526940760
+      },
+      "migration-end": {
+        "java.util.Date": 1540526940863
+      },
+      "migration-logs": [
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Variable instances updated = 2 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Node instances updated = 4 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Process instances updated = 1 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Task variables updated = 6 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Task audit updated = 1 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Tasks updated = 1 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Context info updated = 1 for process instance id 27",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs to be updated  = [0]",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs updated = 1 for node instance id 0",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Task audit updated = 1 for task id 33",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Task updated = 1 for task id 33",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs to be updated  = [1]",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs updated = 1 for node instance id 1",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs to be updated  = [2]",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs updated = 1 for node instance id 2",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs to be updated  = [3]",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Mapping: Node instance logs updated = 1 for node instance id 3",
+        "INFO Fri Oct 26 00:09:00 EDT 2018 Migration of process instance (27) completed successfully to process itorders.orderhardware2"
+      ],
+      "migration-process-instance": 27
+    }
+  ]
+}
+----
