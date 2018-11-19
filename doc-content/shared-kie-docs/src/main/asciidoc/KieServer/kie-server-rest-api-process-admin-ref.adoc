@@ -1,0 +1,851 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-process-admin-ref_{context}']
+= Process instance administration
+
+// The {KIE_SERVER} REST API supports the following endpoints for process instance administration. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+== [GET] /server/admin/containers/{containerId}/processes/errors
+
+Returns all process execution errors for a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the processes reside
+|String
+|Required
+
+|`includeAck`
+|Includes acknowledged errors in returned results when set to `true` (default: `false`)
+|Boolean
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|`sort`
+|Sort column for results
+|String
+|Optional
+
+|`sortOrder`
+|Ascending (`true`) or descending (`false`) sort order for results
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/admin/containers/mortgage-process_1.0.0-SNAPSHOT/processes/errors?includeAck=true&page=0&pageSize=10&sortOrder=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "error-instance": [
+    {
+      "id": "54b04160-6242-475d-9452-0df3678123b0",
+      "type": "Process",
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "process-instance-id": 4,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "activity-id": 12,
+      "activity-name": "Validation",
+      "job-id": null,
+      "error-msg": "[Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- null",
+      "error": null,
+      "acknowledged": false,
+      "acknowledged-by": null,
+      "acknowledged-at": null,
+      "error-date": 1539627373788
+    },
+    {
+      "id": "a7982044-019d-4d4a-be3f-781f4ddca1df",
+      "type": "Process",
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "process-instance-id": 4,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "activity-id": 12,
+      "activity-name": "Validation",
+      "job-id": null,
+      "error-msg": "[Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- null",
+      "error": null,
+      "acknowledged": false,
+      "acknowledged-by": null,
+      "acknowledged-at": null,
+      "error-date": 1539627364193
+    }
+  ]
+}
+----
+
+== [GET] /server/admin/containers/{containerId}/processes/errors/{errorId}
+
+Returns information about a specified process execution error.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the processes reside
+|String
+|Required
+
+|`errorId`
+|ID of process execution error to be retrieved
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "id": "54b04160-6242-475d-9452-0df3678123b0",
+  "type": "Process",
+  "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+  "process-instance-id": 4,
+  "process-id": "Mortgage_Process.MortgageApprovalProcess",
+  "activity-id": 12,
+  "activity-name": "Validation",
+  "job-id": null,
+  "error-msg": "[Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- null",
+  "error": "org.jbpm.workflow.instance.WorkflowRuntimeException: [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- null\n\tat org.jbpm.workflow.instance.node.RuleSetNodeInstance.handleException(RuleSetNodeInstance.java:207)\n\tat org.jbpm.workflow.instance.node.RuleSetNodeInstance.internalTrigger(RuleSetNodeInstance.java:187)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.trigger(NodeInstanceImpl.java:192)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.triggerNodeInstance(NodeInstanceImpl.java:386)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.triggerCompleted(NodeInstanceImpl.java:345)\n\tat org.jbpm.workflow.instance.node.JoinInstance.triggerCompleted(JoinInstance.java:272)\n\tat org.jbpm.workflow.instance.node.JoinInstance.internalTrigger(JoinInstance.java:62)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.trigger(NodeInstanceImpl.java:192)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.triggerNodeInstance(NodeInstanceImpl.java:386)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.triggerCompleted(NodeInstanceImpl.java:345)\n\tat org.jbpm.workflow.instance.impl.ExtendedNodeInstanceImpl.triggerCompleted(ExtendedNodeInstanceImpl.java:44)\n\tat  org.drools.persistence.jpa.processinstance.JPAWorkItemManager.completeWorkItem(JPAWorkItemManager.java:167)\n\tat org.drools.core.command.runtime.process.CompleteWorkItemCommand.execute(CompleteWorkItemCommand.java:75)\n\tat org.drools.core.command.runtime.process.CompleteWorkItemCommand.execute(CompleteWorkItemCommand.java:35)\n\tat org.drools.core.fluent.impl.PseudoClockRunner.executeBatch(PseudoClockRunner.java:102)\n\tat org.drools.core.fluent.impl.PseudoClockRunner.executeBatches(PseudoClockRunner.java:69)\n\tat org.drools.core.fluent.impl.PseudoClockRunner.execute(PseudoClockRunner.java:61)\n\tat org.drools.core.fluent.impl.PseudoClockRunner.execute(PseudoClockRunner.java:39)\n\tat org.drools.core.command.impl.AbstractInterceptor.executeNext(AbstractInterceptor.java:39)\n\tat org.drools.persistence.PersistableRunner$TransactionInterceptor.execute(PersistableRunner.java:597)\n\tat org.drools.persistence.PersistableRunner$TransactionInterceptor.execute(PersistableRunner.java:563)\n\tat org.drools.core.command.impl.AbstractInterceptor.executeNext(AbstractInterceptor.java:39)\n\tat  org.jbpm.runtime.manager.impl.error.ExecutionErrorHandlerInterceptor.internalExecute(ExecutionErrorHandlerInterceptor.java:66)\n\tat org.jbpm.runtime.manager.impl.error.ExecutionErrorHandlerInterceptor.execute(ExecutionErrorHandlerInterceptor.java:52)\n\tat org.jbpm.runtime.manager.impl.error.ExecutionErrorHandlerInterceptor.execute(ExecutionErrorHandlerInterceptor.java:29)\n\tat  org.jbpm.kie.services.impl.ProcessServiceImpl.completeWorkItem(ProcessServiceImpl.java:544)\n\tat org.kie.server.services.jbpm.ProcessServiceBase.completeWorkItem(ProcessServiceBase.java:299)\n\tat org.kie.server.remote.rest.jbpm.ProcessResource.completeWorkItem(ProcessResource.java:531)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\n\tat java.lang.reflect.Method.invoke(Method.java:498)\n\tat org.jboss.resteasy.core.MethodInjectorImpl.invoke(MethodInjectorImpl.java:140)\n\tat org.jboss.resteasy.core.ResourceMethodInvoker.invokeOnTarget(ResourceMethodInvoker.java:295)\n\tat org.jboss.resteasy.core.ResourceMethodInvoker.invoke(ResourceMethodInvoker.java:249)\n\tat org.jboss.resteasy.core.ResourceMethodInvoker.invoke(ResourceMethodInvoker.java:236)\n\tat org.jboss.resteasy.core.SynchronousDispatcher.invoke(SynchronousDispatcher.java:406)\n\tat org.jboss.resteasy.core.SynchronousDispatcher.invoke(SynchronousDispatcher.java:213)\n\tat org.jboss.resteasy.plugins.server.servlet.ServletContainerDispatcher.service(ServletContainerDispatcher.java:228)\n\tat org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher.service(HttpServletDispatcher.java:56)\n\tat org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher.service(HttpServletDispatcher.java:51)\n\tat javax.servlet.http.HttpServlet.service(HttpServlet.java:790)\n\tat io.undertow.servlet.handlers.ServletHandler.handleRequest(ServletHandler.java:85)\n\tat io.undertow.servlet.handlers.security.ServletSecurityRoleHandler.handleRequest(ServletSecurityRoleHandler.java:62)\n\tat io.undertow.servlet.handlers.ServletDispatchingHandler.handleRequest(ServletDispatchingHandler.java:36)\n\tat org.wildfly.extension.undertow.security.SecurityContextAssociationHandler.handleRequest(SecurityContextAssociationHandler.java:78)\n\tat  org.wildfly.extension.undertow.deployment.UndertowDeploymentInfoService$UndertowThreadSetupAction.lambda$create$0(UndertowDeploymentInfoService.java:1508)\n\tat io.undertow.servlet.handlers.ServletInitialHandler.dispatchRequest(ServletInitialHandler.java:272)\n\tat io.undertow.servlet.handlers.ServletInitialHandler.access$000(ServletInitialHandler.java:81)\n\tat io.undertow.servlet.handlers.ServletInitialHandler$1.handleRequest(ServletInitialHandler.java:104)\n\tat io.undertow.server.Connectors.executeRootHandler(Connectors.java:326)\n\tat io.undertow.server.HttpServerExchange$1.run(HttpServerExchange.java:812)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1142)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:617)\n\tat java.lang.Thread.run(Thread.java:748)\nCaused by:  com.myspace.mortgage_app.Process_com$u46$myspace$u46$mortgage_app$u46$MortgageApprovalProcess498606034.action0(Process_com$u46$myspace$u46$mortgage_app$u46$MortgageApprovalProcess498606034.java:10)\n\tat com.myspace.mortgage_app.Process_com$u46$myspace$u46$mortgage_app$u46$MortgageApprovalProcess498606034Action0Invoker.execute(Process_com$u46$myspace$u46$mortgage_app$u46$MortgageApprovalProcess498606034Action0Invoker.java:15)\n\tat org.jbpm.workflow.instance.impl.NodeInstanceImpl.executeAction(NodeInstanceImpl.java:219)\n\t... 105 more\n",
+  "acknowledged": false,
+  "acknowledged-by": null,
+  "acknowledged-at": null,
+  "error-date": 1539627373788
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/processes/errors/{errorId}
+
+Acknowledges a specified process execution error (sets `acknowledged` to `true` for the error).
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the processes reside
+|String
+|Required
+
+|`errorId`
+|ID of process execution error to be acknowledged
+|String
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Error 54b04160-6242-475d-9452-0df3678123b0 successfully acknowledged."
+    }
+  ]
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/processes/errors
+
+Acknowledges multiple process execution errors (sets `acknowledged` to `true` for the errors).
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the processes reside
+|String
+|Required
+
+|`errorId`
+|IDs of process execution errors to be acknowledged
+|Array [string]
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Errors 54b04160-6242-475d-9452-0df3678123b0, 3a72099c-fb62-40d2-bb46-b30d1930757c, 5012d328-74b9-4ca4-ba48-fe900b868c08 successfully acknowledged."
+    }
+  ]
+}
+----
+
+== [GET] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/errors
+
+Returns all process execution errors for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the processes reside
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the errors
+|Integer
+|Required
+
+|`includeAck`
+|Includes acknowledged errors in returned results when set to `true` (default: `false`)
+|Boolean
+|Optional
+
+|`node`
+|Name of a node in the process instance by which to filter errors
+|String
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|`sort`
+|Sort column for results
+|String
+|Optional
+
+|`sortOrder`
+|Ascending (`true`) or descending (`false`) sort order for results
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/admin/containers/mortgage-process_1.0.0-SNAPSHOT/processes/instances/4/errors?includeAck=false&page=0&pageSize=10&sortOrder=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "error-instance": [
+    {
+      "id": "54b04160-6242-475d-9452-0df3678123b0",
+      "type": "Process",
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "process-instance-id": 4,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "activity-id": 12,
+      "activity-name": "Validation",
+      "job-id": null,
+      "error-msg": "[Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- null",
+      "error": null,
+      "acknowledged": false,
+      "acknowledged-by": null,
+      "acknowledged-at": null,
+      "error-date": 1539627373788
+    },
+    {
+      "id": "a7982044-019d-4d4a-be3f-781f4ddca1df",
+      "type": "Process",
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "process-instance-id": 4,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "activity-id": 12,
+      "activity-name": "Validation",
+      "job-id": null,
+      "error-msg": "[Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- [Mortgage_Process.MortgageApprovalProcess:4 - Validation:3] -- null",
+      "error": null,
+      "acknowledged": false,
+      "acknowledged-by": null,
+      "acknowledged-at": null,
+      "error-date": 1539627364193
+    }
+  ]
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}
+
+Migrates a specified process instance to a process definition in another KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance to be migrated
+|Integer
+|Required
+
+|`targetContainerId`
+|ID of the KIE container where the new process definition is located, to which the process instance will be migrated
+|String
+|Required
+
+|`targetProcessId`
+|ID of the new process definition to which the process instance will be migrated
+|String
+|Required
+
+|*body*
+|Optional map containing node IDs of the current and new process definitions in a `key: value` format (the key is the current node ID and the value is the new node ID)
+|Request body
+|Optional
+|===
+
+.Example request body with optional node mapping (JSON)
+[source,json]
+----
+{
+  "_CD02ADDD-FDE8-46A9-BFAF-79CD8DA3EA39": "_8E266769-E6A8-4D46-9EEA-D564234BF7E9"
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "migration-successful": true,
+  "migration-start": "2018-10-15T15:12:47.194Z",
+  "migration-end": "2018-10-15T15:12:47.194Z",
+  "migration-logs": [
+    "15-Oct-2018 15:56:23: StartNode () - Human\n15-Oct-2018 15:56:23: Join () - System\n15-Oct-2018 15:56:23: RuleSetNode (Validation) - System\n15-Oct-2018 15:56:23: Split () - System\n15-Oct-2018 15:56:23: RuleSetNode (Retract Validation) - System\n15-Oct-2018 15:56:23: HumanTaskNode (Correct Data) - System\n15-Oct-2018 15:56:23: RuleSetNode (Retract Validation) Completed - System\n15-Oct-2018 15:56:23: Split () Completed - System\n15-Oct-2018 15:56:23: RuleSetNode (Validation) Completed - System\n15-Oct-2018 15:56:23: Join () Completed - System\n15-Oct-2018 15:56:23: StartNode () Completed - System"
+  ],
+  "migration-process-instance": 4
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/processes/instances
+
+Migrates multiple process instances to process definition in another KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instances reside
+|String
+|Required
+
+|`processInstanceId`
+|IDs of the process instances to be migrated
+|Array [integer]
+|Required
+
+|`targetContainerId`
+|ID of the KIE container where the new process definition is located, to which the process instances will be migrated
+|String
+|Required
+
+|`targetProcessId`
+|ID of the new process definition to which the process instances will be migrated
+|String
+|Required
+
+|*body*
+|Optional map containing node IDs of the current and new process definitions in a `key: value` format (the key is the current node ID and the value is the new node ID)
+|Request body
+|Optional
+|===
+
+.Example request body with optional node mapping (JSON)
+[source,json]
+----
+{
+  "_CD02ADDD-FDE8-46A9-BFAF-79CD8DA3EA39": "_8E266769-E6A8-4D46-9EEA-D564234BF7E9",
+  "_5DBEB9C6-1B5D-4D1E-99A8-12B66B42FFB0": "_CD02ADDD-FDE8-46A9-BFAF-79CD8DA3EA39"
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "migration-report-instance": [
+    {
+      "migration-successful": true,
+      "migration-start": "2018-10-15T15:12:47.194Z",
+      "migration-end": "2018-10-15T15:13:17.202Z",
+      "migration-logs": [
+        "15-Oct-2018 15:56:23: StartNode () - Human\n15-Oct-2018 15:56:23: Join () - System\n15-Oct-2018 15:56:23: RuleSetNode (Validation) - System\n15-Oct-2018 15:56:23: Split () - System\n15-Oct-2018 15:56:23: RuleSetNode (Retract Validation) - System\n15-Oct-2018 15:56:23: HumanTaskNode (Correct Data) - System\n15-Oct-2018 15:56:23: RuleSetNode (Retract Validation) Completed - System\n15-Oct-2018 15:56:23: Split () Completed - System\n15-Oct-2018 15:56:23: RuleSetNode (Validation) Completed - System\n15-Oct-2018 15:56:23: Join () Completed - System\n15-Oct-2018 15:56:23: StartNode () Completed - System"
+      ],
+      "migration-process-instance": 5
+    },
+    {
+      "migration-successful": true,
+      "migration-start": "2018-10-15T15:13:17.202Z",
+      "migration-end": "2018-10-15T15:13:47.194Z",
+      "migration-logs": [
+        "15-Oct-2018 15:56:23: StartNode () - Human\n15-Oct-2018 15:56:23: Join () - System\n15-Oct-2018 15:56:23: RuleSetNode (Validation) - System\n15-Oct-2018 15:56:23: Split () - System\n15-Oct-2018 15:56:23: RuleSetNode (Retract Validation) - System\n15-Oct-2018 15:56:23: HumanTaskNode (Correct Data) - System\n15-Oct-2018 15:56:23: RuleSetNode (Retract Validation) Completed - System\n15-Oct-2018 15:56:23: Split () Completed - System\n15-Oct-2018 15:56:23: RuleSetNode (Validation) Completed - System\n15-Oct-2018 15:56:23: Join () Completed - System\n15-Oct-2018 15:56:23: StartNode () Completed - System"
+      ],
+      "migration-process-instance": 6
+    }
+  ]
+}
+----
+
+== [GET] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/nodes
+
+Returns all nodes in a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the nodes
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-node": [
+    {
+      "name": "",
+      "id": 1,
+      "type": "StartNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "",
+      "id": 2,
+      "type": "Join",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Validation",
+      "id": 3,
+      "type": "RuleSetNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "",
+      "id": 4,
+      "type": "Split",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Retract Validation",
+      "id": 5,
+      "type": "RuleSetNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Correct Data",
+      "id": 6,
+      "type": "HumanTaskNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Mortgage Calculation",
+      "id": 7,
+      "type": "RuleSetNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Qualify",
+      "id": 8,
+      "type": "HumanTaskNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "",
+      "id": 9,
+      "type": "Split",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Final Approval",
+      "id": 10,
+      "type": "HumanTaskNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "",
+      "id": 11,
+      "type": "EndNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "Increase Down Payment",
+      "id": 12,
+      "type": "HumanTaskNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "",
+      "id": 13,
+      "type": "Split",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    },
+    {
+      "name": "",
+      "id": 14,
+      "type": "EndNode",
+      "process-id": "Mortgage_Process.MortgageApprovalProcess"
+    }
+  ]
+}
+----
+
+== [POST] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/nodes/{nodeId}
+
+Triggers a specified node for a specified process instance. If the node is not active in the process instance, it becomes active upon triggering.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the node to be triggered
+|Integer
+|Required
+
+|`nodeId`
+|ID of the node to be triggered
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Node instance _011ED858-F841-4C44-B0F1-F3BE388ADDA5 successfully triggered."
+    }
+  ]
+}
+----
+
+== [GET] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/nodeinstances
+
+Returns all the active node instances in a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the node instances to be retrieved
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "node-instance": [
+    {
+      "node-instance-id": 5,
+      "node-name": "Correct Data",
+      "process-instance-id": 7,
+      "work-item-id": 8,
+      "container-id": "mortgage-process2",
+      "start-date": {
+        "java.util.Date": 1539633383354
+      },
+      "node-id": "_011ED858-F841-4C44-B0F1-F3BE388ADDA5",
+      "node-type": "HumanTaskNode",
+      "node-connection": "_1F34AA4D-E174-470F-85E7-F7CA0D5F3C0D",
+      "node-completed": false,
+      "reference-id": null,
+      "sla-compliance": 0,
+      "sla-due-date": null
+    }
+  ]
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/nodes/{nodeInstanceId}
+
+Re-triggers a specified node instance for a specified process instance. If the node is not active in the process instance, it becomes active upon re-triggering.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the node to be triggered
+|Integer
+|Required
+
+|`nodeInstanceId`
+|ID of the node instance to be triggered
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Node instance 5 successfully triggered."
+    }
+  ]
+}
+----
+
+== [DELETE] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/nodeinstances/{nodeInstanceId}
+
+Aborts a specified node instance within a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the node to be triggered
+|Integer
+|Required
+
+|`nodeInstanceId`
+|ID of the node instance to be aborted
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Node instance 5 successfully disposed."
+    }
+  ]
+}
+----
+
+== [GET] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/timers
+
+Returns all timers for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the timers to be retrieved
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "timer-instance": [
+    {
+      "name": "MyTimer",
+      "id": 1,
+      "activation-time": "2018-10-18T04:49:28.907Z",
+      "last-fire-time": "2018-10-18T04:49:28.907Z",
+      "next-fire-time": "2018-10-18T04:49:28.907Z",
+      "delay": 35000,
+      "period": 500000,
+      "repeat-limit": 2,
+      "process-instance-id": 6,
+      "session-id": 9
+    }
+  ]
+}
+----
+
+== [PUT] /server/admin/containers/{containerId}/processes/instances/{processInstanceId}/timers/{timerId}
+
+Updates a specified timer for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the timer to be updated
+|Integer
+|Required
+
+|`timerId`
+|ID of the timer to be updated
+|Integer
+|Required
+
+|`relative`
+|Sets the time expression relative to the current date when set to `true` (default: `true`)
+|String
+|Optional
+
+|*body*
+|Map containing `delay`, `period`, or `repeat-limit` timer values in a `key: value` format
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "delay": 35000,
+  "period": 500000,
+  "repeat-limit": 2
+}
+----
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Timer 1 successfully updated."
+    }
+  ]
+}
+----
