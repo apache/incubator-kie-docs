@@ -1,0 +1,694 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-custom-queries-ref_{context}']
+= Custom queries
+////
+The {KIE_SERVER} REST API supports the following endpoints for custom queries. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+[IMPORTANT]
+====
+Some custom query requests to the {KIE_SERVER} REST API require a query `mapper` definition to map the query results to concrete objects. You can implement your own query result mappers or use the mappers provided with {PRODUCT}. The query mappers in {PRODUCT} are similar to other object-relational mapping (ORM) providers, such as Hibernate, which maps tables to entities. For example, you can use the `org.jbpm.kie.services.impl.query.mapper.ProcessInstanceQueryMapper`, also registered as `ProcessInstances`, in custom query endpoints for returning process instance data.
+
+Example POST endpoint with `ProcessInstances` mapper parameter:
+----
+http://localhost:8080/kie-server/services/rest/server/queries/definitions/jbpmProcessInstances?mapper=ProcessInstances
+----
+
+For a list of available query mappers in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-kie-services/src/main/java/org/jbpm/kie/services/impl/query/mapper`.
+====
+
+*<@Maciej/@Tiho: Are there any dependency-related or other prerequisites for using query service and custom queries with the REST API? I know there are when using the Java client API for example.>*
+////
+
+== [GET] /server/queries/definitions
+
+Returns all custom query definitions.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "queries": [
+    {
+      "query-name": "tasksMonitoring",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select p.processName, p.externalId, t.taskId, t.taskName, t.status, t.createdDate, t.startDate, t.endDate, t.processInstanceId, t.userId, t.duration from ProcessInstanceLog p inner join BAMTaskSummary t on (t.processInstanceId = p.processInstanceId) inner join (select min(pk) as pk from BAMTaskSummary group by taskId) d on t.pk = d.pk",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmExecutionErrorList",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select eri.ERROR_ACK, eri.ERROR_ACK_BY, eri.ERROR_ACK_AT, eri.ACTIVITY_ID, eri.ACTIVITY_NAME, eri.DEPLOYMENT_ID, eri.ERROR_DATE, eri.ERROR_ID, eri.ERROR_MSG, eri.JOB_ID, eri.PROCESS_ID, eri.PROCESS_INST_ID, eri.ERROR_TYPE from ExecutionErrorInfo eri",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmRequestList",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select ri.id, ri.timestamp, ri.status, ri.commandName, ri.message, ri.businessKey, ri.retries, ri.executions, pil.processName, pil.processInstanceId, pil.processInstanceDescription, ri.deploymentId from RequestInfo ri left join ProcessInstanceLog pil on pil.processInstanceId=ri.processInstanceId",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmHumanTasksWithVariables",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select tvi.taskId, (select ati.name from AuditTaskImpl ati where ati.taskId = tvi.taskId) as \"TASKNAME\", tvi.name, tvi.value from TaskVariableImpl tvi",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmHumanTasks",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select t.activationTime, t.actualOwner, t.createdBy, t.createdOn, t.deploymentId, t.description, t.dueDate, t.name, t.parentId, t.priority, t.processId, t.processInstanceId, t.processSessionId, t.status, t.taskId, t.workItemId, t.lastModificationDate, pil.correlationKey, pil.processInstanceDescription from AuditTaskImpl t left join ProcessInstanceLog pil on pil.id=t.processInstanceId",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmHumanTasksWithUser",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select t.activationTime, t.actualOwner, t.createdBy, t.createdOn, t.deploymentId, t.description, t.dueDate, t.name, t.parentId, t.priority, t.processId, t.processInstanceId, t.processSessionId, t.status, t.taskId, t.workItemId, t.lastModificationDate, pil.correlationKey, pil.processInstanceDescription , oe.id, eo.entity_id from AuditTaskImpl t left join PeopleAssignments_PotOwners po on t.taskId=po.task_id left join OrganizationalEntity oe on po.entity_id=oe.id left join ProcessInstanceLog pil on pil.id=t.processInstanceId left join PeopleAssignments_ExclOwners eo on t.taskId=eo.task_id",
+      "query-target": "FILTERED_PO_TASK",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmProcessInstances",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select log.processInstanceId, log.processId, log.start_date, log.end_date, log.status, log.parentProcessInstanceId, log.outcome, log.duration, log.user_identity, log.processVersion, log.processName, log.correlationKey, log.externalId, log.processInstanceDescription, log.sla_due_date, log.slaCompliance, COALESCE(info.lastModificationDate, log.end_date) as lastModificationDate, (select COUNT(errInfo.id) from ExecutionErrorInfo errInfo where errInfo.process_inst_id=log.processInstanceId and errInfo.error_ack=0) as errorCount from ProcessInstanceLog log left join ProcessInstanceInfo info on info.InstanceId=log.processInstanceId",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "processesMonitoring",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select log.processInstanceId, log.processId, log.start_date, log.end_date, log.status, log.duration, log.user_identity, log.processVersion, log.processName, log.externalId from ProcessInstanceLog log",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmProcessInstancesWithVariables",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select vil.processInstanceId, vil.processId, vil.id, vil.variableId, vil.value from VariableInstanceLog vil where vil.id in (select MAX(v.id) from VariableInstanceLog v group by v.variableId, v.processInstanceId)",
+      "query-target": "CUSTOM",
+      "query-columns": {}
+    },
+    {
+      "query-name": "jbpmHumanTasksWithAdmin",
+      "query-source": "java:jboss/datasources/ExampleDS",
+      "query-expression": "select t.activationTime, t.actualOwner, t.createdBy, t.createdOn, t.deploymentId, t.description, t.dueDate, t.name, t.parentId, t.priority, t.processId, t.processInstanceId, t.processSessionId, t.status, t.taskId, t.workItemId, t.lastModificationDate, pil.correlationKey, pil.processInstanceDescription ,oe.id,  (select COUNT(errInfo.id) from ExecutionErrorInfo errInfo where errInfo.activity_id = t.taskId and errInfo.process_inst_id = pil.processInstanceId and errInfo.error_ack = 0 and errInfo.error_type = 'Task') as errorCount from AuditTaskImpl t  left join ProcessInstanceLog pil on pil.id = t.processInstanceId left join PeopleAssignments_BAs ba on t.taskId = ba.task_id left join OrganizationalEntity oe on ba.entity_id = oe.id",
+      "query-target": "FILTERED_BA_TASK",
+      "query-columns": {}
+    }
+  ]
+}
+----
+
+== [GET] /server/queries/definitions/{queryName}
+
+Returns information about a specified custom query.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`queryName`
+|Name of the custom query to be retrieved
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "query-name": "jbpmProcessInstances",
+  "query-source": "java:jboss/datasources/ExampleDS",
+  "query-expression": "select log.processInstanceId, log.processId, log.start_date, log.end_date, log.status, log.parentProcessInstanceId, log.outcome, log.duration, log.user_identity, log.processVersion, log.processName, log.correlationKey, log.externalId, log.processInstanceDescription, log.sla_due_date, log.slaCompliance, COALESCE(info.lastModificationDate, log.end_date) as lastModificationDate, (select COUNT(errInfo.id) from ExecutionErrorInfo errInfo where errInfo.process_inst_id=log.processInstanceId and errInfo.error_ack=0) as errorCount from ProcessInstanceLog log left join ProcessInstanceInfo info on info.InstanceId=log.processInstanceId",
+  "query-target": "CUSTOM",
+  "query-columns": {
+    "ERRORCOUNT": "NUMBER",
+    "SLACOMPLIANCE": "NUMBER",
+    "OUTCOME": "LABEL",
+    "USER_IDENTITY": "LABEL",
+    "END_DATE": "DATE",
+    "START_DATE": "DATE",
+    "PROCESSNAME": "LABEL",
+    "PROCESSINSTANCEID": "NUMBER",
+    "STATUS": "NUMBER",
+    "PARENTPROCESSINSTANCEID": "NUMBER",
+    "PROCESSINSTANCEDESCRIPTION": "LABEL",
+    "SLA_DUE_DATE": "DATE",
+    "PROCESSVERSION": "LABEL",
+    "LASTMODIFICATIONDATE": "DATE",
+    "CORRELATIONKEY": "LABEL",
+    "PROCESSID": "LABEL",
+    "DURATION": "NUMBER",
+    "EXTERNALID": "LABEL"
+  }
+}
+----
+
+== [POST] /server/queries/definitions/{queryName}
+
+Registers a custom query definition.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`queryName`
+|Name of the custom query to be registered
+|String
+|Required
+
+|*body*
+|Map containing the `query-name`, `query-source`, `query-expression`, `query-target`, and any other components of the new query definition
+|Request body
+|Required
+
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "query-name": "jbpmProcessInstancesWithVariables1",
+  "query-source": "java:jboss/datasources/ExampleDS",
+  "query-expression": "select vil.processInstanceId, vil.processId, vil.id, vil.variableId, vil.value from VariableInstanceLog vil where vil.id in (select MAX(v.id) from VariableInstanceLog v group by v.variableId, v.processInstanceId)",
+  "query-target": "CUSTOM"
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+
+{
+  "query-name": "jbpmProcessInstancesWithVariables1",
+  "query-source": "java:jboss/datasources/ExampleDS",
+  "query-expression": "select vil.processInstanceId, vil.processId, vil.id, vil.variableId, vil.value from VariableInstanceLog vil where vil.id in (select MAX(v.id) from VariableInstanceLog v group by v.variableId, v.processInstanceId)",
+  "query-target": "CUSTOM",
+  "query-columns": {
+    "PROCESSINSTANCEID": "NUMBER",
+    "VARIABLEID": "LABEL",
+    "ID": "NUMBER",
+    "VALUE": "LABEL",
+    "PROCESSID": "LABEL"
+  }
+}
+----
+
+== [PUT] /server/queries/definitions/{queryName}
+
+Replaces existing custom query definition or registers it as new if the query does not already exist.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`queryName`
+|Name of the custom query to be updated or registered
+|String
+|Required
+
+|*body*
+|Map containing the `query-name`, `query-source`, `query-expression`, `query-target`, and any other components of the query definition
+|Request body
+|Required
+
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "query-name": "jbpmProcessInstancesWithVariables1",
+  "query-source": "java:jboss/datasources/ExampleDS",
+  "query-expression": "select vil.processInstanceId, vil.processId, vil.id, vil.variableId, vil.value from VariableInstanceLog vil where vil.id in (select MAX(v.id) from VariableInstanceLog v group by v.variableId, v.processInstanceId)",
+  "query-target": "CUSTOM"
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+
+{
+  "query-name": "jbpmProcessInstancesWithVariables1",
+  "query-source": "java:jboss/datasources/ExampleDS",
+  "query-expression": "select vil.processInstanceId, vil.processId, vil.id, vil.variableId, vil.value from VariableInstanceLog vil where vil.id in (select MAX(v.id) from VariableInstanceLog v group by v.variableId, v.processInstanceId)",
+  "query-target": "CUSTOM",
+  "query-columns": {
+    "PROCESSINSTANCEID": "NUMBER",
+    "VARIABLEID": "LABEL",
+    "ID": "NUMBER",
+    "VALUE": "LABEL",
+    "PROCESSID": "LABEL"
+  }
+}
+----
+
+== [DELETE] /server/queries/definitions/{queryName}
+
+Deletes a specified custom query.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`queryName`
+|Name of the custom query to be deleted
+|String
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Query jbpmProcessInstancesWithVariables1 successfully deleted."
+    }
+  ]
+}
+----
+
+== [GET] /server/queries/definitions/{queryName}/data
+
+Returns the results of a specified custom query.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`queryName`
+|Name of the custom query to be executed
+|String
+|Required
+
+|`mapper`
+|Name of a query mapper for transforming query results (such as `ProcessInstances` and `UserTasks` query mappers in {PRODUCT})
+|String
+|Required
+
+|`orderBy`
+|Order by which to display results, relevant to the result content (such as by `processInstanceId`, `date`, or `country` )
+|String
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+NOTE: For a list of available query mappers in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-kie-services/src/main/java/org/jbpm/kie/services/impl/query/mapper`.
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/queries/definitions/jbpmProcessInstances/data?mapper=ProcessInstances&orderBy=processInstanceId&page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-instance": [
+    {
+      "process-instance-id": 6,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "process-name": "MortgageApprovalProcess",
+      "process-version": "1.0",
+      "process-instance-state": 1,
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1539631842939
+      },
+      "process-instance-desc": "MortgageApprovalProcess",
+      "correlation-key": "6",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 7,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "process-name": "MortgageApprovalProcess",
+      "process-version": "1.0",
+      "process-instance-state": 1,
+      "container-id": "mortgage-process2",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1539633383332
+      },
+      "process-instance-desc": "MortgageApprovalProcess",
+      "correlation-key": "7",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 8,
+      "process-id": "Mortgage_Process.MortgageApprovalProcess",
+      "process-name": "MortgageApprovalProcess",
+      "process-version": "1.0",
+      "process-instance-state": 1,
+      "container-id": "mortgage-process4",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1539838159017
+      },
+      "process-instance-desc": "MortgageApprovalProcess",
+      "correlation-key": "8",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 15,
+      "process-id": "evaluation",
+      "process-name": "Evaluation",
+      "process-version": "1",
+      "process-instance-state": 1,
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1540228047674
+      },
+      "process-instance-desc": "Evaluation",
+      "correlation-key": "15",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 16,
+      "process-id": "evaluation",
+      "process-name": "Evaluation",
+      "process-version": "1",
+      "process-instance-state": 1,
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1540298693665
+      },
+      "process-instance-desc": "Evaluation",
+      "correlation-key": "16",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    }
+  ]
+}
+----
+
+== [POST] /server/queries/definitions/{queryName}/filtered-data
+
+Returns the results of a specified custom query and filters the results based on a provided builder or filter request body.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`queryName`
+|Name of the custom query to be executed
+|String
+|Required
+
+|`mapper`
+|Name of a query mapper for transforming query results (such as `ProcessInstances` and `UserTasks` query mappers in {PRODUCT})
+|String
+|Required
+
+|`builder`
+|Name of a predefined `QueryParamBuilder` class for defining query filters (such as `UserTask` builder in {PRODUCT})
+|String
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|*body*
+|Map containing parameters and values by which to filter query results
+|Request body
+|Optional
+|===
+
+NOTE: For a list of available query mappers and builders in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-kie-services/src/main/java/org/jbpm/kie/services/impl/query/mapper` and `~/jbpm-$VERSION/jbpm-services/jbpm-kie-services/src/main/java/org/jbpm/kie/services/impl/query/builder`.
+
+.Example request body with data filters (JSON)
+[source,json]
+----
+{
+  "order-by": "processInstanceId",
+  "order-asc": true,
+  "query-params": [
+    {
+      "cond-column": "processInstanceId",
+      "cond-operator": "BETWEEN",
+      "cond-values": [
+        10,
+        20
+      ]
+    }
+  ],
+  "result-column-mapping": null,
+  "order-by-clause": null
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-instance": [
+    {
+      "process-instance-id": 15,
+      "process-id": "evaluation",
+      "process-name": "Evaluation",
+      "process-version": "1",
+      "process-instance-state": 1,
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1540228047674
+      },
+      "process-instance-desc": "Evaluation",
+      "correlation-key": "15",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 16,
+      "process-id": "evaluation",
+      "process-name": "Evaluation",
+      "process-version": "1",
+      "process-instance-state": 1,
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1540298693665
+      },
+      "process-instance-desc": "Evaluation",
+      "correlation-key": "16",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    }
+  ]
+}
+----
+
+== [POST] /server/queries/definitions/containers/{containerId}/query/{queryName}/filtered-data
+
+Returns the results of a specified custom query on a specified KIE container and filters the results based on a provided builder or filter request body.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of KIE container on which you are executing the query
+|String
+|Required
+
+|`queryName`
+|Name of the custom query to be executed
+|String
+|Required
+
+|`mapper`
+|Name of a query mapper for transforming query results (such as `ProcessInstances` and `UserTasks` query mappers in {PRODUCT})
+|String
+|Required
+
+|`builder`
+|Name of a predefined `QueryParamBuilder` class for defining query filters (such as `UserTask` builder in {PRODUCT})
+|String
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|*body*
+|Map containing parameters and values by which to filter query results
+|Request body
+|Optional
+|===
+
+NOTE: For a list of available query mappers and builders in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-kie-services/src/main/java/org/jbpm/kie/services/impl/query/mapper` and `~/jbpm-$VERSION/jbpm-services/jbpm-kie-services/src/main/java/org/jbpm/kie/services/impl/query/builder`.
+
+.Example request body with data filters (JSON)
+[source,json]
+----
+{
+  "order-by": "processInstanceId",
+  "order-asc": true,
+  "query-params": [
+    {
+      "cond-column": "processInstanceId",
+      "cond-operator": "BETWEEN",
+      "cond-values": [
+        10,
+        20
+      ]
+    }
+  ],
+  "result-column-mapping": null,
+  "order-by-clause": null
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-instance": [
+    {
+      "process-instance-id": 15,
+      "process-id": "evaluation",
+      "process-name": "Evaluation",
+      "process-version": "1",
+      "process-instance-state": 1,
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1540228047674
+      },
+      "process-instance-desc": "Evaluation",
+      "correlation-key": "15",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 16,
+      "process-id": "evaluation",
+      "process-name": "Evaluation",
+      "process-version": "1",
+      "process-instance-state": 1,
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1540298693665
+      },
+      "process-instance-desc": "Evaluation",
+      "correlation-key": "16",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    }
+  ]
+}
+----
