@@ -1,4 +1,4 @@
-[id='clustering-ps-configure-domain-proc']
+[id='clustering-ps-configure-standalone_{context}']
 = Configuring and running a {EAP} 7.2  cluster for {KIE_SERVER}
 Configure the {EAP} cluster  for {KIE_SERVER}, then start the cluster. 
 
@@ -7,20 +7,6 @@ ifdef::PAM[]
 . Install the JDBC driver on all {EAP} instances that are part of this cluster. For more information, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.1/html-single/configuration_guide/#jdbc_drivers["JDBC Drivers"] section of the _{EAP} 7.2 Configuration Guide_.
 endif::[]  
 . Open the `_EAP_HOME_/standalone/configuration/standalone-full-ha.xml` file in a text editor.
-. Make the following changes for each server group in the `server-groups` element:
-.. Specify the `server-group name` and `jvm` name.
-.. To enable high availability, change the `profile` to `full-ha` and the `socket-binding-group` to `full-ha-sockets`.
-+
-[source]
-----
-<server-group name="some-server-group" profile="full-ha">
-    <jvm name="some-jvm">
-        <heap size="1000m" max-size="1000m"/>
-    </jvm>
-    <socket-binding-group ref="full-ha-sockets"/>
-</server-group>
-----
-ifdef::PAM[]
 . Edit the `data-stores` property and the `timer-service thread-pool-name` above it:
 +
 * The `datasource-jndi-name` is the JNDI name of the database specified at the beginning of this procedure. 
@@ -99,28 +85,13 @@ ifdef::PAM[]
     </security> 
 </xa-datasource>
 ----
-endif::PAM[]
 +
 [WARNING]
 ====
 You must use two different databases for {KIE_SERVER} runtime data and EJB timer data.
 ====
 +
-endif::[] 
-.  In the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` element, make the following changes:
-.. Replace `<cluster password="${jboss.messaging.cluster.password:CHANGE ME!!}"/>` with `<cluster user="<CLUSTER_USER>" password="<CLUSTER_PWD>"/>` where `<CLUSTER_USER>` is the user used by {EAP} to form a messaging cluster and `<CLUSTER_PWD>` is the password for that user.
-.. In the `security-setting` element add the `kie-server` role:
-+
-[source]
-----
-<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">
-    <server name="default">
-        <security-setting name="#">
-            <role name="guest" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
-            <role name="kie-server" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
-        </security-setting>
----- 
-ifdef::PAM[]
+
 . Add the following properties to the `<system-properties>` element and replace the following placeholders:
 * `<JNDI_NAME>` is the JNDI name of your data source. For {PRODUCT}, this is `java:/jboss/datasources/rhpam`.
 * `<DIALECT>` is the hibernate dialect for your database. 
@@ -145,7 +116,7 @@ The following dialects are supported:
 </system-properties>
 ----
 +
-endif::[]  
+endif::[]
 . Save the `standalone-full-ha.xml` file.
 . To start the cluster, navigate to `__EAP_HOME__/bin` and enter one of the following commands:
 ** On Linux or UNIX-based systems:

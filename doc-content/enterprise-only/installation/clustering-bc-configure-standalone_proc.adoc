@@ -16,9 +16,11 @@ These steps describe a basic cluster configuration. For more complex configurati
 .Procedure
 . Open the `_EAP_HOME_/standalone/configuration/standalone-full-ha.xml` file in a text editor.
 . Edit or add the following properties to the `<system-properties>` element and replace the following placeholders:
+* `<AMQ_USER>` and `<AMQ_PASSWORD>` are the credentials that you defined when creating the AMQ Broker.
+* `<AMQ_BROKER_IP_ADDRESS>` is the IP address of the AMQ Broker.
 * `<ELASTICSEARCH_NODE_IP>` is the IP addresses where Elasticseach is installed.
-* `<JMS_USER>` is a {EAP} application user. It is the user that {CENTRAL} uses to connect to the  embedded JMS broker. 
-* `<JMS_USER_PASSWORD>` is the password for `<JMS_USER>`.
+* `<SHARED_NETWORK_FOLDER>` is the network folder that all {CENTRAL}s in the cluster use to exchange data. This folder must be the same on all nodes of the cluster.
+
 +
 [source,xml]
 ----
@@ -34,20 +36,8 @@ These steps describe a basic cluster configuration. For more complex configurati
       value="kie-cluster"/>
   <property name="org.appformer.ext.metadata.index" value="elastic"/> 
   <property name="org.appformer.ext.metadata.elastic.retries" value="10"/>
-  <property name="appformer-jms-connection-factory" value="java:/ConnectionFactory"/> 
   <property name="org.uberfire.nio.git.dir" value="<SHARED_NETWORK_FOLDER>"/>
 </system-properties>
-----
-.  In the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` element, make the following changes:
-.. Replace `<cluster password="${jboss.messaging.cluster.password:CHANGE ME!!}"/>` with `<cluster user="<CLUSTER_USER>" password="<CLUSTER_PWD>"/>` where `<CLUSTER_USER>` is the user used by {EAP} to form a messaging cluster and `<CLUSTER_PWD>` is the password for that user.
-.. In the `security-setting` element , add the role of the `<JMS_USER>` to a new `role-name` element, for example:
-+
-[source]
-----
-<security-setting name="#">
-    <role name="guest" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
-    <role name="admin" send="true" consume="true" create-non-durable-queue="true" delete-non-durable-queue="true"/>
-</security-setting>
 ----
 . Save the `standalone-full-ha.xml` file.
 . To start the cluster, navigate to `__EAP_HOME__/bin` and enter one of the following commands:
@@ -55,11 +45,11 @@ These steps describe a basic cluster configuration. For more complex configurati
 +
 [source,bash]
 ----
-$ ./standalone.sh -c standalone-full.xml
+$ ./standalone.sh -c standalone-full-ha.xml
 ----
 ** On Windows:
 +
 [source,bash]
 ----
-standalone.bat -c standalone-full.xml
+standalone.bat -c standalone-full-ha.xml
 ----
