@@ -1,0 +1,29 @@
+[[_drools.releasenotesdrools.7.15.0]]
+
+= What is New and Noteworthy in Drools 7.15
+
+== Behavior of building a KJAR with a broken DMN resource 
+
+Generally, building a KJAR with a resource containing errors would result in a failure of the building process, reporting the error message(s).
+In previous releases, a bug allowed a broken DMN resource to be part of a successful KJAR building process; this bug was corrected with DROOLS-3335.
+With the current release, a broken DMN resource would result in failure(s) while building a KJAR, aligning to the general behavior of KJAR build process.
+
+We recommend to follow the standard practices described in the manual to build a KJAR.
+
+For those instead requiring a custom programmatic build, it could be helpful to reference the following code snippet to retrieve the list of errors:
+
+====
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieFileSystem kfs = ks.newKieFileSystem()
+                      .generateAndWritePomXML(releaseId)
+                      .write(dmnResource);
+KieBuilder kieBuilder = ks.newKieBuilder(kfs)
+                          .buildAll();
+Results results = kieBuilder.getResults();
+if (results.hasMessages(Message.Level.ERROR)) {
+    throw new IllegalStateException(results.getMessages(Message.Level.ERROR).toString());
+}
+----
+====
