@@ -62,6 +62,81 @@ You can also specify the `org.uberfire.nio.git.hooks` system property. Specify a
 ----
 
 [float]
+
+= Customizing git hook notifications
+The platform provides a mechanism to enable users getting feedback about the git hooks execution using customized
+messages based on the hook ``exit code``.
+
+To enable the notification mechanism you should specify the `appformer.git.hooks.bundle` system property pointing to a
+`*.properties` file containing the custom messages for each `exit code`. For example adding it to the `standalone.xml`:
+
+[source]
+----
+<system-properties>
+  <property name="appformer.git.hooks.bundle" value="/opt/jboss-as/git-hooks-messages/Messages.properties">
+  </property>
+  ...
+</system-properties>
+----
+
+Each line of the  `*.properties` should have the following format `<exit code>=<display message>. Where `<exit code>` is
+the git hook exit code and `<display message>` is the text of the message to display on the notification.
+
+For example:
+
+[source]
+----
+0=Success! Nothing wrong happened and the git hook worked as expected :)
+1=Oops! Something went wrong, check the logs and tell your admin.
+...
+31=Ouch! Something went REALLY WRONG! Please run and tell your admin.
+----
+
+[NOTE]
+====
+Its not necessary to define all the exit codes in the `*.properties` file. Notifications will appear only for the exit
+codes defined in the `*.properties`.
+====
+
+== Types of exit codes
+
+The platform provides some ranges of codes that can be used to show different notification types on the UI:
+
+* `0`: Success. A git hook that exits with code `0` will display a success notification on UI.
+
+.Successful notification
+image::admin-and-config/githooks/Error.png[align="center"]
+
+* `1..30`: Warning. A git hook that exits with a code between `1` and `30` (included) will display a warning notification
+on UI.
+
+.Warning notification
+image::admin-and-config/githooks/Warning.png[align="center"]
+
+* Anything else: Error. Any other code will be displayed on UI as an error notification.
+
+.Error notification
+image::admin-and-config/githooks/Success.png[align="center"]
+
+[IMPORTANT]
+====
+*UNIX* machines only support error codes between 0 (success) to 255 (error), any exit code outside of this range will
+end up being converted into a different code which may cause showing a wrong notification message.
+
+*Windows* machines don't have this limitation and support a wide range of exit codes.
+====
+
+== Internationalization support
+It is possible to internationalize the notification messages by placing different `*.properties` on the same path as the
+`*.properties` file specified on the `appformer.git.hooks.bundle` system property. The name of the different localized
+files should be `<filename>_<lang>.properties`, and it should contain the same entries as the original one. For example:
+having specified the system property pointing to `Messages.properties`, you can create other files like
+`Messages_en.properties" for English, `Messages_fr.properties` for French, `Messages_it.properties` for Italian...
+
+The notification service will choose the one based on the user language, if there are no available translations
+for that language it will use the default ones specified on the `Messages.properties` file.
+
+
 ==== Additional resources
 
 * https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks/[_Customizing Git Hooks_]
