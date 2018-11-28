@@ -1,0 +1,27 @@
+[[_drools.releasenotesdrools.7.15.0]]
+
+= What is New and Noteworthy in Drools 7.15
+
+== Broken DMN resources detected in {PRODUCT} project builds
+
+When a {PRODUCT} project (KJAR file) contains an invalid or a broken resource, the project fails to build and reports the failure in one or more error messages. Previously, a {PRODUCT} project with an invalid DMN resource could build successfully, with no error messages. With this release, this issue has been resolved so that an invalid DMN resource now causes a project build failure with error messaging, as expected (ref: DROOLS-3335). 
+
+For more information about project packaging and deployment, see <<_builddeployutilizeandrunsection>>.
+
+For a custom programmatic build, you can use the following code snippet to retrieve a list of build errors:
+
+====
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieFileSystem kfs = ks.newKieFileSystem()
+                      .generateAndWritePomXML(releaseId)
+                      .write(dmnResource);
+KieBuilder kieBuilder = ks.newKieBuilder(kfs)
+                          .buildAll();
+Results results = kieBuilder.getResults();
+if (results.hasMessages(Message.Level.ERROR)) {
+    throw new IllegalStateException(results.getMessages(Message.Level.ERROR).toString());
+}
+----
+====
