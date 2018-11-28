@@ -32,7 +32,7 @@ Authentication is enabled for single test user named `user` with password `user`
 Additionally there is default `kieserver` user that allows to easy connect to
 jBPM Console in development mode.
 
-Both authenitcation and authorization is based on Spring Security and can be
+Both authentication and authorization is based on Spring Security and can be
 configured in `DefaultWebSecurityConfig.java` that is included in the generated
 service project (`src/main/java/com/company/service/DefaultWebSecurityConfig.java`)
 
@@ -131,6 +131,61 @@ keycloak.resource=springboot-app
 keycloak.public-client=true
 keycloak.principal-attribute=preferred_username
 keycloak.enable-basic-auth=true
+----
+
+* Modify `DefaultWebSecurityConfig.java` to ensure that Spring Security will work correctly with Keycloak
+
+[source, java]
+----
+import org.keycloak.adapters.KeycloakConfigResolver;
+import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
+import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+
+@Configuration("kieServerSecurity")
+@EnableWebSecurity
+public class DefaultWebSecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+        http
+        .csrf().disable()
+        .authorizeRequests()
+            .anyRequest().authenticated()
+            .and()
+        .httpBasic();
+    }
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+        SimpleAuthorityMapper mapper = new SimpleAuthorityMapper();
+        mapper.setPrefix("");
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(mapper);
+        auth.authenticationProvider(keycloakAuthenticationProvider);
+    }
+
+    @Bean
+    public KeycloakConfigResolver KeycloakConfigResolver() {
+       return new KeycloakSpringBootConfigResolver();
+    }
+
+    @Override
+    protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+        return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+    }
+}
 ----
 
 These are the steps to configure you business application to use Keycloak as
