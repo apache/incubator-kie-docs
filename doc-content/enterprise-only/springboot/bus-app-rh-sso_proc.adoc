@@ -1,32 +1,32 @@
 [id='bus-app-rh-sso_{context}']
-= Configuring the business application with Red Hat Single-On
+= Configuring the business application with Red Hat Single Sign-On
 
 You can use Red Hat Single Sign-On (RH SSO) to enable single sign-on between your services and to have a central place to configure and manage your users and roles. 
 
-.Prerequisite
-You have a `<business-application>.zip` file that you created using the http://start.jbpm.org[business applications] web site.
+.Prerequisites
+* You have a `<business-application>.zip` file that you created using the http://start.jbpm.org[business applications] web site.
 
 .Procedure
-. Download and install RH-SSO. For instructions, see the https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.2/html/getting_started_guide/[_Red Hat Single Sign-On Getting Started Guide_].
-. Configure RH-SSO:
+. Download and install RH SSO. For instructions, see the https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.2/html/getting_started_guide/[_Red Hat Single Sign-On Getting Started Guide_].
+. Configure RH SSO:
 .. Either use the default master realm or create a new realm.
 .. Create the `springboot-app` client and set the `AccessType` to public.
 .. Set a valid redirect URI and web origin according to your local setup, for example:
 +
 * Valid redirect URIs: http://localhost:8090/*
 * Web Origins: http://localhost:8090
-.. Create realm roles that are used in the application
+.. Create realm roles that are used in the application.
 .. Create users used in the application and assign roles to them.
-. Add the following dependencies to service project pom.xml:
+. Add the following dependencies to service project `pom.xml` file:
 +
 [source, xml]
 ----
 <dependencyManagement>
   <dependencies>
     <dependency>
-      <groupId>org.RH-SSO.bom</groupId>
-      <artifactId>rhsso-adapter-bom</artifactId>
-      <version>${version.org.rhsso}</version>
+      <groupId>org.keycloak.bom</groupId>
+      <artifactId>keycloak-adapter-bom</artifactId>
+      <version>${version.org.keycloak}</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -36,8 +36,8 @@ You have a `<business-application>.zip` file that you created using the http://s
   ....
 
 <dependency>
-  <groupId>org.rhsso</groupId>
-  <artifactId>rhsso-spring-boot-starter</artifactId>
+  <groupId>org.keycloak</groupId>
+  <artifactId>keycloak-spring-boot-starter</artifactId>
 </dependency>
 ----
 
@@ -45,22 +45,22 @@ You have a `<business-application>.zip` file that you created using the http://s
 +
 [source, bash]
 ----
-# rhsso security setup
-rhsso.auth-server-url=http://localhost:8100/auth
-rhsso.realm=master
-rhsso.resource=springboot-app
-rhsso.public-client=true
-rhsso.principal-attribute=preferred_username
-rhsso.enable-basic-auth=true
+# keycloak security setup
+keycloak.auth-server-url=http://localhost:8100/auth
+keycloak.realm=master
+keycloak.resource=springboot-app
+keycloak.public-client=true
+keycloak.principal-attribute=preferred_username
+keycloak.enable-basic-auth=true
 ----
-. Modify `DefaultWebSecurityConfig.java` to ensure that Spring Security works correctly with RH-SSO:
+. Modify `DefaultWebSecurityConfig.java` to ensure that Spring Security works correctly with RH SSO:
 +
 [source]
 ----
-import org.rhsso.adapters.RhssoConfigResolver;
-import org.rhsso.adapters.springboot.RhssoSpringBootConfigResolver;
-import org.rhsso.adapters.springsecurity.authentication.RhssoAuthenticationProvider;
-import org.rhsso.adapters.springsecurity.config.RhssoWebSecurityConfigurerAdapter;
+import org.keycloak.adapters.KeycloakConfigResolver;
+import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
+import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,7 +74,7 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 
 @Configuration("kieServerSecurity")
 @EnableWebSecurity
-public class DefaultWebSecurityConfig extends RhssoWebSecurityConfigurerAdapter {
+public class DefaultWebSecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -89,16 +89,16 @@ public class DefaultWebSecurityConfig extends RhssoWebSecurityConfigurerAdapter 
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-        RhssoAuthenticationProvider rhssoAuthenticationProvider = rhssoAuthenticationProvider();
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
         SimpleAuthorityMapper mapper = new SimpleAuthorityMapper();
         mapper.setPrefix("");
-        rhssoAuthenticationProvider.setGrantedAuthoritiesMapper(mapper);
-        auth.authenticationProvider(rhssoAuthenticationProvider);
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(mapper);
+        auth.authenticationProvider(keycloakAuthenticationProvider);
     }
 
     @Bean
-    public RhssoConfigResolver RhssoConfigResolver() {
-       return new RhssoSpringBootConfigResolver();
+    public KeycloakConfigResolver KeycloakConfigResolver() {
+       return new KeycloakSpringBootConfigResolver();
     }
 
     @Override
