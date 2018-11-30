@@ -155,6 +155,99 @@ endif::[]
 ** `groupId: org.kie`
 ** `artifactId: kie-server-spring-boot-starter-optaplanner`
 
+== Decision engine
+
+=== Rule units
+
+{PRODUCT} {PRODUCT_VERSION} now supports rule units that you can use to partition a rule set into smaller units, bind different data sources to those units, and then execute the individual unit. A rule unit consists of data sources, global variables, and rules.
+
+You can define a rule unit by implementing the `RuleUnit` interface as shown in the following example:
+
+.Example rule unit class
+[source,java]
+----
+package org.mypackage.myunit;
+
+public static class AdultUnit implements RuleUnit {
+    private int adultAge;
+    private DataSource<Person> persons;
+
+    public AdultUnit( ) { }
+
+    public AdultUnit( DataSource<Person> persons, int age ) {
+        this.persons = persons;
+        this.age = age;
+    }
+
+    // A DataSource of Persons in this rule unit
+    public DataSource<Person> getPersons() {
+        return persons;
+    }
+
+    // A global variable valid in this rule unit
+    public int getAdultAge() {
+        return adultAge;
+    }
+
+    // --- life cycle methods
+
+    @Override
+    public void onStart() {
+        System.out.println("AdultUnit started.");
+    }
+
+    @Override
+    public void onEnd() {
+        System.out.println("AdultUnit ended.");
+    }
+}
+----
+
+For more information about rule units, see the http://docs.jboss.org/drools/release/latestFinal/drools-docs/html_single/#rule-units-con[Drools Documentation].
+
+=== Multithreaded evaluation in the decision engine
+
+In {PRODUCT} {PRODUCT_VERSION}, the decision engine can now evaluate more business rules in parallel by dividing the RETE and PHREAK pattern-matching algorithms in independent partitions and evaluating them in parallel.
+
+Multithreaded evaluation is disabled by default in {PRODUCT}. To enable multithreaded evaluation for a parallel KIE base, use one of the following options:
+
+* Enable multithreaded evaluation with `KieBaseConfiguration`:
++
+[source]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(MultithreadEvaluationOption.YES);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+
+* Enable the multithreaded evaluation system property:
++
+[source]
+----
+drools.multithreadEvaluation = true
+----
+
+[WARNING]
+====
+Rules using queries, salience, or agenda groups are currently not supported by the parallel decision engine. If these rule attributes are present in the KIE base, the compiler emits a warning and automatically switches back to single-threaded evaluation. However, in some cases, the decision engine might not detect the unsupported rule attributes and rules might be evaluated incorrectly. For example, the decision engine might not detect when rules rely on implicit salience given by rule ordering inside the DRL file, resulting in incorrect evaluation due to the unsupported salience attribute.
+====
+
+== Ability to declaratively set calendars in a KIE session
+
+In {PRODUCT} {PRODUCT_VERSION}, you can now declaratively set one or more calendars on a KIE session through the `kmodule.xml` configuration file as shown in the following example:
+
+[source,xml]
+----
+<ksession name="KSession1">
+  <calendars>
+    <calendar name="monday" type="org.domain.Monday"/>
+  </calendars>
+</ksession>
+----
+
+The type is the name of the class implementing the `org.kie.api.time.Calendar` interface.
+
 ifdef::PAM[]
 == Smart Router
 

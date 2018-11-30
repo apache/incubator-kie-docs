@@ -12,20 +12,19 @@ for details on how to build and execute DMN models.
 
 At this time, no DMN authoring is supported, but it will be supported in future versions.
 
-=== Multithreaded {ENGINE}
+=== Multithreaded evaluation in the {ENGINE}
 
 [WARNING]
 ====
-This feature is experimental
+This feature is experimental in {PRODUCT} 7.0.
 ====
 
-Historically Rete has always been a sequential algorithm and even if Phreak, its evolution introduced in Drools 6, allowed
-some degree of parallelization, this possibility wasn't concretely leveraged yet. In Drools 7 is finally possible to make
-the engine to evaluate more rules in parallel. This is achieved by partitioning the Rete/Phreak in independent partitions
-and evaluating them in parallel.
+In {PRODUCT} 7.0, the {ENGINE} can now evaluate more business rules in parallel by dividing the RETE and PHREAK pattern-matching algorithms in independent partitions and evaluating them in parallel.
 
-This feature is off by default, but it's possible to create a parallel KieBase by enabling it via the ``KieBaseConfiguration`` as it follows:
+Multithreaded evaluation is disabled by default in {PRODUCT}. To enable multithreaded evaluation for a parallel KIE base, use one of the following options:
 
+* Enable multithreaded evaluation with `KieBaseConfiguration`:
++
 [source]
 ----
 KieServices ks = KieServices.Factory.get();
@@ -34,8 +33,8 @@ kieBaseConf.setOption(MultithreadEvaluationOption.YES);
 KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
 ----
 
-or alternatively through the system property:
-
+* Enable the multithreaded evaluation system property:
++
 [source]
 ----
 drools.multithreadEvaluation = true
@@ -43,12 +42,7 @@ drools.multithreadEvaluation = true
 
 [WARNING]
 ====
-Rules using queries, salience or agenda-group are currently not supported by the parallel engine. In case they are present inside
-the rule base the compiler emits a warning and automatically switches back using the single threaded implementation. There are
-other cases where using the multithreaded {ENGINE} is not correct and leads to wrong results even if the engine may be not
-able to automatically detect them and then will not fallback to the single thread mode, e.g. rules rely on implicit salience
-given by rule ordering inside the drl file. For this reason particular attention must be paid when enabling this option.
-Finally at the moment session serialization and incremental compilation are not supported.
+Rules using queries, salience, or agenda groups are currently not supported by the parallel {ENGINE}. If these rule attributes are present in the KIE base, the compiler emits a warning and automatically switches back to single-threaded evaluation. However, in some cases, the {ENGINE} might not detect the unsupported rule attributes and rules might be evaluated incorrectly. For example, the {ENGINE} might not detect when rules rely on implicit salience given by rule ordering inside the DRL file, resulting in incorrect evaluation due to the unsupported salience attribute.
 ====
 
 === OOPath improvements
@@ -244,7 +238,7 @@ public class School implements ReactiveObject {
 This feature is experimental
 ====
 
-NOTE: This feature makes use of <<_rule_units_2,Rule Units>>
+NOTE: This feature makes use of <<rule-units-con,Rule Units>>
 
 Drools now support assets that conform to a subset of the Predictive Modeling Markup Language (PMML). The following
 predictive model types are now supported:
