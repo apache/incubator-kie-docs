@@ -1,15 +1,11 @@
-= Rule Units
+[id='rule-units-con']
+= Rule units
 
-[WARNING]
-====
-This feature is experimental
-====
+You can use rule units to partition a rule set into smaller units, bind different data sources to those units, and then execute the individual unit. A rule unit consists of data sources, global variables, and rules.
 
-Rule units represent a declarative approach to partition a rule set into smaller units, binding different data sources
-to those units, and orchestrate the execution of the individual unit. A rule unit is an aggregate of data sources, global variables,
-and rules. You can define a rule unit by implementing the ``RuleUnit`` marker interface as shown in the following example:
+You can define a rule unit by implementing the `RuleUnit` interface as shown in the following example:
 
-.A RuleUnit class:
+.Example rule unit class
 [source,java]
 ----
 package org.mypackage.myunit;
@@ -25,12 +21,12 @@ public static class AdultUnit implements RuleUnit {
         this.age = age;
     }
 
-    // A DataSource of Persons for this RuleUnit
+    // A DataSource of Persons in this rule unit
     public DataSource<Person> getPersons() {
         return persons;
     }
 
-    // A global variable valid in this RuleUnit
+    // A global variable valid in this rule unit
     public int getAdultAge() {
         return adultAge;
     }
@@ -49,13 +45,13 @@ public static class AdultUnit implements RuleUnit {
 }
 ----
 
-Here, ``persons`` is a source of facts of type Person. It represents that part of the working memory, which is related to that specific
-entry-point used when the rule unit is evaluated. ``adultAge`` is a global variable accessible from all the rules
-belonging to this rule unit. The last two methods are part of the rule unit life cycle and are invoked by the engine.
-The lifecycle of a RuleUnit can be monitored overriding the following methods:
+In this example, `persons` is a source of facts of type `Person`. It represents that part of the working memory, which is related to that specific
+entry-point used when the rule unit is evaluated. The `adultAge` global variable is accessible from all the rules belonging to this rule unit. The last two methods are part of the rule unit life cycle and are invoked by the engine.
+
+The lifecycle of a rule unit can be monitored overriding the following methods:
 
 [cols="2", options="header"]
-.Rule Unit life cycle methods
+.Rule unit life cycle methods
 |===
 |Method
 |Invoked when
@@ -76,18 +72,13 @@ The lifecycle of a RuleUnit can be monitored overriding the following methods:
 |the consequence of rule in a given rule unit triggers the execution of a different unit
 |===
 
-All these methods have an empty default implemention inside the ``RuleUnit`` interface, so their implementation is optional.
-At this point, it is possible to add one or more rules to this rule unit. By default all the rules in a drl file are automatically
-associated to a rule unit following a naming convention of the name of drl file itself: if the drl file is in the same package
-and has the same name of a class implementing the ``RuleUnit`` interface all the rules in that drl file will implicitly belong
-to that unit. For example, all the rules in the drl file named AdultUnit.drl in package org.mypackage.myunit will be automatically
-part of the rule unit ``org.mypackage.myunit.AdultUnit``.
+All of these methods have an empty default implementation inside the `RuleUnit` interface, so their implementation is optional. At this point, it is possible to add one or more rules to this rule unit. By default all the rules in a DRL file are automatically associated to a rule unit following a naming convention of the name of the DRL file itself. If the DRL file is in the same package and has the same name as a class implementing the `RuleUnit` interface, then all of the rules in that DRL file will implicitly belong to that unit.
 
-You can avoid using this naming convention and explictly declare the unit to which the rules in a drl file belongs
-by using the new ``unit`` keyword. The unit declaration must always immediately follow the package declaration and contain
-the name of the class (in that package) to which the rules of the drl file are part of. For example,
+For example, all the rules in the DRL file named `AdultUnit.drl` in the package `org.mypackage.myunit` are automatically part of the rule unit `org.mypackage.myunit.AdultUnit`.
 
-.A rule belonging to the rule unit
+You can avoid using this naming convention and explicitly declare the unit to which the rules in a DRL file belong by using the new `unit` keyword. The unit declaration must always immediately follow the package declaration and contain the name of the class in that package of which the rules in the DRL file are part.
+
+.Example rule belonging to the rule unit
 [source]
 ----
 package org.mypackage.myunit
@@ -102,13 +93,12 @@ end
 
 [WARNING]
 ====
-It is not allowed to mix rules with and without a rule unit in the same KieBase.
+You cannot mix rules with and without a rule unit in the same KIE base.
 ====
 
-Additionally, you can rewrite the same pattern in a more convenient way using the oopath notation introduced in drools 6
-as shown below:
+Additionally, you can rewrite the same pattern in a more convenient way using the oopath notation introduced in drools 6, as shown in the following example:
 
-.A rule belonging to a rule unit using the oopath notation
+.Example rule belonging to a rule unit using the oopath notation
 [source]
 ----
 package org.mypackage.myunit
@@ -121,11 +111,10 @@ then
 end
 ----
 
-Here, the persons matched by the left hand side of the rule is retrieved from the ``DataSource`` contained in the RuleUnit class with
-the same name. The ``adultAge`` variable is used in both the left and right hand side of the rule in the same way as a global is
-defined at drl level. In other words the ``persons`` DataSource acts as a specific entry-point, feeding the working memory.
+In this example, the persons matched by the left-hand side of the rule is retrieved from the `DataSource` contained in the rule unit class with
+the same name. The `adultAge` variable is used in both the left-hand side and right-hand side of the rule in the same way that a global variable is defined at the DRL level. The `persons` DataSource acts as a specific entry point, feeding the working memory.
 
-The easiest way to create a ``DataSource`` is using a fixed set of data, as shown below:
+The easiest way to create a `DataSource` is using a fixed set of data, as shown in the following example:
 
 [source,java]
 ----
@@ -134,8 +123,7 @@ DataSource<Person> persons = DataSource.create( new Person( "Mario", 42 ),
                                                 new Person( "Sofia", 4 ) );
 ----
 
-To execute one or more rule units defined in a given ``KieBase``, create a new ``RuleUnitExecutor`` and
-bind it to the ``KieBase`` itself. For example,
+To execute one or more rule units defined in a given KIE base, create a new `RuleUnitExecutor` and bind it to the KIE base:
 
 [source,java]
 ----
@@ -143,7 +131,7 @@ KieBase kbase = kieContainer.getKieBase();
 RuleUnitExecutor executor = RuleUnitExecutor.create().bind( kbase );
 ----
 
-At this point, create the ``AdultUnit`` by passing the persons ``DataSource`` to it and running it on the ``RuleUnitExecutor``.
+At this point, create the `AdultUnit` by passing the persons `DataSource` to it and running it on the `RuleUnitExecutor`:
 
 [source,java]
 ----
@@ -161,7 +149,7 @@ Mario is adult and greater than 18
 org.mypackage.myunit.AdultUnit ended.
 ----
 
-Instead of explicitly creating the rule unit instance, it is more convenient to pass to the executor the rule unit class that you want to run and let the executor create an instance of it. You can then set the ``DataSource``s and other variables before running it. In order to do so, ensure that you have previously registered those variables on the executor itself, so that the following code produces exactly the same result as the former one:
+Instead of explicitly creating the rule unit instance, you can pass to the executor the rule unit class that you want to run and let the executor create an instance of it. You can then set the `DataSource` and other variables before running it. In order to do so, ensure that you have previously registered those variables on the executor so that the following code produces exactly the same result as the former example:
 
 [source,java]
 ----
@@ -170,12 +158,9 @@ executor.bindVariable( "persons", persons );
 executor.run( AdultUnit.class );
 ----
 
-The name passed to the ``RuleUnitExecutor.bindVariable()`` method is used at runtime to bind said variable to the field of the
-RuleUnit class having the same name. For instance in the former example the ``RuleUnitExecutor`` injects into the new rule unit
-the data source formerly bound to the "persons" name and the value 18 bound to the String "adultAge" to the fields with the
-corresponding names inside the ``AdultUnit`` class. It is possible to override this default and explictly define a logical
-binding name for each field of the rule unit class using the ``@UnitVar`` annotation. For example, the field binding in the
-following class can be redefined with alternative names:
+The name passed to the `RuleUnitExecutor.bindVariable()` method is used at run time to bind the variable to the field of the rule unit class with the same name. For example, in the previous example the `RuleUnitExecutor` inserts into the new rule unit the data source formerly bound to the `"persons"` name and the value `18` bound to the String `"adultAge"` to the fields with the corresponding names inside the `AdultUnit` class.
+
+You can override this default and explicitly define a logical binding name for each field of the rule unit class using the `@UnitVar` annotation. For example, the field binding in the following class can be redefined with alternative names:
 
 [source,java]
 ----
@@ -199,9 +184,10 @@ executor.bindVariable( "data", persons );
 executor.run( AdultUnit.class );
 ----
 
-A rule unit can be executed in passive mode as shown above (corresponding to invoking ``fireAllRules`` on a whole session)
-or in active mode using the ``runUntilHalt`` that is equivalent to the session ``fireUntilHalt``. As for the fireUntilHalt,
-the runUntilHalt is blocking and therefore has to be issued on a separated thread. For example,
+You can execute a rule unit in passive mode as shown in the previous example (equivalent to invoking `fireAllRules` on an entire KIE session)
+or in active mode using the `runUntilHalt` (equivalent to the KIE session `fireUntilHalt`).
+
+As for the `fireUntilHalt`, the `runUntilHalt` is blocking and therefore has to be issued on a separated thread:
 
 [source,java]
 ----
