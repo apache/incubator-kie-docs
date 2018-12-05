@@ -1,2 +1,104 @@
 = Gateways 
-TODO
+Gateways are used to create or synchronize branches in the workflow using a set of conditions, which is called the gating mechanism. Gateways are of two types:
+
+* Converging, that is merging multiple flows into one flow.
+* Diverging, that is splitting one Flow into multiple flows.
+
+One Gateway cannot have multiple incoming _and_ multiple outgoing flows.
+
+
+.Gateway elements table
+[cols="4"]
+|===
+.2+h|
+.2+h|Top-level
+2+h|Subprocesses
+
+
+h|Interrupt
+h|Non-interrupt 
+
+|Exclusive (XOR)
+|image:BPMN2/bpmn-start-node.png[]
+|
+|
+
+|Inclusive
+|
+|
+|
+
+|Parallel
+|
+|
+|
+
+|Event
+|
+|
+|
+
+|===
+
+[[_exclusive_gateway]]
+.Exclusive
+In an exclusive converging gateway, only the first incoming flow whose condition evaluates to true is chosen. In a diverging gateway only one outgoing Flow is chosen.
+
+The gateway triggers exactly one outgoing flow. The flow with the constraint evaluated to true and the _lowest_ priority number is taken.
+
+
+[IMPORTANT]
+====
+Ensure that at least one of the outgoing flow evaluates to true at runtime. Otherwise, the process instance terminates with a runtime exception.
+====
+
+
+The converging gateway allows a workflow branch to continue to its outgoing flow as soon as it reaches the gateway. When one of the incoming flows triggers the gateway, the workflow continues to the outgoing flow of the gateway. If it is triggered from more than one incoming flow, it triggers the next node for each trigger.
+
+
+* Attributes
+*Default gate*
++
+The outgoing flow taken by default if no other flow can be taken.
+
+
+[[_inclusive_gateway]]
+.Inclusive
+
+With a diverging inclusive gateway, the incoming flow is taken, all outgoing flows that evaluate to true are taken.
+Connections with lower priority numbers are triggered before triggering higher priority ones. Priorities are evaluated but the BPMN2 specification does not guarantee the priority order. It is recommended that you do not depend on the `priority` attribute in your workflow.
+
+[IMPORTANT]
+====
+Ensure that at least one of the outgoing flow evaluates to true at runtime. Otherwise, the process instance terminates with a runtime exception.
+====
++
+With a converging inclusive gateway, merges all incoming Flows previously created by a diverging Inclusive Gateway; that is, it serves as a synchronizing entry point for the Inclusive Gateway branches.
+
+* Attributes
++
+*Default gate*
+The outgoing flow taken by default if no other flow can be taken.
+
+[[_parallel_gateway]]
+.Parallel
+
+EDIT:
+"`A Parallel Gateway is used to synchronize (combine) parallel flows and to create parallel flows.footnote:[Business Process Model and Notation (BPMN). Version 2.0, OMG Document Number: formal/2011-01-03 http://www.omg.org/spec/BPMN/2.0]`"
+
+
+With a diverging parallel gateway, the incoming flow is taken, all outgoing flows are taken simultaneously.
+
+With a converging parallel gateway, waits until all incoming flows have entered and only then triggers the outgoing flow.
+
+
+
+[[_event_based_gateway]]
+.Event
+
+An Event-based gateway is only diverging and allows you to react to possible events as opposed to the Data-based Exclusive Gateway, which reacts to the process data.
+The outgoing flow is taken based on the event that occurs. Only one outgoing flow is taken at a time.
+
+
+The gateway might act as a start event, where the process is instantiated only if one the intermediate events connected to the Event-Based Gateway occurs.
+
