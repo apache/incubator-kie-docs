@@ -1,4 +1,4 @@
-= Fibonacci Example
+= Fibonacci Example (recursion and conflict resolution)
 
 ----
 Name: Fibonacci 
@@ -6,14 +6,13 @@ Main class: org.drools.examples.fibonacci.FibonacciExample
 Module: drools-examples
 Type: Java application
 Rules file: Fibonacci.drl
-Objective: Demonstrates Recursion,
-  the CE not and cross product matching
+Objective: Demonstrates recursion and the use of salience
 ----
 
 
-The Fibonacci Numbers (see http://en.wikipedia.org/wiki/Fibonacci_number) discovered by Leonardo of Pisa (see http://en.wikipedia.org/wiki/Fibonacci) is a sequence  that starts with 0 and 1.
-The next Fibonacci number is obtained by adding the two preceding Fibonacci numbers.
-The Fibonacci sequence begins with 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946,... The Fibonacci Example demonstrates recursion and conflict resolution with salience values.
+The Fibonacci Example demonstrates recursion and conflict resolution with salience values.
+
+The Fibonacci Numbers (see http://en.wikipedia.org/wiki/Fibonacci_number) discovered by Leonardo of Pisa (see http://en.wikipedia.org/wiki/Fibonacci) form a sequence starting with 0 and 1. The next Fibonacci number is obtained by adding the two preceding Fibonacci numbers. The first few elements of the Fibonacci sequence are 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946,... 
 
 The single fact class `Fibonacci` is used in this example.
 It has two fields, sequence and value.
@@ -21,7 +20,7 @@ The sequence field is used to indicate the position of the object in the Fibonac
 The value field shows the value of that Fibonacci object for that sequence position, using -1 to indicate a value that still needs to be computed.
 
 .Fibonacci Class
-====
+
 [source,java]
 ----
 public static class Fibonacci {
@@ -36,19 +35,18 @@ public static class Fibonacci {
     ... setters and getters go here...
 }
 ----
-====
+
 
 
 Execute the example:
 
-. Open the class [class]``org.drools.examples.fibonacci.FibonacciExample`` in your Eclipse IDE.
-. Right-click the class and select "Run as..." and then "Java application"
+. Right-click the class [class]``org.drools.examples.fibonacci.FibonacciExample`` in your Eclipse IDE, select "Run as..." and then "Java application"
 
 
 Eclipse shows the following output in its console window (with "...snip..." indicating lines that were removed to save space):
 
 .Fibonacci Example: Console Output
-====
+
 [source]
 ----
 recurse for 50
@@ -72,32 +70,29 @@ recurse for 2
 49 == 7778742049
 50 == 12586269025
 ----
-====
 
 
-To kick this off from Java we only insert a single Fibonacci object, with a sequence field of 50.
+
+To kick this off from Java you only need to insert a single Fibonacci object, with a sequence field of 50.
 A recursive rule is then used to insert the other 49 `Fibonacci` objects.
-This example doesn't use ``PropertyChangeSupport``.
-It uses the MVEL dialect, which means we can use the `modify` keyword, which allows a block setter action which also notifies the engine of changes.
+
+Instead of implementing the ``PropertyChangeSupport`` interface this example uses the MVEL dialect `modify` keyword which allows a block setter action and also notifies the engine of changes.
 
 .Fibonacci Example: Execution
-====
+
 [source,java]
 ----
 ksession.insert( new Fibonacci( 50 ) );
 ksession.fireAllRules();
 ----
-====
 
+There are three rules in this example: Recurse, Bootstrap and Calculate.
 
-The rule Recurse is very simple.
-It matches each asserted `Fibonacci` object with a value of -1, creating and  asserting a new `Fibonacci` object with a sequence of one less than the currently matched object.
-Each time a Fibonacci object is added while the one with a sequence field equal to 1 does not exist, the rule re-matches and fires again.
-The `not` conditional element is used to stop the rule's matching once we have all 50 Fibonacci objects in memory.
-The rule also has a salience value, because we need to have all 50 `Fibonacci` objects asserted before we execute the Bootstrap rule.
+The rule Recurse is very simple. It matches each asserted `Fibonacci` object with a value of -1, creating and  asserting a new `Fibonacci` object with a sequence of one less than the currently matched object.
+Each time a Fibonacci object is added while the one with a sequence field equal to 1 does not exist, the rule re-matches and fires again. The `not` conditional element is used to stop the rule's matching once you have all 50 Fibonacci objects in memory. The rule also has a salience value, because you need to have all 50 `Fibonacci` objects asserted before you execute the Bootstrap rule.
 
 .Fibonacci Example: Rule "Recurse"
-====
+
 [source]
 ----
 rule Recurse
@@ -110,21 +105,19 @@ rule Recurse
         System.out.println( "recurse for " + f.sequence );
 end
 ----
-====
 
 
-The Audit view shows the original assertion of the `Fibonacci` object with a sequence field of 50, done from Java code.
-From there on, the Audit view shows the continual recursion of the rule, where each asserted `Fibonacci` object causes the Recurse rule to become activated and to fire again.
+
+The Audit view shows the original assertion of the `Fibonacci` object with a sequence field of 50, done from Java code. From there on, the Audit view shows the continual recursion of the rule, where each asserted `Fibonacci` object causes the Recurse rule to become activated and to fire again.
 
 .Fibonacci Example: "Recurse" Audit View 1
 image::Examples/FibonacciExample/fibonacci1.png[align="center"]
 
 
-When a `Fibonacci` object with a sequence field of 2 is asserted the "Bootstrap" rule is matched and activated along with the "Recurse" rule.
-Note the multi-restriction on field ``sequence``, testing for equality with 1 or 2.
+When a `Fibonacci` object with a sequence field of 2 is asserted the "Bootstrap" rule is matched and activated along with the "Recurse" rule. Note the multiple restrictions on field ``sequence``, testing for equality with 1 or 2.
 
 .Fibonacci Example: Rule "Bootstrap"
-====
+
 [source]
 ----
 rule Bootstrap
@@ -135,37 +128,35 @@ rule Bootstrap
         System.out.println( f.sequence + " == " + f.value );
 end
 ----
-====
 
 
-At this point the Agenda looks as shown below.
-However, the "Bootstrap" rule does not fire because the "Recurse" rule has a higher salience.
+
+At this point the Agenda looks as shown below. The "Bootstrap" rule does not fire yet because the "Recurse" rule has a higher salience.
 
 .Fibonacci Example: "Recurse" Agenda View 1
 image::Examples/FibonacciExample/fibonacci_agenda1.png[align="center"]
 
 
-When a `Fibonacci` object with a sequence of 1 is asserted the Bootstrap rule is matched again, causing two activations for this rule.
-Note that the "Recurse" rule does not match and activate because the `not` conditional element stops the rule's matching as soon as a `Fibonacci` object with a sequence of 1 exists.
+When a `Fibonacci` object with a sequence of 1 is asserted the Bootstrap rule is matched again, causing two activations for this rule. Note that the "Recurse" rule does not match and activate because the `not` conditional element stops the rule's matching as soon as a `Fibonacci` object with a sequence of 1 exists.
 
 .Fibonacci Example: "Recurse" Agenda View 2
 image::Examples/FibonacciExample/fibonacci_agenda2.png[align="center"]
 
 
-Once we have two `Fibonacci` objects with values not equal to -1 the "Calculate" rule is able to match.
-It was the "Bootstrap" rule that set the objects with sequence 1 and 2 to values of 1.
-At this point we have 50 Fibonacci objects in the Working Memory.
-Now we need to select a suitable triple to calculate each of their values in turn.
+The "Bootstrap" rule sets the objects with sequence 1 and 2 to values of 1.
+Now that you have two `Fibonacci` objects with values not equal to -1 the "Calculate" rule is able to match.
+At this point there are 50 Fibonacci objects in the Working Memory.
+You need to select a suitable triple to calculate each of their values in turn.
 Using three Fibonacci patterns in a rule without field constraints to confine the possible cross products would result in 50x49x48 possible combinations, leading to about 125,000 possible rule firings, most of them incorrect.
-The "Calculate" rule uses field constraints to correctly constraint the thee Fibonacci patterns in the correct order; this technique is called __cross product matching__.
+The "Calculate" rule uses field constraints to correctly force the thee Fibonacci patterns in the correct order; this technique is called __cross product matching__.
 The first pattern finds any Fibonacci with a value != -1 and binds both the pattern and the field.
 The second Fibonacci does this, too, but it adds an additional field constraint to ensure that its sequence is greater by one than the Fibonacci bound to ``f1``.
-When this rule fires for the first time, we know that only sequences 1 and 2 have values of 1, and the two constraints ensure that `f1` references sequence 1 and `f2` references sequence 2.
+When this rule fires for the first time, you know that only sequences 1 and 2 have values of 1, and the two constraints ensure that `f1` references sequence 1 and `f2` references sequence 2.
 The final pattern finds the Fibonacci with a value equal to -1 and with a sequence one greater than ``f2``.
-At this point, we have three `Fibonacci` objects correctly selected from the available cross products, and we can calculate the value for the third `Fibonacci` object that's bound to ``f3``.
+At this point, there are three `Fibonacci` objects correctly selected from the available cross products, and you can calculate the value for the third `Fibonacci` object that's bound to ``f3``.
 
 .Fibonacci Example: Rule "Calculate"
-====
+
 [source]
 ----
 rule Calculate
@@ -182,11 +173,11 @@ rule Calculate
         System.out.println( s3 + " == " + f3.value );
 end
 ----
-====
 
 
-The `modify` statement updated the value of the `Fibonacci` object bound to ``f3``.
-This means we now have another new Fibonacci object with a value not equal to -1, which allows the "Calculate" rule to rematch and calculate the next Fibonacci number.
+
+The `modify` statement updates the value of the `Fibonacci` object bound to ``f3``.
+This means that you now have another new Fibonacci object with a value not equal to -1, which allows the "Calculate" rule to rematch and calculate the next Fibonacci number.
 The Audit view below shows how the firing of the last "Bootstrap" modifies the `Fibonacci` object, enabling the "Calculate" rule to match, which then modifies another Fibonacci object allowing the "Calculate" rule to match again.
 This continues till the value is set for all `Fibonacci` objects.
 
