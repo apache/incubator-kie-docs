@@ -14,8 +14,8 @@ Indicate the completion of a business process.
 +
 Drive the flow of a business process.
 
-.Start Events
-All start events, except for the None Start Event, define a trigger. When you start a process, the trigger must be fulfilled. If no start event can be triggered, the process is never instantiated.
+.start events
+All start events, except for the None start event, define a trigger. When you start a process, the trigger must be fulfilled. If no start event can be triggered, the process is never instantiated.
 
 .Start events table
 [cols="4"]
@@ -36,12 +36,12 @@ h|Non-interrupt
 |<<_message_start_event>>
 |image:BPMN2/bpmn-message-node.png[]
 |image:BPMN2/bpmn-message-node.png[]
-|X
+|legacy
 
 |<<_timer_start_event>> 
 |image:BPMN2/bpmn-timer-start.png[]
 |image:BPMN2/bpmn-timer-start.png[]
-|X
+|legacy
 
 |<<_error_start_event>>
 |
@@ -51,12 +51,12 @@ h|Non-interrupt
 |<<_signal_start_event>>
 |image:BPMN2/bpmn-signal-start.png[]
 |image:BPMN2/bpmn-signal-start.png[]
-|X
+|legacy
 
 |<<_conditional_start_event>>
 |image:BPMN2/bpmn-conditional-start.png[]
 |image:BPMN2/bpmn-conditional-start.png[]
-|X
+|legacy
 
 |===
 
@@ -64,116 +64,63 @@ h|Non-interrupt
 [[_none_start_event]]
 .None
 
-The None Start Event is a start event without a trigger condition. A process or a sub-process can contain at most one None Start Event, which is triggered on process or sub-process start by default, and the outgoing flow is taken immediately.
+The None start event is a start event without a trigger condition. A process or a sub-process can contain at most one None start event, which is triggered on process or sub-process start by default, and the outgoing flow is taken immediately.
 
-When used in a sub-process, the execution is transferred from the parent process into the sub-process and the None Start Event is triggered. That means that the token is taken from the parent sub-process activity and the None Start Event of the sub-process generates a token.
+When used in a sub-process, the execution of the process flow is transferred from the parent process into the sub-process and the None start event is triggered. This means that the token (the current location within the process flow) is passed from the parent process into the sub-process activity and the None start event of the sub-process generates a token of its own.
 
 [[_message_start_event]]
 .Message
 
-A process or an event sub-process can contain multiple Message Start Events, which are triggered by a particular message.
-The process instance with a Message Start Event only starts its execution from this event after it has received the respective message. After the message is received, the process is instantiated and its Message Start Event is executed immediately (its outgoing Flow is taken).
+A process or an event sub-process can contain multiple Message start events, which are triggered by a particular message.
+The process instance with a Message start event only starts its execution from this event after it has received the respective message. After the message is received, the process is instantiated and its Message start event is executed immediately (its outgoing Flow is taken).
 
-As a message can be consumed by an arbitrary number of processes and process elements, including no elements, one message can trigger multiple Message Start Events and therefore instantiate multiple Processes.
+As a message can be consumed by an arbitrary number of processes and process elements, including no elements, one message can trigger multiple Message start events and therefore instantiate multiple Processes.
 
-* Attributes
-+
-`MessageRef`
-ID of the expected Message object
 
 [[_timer_start_event]]
 .Timer
 
 
-The Timer Start Event is a Start Event with a timing mechanism. 
+The Timer start event is a start event with a timing mechanism. 
 
-A process can contain multiple Timer Start Events, which are triggered at the start of the process, after which the timing mechanism is applied.
+A process can contain multiple Timer start events, which are triggered at the start of the process, after which the timing mechanism is applied.
 
-When used in a sub-process, the execution is transferred from the parent process into the sub-process and the Timer Start Event is triggered. The token is taken from the parent sub-process activity and the Timer Start Event of the sub-process is triggered and waits for the timer to trigger.
-Once the time defined by the timing definition has been reached, the outgoing flow is taken.
-
-* Attributes
-+
-*Time Cycle*
-+
-Repeatedly triggers the timer after a specific time period. If the period is ``0``, the timer is triggered only once.
-+
-*Time Cycle Language*
-+
-Set to `None` for the default interval, or `Cron` for the following `Time Cycle` property format: 
-+
-[source]
-----
-[\#d][\#h][\#m][\#s][#[ms]]
-----
-*Time Duration*
-+
-Marks the timer as a one-time expiration timer. It is the delay after which the timer fires. Possible values are a String interval, a process variable, or the ISO-8601 date format.
-+
-*Time Date*
-+
-Starts the process at the specified date and time in the ISO-8601 date format.
+When used in a sub-process, the execution of the process flow is transferred from the parent process into the sub-process and the Timer start event is triggered. The token is taken from the parent sub-process activity and the Timer start event of the sub-process is triggered and waits for the timer to trigger.
+after the time defined by the timing definition has been reached, the outgoing flow is taken.
 
 [[_escalation_start_event]]
 .Escalation
 
 
-The Escalation Start Event is a start event that is triggered by an escalation with a particular escalation code. 
+The Escalation start event is a start event that is triggered by an escalation with a particular escalation code. 
 //For further information, see <<_escalation>>.
 
-Process can contain multiple Escalation Start Events. The process instance with an Escalation Start Event starts its execution when it receives the defined escalation object. The process is instantiated and the Escalation Start Event is executed immediately, which means its outgoing flow is taken.
-
-
-* Attributes
-+
-*Escalation Code*
-+
-Expected escalation Code.
+Process can contain multiple Escalation start events. The process instance with an Escalation start event starts its execution when it receives the defined escalation object. The process is instantiated and the Escalation start event is executed immediately, which means its outgoing flow is taken.
 
 [[_conditional_start_event]]
 .Conditional
 
-The Conditional Start Event is a start event with a Boolean condition definition. The execution is triggered always when the condition is first evaluated to `false` and then to ``true``. The process execution starts only if the condition is evaluated to `true` after the start event has been instantiated. 
+The Conditional start event is a start event with a Boolean condition definition. The execution is triggered always when the condition is first evaluated to `false` and then to ``true``. The process execution starts only if the condition is evaluated to `true` after the start event has been instantiated. 
 
-A process can contain multiple Conditional Start Events.
-
-* Attributes
-+
-*Expression*
-+
-A Boolean condition that starts the process execution when evaluated to `true`.
-+
-*Language*
-+
-A language of the `Expression` attribute.
+A process can contain multiple Conditional start events.
 
 [[_error_start_event]]
 .Error
-A process or sub-process can contain multiple Error Start Events, which are triggered when an Error object with a particular `ErrorRef` property is received.
-The error object can be produced by an Error End Event, and it signalizes an incorrect process ending. The process instance with the Error Start Event starts execution after it has received the respective error object. The Error Start Event is executed immediately upon receiving the error object, which means its outgoing Flow is taken.
-
-* Attributes
-+
-`ErrorRef`
-A code of the expected error object.
+A process or sub-process can contain multiple Error start events, which are triggered when an Error object with a particular `ErrorRef` property is received.
+The error object can be produced by an Error End Event, and it indicates an incorrect process ending. The process instance with the Error start event starts execution after it has received the respective error object. The Error start event is executed immediately upon receiving the error object, which means its outgoing Flow is taken.
 
 [[_compensation_start_event]]
 .Compensation
 
-A Compensation Start Event is used to start a Compensation Event sub-process when using a sub-process as the target activity of a Compensation Intermediate Event.
+A Compensation start event is used to start a Compensation Event sub-process when using a sub-process as the target activity of a Compensation Intermediate Event.
 
 [[_signal_start_event]]
 .Signal
 
-The Signal Start Event is is triggered by a signal with a particular signal code. 
+The Signal start event is is triggered by a signal with a particular signal code. 
 //For further information, see <<_signals>>.
 
-A process can contain multiple Signal Start Events. The Signal Start Event only starts its execution within the Process instance after the instance has received the respective Signal. Then, the Signal Start Event is executed, which means its outgoing flow is taken.
-
-* Attributes
-+
-*SignalRef*
-The expected Signal Code.
+A process can contain multiple Signal start events. The Signal start event only starts its execution within the Process instance after the instance has received the respective Signal. Then, the Signal start event is executed, which means its outgoing flow is taken.
 
 .Intermediate events
 [cols="5"]
