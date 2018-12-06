@@ -1,5 +1,9 @@
 = Sudoku Example
 
+This example demonstrates how Drools can be used to find a solution in a large potential solution space based on a number of constraints.
+We use the popular puzzle of Sudoku.
+This example also shows how Drools can be integrated into a graphical interface and how callbacks can be used to interact with a running {ENGINE} in order to update the graphical interface based on changes in the Working Memory at runtime.
+
 [source]
 ----
 Name: Sudoku
@@ -9,10 +13,6 @@ Rules file: sudoku.drl, validate.drl
 Objective: Demonstrates the solving of logic problems, and complex pattern matching.
 ----
 
-
-This example demonstrates how Drools can be used to find a solution in a large potential solution space based on a number of constraints.
-We use the popular puzzle of Sudoku.
-This example also shows how Drools can be integrated into a graphical interface and how callbacks can be used to interact with a running {ENGINE} in order to update the graphical interface based on changes in the Working Memory at runtime.
 
 == Sudoku Overview
 
@@ -29,8 +29,7 @@ See http://en.wikipedia.org/wiki/Sudoku[Wikipedia] for a more detailed descripti
 == Running the Example
 
 
-Download and install drools-examples as described above and then execute [path]_java org.drools.examples.DroolsExamplesApp_
- and click on "SudokuExample".
+Download and install drools-examples as described above and then execute [path]_java org.drools.examples.SudokuExample_.
 
 The window contains an empty grid, but the program comes with a number of grids stored internally which can be loaded and solved.
 Click on "File", then "Samples" and select "Simple" to load one of the examples.
@@ -56,7 +55,6 @@ Some examples of these messages are presented below.
 
 
 ----
-
 single 8 at [0,1]
 column elimination due to [1,2]: remove 9 from [4,2]
 hidden single 9 at [1,2]
@@ -65,11 +63,10 @@ remove 6 from [3,8] due to naked pair at [3,2] and [3,7]
 hidden pair in row at [4,6] and [4,4]
 ----
 
-Click on the "Dump" button to see the state of the grid, with cells showing either the established value or the remaining  possibilitiescandidates.
+Click on the "Dump" button to see the state of the grid, with cells showing either the established value or the remaining possibilities/candidates.
 
 
 ----
-
        Col: 0     Col: 1     Col: 2     Col: 3     Col: 4     Col: 5     Col: 6     Col: 7     Col: 8
 Row 0:   2 4  7 9   2 456        4567 9   23 56  9  --- 5 ---  --- 1 ---    3  67 9  --- 8 ---     4 67
 Row 1:  12    7 9  --- 8 ---  1    67 9   23  6  9  --- 4 ---   23  67    1 3  67 9    3  67 9  --- 5 ---
@@ -82,27 +79,25 @@ Row 7:  --- 5 ---  1 34 6     1  4 678     3  6 8   --- 9 ---    34 6 8   1 3  6
 Row 8:    34       --- 9 ---     4 6 8   --- 7 ---  --- 1 ---   23456 8     3 56 8     3 56          6 8
 ----
 
-Now, let us load a Sudoku grid that is deliberately invalid.
-Click on "File", "Samples" and "!DELIBERATELY BROKEN!". Note that this grid starts with some issues, for example the value 5 appears twice in the first row.
+Now, let us load a Sudoku grid that is deliberately invalid. Click on "File", "Samples" and "!DELIBERATELY BROKEN!".
+Note that this grid starts with some issues, for example the value 5 appears twice in the first row.
 
 .Broken initial state
 image::Examples/SudokuExample/sudoku4.png[align="center"]
 
-A few simple rules perform a sanity check, right after loading a grid.
+Nevertheless, click on the "Solve" button to apply the solving rules to this invalid grid.
+This will not complete; some cells remain empty.
+
+There are a few simple rules that perform a sanity check.
 In this case, the following messages are printed on standard output:
 
-
 ----
-
 cell [0,8]: 5 has a duplicate in row 0
 cell [0,0]: 5 has a duplicate in row 0
 cell [6,0]: 8 has a duplicate in col 0
 cell [4,0]: 8 has a duplicate in col 0
 Validation complete.
 ----
-
-Nevertheless, click on the "Solve" button to apply the solving rules to this invalid grid.
-This will not complete; some cells remain empty.
 
 .Broken "solved" state
 image::Examples/SudokuExample/sudoku5.png[align="center"]
@@ -125,18 +120,20 @@ More sophisticated eliminations are done by "X-wings in rows", "X-wings in colum
 The Java source code can be found in the /src/main/java/org/drools/examples/sudoku directory, with the two DRL files defining the rules located in the /src/main/rules/org/drools/examples/sudoku directory.
 
 The package `org.drools.examples.sudoku.swing` contains a set of classes which implement a framework for Sudoku puzzles.
-Note that this package does not have any dependencies on the Drools libraries. `SudokuGridModel` defines an interface which can be implemented to store a Sudoku puzzle as a 9x9 grid of `Cell` objects. `SudokuGridView` is a Swing component which can visualize any implementation of ``SudokuGridModel``. `SudokuGridEvent` and `SudokuGridListener` are used to communicate state changes between the model and the view: events are fired when a cell's value is resolved or changed.
-If you are familiar with the model-view-controller patterns in other Swing components such as `JTable` then this pattern should be familiar. `SudokuGridSamples` provides a number of partially filled Sudoku puzzles for demonstration purposes.
+Note that this package does not have any dependencies on the Drools libraries.
+`SudokuGridModel` defines an interface which can be implemented to store a Sudoku puzzle as a 9x9 grid of `Cell` objects.
+`SudokuGridView` is a Swing component which can visualize any implementation of `SudokuGridModel`.
+`SudokuGridEvent` and `SudokuGridListener` are used to communicate state changes between the model and the view: events are fired when a cell's value is resolved or changed.
+If you are familiar with the model-view-controller patterns in other Swing components such as `JTable` then this pattern should be familiar.
+`SudokuGridSamples` provides a number of partially filled Sudoku puzzles for demonstration purposes.
 
-Package `org.drools.examples.sudoku.rules` contains a utility class with a method for compiling DRL files.
-
-The package `org.drools.examples.sudoku` contains a set of classes implementing the elementary `Cell` object and its various aggregations: the `CellFile` subtypes `CellRow` and `CellCol` as well as ``CellSqr``, all of which are subtypes of ``CellGroup``.
-It's interesting to note that `Cell` and `CellGroup` are subclasses of ``SetOfNine``, which provides a property `free` with the type ``Set<Integer>``.
+The package `org.drools.examples.sudoku` contains a set of classes implementing the elementary `Cell` object and its various aggregations: the `CellFile` subtypes `CellRow` and `CellCol` as well as `CellSqr`, all of which are subtypes of `CellGroup`.
+It's interesting to note that `Cell` and `CellGroup` are subclasses of `SetOfNine`, which provides a property `free` with the type `Set<Integer>`.
 For a `Cell` it represents the individual candidate set; for a `CellGroup` the set is the union of all candidate sets of its cells, or, simply, the set of digits that still need to be allocated.
 
-With 81 `Cell` and 27 `CellGroup` objects and the linkage provided by the `Cell` properties  ``cellRow``, `cellCol` and `cellSqr` and the `CellGroup` property ``cells``, a list of `Cell` objects, it is possible to write rules that detect the specific situations that permit the allocation of a value to a cell or the elimination of a value from some candidate  set.
+With 81 `Cell` and 27 `CellGroup` objects and the linkage provided by the `Cell` properties `cellRow`, `cellCol` and `cellSqr` and the `CellGroup` property `cells`, a list of `Cell` objects, it is possible to write rules that detect the specific situations that permit the allocation of a value to a cell or the elimination of a value from some candidate set.
 
-An object of class `Setting` is used for triggering the operations that accompany the allocation of a value: its removal from the candidate sets of sibling cells and associated cell groups.
+An object of class `Setting` is used for triggering the operations that accompany the allocation of a value.
 Moreover, the presence of a `Setting` fact is used in all rules that should detect a new situation; this is to avoid reactions to inconsistent intermediary states.
 
 An object of class `Stepping` is used in a low priority rule to execute an emergency halt when a "Step" does not terminate regularly.
@@ -148,14 +145,14 @@ The class `org.drools.examples.sudoku.SudokuExample` implements a Java applicati
 
 
 Validation rules detect duplicate numbers in cell groups.
-They are combined in an agenda group which enables us to activate them, explicitly, after loading a puzzle.
+They are combined in an agenda group which enables us to explicitly activate them after loading a puzzle.
 
 The three rules "duplicate in cell..." are very similar.
 The first pattern locates a cell with an allocated value.
 The second pattern pulls in any of the three cell groups the cell belongs to.
 The final pattern would find a cell (other than the first one) with the same value as the first cell and in the same row, column or square, respectively.
 
-Rule "terminate group" fires last.
+Rule "terminate group" is the last to fire.
 It prints a message and calls halt.
 
 == Sudoku Solving Rules (sudoku.drl)
@@ -165,7 +162,7 @@ There are three types of rules in this file: one group handles the allocation of
 
 Rules  "set a value", "eliminate a value from Cell" and "retract setting" depend on the presence of a `Setting` object.
 The first rule handles the assignment to the cell and the operations for removing the value from the "free" sets of the  cell's three groups.
-Also, it decrements a counter that, when zero, returns control to the Java application that has called ``fireUntilHalt()``.
+This group also decrements a counter that, when zero, returns control to the Java application that has called `fireUntilHalt()`.
 The purpose of rule "eliminate a value from Cell" is to reduce the candidate lists of all cells that are related to the newly assigned cell.
 Finally, when all eliminations have been made, rule "retract setting" retracts the triggering `Setting` fact.
 
@@ -174,12 +171,13 @@ Rule "single" fires for a `Cell` with a candidate set containing a single number
 Rule "hidden single" fires when there is no cell with a single candidate but when there is a cell containing a candidate but   this candidate is absent from all other cells in one of the three groups the cell belongs to.
 Both rules create and insert a `Setting` fact.
 
-Rules from the largest group of rules implement, singly or in groups of two or three, various solving techniques, as they are employed when solving Sudoku puzzles manually.
+Rules from the largest group implement, singly or in groups of two or three, various solving techniques, as they are employed when solving Sudoku puzzles manually.
 
 Rule "naked pair" detects identical candidate sets of size 2 in two cells of a group; these two values may be removed from all other candidate sets of that group.
 
-A similar idea motivates the three rules "hidden pair in..."; here, the rules look for a subset of two numbers in exactly two cells of a group, with neither value occurring in any of the other cells of this group.
-This, then, means that all other candidates can be eliminated from the two cells harbouring the hidden pair.
+A similar idea motivates the three rules "hidden pair in...".
+Here, the rules look for a subset of two numbers in exactly two cells of a group, with neither value occurring in any of the other cells of this group.
+This, then, means that all other candidates can be eliminated from the two cells harboring the hidden pair.
 
 A pair of rules deals with "X-wings" in rows and columns.
 When there are only two possible cells for a value in each of two different rows (or columns) and these candidates lie also in the same columns (or rows), then all other candidates for  this value in the columns (or rows) can be eliminated.
