@@ -1,5 +1,6 @@
 = Honest Politician Example
 
+The Honest Politician example goes through the concept of truth maintenance with logical assetions and also the usage of rule salience. This example is to focus on the basic premise that an object can only exist while a statement is true. This example will go through the process of when a rule evaluates to change an existing politician from being honest to being corrupted by an evil corporation. As each politician is evaluated, they start out with their honesty attribute being set to a Boolean of `true`, but a rule will fire that will make them no longer be honest. As they switch their state from them being honest to being corrupt they will then be removed from the Working Memory. The rule salience will tell the engine how to prioritize any rules that have a salience defined for them, otherwise utilizing the default of 0.
 [source]
 ----
 Name: Honest Politician
@@ -10,16 +11,19 @@ Rules file: HonestPoliticianExample.drl
 Objective: Illustrate the concept of "truth maintenance" based on the logical insertion of facts
 ----
 
+== Honest Politician overview
 
-The Honest Politician example demonstrates truth maintenance with logical assertions.
-The basic premise is that an object can only exist while a statement is true.
-A rule's consequence can logically insert an  object with the `insertLogical()` method.
+The basic premise of this example is that an object can only exist while a statement is true.
+A rule's consequence can logically insert an object with the `insertLogical()` method.
 This means the object will only remain in the Working Memory as long as the rule that logically inserted  it remains true.
 When the rule is no longer true the object is automatically retracted.
 
-In this example there is the class ``Politician``, with a name and a boolean value for being honest.
-Four politicians with honest state set to true are inserted.
+=== Politician and Hope classes
 
+In this example there is the class `Politician`, with a name and a boolean value for being honest.
+Four politicians with honest state set to true are inserted for evaluation against the business rules.
+
+The `Politician` class is made up of a string, `name`, and a boolean `honest`. 
 .Class Politician
 ====
 [source,java]
@@ -32,24 +36,43 @@ public class Politician {
 ----
 ====
 
+The `Hope` class is essentially used to define if it exists or not.
+
+.Class Hope
+====
+[source,java]
+----
+public class Hope {
+
+    public Hope() {
+
+    }
+----
+       
+==== 
+
+
+=== Fact creation and rule execution for the Honest Politician example 
 .Honest Politician: Execution
 ====
 [source,java]
 ----
-Politician blair = new Politician("blair", true);
-Politician bush = new Politician("bush", true);
-Politician chirac = new Politician("chirac", true);
-Politician schroder = new Politician("schroder", true);
-    
-ksession.insert( blair );
-ksession.insert( bush );
-ksession.insert( chirac );
-ksession.insert( schroder );
+        final Politician p1 = new Politician( "President of Umpa Lumpa", true );
+        final Politician p2 = new Politician( "Prime Minster of Cheeseland", true );
+        final Politician p3 = new Politician( "Tsar of Pringapopaloo", true );
+        final Politician p4 = new Politician( "Omnipotence Om", true );
+
+        ksession.insert( p1 );
+        ksession.insert( p2 );
+        ksession.insert( p3 );
+        ksession.insert( p4 );
+
 
 ksession.fireAllRules();
 ----
 ====
 
+=== Output from sample execution
 
 The Console window output shows that, while there is at least one honest politician, democracy lives.
 However, as each politician is in turn corrupted by an evil corporation, so that all politicians become dishonest, democracy is dead.
@@ -59,14 +82,19 @@ However, as each politician is in turn corrupted by an evil corporation, so that
 [source]
 ----
 Hurrah!!! Democracy Lives
-I'm an evil corporation and I have corrupted schroder
-I'm an evil corporation and I have corrupted chirac
-I'm an evil corporation and I have corrupted bush
-I'm an evil corporation and I have corrupted blair
+I'm an evil corporation and I have corrupted President of Umpa Lumpa
+I'm an evil corporation and I have corrupted Prime Minster of Cheeseland
+I'm an evil corporation and I have corrupted Tsar of Pringapopaloo
+I'm an evil corporation and I have corrupted Omnipotence Om
 We are all Doomed!!! Democracy is Dead
 ----
 ====
 
+=== Business rule definitions
+
+The Honest Politician example will go through several various rules varying in concept, be it use of salience or the truth maintenance concept. This section will give you an overview of each one individually.
+
+==== "We have an honest Politician" rule
 
 As soon as there is at least one honest politician in the Working Memory a new `Hope` object is logically asserted.
 This object will only exist while there is at least one honest politician.
@@ -78,18 +106,19 @@ This rule is given a salience of 10 to ensure that it fires before any other rul
 [source]
 ----
 rule "We have an honest Politician"
-    salience 10
+    salience 10 <1>
     when
         exists( Politician( honest == true ) )
     then
         insertLogical( new Hope() );
 end
 ----
+<1> The definition of salience here is to give this rule a higher priority than default on order of execution.
 ====
 
-
+==== "Hope Lives" rule
 As soon as a `Hope` object exists the "Hope Lives" rule matches and fires.
-It has a salience of 10 so that it takes priority over "Corrupt the Honest".
+This rule has a salience of 10 so that it takes priority over "Corrupt the Honest". 
 
 .Honest Politician: Rule "Hope Lives"
 ====
@@ -105,6 +134,7 @@ end
 ----
 ====
 
+==== "Corrupt the Honest" rule
 
 Now that there is hope and we have, at the start, four honest politicians, we have four activations for this rule, all in conflict.
 They will fire in turn, corrupting each politician so that they are no longer honest.
@@ -126,6 +156,8 @@ end
 ----
 ====
 
+==== "Hope is Dead" rule
+
 
 With the `Hope` object being automatically retracted, via the truth maintenance system, the conditional element `not` applied to `Hope` is no longer true so that the following rule will match and fire.
 
@@ -140,20 +172,86 @@ rule "Hope is Dead"
         System.out.println( "We are all Doomed!!! Democracy is Dead" );
 end
 ----
+
+
+=== Auditing the execution of the rules trail
+
+Let's take a look at the Audit trail for this application to see how things were executed. To do this we will need to create the Rule Runtime Logger to view this. This was done by modifying the _HonestPoliticianExample.java_ file to reflect the following source code:
+
+[source]
+
+----
+package org.drools.examples.honestpolitician;
+
+import org.kie.api.KieServices;
+import org.kie.api.event.rule.DebugAgendaEventListener; <1>
+import org.kie.api.event.rule.DebugRuleRuntimeEventListener;
+import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
+
+public class HonestPoliticianExample {
+	
+    /**
+     * @param args
+     */
+    public static void main(final String[] args) {
+    	KieServices ks = KieServices.Factory.get(); <2>
+    	//ks = KieServices.Factory.get();
+        KieContainer kc = KieServices.Factory.get().getKieClasspathContainer();
+        System.out.println(kc.verify().getMessages().toString());
+        //execute( kc );
+        execute( ks, kc); <3>
+    }
+
+    public static void execute( KieServices ks, KieContainer kc ) { <4>
+        KieSession ksession = kc.newKieSession("HonestPoliticianKS");
+
+        final Politician p1 = new Politician( "President of Umpa Lumpa", true );
+        final Politician p2 = new Politician( "Prime Minster of Cheeseland", true );
+        final Politician p3 = new Politician( "Tsar of Pringapopaloo", true );
+        final Politician p4 = new Politician( "Omnipotence Om", true );
+
+        ksession.insert( p1 );
+        ksession.insert( p2 );
+        ksession.insert( p3 );
+        ksession.insert( p4 );
+        
+        // The application can also setup listeners <5>
+        ksession.addEventListener( new DebugAgendaEventListener() );
+        ksession.addEventListener( new DebugRuleRuntimeEventListener() );
+
+        // To setup a file based audit logger, uncomment the next line
+        ks.getLoggers().newFileLogger( ksession, "./target/honestpolitician" ); <6>
+
+        ksession.fireAllRules();
+
+        ksession.dispose();
+    }
+
+}
+
+----
+
+<1> Add to your imports the packages that handle the `DebugAgendaEventListener` and `DebugRuleRuntimeEventListener` 
+<2> Create a `KieServices Factory`, `ks` which will be used to produce the logs as at the KieContainer level this audit log is not available.
+<3> Modify the execute method to use both the KieServices and KieContainer
+<4> Modify the execute method to now also pass in KieServices in addition to the KieContainer
+<5> Create the listeners
+<6> Build the log that can be passed into the Audit view upon execution of the rules
+
+
 ====
 
-
-Let's take a look at the Audit trail for this application:
-
 .Honest Politician Example Audit View
-image::Examples/HonestPoliticianExample/honest_politician_audit.png[align="center"]
+image::Examples/HonestPoliticianExample/honest_politician_audit.png[align="center"] 
 
-
+==== Audit Trail Walk through
+    
 The moment we insert the first politician we have two activations.
-The rule "We have an honest Politician" is activated only once for the first inserted politician because it uses an `exists` conditional element, which matches once for any number.
+The rule "We have an honest Politician" is activated only once for the first inserted politician because it uses an `exists` conditional element, which matches once for any number of politicians that are inserted (as long as there is one).
 The rule "Hope is Dead" is also activated at this stage, because we have not yet inserted the `Hope` object.
-Rule "We have an honest Politician" fires first, as it has a higher salience than "Hope is Dead", which inserts the `Hope` object.
-(That action is highlighted green.) The insertion of the `Hope` object activates "Hope Lives" and de-activates "Hope is Dead"; it also activates "Corrupt the Honest" for each inserted honest politician.
+The rule "We have an honest Politician" fires first, as it has a higher salience than "Hope is Dead", which inserts the `Hope` object.
+(That action is highlighted green.) The insertion of the `Hope` object activates "Hope Lives" and de-activates "Hope is Dead"; it also activates the rule "Corrupt the Honest" for each inserted honest politician.
 Rule "Hope Lives" executes, printing  "Hurrah!!! Democracy Lives". Then, for each politician, rule "Corrupt the Honest" fires, printing "I'm an evil corporation and I have corrupted X", where X is the name of the politician, and modifies the politician's honest value to false.
 When the last honest politician is corrupted, `Hope` is automatically retracted, by the truth maintenance system, as shown by the blue highlighted area.
 The green highlighted area shows the origin of the currently selected blue highlighted area.
