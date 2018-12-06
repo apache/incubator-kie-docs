@@ -1,0 +1,930 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE book [
+<!ENTITY % sgml.features "IGNORE">
+<!ENTITY % xml.features "INCLUDE">
+<!ENTITY % DOCBOOK_ENTS PUBLIC "-//OASIS//ENTITIES DocBook Character Entities V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/dbcentx.mod">
+%DOCBOOK_ENTS;
+]>
+<?asciidoc-toc?><?asciidoc-numbered?><book xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" version="5.0">
+<info>
+<title>Creating Red Hat Process Automation Manager business applications with Spring Boot</title><subtitle>
+</subtitle>
+
+<date>2018-12-06</date>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Author_Group.xml"/>
+<authorinitials>RC</authorinitials>
+<productname>Red Hat Process Automation Manager</productname>
+<productnumber>7.2</productnumber>
+<abstract>
+	<para>This document describes how to create Red Hat Process Automation Manager business applications using Spring Boot starters.
+</para>
+</abstract>
+<xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Common_Content/Legal_Notice.xml"/>
+</info>
+<preface>
+<title>Preface</title>
+<simpara>As a developer, you can use Spring Boot starters, through the <link xlink:href="https://start.jbpm.org">start.jbpm.org</link> web site, to quickly create Red Hat Business Automation business applications, configure those applications, and deploy them to an existing service or in the cloud.</simpara>
+</preface>
+<chapter xml:id="bus_app_business-applications">
+<title>Red Hat Process Automation Manager business applications</title>
+<simpara>Spring Framework is a Java platform that provides comprehensive infrastructure support for developing Java applications. Spring Boot is Spring’s lightweight framework based on Spring Boot starters, <literal>pom.xml</literal> files that contain a set of dependency descriptors that you can include in your application.</simpara>
+<simpara>Red Hat Process Automation Manager business applications are flexible, UI-agnostic logical groupings of individual services that provide certain business capabilities. Business applications are based on Spring Boot starters. They are usually deployed separately and can be versioned individually. A complete business application enables a domain to achieve specific business goals, for example order management or accommodation management.</simpara>
+<simpara>On the <link xlink:href="https://start.jbpm.org">business application</link>  web site you can create a Process Automation Manager, Decision Manager, or Business Optimizer business application. After you create and configure your business application, you can deploy it to an existing service or to the cloud, through OpenShift.</simpara>
+<simpara>Business applications can contain one or more of the following projects and more than one project of the same type:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Business assets (kjar): Contains business processes, rules, and forms and are easily imported into Business Central.</simpara>
+</listitem>
+<listitem>
+<simpara>Data model: Data model projects provide common data structures that are shared between the service projects and business assets projects. This enables proper encapsulation, promotes reuse, and reduces shortcuts. Each service project can expose its own public data model.</simpara>
+</listitem>
+<listitem>
+<simpara>Service: A deployable project that provides the actual service with various capabilities. It includes the business logic that operates your business. In most cases, a service  project includes business assets and data model projects. A business application can split services into smaller component service projects for better manageability.</simpara>
+</listitem>
+</itemizedlist>
+</chapter>
+<chapter xml:id="bus-app-create_business-applications">
+<title>Creating a business application</title>
+<simpara>You can use the <link xlink:href="https://start.jbpm.org">business application</link> web site to quickly and easily create business applications using the Spring Boot framework. Doing this by-passes the need to install and configure the Business Automation product.</simpara>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Enter the following URL in a web browser:</simpara>
+<screen>https://start.jbpm.org</screen>
+</listitem>
+<listitem>
+<simpara>Click <emphasis role="strong">Configure your business application</emphasis>.</simpara>
+</listitem>
+<listitem>
+<simpara>Click <emphasis role="strong">Business Automation</emphasis> and click <emphasis role="strong">Next</emphasis>.</simpara>
+</listitem>
+<listitem>
+<simpara>Enter a package and application name.</simpara>
+</listitem>
+<listitem>
+<simpara>From the <emphasis role="strong">Version</emphasis> menu, select <emphasis role="strong">Enterprise 7.2</emphasis> and click <emphasis role="strong">Next</emphasis>.</simpara>
+<note>
+<simpara>You must select <emphasis role="strong">Enterprise 7.2</emphasis> to create a Red Hat Process Automation Manager business application.</simpara>
+</note>
+</listitem>
+<listitem>
+<simpara>Select the project types that you want to include in your project. You can include more than one project type.</simpara>
+<itemizedlist>
+<listitem>
+<simpara><emphasis role="strong">Business Assets</emphasis>: Contains business processes, rules, and forms and are easily imported into Business Central.  Select <emphasis role="strong">Dynamic Assets</emphasis> instead if you want to add adaptive and dynamic assets such as cases.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Data Model</emphasis>: Provides common data structures that are shared between the service projects and business assets projects. This enables proper encapsulation, promotes reuse, and reduces shortcuts. Each service project can expose its own public data model.</simpara>
+</listitem>
+<listitem>
+<simpara><emphasis role="strong">Service</emphasis>: Includes business logic that operates your business.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Click <emphasis role="strong">Generate business application</emphasis>.</simpara>
+<simpara>The <literal>&lt;business-application&gt;.zip</literal> file downloads, where <literal>&lt;business-application&gt;</literal> is the name that you entered in the <emphasis role="strong">Application Name</emphasis> box.</simpara>
+</listitem>
+<listitem>
+<simpara>Unzip the <literal>&lt;business-application&gt;.zip</literal> file.</simpara>
+</listitem>
+<listitem>
+<simpara>Open the  <literal>&lt;business-application&gt;/business-application-service/src/main/docker/settings.xml</literal> file in a text editor.</simpara>
+</listitem>
+<listitem>
+<simpara>Add the following repository the <literal>repositories</literal> element:</simpara>
+<screen>&lt;repository&gt;
+  &lt;id&gt;jboss-enterprise-repository-group&lt;/id&gt;
+  &lt;name&gt;Red Hat JBoss Enterprise Maven Repository&lt;/name&gt;
+  &lt;url&gt;https://maven.repository.redhat.com/ga/&lt;/url&gt;
+  &lt;layout&gt;default&lt;/layout&gt;
+  &lt;releases&gt;
+    &lt;updatePolicy&gt;never&lt;/updatePolicy&gt;
+  &lt;/releases&gt;
+  &lt;snapshots&gt;
+    &lt;updatePolicy&gt;daily&lt;/updatePolicy&gt;
+  &lt;/snapshots&gt;
+&lt;/repository&gt;</screen>
+</listitem>
+<listitem>
+<simpara>Add the following plug-in repository to the <literal>pluginRepositories</literal> element:</simpara>
+<screen>&lt;pluginRepository&gt;
+  &lt;id&gt;jboss-enterprise-repository-group&lt;/id&gt;
+  &lt;name&gt;Red Hat JBoss Enterprise Maven Repository&lt;/name&gt;
+  &lt;url&gt;https://maven.repository.redhat.com/ga/&lt;/url&gt;
+  &lt;layout&gt;default&lt;/layout&gt;
+  &lt;releases&gt;
+    &lt;updatePolicy&gt;never&lt;/updatePolicy&gt;
+  &lt;/releases&gt;
+  &lt;snapshots&gt;
+    &lt;updatePolicy&gt;daily&lt;/updatePolicy&gt;
+  &lt;/snapshots
+&lt;/pluginRepository&gt;</screen>
+<simpara>Doing this adds the productized Maven repository to your business application.</simpara>
+</listitem>
+</orderedlist>
+</chapter>
+<chapter xml:id="configuring_your_business_application" remap="_configuring_your_business_application">
+<title>Configuring your business application</title>
+<section xml:id="bus-app-auth_business-applications">
+<title>Business application authentication and authorization</title>
+<simpara>By default, business applications are secured by protecting all REST endpoints
+(URLs that contain <literal>/rest/</literal>). In addition, business applications have two sets of log in credentials that allow users to connect to  Business Central in development mode: the user with the ID <literal>user</literal> and password <literal>user</literal>  and the  <literal>kieserver</literal> user (password <literal>kieserver1!</literal>).</simpara>
+<simpara>Both authentication and authorization is based on Spring security. Alter this security configuration for all business applications used in production environments. You can
+make configuration changes in the <literal>&lt;business-application&gt;/&lt;business-application&gt;-services/src/main/java/com/company/service/DefaultWebSecurityConfig.java</literal> file:</simpara>
+<screen>import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+
+
+@Configuration("kieServerSecurity")
+@EnableWebSecurity
+public class DefaultWebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+        .csrf().disable()
+        .authorizeRequests()
+        .antMatchers("/rest/*").authenticated()
+        .and()
+        .httpBasic();
+    }
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication().withUser("user").password("user").roles("kie-server");
+        auth.inMemoryAuthentication().withUser("kieserver").password("kieserver1!").roles("kie-server");
+    }
+}</screen>
+</section>
+<section xml:id="bus-app-con-app-prop_business-applications">
+<title>Configuring the application.properties file for a business application</title>
+<simpara>After you create your business application, there are several components that you can configure through the <literal>application.properties</literal> file to customize your application.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business application</link>  web site.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Unzip the <literal>&lt;business-application&gt;.zip</literal> file and navigate to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service/src/main/resources</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Open the <literal>application.properties</literal> file in a text editor.</simpara>
+</listitem>
+<listitem>
+<simpara>Configure the host, port, and path for the REST endpoints, for example:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">server.address=localhost
+server.port=8090
+
+cxf.path=/rest</programlisting>
+</listitem>
+<listitem>
+<simpara>Configure the Process Server (<literal>kieserver</literal>) so that it can be more easily identified, for example:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">kieserver.serverId=&lt;business-application&gt;-service
+kieserver.serverName=&lt;business-application&gt;-service
+kieserver.location=http://localhost:8090/rest/server
+kieserver.controllers=http://localhost:8080/jbpm-console/rest/controller</programlisting>
+<table frame="all" rowsep="1" colsep="1">
+<title>kieserver parameters</title>
+<tgroup cols="3">
+<colspec colname="col_1" colwidth="30*"/>
+<colspec colname="col_2" colwidth="15*"/>
+<colspec colname="col_3" colwidth="55*"/>
+<thead>
+<row>
+<entry align="left" valign="top">Parameter</entry>
+<entry align="left" valign="top">Values</entry>
+<entry align="left" valign="top">Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.serverId</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>string</simpara></entry>
+<entry align="left" valign="top"><simpara>The id used to identify the business application when connecting to the Process Automation Manager controller.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.serverName</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>string</simpara></entry>
+<entry align="left" valign="top"><simpara>The   name used to identify the business application when connecting to the Process Automation Manager controller. Can be the same string used for the <literal>kieserver.serverId</literal> parameter.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.location</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>URL</simpara></entry>
+<entry align="left" valign="top"><simpara>Used by other components that use the REST API to identify the location of this server. Do not use the location as defined by <literal>server.address</literal> and <literal>server.port</literal>.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.controllers</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>URLs</simpara></entry>
+<entry align="left" valign="top"><simpara>A comma-separated list of controller URLs.</simpara></entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+</listitem>
+<listitem>
+<simpara>To enable asynchronous execution, set the value of the <literal>jbpm.executor.enabled</literal> parameter to <literal>true</literal>, uncomment the other <literal>jbpm.executor</literal> parameters, and change the values as required, for example:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">jbpm.executor.enabled=true
+jbpm.executor.retries=5
+jbpm.executor.interval=0
+jbpm.executor.threadPoolSize=1
+jbpm.executor.timeUnit=SECONDS</programlisting>
+<table frame="all" rowsep="1" colsep="1">
+<title>Executor parameters</title>
+<tgroup cols="3">
+<colspec colname="col_1" colwidth="30*"/>
+<colspec colname="col_2" colwidth="15*"/>
+<colspec colname="col_3" colwidth="55*"/>
+<thead>
+<row>
+<entry align="left" valign="top">Parameter</entry>
+<entry align="left" valign="top">Values</entry>
+<entry align="left" valign="top">Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry align="left" valign="top"><simpara><literal>jbpm.executor.enabled</literal></simpara></entry>
+<entry align="left" valign="top"><simpara><literal>true, false</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Disables or enables the executor component.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>jbpm.executor.retries</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>integer</simpara></entry>
+<entry align="left" valign="top"><simpara>Specifies the number of retries if errors occur while a job is running.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>jbpm.executor.interval</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>integer</simpara></entry>
+<entry align="left" valign="top"><simpara>Specifies the length of time that the executor uses to synchronize with the database. The unit of time is specified by the <literal>jbpm.executor.timeUnit</literal> parameter. Disabled by default (value <literal>0</literal>).</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>jbpm.executor.threadPoolSize</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>integer</simpara></entry>
+<entry align="left" valign="top"><simpara>Specifies the thread pool size.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>jbpm.executor.timeUnit</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>string</simpara></entry>
+<entry align="left" valign="top"><simpara>Specifies the time unit used to calculate the interval that the executor uses to synchronize with the database. The value must be a valid constant of <literal>java.util.concurrent.TimeUnit</literal>. The default value is <literal>SECONDS</literal>.</simpara></entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+</listitem>
+<listitem>
+<simpara>If you selected <emphasis role="strong">Business Automation</emphasis> when you created your business application, specify the components that you want to start at runtime.</simpara>
+<table frame="all" rowsep="1" colsep="1">
+<title><literal>kieserver</literal> capabilities parameters</title>
+<tgroup cols="3">
+<colspec colname="col_1" colwidth="30*"/>
+<colspec colname="col_2" colwidth="15*"/>
+<colspec colname="col_3" colwidth="55*"/>
+<thead>
+<row>
+<entry align="left" valign="top">Parameter</entry>
+<entry align="left" valign="top">Values</entry>
+<entry align="left" valign="top">Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.drools.enabled</literal></simpara></entry>
+<entry align="left" valign="top"><simpara><literal>true, false</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Enables or disables the Decision Manager component.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.dmn.enabled</literal></simpara></entry>
+<entry align="left" valign="top"><simpara><literal>true, false</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Enables or disables the Decision Model and Notation (DMN) component.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.jbpm.enabled</literal></simpara></entry>
+<entry align="left" valign="top"><simpara><literal>true, false</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Enables or disables Business Central.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.jbpmui.enabled</literal></simpara></entry>
+<entry align="left" valign="top"><simpara><literal>true, false</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Enables or disables Business Central.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>kieserver.casemgmt.enabled</literal></simpara></entry>
+<entry align="left" valign="top"><simpara><literal>true, false</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Enables or disables the case management component.</simpara></entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+</listitem>
+</orderedlist>
+</section>
+<section xml:id="bus-app-rh-sso_business-applications">
+<title>Configuring the business application with Red Hat Single Sign-On</title>
+<simpara>You can use Red Hat Single Sign-On (RH SSO) to enable single sign-on between your services and to have a central place to configure and manage your users and roles.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business applications</link> web site.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Download and install RH SSO. For instructions, see the <link xlink:href="https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.2/html/getting_started_guide/"><emphasis>Red Hat Single Sign-On Getting Started Guide</emphasis></link>.</simpara>
+</listitem>
+<listitem>
+<simpara>Configure RH SSO:</simpara>
+<orderedlist numeration="loweralpha">
+<listitem>
+<simpara>Either use the default master realm or create a new realm.</simpara>
+</listitem>
+<listitem>
+<simpara>Create the <literal>springboot-app</literal> client and set the <literal>AccessType</literal> to public.</simpara>
+</listitem>
+<listitem>
+<simpara>Set a valid redirect URI and web origin according to your local setup, for example:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Valid redirect URIs: <link xlink:href="http://localhost:8090/*">http://localhost:8090/*</link></simpara>
+</listitem>
+<listitem>
+<simpara>Web Origins: <link xlink:href="http://localhost:8090">http://localhost:8090</link></simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Create realm roles that are used in the application.</simpara>
+</listitem>
+<listitem>
+<simpara>Create users used in the application and assign roles to them.</simpara>
+</listitem>
+</orderedlist>
+</listitem>
+<listitem>
+<simpara>Add the following dependencies to service project <literal>pom.xml</literal> file:</simpara>
+<programlisting language="xml" linenumbering="unnumbered">&lt;dependencyManagement&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.keycloak.bom&lt;/groupId&gt;
+      &lt;artifactId&gt;keycloak-adapter-bom&lt;/artifactId&gt;
+      &lt;version&gt;${version.org.keycloak}&lt;/version&gt;
+      &lt;type&gt;pom&lt;/type&gt;
+      &lt;scope&gt;import&lt;/scope&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;
+
+  ....
+
+&lt;dependency&gt;
+  &lt;groupId&gt;org.keycloak&lt;/groupId&gt;
+  &lt;artifactId&gt;keycloak-spring-boot-starter&lt;/artifactId&gt;
+&lt;/dependency&gt;</programlisting>
+</listitem>
+<listitem>
+<simpara>Update the <literal>application.properties</literal> file:</simpara>
+<programlisting language="bash" linenumbering="unnumbered"># keycloak security setup
+keycloak.auth-server-url=http://localhost:8100/auth
+keycloak.realm=master
+keycloak.resource=springboot-app
+keycloak.public-client=true
+keycloak.principal-attribute=preferred_username
+keycloak.enable-basic-auth=true</programlisting>
+</listitem>
+<listitem>
+<simpara>Modify the <literal>DefaultWebSecurityConfig.java</literal> file to ensure that Spring Security works correctly with RH SSO:</simpara>
+<screen>import org.keycloak.adapters.KeycloakConfigResolver;
+import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
+import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+
+@Configuration("kieServerSecurity")
+@EnableWebSecurity
+public class DefaultWebSecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        super.configure(http);
+        http
+        .csrf().disable()
+        .authorizeRequests()
+            .anyRequest().authenticated()
+            .and()
+        .httpBasic();
+    }
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+        SimpleAuthorityMapper mapper = new SimpleAuthorityMapper();
+        mapper.setPrefix("");
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(mapper);
+        auth.authenticationProvider(keycloakAuthenticationProvider);
+    }
+
+    @Bean
+    public KeycloakConfigResolver KeycloakConfigResolver() {
+       return new KeycloakSpringBootConfigResolver();
+    }
+
+    @Override
+    protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+        return new RegisterSessionAuthenticationStrategy(new SessionRegistryImpl());
+    }
+}</screen>
+</listitem>
+</orderedlist>
+</section>
+<section xml:id="bus-app-quartz_business-applications">
+<title>Configuring the business application for a cluster using Quartz</title>
+<simpara>If you plan to run your application in a cluster you must configure the Quartz timer service.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business application</link> web site, that you want to use in a cluster.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Create the <literal>quartz.properties</literal> file and add the following content:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">#============================================================================
+# Configure Main Scheduler Properties
+#============================================================================
+org.quartz.scheduler.instanceName = SpringBootScheduler
+org.quartz.scheduler.instanceId = AUTO
+org.quartz.scheduler.skipUpdateCheck=true
+org.quartz.scheduler.idleWaitTime=1000
+#============================================================================
+# Configure ThreadPool
+#============================================================================
+org.quartz.threadPool.class = org.quartz.simpl.SimpleThreadPool
+org.quartz.threadPool.threadCount = 5
+org.quartz.threadPool.threadPriority = 5
+#============================================================================
+# Configure JobStore
+#============================================================================
+org.quartz.jobStore.misfireThreshold = 60000
+org.quartz.jobStore.class=org.quartz.impl.jdbcjobstore.JobStoreCMT
+org.quartz.jobStore.driverDelegateClass=org.jbpm.process.core.timer.impl.quartz.DeploymentsAwareStdJDBCDelegate
+org.quartz.jobStore.useProperties=false
+org.quartz.jobStore.dataSource=myDS
+org.quartz.jobStore.nonManagedTXDataSource=notManagedDS
+org.quartz.jobStore.tablePrefix=QRTZ_
+org.quartz.jobStore.isClustered=true
+org.quartz.jobStore.clusterCheckinInterval = 5000
+#============================================================================
+# Configure Datasources
+#============================================================================
+org.quartz.dataSource.myDS.connectionProvider.class=org.jbpm.springboot.quartz.SpringConnectionProvider
+org.quartz.dataSource.myDS.dataSourceName=quartzDataSource
+org.quartz.dataSource.notManagedDS.connectionProvider.class=org.jbpm.springboot.quartz.SpringConnectionProvider
+org.quartz.dataSource.notManagedDS.dataSourceName=quartzNotManagedDataSource</programlisting>
+<note>
+<simpara>Data source names in the quartz configuration file refer to Spring beans. The connection provider must be set to <literal>org.jbpm.springboot.quartz.SpringConnectionProvider</literal>
+to enable integration with Spring-based data sources.</simpara>
+</note>
+</listitem>
+<listitem>
+<simpara>Include the following properties in the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service/src/main/resourcesapplication.properties</literal> file to enable the Quartz clustered timers and set the path of the <literal>quartz.properties</literal> file that you created inthe previous step:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">jbpm.quartz.enabled=true
+jbpm.quartz.configuration=quartz.properties</programlisting>
+</listitem>
+<listitem>
+<simpara>Create a managed and an unmanaged data source by adding the following content to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service/src/main/resources/application.properties</literal> file.</simpara>
+<programlisting language="bash" linenumbering="unnumbered"># enable to use data base as storage
+jbpm.quartz.db=true
+
+quartz.datasource.name=quartz
+quartz.datasource.username=sa
+quartz.datasource.password=sa
+quartz.datasource.url=jdbc:h2:./target/spring-boot-jbpm;MVCC=true
+quartz.datasource.driver-class-name=org.h2.Driver
+
+# used to configure connection pool
+quartz.datasource.dbcp2.maxTotal=15
+
+# used to initialize quartz schema
+quartz.datasource.initialization=true
+spring.datasource.schema=classpath*:&lt;QUARTZ_TABLES_H2&gt;.sql
+spring.datasource.initialization-mode=always</programlisting>
+<simpara>In the preceding example, replace <literal>&lt;QUARTZ_TABLES_H2&gt;</literal> with the name of a Quartz H2 database schema script. The last three lines of the preceding configuration initialize the
+database schema.</simpara>
+</listitem>
+</orderedlist>
+<simpara>By default, Quartz requires two data sources:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Managed data source to participate in the transaction of the process engine</simpara>
+</listitem>
+<listitem>
+<simpara>Not managed data source to look up timers to trigger without any transaction handling</simpara>
+</listitem>
+</itemizedlist>
+<simpara>Red Hat Process Automation Manager business applications assume that the Quartz database (schema) will be co-located with Red Hat Process Automation Manager tables and therefore produce data sources used for transactional operations for Quartz.</simpara>
+<simpara>The other (non transactional) data source must be configured but it should point
+to the same database as the main data source.</simpara>
+</section>
+<section xml:id="bus-app-user-group_business-applications">
+<title>Configuring business application user group providers</title>
+<simpara>With Business Automation applications, you can manage human-centric activities. To provide integration with user and group repositories, there are two KIE API entry points available:</simpara>
+<itemizedlist>
+<listitem>
+<simpara><literal>UserGroupCallback</literal>: Responsible for verifying whether a user or group exists and for collecting groups for a specific user</simpara>
+</listitem>
+<listitem>
+<simpara><literal>UserInfo</literal>: Responsible for collecting additional information about users and groups, for example email addresses and preferred language</simpara>
+</listitem>
+</itemizedlist>
+<simpara>You can configure both of these components by providing alternative code, either code provided out of the box or custom developed code.</simpara>
+<simpara>For the <literal>UserGroupCallback</literal> component, retain the default implementation because it is based on the security context of the application. For this reason, it does not matter which backend store is used for authentication and authorisation (for example, RH-SSO). It will be automatically used as source of information for collecting user and group information.</simpara>
+<simpara>It uses the back-end store, for example RH-SSO, for authentication and authorization and as source of information for collecting user and group information.</simpara>
+<simpara>Because <literal>UserInfo</literal> must collect more advanced information, it is a separate component.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business application</link> web site and that contains a business automation project.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>To provide an alternative implementation of <literal>UserGroupCallback</literal>, add the following code to the Application class or a separate class annotated with <literal>@Configuration</literal>:</simpara>
+<programlisting language="java" linenumbering="unnumbered">@Bean(name = "userGroupCallback")
+public UserGroupCallback userGroupCallback(IdentityProvider identityProvider) throws IOException {
+    return new MyCustomUserGroupCallback(identityProvider);
+}</programlisting>
+</listitem>
+<listitem>
+<simpara>To provide an alternative implementation of <literal>UserInfo</literal>, add the following code to the Application class or a separate class annotated with <literal>@Configuration</literal>:</simpara>
+<programlisting language="java" linenumbering="unnumbered">@Bean(name = "userInfo")
+public UserInfo userInfo() throws IOException {
+    return new MyCustomUserInfo();
+}</programlisting>
+</listitem>
+</orderedlist>
+</section>
+<section xml:id="bus-app-config-data-source_business-applications">
+<title>Configuring a business application with a MySQL or PostgreSQL database</title>
+<simpara>Red Hat Process Automation Manager business applications are generated with the default H2 database. You can change the database type to MySQL or PostgreSQL.</simpara>
+<formalpara>
+<title>Prerequisite</title>
+<para>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business applications</link> web site.</para>
+</formalpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Unzip the <literal>&lt;business-application&gt;.zip</literal> file and navigate to the <literal>&lt;business-application&gt;/business-application-service/src/main/resources</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Open the <literal>application.properties</literal> file in a text editor.</simpara>
+</listitem>
+<listitem>
+<simpara>To configure your business application to use a MySQL database, find the following parameters in the <literal>application.properties</literal> file and change the values as shown:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">spring.datasource.username=jbpm
+spring.datasource.password=jbpm
+spring.datasource.url=jdbc:mysql://localhost:3306/jbpm
+spring.datasource.driver-class-name=com.mysql.jdbc.jdbc2.optional.MysqlXADataSource
+
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQL5InnoDBDialect</programlisting>
+</listitem>
+<listitem>
+<simpara>To configure your business application to use a PostgreSQL database, find the following parameters in the <literal>application.properties</literal> file and change the values as shown:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">spring.datasource.username=jbpm
+spring.datasource.password=jbpm
+spring.datasource.url=jdbc:postgresql://localhost:5432/jbpm
+spring.datasource.driver-class-name=org.postgresql.xa.PGXADataSource
+
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect</programlisting>
+</listitem>
+<listitem>
+<simpara>Save the <literal>application.properties</literal> file.</simpara>
+</listitem>
+</orderedlist>
+</section>
+<section xml:id="bus-app-config-jpa_business-applications">
+<title>Configuring business applications for JPA</title>
+<simpara>The Java Persistence API (JPA) is a standard technology that enables you to map objects to relational databases. You must configure JPA for your Red Hat Process Automation Manager business application.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a Red Hat Process Automation Manager <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business applications</link>  web site.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Unzip the <literal>&lt;business-application&gt;.zip</literal> file and navigate to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service/src/main/resources</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Open the <literal>application.properties</literal> file in a text editor.</simpara>
+</listitem>
+<listitem>
+<simpara>Find the following parameters in the <literal>application.properties</literal> file and verify that they have the values shown:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+spring.jpa.properties.hibernate.show_sql=false
+spring.jpa.properties.hibernate.hbm2ddl.auto=update
+spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl</programlisting>
+</listitem>
+<listitem>
+<simpara>If your business application has business automation capabilities, you can add entities to the entity manager factory by adding a comma-separated listed of packages:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">spring.jpa.properties.entity-scan-packages=org.jbpm.springboot.samples.entities</programlisting>
+<simpara>Business applications with business automation capabilities create an entity manager factory based on the <literal>persistence.xml</literal> file that comes with Red Hat Process Automation Manager. All entities found in the <literal>org.jbpm.springboot.samples.entities</literal> package are automatically added to the entity manager factory and used the same as any other JPA entity in the application.</simpara>
+</listitem>
+</orderedlist>
+<informalexample>
+<simpara>For more information about configuring JPA, see the  <link xlink:href="https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle"><emphasis>Spring Boot Reference Guide</emphasis></link>.</simpara>
+</informalexample>
+</section>
+<section xml:id="bus-app-swagger_business-applications">
+<title>Enable Swagger documentation</title>
+<simpara>You can enable Swagger-based documentation for all endpoints
+available in the service project of your Red Hat Process Automation Manager business application.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business applications</link> web site.</simpara>
+<orderedlist numeration="arabic">
+<listitem>
+<simpara>Unzip the <literal>&lt;business-application&gt;.zip</literal> file and navigate to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Open the service project <literal>pom.xml</literal> file in a text editor.</simpara>
+</listitem>
+<listitem>
+<simpara>Add the following dependencies to service project <literal>pom.xml</literal> file and save the file.</simpara>
+<programlisting language="xml" linenumbering="unnumbered">&lt;dependency&gt;
+  &lt;groupId&gt;org.apache.cxf&lt;/groupId&gt;
+  &lt;artifactId&gt;cxf-rt-rs-service-description-swagger&lt;/artifactId&gt;
+  &lt;version&gt;3.1.11&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;io.swagger&lt;/groupId&gt;
+  &lt;artifactId&gt;swagger-jaxrs&lt;/artifactId&gt;
+  &lt;version&gt;1.5.15&lt;/version&gt;
+  &lt;exclusions&gt;
+    &lt;exclusion&gt;
+      &lt;groupId&gt;javax.ws.rs&lt;/groupId&gt;
+      &lt;artifactId&gt;jsr311-api&lt;/artifactId&gt;
+    &lt;/exclusion&gt;
+  &lt;/exclusions&gt;
+&lt;/dependency&gt;</programlisting>
+</listitem>
+<listitem>
+<simpara>To enable the Swagger UI (optional), add the following dependency to the <literal>pom.xml</literal> file and save the file.</simpara>
+<programlisting language="xml" linenumbering="unnumbered">&lt;dependency&gt;
+  &lt;groupId&gt;org.webjars&lt;/groupId&gt;
+  &lt;artifactId&gt;swagger-ui&lt;/artifactId&gt;
+  &lt;version&gt;2.2.10&lt;/version&gt;
+&lt;/dependency&gt;</programlisting>
+</listitem>
+<listitem>
+<simpara>Open the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service/src/main/resources/application.properties</literal> file in a text editor.</simpara>
+</listitem>
+<listitem>
+<simpara>Add the following line to the <literal>application.properties</literal> file to enable Swagger support:</simpara>
+<programlisting language="bash" linenumbering="unnumbered">kieserver.swagger.enabled=true</programlisting>
+</listitem>
+</orderedlist>
+</listitem>
+</itemizedlist>
+<simpara>After you start the business application, you can view the Swagger document at <link xlink:href="http://localhost:8090/rest/swagger.json">http://localhost:8090/rest/swagger.json</link>. The complete set of
+endpoints is available at <link xlink:href="http://localhost:8090/rest/api-docs/?url=../swagger.json">http://localhost:8090/rest/api-docs/?url=../swagger.json</link>.</simpara>
+</section>
+</chapter>
+<chapter xml:id="bus-app-run_business-applications">
+<title>Running business applications</title>
+<simpara>By default, business applications contain a single runnable project, the service project. You can run the service project on Windows or Linux, in standalone or development (managed) mode. Standalone mode enables you to start your application without additional requirements. Applications started in development mode require Business Central to be available as the Process Automation Manager controller.</simpara>
+<section xml:id="bus-apps-run-standard_business-applications">
+<title>Running business applications in standalone mode</title>
+<simpara>Standalone mode enables you to start your business application without additional requirements.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that you created using the <link xlink:href="http://start.jbpm.org">business applications</link>  web site.</simpara>
+</listitem>
+<listitem>
+<simpara>The business application is configured.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Navigate to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Enter one of the following commands:</simpara>
+<table frame="all" rowsep="1" colsep="1">
+<title>Standalone launch options</title>
+<tgroup cols="2">
+<colspec colname="col_1" colwidth="50*"/>
+<colspec colname="col_2" colwidth="50*"/>
+<tbody>
+<row>
+<entry align="left" valign="top"><simpara>Command</simpara></entry>
+<entry align="left" valign="top"><simpara>Description</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch.sh clean install</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in standalone mode on Linux or Unix.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch.bat clean install</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in standalone mode on Windows.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch.sh clean install -Pmysql</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in standalone mode on Linux or Unix if you have configured for a MySQL database.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch.bat clean install -Pmysql</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in standalone mode on Windows if you have configured for a MySQL database.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch.sh clean install -Ppostgres</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in standalone mode on Linux or Unix if you have configured for a postgreSQL database.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch.bat clean install -Ppostgres</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in standalone mode on Windows if you have configured for a PostgreSQL database.</simpara></entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+<simpara>The <literal>clean install</literal> argument directs Maven to build a fresh installation. The projects are then built in the following order:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Data model</simpara>
+</listitem>
+<listitem>
+<simpara>Business assets</simpara>
+</listitem>
+<listitem>
+<simpara>Service</simpara>
+<simpara>The first time that you run the script, it might take a while to build the project because all dependencies of the project are downloaded. At the end of the build, the application starts.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Enter the following command to access your business application:</simpara>
+<screen>http://localhost:8090/</screen>
+</listitem>
+<listitem>
+<simpara>Enter the credentials <literal>user</literal>/<literal>user</literal>  or <literal>kieserver</literal>/<literal>kieserver1!</literal>.</simpara>
+</listitem>
+</orderedlist>
+</section>
+<section xml:id="bus-apps-run-managed_business-applications">
+<title>Running business applications in development mode</title>
+<simpara>Development (managed) mode enables developers to work on a Red Hat Process Automation Manager business application business assets project and dynamically deploy changes to the business application without the need to restart it. In addition, development mode provides a complete monitoring environment for business automation capabilities, for example process instances, tasks, and jobs.</simpara>
+<itemizedlist>
+<title>Prerequisites</title>
+<listitem>
+<simpara>You have a <literal>&lt;business-application&gt;.zip</literal> file that contains a business assets project, that you created using the <link xlink:href="http://start.jbpm.org">business applications</link> web site.</simpara>
+</listitem>
+<listitem>
+<simpara>You configured the business application.</simpara>
+</listitem>
+<listitem>
+<simpara>Business Central is installed and running.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Navigate to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-service</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Enter one of the following commands:</simpara>
+<table frame="all" rowsep="1" colsep="1">
+<title>Managed launch options</title>
+<tgroup cols="2">
+<colspec colname="col_1" colwidth="50*"/>
+<colspec colname="col_2" colwidth="50*"/>
+<tbody>
+<row>
+<entry align="left" valign="top"><simpara>Command</simpara></entry>
+<entry align="left" valign="top"><simpara>Description</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch-dev.sh clean install</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in development mode on Linux or Unix.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch-dev.bat clean install</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in development mode on Windows.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch-dev.sh clean install -Pmysql</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in development mode on Linux or Unix if you have configured for a MySQL database.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch-dev.bat clean install -Pmysql</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in development mode on Windows if you have configured for a MySQL database.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch-dev.sh clean install -Ppostgres</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in development mode on Linux or Unix if you have configured for a postgreSQL database.</simpara></entry>
+</row>
+<row>
+<entry align="left" valign="top"><simpara><literal>./launch-dev.bat clean install -Ppostgres</literal></simpara></entry>
+<entry align="left" valign="top"><simpara>Launches in development mode on Windows if you have configured for a PostgreSQL database.</simpara></entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+<simpara>The <literal>clean install</literal> argument directs Maven to build a fresh installation. The projects are then built in the following order:</simpara>
+<itemizedlist>
+<listitem>
+<simpara>Data model</simpara>
+</listitem>
+<listitem>
+<simpara>Business assets</simpara>
+</listitem>
+<listitem>
+<simpara>Service</simpara>
+<simpara>The first time that you run the script, it might take a while to build the project because all dependencies of the project are downloaded. At the end of the build, the application starts.</simpara>
+</listitem>
+</itemizedlist>
+</listitem>
+<listitem>
+<simpara>Enter the following command to access your business application:</simpara>
+<screen>http://localhost:8090/</screen>
+</listitem>
+<listitem>
+<simpara>Enter the credentials <literal>user</literal>/<literal>user</literal>  or <literal>kieserver</literal>/<literal>kieserver1!</literal>.</simpara>
+</listitem>
+<listitem>
+<simpara>After the business application starts, it connects to the Process Automation Manager controller and
+is visible in the <emphasis role="strong">Servers</emphasis> perspective of Business Central.</simpara>
+</listitem>
+</orderedlist>
+</section>
+</chapter>
+<chapter xml:id="bus-apps-import_business-applications">
+<title>Importing business assets projects into and deploying from Business Central</title>
+<simpara>You can import a business assets project that is part of a Red Hat Process Automation Manager business application into Business Central and then deploy that project to a business application.</simpara>
+<itemizedlist>
+<title>Prerequistes</title>
+<listitem>
+<simpara>You have a business application project running in development mode.</simpara>
+</listitem>
+<listitem>
+<simpara>Red Hat Process Automation Manager Business Central is installed.</simpara>
+</listitem>
+</itemizedlist>
+<orderedlist numeration="arabic">
+<title>Procedure</title>
+<listitem>
+<simpara>Navigate to the <literal>&lt;business-application&gt;/&lt;business-application&gt;-kjar</literal> folder.</simpara>
+</listitem>
+<listitem>
+<simpara>Execute the following following commands to initialize the Git repository for your project:</simpara>
+<screen>$ git init
+$ git add -A
+$ git commit -m "Initial project structure"</screen>
+</listitem>
+<listitem>
+<simpara>Log in to Business Central and go the <emphasis role="strong">Projects</emphasis> page.</simpara>
+</listitem>
+<listitem>
+<simpara>Select <emphasis role="strong">Import Project</emphasis> and enter following URL:</simpara>
+<screen> file:///&lt;business-application-path&gt;/&lt;business-application-name&gt;-kjar</screen>
+</listitem>
+<listitem>
+<simpara>Click <emphasis role="strong">Import</emphasis> and confirm the project to be imported.</simpara>
+</listitem>
+<listitem>
+<simpara>After the business assets project is imported into Business Central, open the project and click <emphasis role="strong">Add Assets</emphasis> to add assets such as business processes, rules, and decision tables to your business assets project.</simpara>
+</listitem>
+<listitem>
+<simpara>Click <emphasis role="strong">Deploy</emphasis> on your project page to deploy your project to a running business application.</simpara>
+</listitem>
+<listitem>
+<simpara>Use the <emphasis role="strong">Process Definitions</emphasis> and <emphasis role="strong">Process Instance</emphasis> perspectives of Business Central
+to interact with your newly deployed business assets.</simpara>
+</listitem>
+</orderedlist>
+</chapter>
+<appendix xml:id="versioning-information">
+<title>Versioning information</title>
+<simpara>Documentation last updated on Thursday, November 1, 2018.</simpara>
+</appendix>
+</book>
