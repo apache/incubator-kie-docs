@@ -1,0 +1,154 @@
+[id='wb-employee-rostering-call-solver-proc']
+= Calling the Solver using the REST API
+
+After registering the solver instance, you can use the REST API to submit a data set to the solver and to retrieve an optimized solution.
+
+.Procedure
+. Create a HTTP request using the following header:
++
+[source]
+----
+authorization: admin:admin
+X-KIE-ContentType: xstream
+content-type: application/xml
+----
++
+. Submit a request to the Solver with a data set, as in the following example:
++
+POST::
+`http://localhost:8080/kie-server/services/rest/server/containers/employeerostering_1.0.0-SNAPSHOT/solvers/EmployeeRosteringSolver/state/solving`
++
+Request body::
++
+[source,xml]
+----
+<employeerostering.employeerostering.EmployeeRoster>
+  <employeeList>
+    <employeerostering.employeerostering.Employee>
+      <name>John</name>
+      <skills>
+        <employeerostering.employeerostering.Skill>
+          <name>reading</name>
+        </employeerostering.employeerostering.Skill>
+      </skills>
+    </employeerostering.employeerostering.Employee>
+    <employeerostering.employeerostering.Employee>
+      <name>Mary</name>
+      <skills>
+        <employeerostering.employeerostering.Skill>
+          <name>writing</name>
+        </employeerostering.employeerostering.Skill>
+      </skills>
+    </employeerostering.employeerostering.Employee>
+    <employeerostering.employeerostering.Employee>
+      <name>Petr</name>
+      <skills>
+        <employeerostering.employeerostering.Skill>
+          <name>speaking</name>
+        </employeerostering.employeerostering.Skill>
+      </skills>
+    </employeerostering.employeerostering.Employee>
+  </employeeList>
+  <shiftList>
+    <employeerostering.employeerostering.Shift>
+      <timeslot>
+        <startTime>2017-01-01T00:00:00</startTime>
+        <endTime>2017-01-01T01:00:00</endTime>
+      </timeslot>
+      <requiredSkill reference="../../../employeeList/employeerostering.employeerostering.Employee/skills/employeerostering.employeerostering.Skill"/>
+    </employeerostering.employeerostering.Shift>
+    <employeerostering.employeerostering.Shift>
+      <timeslot reference="../../employeerostering.employeerostering.Shift/timeslot"/>
+      <requiredSkill reference="../../../employeeList/employeerostering.employeerostering.Employee[3]/skills/employeerostering.employeerostering.Skill"/>
+    </employeerostering.employeerostering.Shift>
+    <employeerostering.employeerostering.Shift>
+      <timeslot reference="../../employeerostering.employeerostering.Shift/timeslot"/>
+      <requiredSkill reference="../../../employeeList/employeerostering.employeerostering.Employee[2]/skills/employeerostering.employeerostering.Skill"/>
+    </employeerostering.employeerostering.Shift>
+  </shiftList>
+  <skillList>
+    <employeerostering.employeerostering.Skill reference="../../employeeList/employeerostering.employeerostering.Employee/skills/employeerostering.employeerostering.Skill"/>
+    <employeerostering.employeerostering.Skill reference="../../employeeList/employeerostering.employeerostering.Employee[3]/skills/employeerostering.employeerostering.Skill"/>
+    <employeerostering.employeerostering.Skill reference="../../employeeList/employeerostering.employeerostering.Employee[2]/skills/employeerostering.employeerostering.Skill"/>
+  </skillList>
+  <timeslotList>
+    <employeerostering.employeerostering.Timeslot reference="../../shiftList/employeerostering.employeerostering.Shift/timeslot"/>
+  </timeslotList>
+  <dayOffRequestList/>
+  <shiftAssignmentList/>
+</employeerostering.employeerostering.EmployeeRoster>
+----
+. Request the best solution to the planning problem:
++
+GET::
+`http://localhost:8080/kie-server/services/rest/server/containers/employeerostering_1.0.0-SNAPSHOT/solvers/EmployeeRosteringSolver/bestsolution`
++
+.Example response
+[source,xml]
+----
+<solver-instance>
+  <container-id>employee-rostering</container-id>
+  <solver-id>solver1</solver-id>
+  <solver-config-file>employeerostering/employeerostering/EmployeeRosteringSolverConfig.solver.xml</solver-config-file>
+  <status>NOT_SOLVING</status>
+  <score scoreClass="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore">0hard/0soft</score>
+  <best-solution class="employeerostering.employeerostering.EmployeeRoster">
+    <employeeList>
+      <employeerostering.employeerostering.Employee>
+        <name>John</name>
+        <skills>
+          <employeerostering.employeerostering.Skill>
+            <name>reading</name>
+          </employeerostering.employeerostering.Skill>
+        </skills>
+      </employeerostering.employeerostering.Employee>
+      <employeerostering.employeerostering.Employee>
+        <name>Mary</name>
+        <skills>
+          <employeerostering.employeerostering.Skill>
+            <name>writing</name>
+          </employeerostering.employeerostering.Skill>
+        </skills>
+      </employeerostering.employeerostering.Employee>
+      <employeerostering.employeerostering.Employee>
+        <name>Petr</name>
+        <skills>
+          <employeerostering.employeerostering.Skill>
+            <name>speaking</name>
+          </employeerostering.employeerostering.Skill>
+        </skills>
+      </employeerostering.employeerostering.Employee>
+    </employeeList>
+    <shiftList>
+      <employeerostering.employeerostering.Shift>
+        <timeslot>
+          <startTime>2017-01-01T00:00:00</startTime>
+          <endTime>2017-01-01T01:00:00</endTime>
+        </timeslot>
+        <requiredSkill reference="../../../employeeList/employeerostering.employeerostering.Employee/skills/employeerostering.employeerostering.Skill"/>
+      </employeerostering.employeerostering.Shift>
+      <employeerostering.employeerostering.Shift>
+        <timeslot reference="../../employeerostering.employeerostering.Shift/timeslot"/>
+        <requiredSkill reference="../../../employeeList/employeerostering.employeerostering.Employee[3]/skills/employeerostering.employeerostering.Skill"/>
+      </employeerostering.employeerostering.Shift>
+      <employeerostering.employeerostering.Shift>
+        <timeslot reference="../../employeerostering.employeerostering.Shift/timeslot"/>
+        <requiredSkill reference="../../../employeeList/employeerostering.employeerostering.Employee[2]/skills/employeerostering.employeerostering.Skill"/>
+      </employeerostering.employeerostering.Shift>
+    </shiftList>
+    <skillList>
+      <employeerostering.employeerostering.Skill reference="../../employeeList/employeerostering.employeerostering.Employee/skills/employeerostering.employeerostering.Skill"/>
+      <employeerostering.employeerostering.Skill reference="../../employeeList/employeerostering.employeerostering.Employee[3]/skills/employeerostering.employeerostering.Skill"/>
+      <employeerostering.employeerostering.Skill reference="../../employeeList/employeerostering.employeerostering.Employee[2]/skills/employeerostering.employeerostering.Skill"/>
+    </skillList>
+    <timeslotList>
+      <employeerostering.employeerostering.Timeslot reference="../../shiftList/employeerostering.employeerostering.Shift/timeslot"/>
+    </timeslotList>
+    <dayOffRequestList/>
+    <shiftAssignmentList/>
+    <score>0hard/0soft</score>
+  </best-solution>
+</solver-instance>
+----
+
+//For more information about creating containers, Solvers, and submitting problems through the decision server REST API, see {URL_INSTALLING_PLANNER}[_{INSTALLING_PLANNER}_].
