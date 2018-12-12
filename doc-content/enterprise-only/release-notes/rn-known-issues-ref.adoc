@@ -3,106 +3,232 @@
 
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
+== Installer
+.References to {EAP} 7.1 in the {PRODUCT} installer console [https://issues.jboss.org/browse/RHPAM-803[RHPAM-803]]
+
+Issue: When you run the {PRODUCT} installer from the terminal, there are references to {EAP} 7.1. 
+
+Workaround: When you see {EAP} 7.1, read as {EAP} 7.2.
+
+.WIP: The controller URL is not updated in XML files when only kie-server is being installed [https://issues.jboss.org/browse/RHPAM-1781[RHPAM-1781]]
+
+Issue: When you run the {PRODUCT} installer, and you specify a URL for the controller, the URL is not updated in the {EAP} `standalone.xml` file.
+
+Steps to reproduce:
+
+. Run the {PRODUCT} installer.
+. Specify an {EAP} installation for container.
+. Select only Process Server to install.
+. Select Advanced Configuration and update controller URL.
+. Complete the installation.
+. Open the {EAP} `standalone.xml` file and find the controller URL.
+
+Expected result: The value of the controller URL property is the URL that you entered during installation.
+
+Actual result: The value of the controller URL property is the default value.
+
+.WIP: Severe exceptions during startup occur due to missing libraries after {PRODUCT} installation on JWS 5.0 [https://issues.jboss.org/browse/RHDM-808[RHDM-808]]
+
+Issue: If you install {PRODUCT} on Red Hat JBoss Web Server 5.0.1, severe exceptions occur when you start {PRODUCT}.
+
+Steps to reproduce:
+. Use the installer to install {PRODUCT} on Red Hat JBoss Web Server 5.0.1 and accept the default settings.
+. Run `./startup.sh`.
+
+Expected result: {PRODUCT} starts.
+
+Actual result: Exceptions appear in the log files.
+
 == {CENTRAL}
 
-.Cannot close the standalone editor [https://issues.jboss.org/browse/RHPAM-976[RHPAM-976]]
+.WIP: {PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
 
-Issue: If you make a change in a standalone editor, you cannot close the editor until you save your changes.
-
-Steps to reproduce:
-
-. Open a standalone editor.
-. Make a change to asset.
-. Try to close the editor.
-
-Expected result: The editor closes.
-
-Actual result: The editor does not close.
-
-Workaround: Save any changes before closing the editor.
-
-.In guided rules, guided decision tables, and guided decision templates, the use of the "contains" operator does not add values from enumerations that have quotes. [https://issues.jboss.org/browse/RHDM-25[RHDM-25]]
-
-Issue: When enumeration is used for a string field of a fact in guided rules, guided decision tables, and guided decision templates, the resultant rule does not wrap the selected value from the enumeration drop down in quotes ("") and a validation error occurs. 
-
-ifdef::PAM[]
-.Process designer instances are very slow with Google Chrome on Linux [https://issues.jboss.org/browse/RHPAM-922[RHPAM-922]]
-
-Step to reproduce: Open three process designer instances in Google Chrome on Linux.
-
-Expected result: All instances of process designer perform at the same level, regardless of the number of instances open.
-
-Actual result: The first two instances that were opened perform as usual, but the third and all subsequent instances are very slow, even if you close the first two instances.
-
-Workaround: Set the value of `chrome://flags/#force-color-profile` to sRGB.
-
-endif::[]
-
-.Project cannot be built and deployed in {CENTRAL} when connected to a snapshot Maven repo [https://issues.jboss.org/browse/RHPAM-1544[RHPAM-1544]]
+Issue: With {PRODUCT} on {EAP} 7.2 integrated with Red Hat Single Sign-On, if you try to clone a project that has an SSH key set using ssh with set ssh-key, you are not able to clone it without password. The ssh key is ignored.
 
 Steps to reproduce:
 
-. Start the local Nexus repository.
-. Install {EAP} with {CENTRAL}.
-. Set the value of the `kie.maven.settings.custom` system property to `settings.xml` which will point to the Nexus snapshot repository.
-. Start {EAP}, log in to {EAP}, and try to create a project.
+. Integrate a {PRODUCT} installation with Red Hat Single Sign-On, as described in 
+. Use the {PRODUCT} *Admin* -> *SSH Keys* page to add an SSH key.
+. Enter the following command in a terminal to add a private SSH key to your `ssh-agent`, where `<SSH-KEY-PATH>` is the path to the SSH key key that you created in the previous step:
++
+[source]
+----
+$ ssh-add <SSH-KEY-PATH>
+----
+. Use SSH to clone the project, for example:
++
+[source]
+----
+ssh://user@localhost:8001/space/project
+----
 
-Actual result: An error appears.
+Expected result: The project is cloned.
 
-Workaround: Remove the snapshot Maven repository from the `settings.xml` file used by {CENTRAL}.
+Actual result: You cannot clone the project unless you have the SSH key password.
+
+
+.Several Errai projects contain XSD-invalid `pom.xml` file [https://issues.jboss.org/browse/RHPAM-1742[RHPAM-1742]]
+Issue: Maven repository validation identified the following `pom.xml` files in the Errai project which are invalid according to Maven POM XSD:
+[source]
+----
+org/jboss/errai/errai-ioc/4.4.1.Final-redhat-00001/errai-ioc-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-navigation/4.4.1.Final-redhat-00001/errai-navigation-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-security-server/4.4.1.Final-redhat-00001/errai-security-server-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-security-client/4.4.1.Final-redhat-00001/errai-security-client-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-common/4.4.1.Final-redhat-00001/errai-common-4.4.1.Final-redhat-00001.pom
+----
+
+Workaround: None.
+
+.`kie-soup-dataset-elasticsearch` is an  XSD-invalid `pom.xml` file [https://issues.jboss.org/browse/RHPAM-1743[RHPAM-1743]]
+Issue: Maven repository validation identified the `kie-soup-dataset-elasticsearch` `pom.xml` fileas invalid according to Maven POM XSD.
+
+Workaround: None.
+
+.Two `ClassNotFoundExceptions` errors are thrown the first time you open the {CENTRAL} *Data Sources* perspective [https://issues.jboss.org/browse/RHPAM-1741[RHPAM-1741]]
+Issue: When you got to the {CENTRAL} *Data Sources* perspective for the first time after a clean installation, the following `ClassNotFoundExceptions` errors appear in the `server.log` file:
+[source]
+----
+org.guvnor.structure.repositories.NewBranchEvent
+org.guvnor.structure.repositories.RepositoryUpdatedEvent
+----
+Steps to reproduce:
+
+. Install {PRODUCT}.
+. Log in to {CENTRAL} with the `admin` role.
+. Go to *Admin* -> *Datasources*.
+
+Actual result: As soon as you click the *Data Sources* perspective, two errors appear in {EAP} console.
+
+Expected result: No errors appear.
+
+Workaround: Restart {CENTRAL} and go to *Admin* -> *Datasources*. These errors only appear the first time the perspective is clicked after installation.
+
+.WIP: NullPointerException error is thrown when resolving a branch [https://issues.jboss.org/browse/RHPAM-1701[RHPAM-1701]]
+Issue: In a {PRODUCT} on premise cluster installation, several NPE errors occur sin the UI and in `sever.log` file.
+
+Workaround: None.
+
+.{PRODUCT} 7.0 and earlier repositories can be imported into {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1768[RHPAM-1768]]
+Issue: {PRODUCT} 7.0 and earlier repositories (old structure repositories) that contain more than one project can be imported into {CENTRAL} even though they are not supported. When these repositories are imported, the are not fully migrated and will not perform as expected. 
+
+Steps to reproduce:
+
+. In {PRODUCT} 7.0.0 or earlier, create a repository with two projects.
+. Copy repository location from the `.niogit` directory.
+. Open {PRODUCT} 7.2.0.
+. Click *Library* -> *Import Project*.
+. Paste the repository location  select both projects. 
+
+Actual result: The projects are imported but will not perform as expected.
+
+Workaround: Do not import {PRODUCT} 7.0 and earlier repositories (old structure repositories) that contain more than one project.
+
+.A TimeoutException error occurs when logging in to a clustered {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1749[RHPAM-1749]]
+Issue: On a clustered {CENTRAL} instance, when logging in to {CENTRAL} an exception is thrown.
+
+Steps to reproduce:
+
+. Create a {CENTRAL} cluster configuration that uses ElasticSearch, AMQ Broker, and has two standalone {CENTRAL} nodes.
+. Uncomment the `<distributable/>` tag on both {CENTRAL} nodes.
+. Log in to {CENTRAL} on one of the nodes. 
+
+Actual result: An exception is thrown.
+
+Workaround: See the workaround in the https://access.redhat.com/solutions/2776221[JBoss EAP 7 does not process requests for a session in parallel] article.
+
+.WIP: Bulk abort throws an exception when called on several subprocess instances [https://issues.jboss.org/browse/RHPAM-1761[RHPAM-1761]]
+
+Issue: If you have a process with two subprocesses running at the same time and you call bulk abort on both the subprocesses and the parent process instances, you receive an error.
+
+Steps to reproduce:
+. Create a process with two subprocess, then start the process and both subprocesses.
+. Go to process instances and perform a bulk abort.
+
+Expected result: The process and subprocesses stop running.
+
+Actual result: The following error occurs:
+[source]
+----
+Unable to complete your request. The following exception occurred: "Could not find process instance with id "[26, 25, 24]"".
+
+----
 
 == OpenShift
 
-.Opening Case Modeler (legacy) throws a JSON exception [https://issues.jboss.org/browse/RHPAM-1431[RHPAM-1431]]
+.Various errors occur when starting clustered {CENTRAL} on OpenShift [https://issues.jboss.org/browse/RHPAM-1747[RHPAM-1747]]
+
+Issue: When clustered {CENTRAL} is started on OpenShift using the `rhpam72-authoring-ha.yaml` template, {CENTRAL} sometimes throws various exceptions that cause the pod to restart or the deployment to fail.
 
 Steps to reproduce:
 
-. Install Red Hat Single Sign-On in OpenShift.
-. Create a realm.
-. Install {PRODUCT} in OpenShift.
-. Open the IT-Orders orders hardware case definition.
+. Use the `rhpam72-authoring-ha.yaml` template to deploy {PRODUCT} {PRODUCT_VERSION} images on OpenShift .
+. Check the {CENTRAL} log files.
 
-Actual result: An error occurs and the application restarts.
+Expected result: There are no errors in the log files.
 
-Workaround: Replace the `keycloak.sh` script that is configuring `autodeploy`:
+Actual result: Errors appear in the log files, the pod to restarts, or the deployment fails.
 
-. Download the updated `keycloak.sh` script from the https://access.redhat.com/solutions/3645362[_Business Central Authoring Environment (on Openshift) crashes when a new "Business Processes (legacy)" asset is created_] article.
-. Use the script to create a configuration map:
-+
-[source]
-----
-$ oc create configmap sso-script --from-file=keycloak.sh=keycloak.sh
-----
-. Mount the configuration map and override the previous script, where `<NAME>` is the name of the volume, for example `myapp-rhpam`:
-+
-[source]
-----
-$ oc volume dc/<NAME> --add --type configmap --configmap-name=sso-script --sub-path=keycloak.sh --name=keycloak-script --mount-path=/opt/eap/bin/launch/keycloak.sh
-----
-
-ifdef::PAM[]
+Workaround: None.
 
 == {KIE_SERVER}
-.Execution errors: Details cannot be loaded from Sybase 16.0 [https://issues.jboss.org/browse/RHPAM-1567[RHPAM-1567]]
+.A container is removed from the UI even though it was not possible to stop it [https://issues.jboss.org/browse/RHPAM-1698[RHPAM-1698]]
 
-Issue: If you select a Sybase 16.0 error from the list of execution errors, the *Details* panel opens but no data is displayed and the following error appears:
+Issue: A container cannot be stopped if it is blocked by an active process instance. However if you attempt to stop a blocked container from the UI, the action throws and exception and the container disappears.
 
+Steps to reproduce:
+
+. Create a project with a process.
+. Deploy the project and start the process.
+. Go to the *Execution Servers* page and stop the container.
+
+Actual result: The container is removed from the UI even though it is still running.
+
+== Process designer
+.WIP: Process designer nested subprocess is not created well and validation fails [https://issues.jboss.org/browse/RHPAM-1732[RHPAM-1732]]
+
+Issue: When a process containing subprocesses is created and saved, the process validation fails.
+COMMENT: Please clarify 'process of the figure'.
+
+Steps to reproduce:
+
+. Create the process of the figure.
+. Click *Save*.
+
+Expected result: The process and subprocesses are saved.
+
+Actual result: The following validation error appears even though all sequence flows have their source and target within the process.
 [source]
 ----
-An unexpected error happened. Please try again in a few moments.
+Sequence flow connectors cannot exceed the embbedded subprocess' bounds. Both source and target nodes must be in same parent process.
 ----
 
-endif::[]
-
-== Decision engine
-.MVEL expression (1 + 2 * 3 + $v ) causes a "no such method or function " error for bind variable[https://issues.jboss.org/browse/RHDM-707[RHDM-707]]
-
-Issue: When using an expression such as `(1 + 2 * 3 + $v)` in the consequence of a rule which uses the mvel dialect, where `$v` is a bound variable from rule constraints, the evaluation of the rule produces an exception.
-
-Workaround: Change the expression to `(1 + (2 * 3) + $v)`.
-
 ifdef::PAM[]
-== Process designer
+== Maven Repository
+.WIP: Missing JWS dependencies in offline maven repo distribution [https://issues.jboss.org/browse/RHPAM-1715[RHPAM-1715]]
 
-The Data Objects functionality in the process designer is disabled by the `designerdataobjects=false` configuration switch because at this time it is considered incomplete. 
+Issue: The following key dependencies required to install {KIE_SERVER} on Red Hat JBoss Web Server are missing from the offline Maven repository:
+[sources]
+----
+org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
+org.jboss.integration:narayana-tomcat
+org.jboss:jboss-transaction-spi
+org.jboss.logging:jboss-logging
+----
+
+Workaround:
+. Install {PRODUCT} on Red Hat JBoss Web Server.
+. In a terminal, change directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` direcory.
+. Copy the following files to the offline Maven repository COMMENT: can we be more specific about the directory?:
+[source]
+----
+narayana-tomcat-1.0.0.Final-redhat-1.jar 
+jboss-transaction-spi-7.6.0.Final-redhat-1.jar 
+----
 endif::[]
+COMMENT:
+Waiting for confirmation to include:
+https://issues.jboss.org/browse/RHPAM-1697
+https://issues.jboss.org/browse/RHPAM-1554
+https://issues.jboss.org/browse/RHPAM-1759
+https://issues.jboss.org/browse/RHPAM-1773
