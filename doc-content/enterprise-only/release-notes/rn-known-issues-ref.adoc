@@ -4,46 +4,30 @@
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
 == Installer
-.References to {EAP} 7.1 in the {PRODUCT} installer console [https://issues.jboss.org/browse/RHPAM-803[RHPAM-803]]
+.References to {EAP} 7.1 in the {PRODUCT} installer [https://issues.jboss.org/browse/RHPAM-803[RHPAM-803]]
 
-Issue: When you run the {PRODUCT} installer from the terminal, there are references to {EAP} 7.1. 
+Issue: When you run the {PRODUCT} installer, there are references to {EAP} 7.1. 
 
 Workaround: When you see {EAP} 7.1, read as {EAP} 7.2.
 
-.WIP: The controller URL is not updated in XML files when only kie-server is being installed [https://issues.jboss.org/browse/RHPAM-1781[RHPAM-1781]]
-
-Issue: When you run the {PRODUCT} installer, and you specify a URL for the controller, the URL is not updated in the {EAP} `standalone.xml` file.
-
-Steps to reproduce:
-
-. Run the {PRODUCT} installer.
-. Specify an {EAP} installation for container.
-. Select only Process Server to install.
-. Select Advanced Configuration and update controller URL.
-. Complete the installation.
-. Open the {EAP} `standalone.xml` file and find the controller URL.
-
-Expected result: The value of the controller URL property is the URL that you entered during installation.
-
-Actual result: The value of the controller URL property is the default value.
-
-.WIP: Severe exceptions during startup occur due to missing libraries after {PRODUCT} installation on JWS 5.0 [https://issues.jboss.org/browse/RHDM-808[RHDM-808]]
-
-Issue: If you install {PRODUCT} on Red Hat JBoss Web Server 5.0.1, severe exceptions occur when you start {PRODUCT}.
-
-Steps to reproduce:
-. Use the installer to install {PRODUCT} on Red Hat JBoss Web Server 5.0.1 and accept the default settings.
-. Run `./startup.sh`.
-
-Expected result: {PRODUCT} starts.
-
-Actual result: Exceptions appear in the log files.
-
 == {CENTRAL}
 
-.WIP: {PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
+//.When using Infinispan to index large repositories, and error sometimes appears [https://issues.jboss.org/browse/RHPAM-1494[RHPAM-1494]]
 
-Issue: With {PRODUCT} on {EAP} 7.2 integrated with Red Hat Single Sign-On, if you try to clone a project that has an SSH key set using ssh with set ssh-key, you are not able to clone it without password. The ssh key is ignored.
+//Issue: If you use Infinispan to index large repositories, the `No filesystem for URI found` error sometimes appears.
+
+//Step to reproduce:
+//Import a repository that contains 1000 DRL files.
+
+//Expected result: The repository is imported successfully.
+
+//Actual result: the `No filesystem for URI found` error sometimes appears.
+
+//Workaround: Comment: ??
+
+.{PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
+
+Issue: With {PRODUCT} integrated with Red Hat Single Sign-On, if you try to clone a project that has an SSH key set using ssh with set ssh-key, you are not able to clone it without password. The ssh key is ignored.
 
 Steps to reproduce:
 
@@ -65,7 +49,6 @@ ssh://user@localhost:8001/space/project
 Expected result: The project is cloned.
 
 Actual result: You cannot clone the project unless you have the SSH key password.
-
 
 .Several Errai projects contain XSD-invalid `pom.xml` file [https://issues.jboss.org/browse/RHPAM-1742[RHPAM-1742]]
 Issue: Maven repository validation identified the following `pom.xml` files in the Errai project which are invalid according to Maven POM XSD:
@@ -104,7 +87,7 @@ Expected result: No errors appear.
 
 Workaround: Restart {CENTRAL} and go to *Admin* -> *Datasources*. These errors only appear the first time the perspective is clicked after installation.
 
-.WIP: NullPointerException error is thrown when resolving a branch [https://issues.jboss.org/browse/RHPAM-1701[RHPAM-1701]]
+.NullPointerException error is thrown when resolving a branch [https://issues.jboss.org/browse/RHPAM-1701[RHPAM-1701]]
 Issue: In a {PRODUCT} on premise cluster installation, several NPE errors occur sin the UI and in `sever.log` file.
 
 Workaround: None.
@@ -137,22 +120,21 @@ Actual result: An exception is thrown.
 
 Workaround: See the workaround in the https://access.redhat.com/solutions/2776221[JBoss EAP 7 does not process requests for a session in parallel] article.
 
-.WIP: Bulk abort throws an exception when called on several subprocess instances [https://issues.jboss.org/browse/RHPAM-1761[RHPAM-1761]]
-
-Issue: If you have a process with two subprocesses running at the same time and you call bulk abort on both the subprocesses and the parent process instances, you receive an error.
+.Project branches created on one cluster node are not visible on other nodes [https://issues.jboss.org/browse/RHPAM-1765[RHPAM-1765]]
+Issue: In a {CENTRAL} on-premise cluster,when one node creates a new branch in a project, other nodes cannot see the branch. 
 
 Steps to reproduce:
-. Create a process with two subprocess, then start the process and both subprocesses.
-. Go to process instances and perform a bulk abort.
+. Create a {PRODUCT} cluster on {EAP}.
+. On node 1, create a project.
+. On node 1, create new branch (`branch1` in `project1`).
+. On node 2, open `project1` and check the branches.
 
-Expected result: The process and subprocesses stop running.
+Expected result: Node two can see `branch1` in `project1`.
 
-Actual result: The following error occurs:
-[source]
-----
-Unable to complete your request. The following exception occurred: "Could not find process instance with id "[26, 25, 24]"".
+Actual result: Node two sees only the `master` branch in `project1`.
 
-----
+Workaround: None.
+
 
 == OpenShift
 
@@ -172,63 +154,7 @@ Actual result: Errors appear in the log files, the pod to restarts, or the deplo
 Workaround: None.
 
 == {KIE_SERVER}
-.A container is removed from the UI even though it was not possible to stop it [https://issues.jboss.org/browse/RHPAM-1698[RHPAM-1698]]
 
-Issue: A container cannot be stopped if it is blocked by an active process instance. However if you attempt to stop a blocked container from the UI, the action throws and exception and the container disappears.
-
-Steps to reproduce:
-
-. Create a project with a process.
-. Deploy the project and start the process.
-. Go to the *Execution Servers* page and stop the container.
-
-Actual result: The container is removed from the UI even though it is still running.
+== Decision engine
 
 == Process designer
-.WIP: Process designer nested subprocess is not created well and validation fails [https://issues.jboss.org/browse/RHPAM-1732[RHPAM-1732]]
-
-Issue: When a process containing subprocesses is created and saved, the process validation fails.
-COMMENT: Please clarify 'process of the figure'.
-
-Steps to reproduce:
-
-. Create the process of the figure.
-. Click *Save*.
-
-Expected result: The process and subprocesses are saved.
-
-Actual result: The following validation error appears even though all sequence flows have their source and target within the process.
-[source]
-----
-Sequence flow connectors cannot exceed the embbedded subprocess' bounds. Both source and target nodes must be in same parent process.
-----
-
-ifdef::PAM[]
-== Maven Repository
-.WIP: Missing JWS dependencies in offline maven repo distribution [https://issues.jboss.org/browse/RHPAM-1715[RHPAM-1715]]
-
-Issue: The following key dependencies required to install {KIE_SERVER} on Red Hat JBoss Web Server are missing from the offline Maven repository:
-[sources]
-----
-org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
-org.jboss.integration:narayana-tomcat
-org.jboss:jboss-transaction-spi
-org.jboss.logging:jboss-logging
-----
-
-Workaround:
-. Install {PRODUCT} on Red Hat JBoss Web Server.
-. In a terminal, change directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` direcory.
-. Copy the following files to the offline Maven repository COMMENT: can we be more specific about the directory?:
-[source]
-----
-narayana-tomcat-1.0.0.Final-redhat-1.jar 
-jboss-transaction-spi-7.6.0.Final-redhat-1.jar 
-----
-endif::[]
-COMMENT:
-Waiting for confirmation to include:
-https://issues.jboss.org/browse/RHPAM-1697
-https://issues.jboss.org/browse/RHPAM-1554
-https://issues.jboss.org/browse/RHPAM-1759
-https://issues.jboss.org/browse/RHPAM-1773
