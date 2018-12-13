@@ -4,36 +4,53 @@
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
 == Installer
-.References to {EAP} 7.1 in the {PRODUCT} installer [https://issues.jboss.org/browse/RHPAM-803[RHPAM-803]]
+.References to {EAP} 7.1 in the {PRODUCT} installer console [https://issues.jboss.org/browse/RHPAM-803[RHPAM-803]]
 
-Issue: When you run the {PRODUCT} installer, there are references to {EAP} 7.1. 
+Issue: When you run the {PRODUCT} installer from the terminal, there are references to {EAP} 7.1. 
 
 Workaround: When you see {EAP} 7.1, read as {EAP} 7.2.
 
 == {CENTRAL}
+.WIP: NullPointerException error is thrown when resolving a branch [https://issues.jboss.org/browse/RHPAM-1701[RHPAM-1701]]
 
-//.When using Infinispan to index large repositories, and error sometimes appears [https://issues.jboss.org/browse/RHPAM-1494[RHPAM-1494]]
+Issue: In a {PRODUCT} on premise cluster installation, several NPE errors occur sin the UI and in `sever.log` file.
 
-//Issue: If you use Infinispan to index large repositories, the `No filesystem for URI found` error sometimes appears.
+ Workaround: None.
 
-//Step to reproduce:
-//Import a repository that contains 1000 DRL files.
+.Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories can be imported into {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1768[RHPAM-1768]]
+Issue: Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (old structure repositories) that contain more than one project can be imported into {CENTRAL} even though they are not supported. When these repositories are imported, the are not fully migrated and will not perform as expected. 
+ Steps to reproduce:
+ . In {PRODUCT} 7.0.0 or earlier, create a repository with two projects.
+. Copy repository location from the `.niogit` directory.
+. Open {PRODUCT} 7.2.0.
+. Click *Library* -> *Import Project*.
+. Paste the repository location  select both projects. 
+ Actual result: The projects are imported but will not perform as expected.
+ Workaround: Do not import {Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (old structure repositories) that contain more than one project.
 
-//Expected result: The repository is imported successfully.
 
-//Actual result: the `No filesystem for URI found` error sometimes appears.
+.Pagination navigates to empty page at the end. [https://issues.jboss.org/browse/RHPAM-1759[RHPAM-1759]]
 
-//Workaround: Comment: ??
+Issue: In Process Definitions, if there are 10 or fewer processes on a page, the page navigation shows "1-10 of over 10" and it is possible to go the next page even though it is empty.
+
+Steps to reproduce:
+. Open a project with an odd number of processes, for example 25 processes.
+. Go to the process definitions page.
+. Click the arrows to navigate to the last page of definitions.
+
+Expected result: There are no more pages to view.
+
+Actual result: The last page is empty and the previous pages say '1-10 of over 10'.
 
 .{PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
 
-Issue: With {PRODUCT} integrated with Red Hat Single Sign-On, if you try to clone a project that has an SSH key set using ssh with set ssh-key, you are not able to clone it without password. The ssh key is ignored.
+Issue: With {PRODUCT} integrated with Red Hat Single Sign-On, if you try to clone a project created by a user that has an SSH key set, you cannot clone it without the SSH key password. The ssh key is ignored.
 
 Steps to reproduce:
 
-. Integrate a {PRODUCT} installation with Red Hat Single Sign-On, as described in 
-. Use the {PRODUCT} *Admin* -> *SSH Keys* page to add an SSH key.
-. Enter the following command in a terminal to add a private SSH key to your `ssh-agent`, where `<SSH-KEY-PATH>` is the path to the SSH key key that you created in the previous step:
+. Integrate a {PRODUCT} installation with Red Hat Single Sign-On, as described in {URL_INTEGRATING_SSO}[_{INTEGRATING_SSO}_].
+. Use the {PRODUCT} *Admin* -> *SSH Keys* page to add a public SSH key.
+. Enter the following command in a terminal to add a private SSH key to your `ssh-agent`, where `<SSH-KEY-PATH>`  is the path to the SSH private key:
 +
 [source]
 ----
@@ -43,12 +60,13 @@ $ ssh-add <SSH-KEY-PATH>
 +
 [source]
 ----
-ssh://user@localhost:8001/space/project
+
+git clone ssh://user@localhost:8001/space/project
 ----
 
 Expected result: The project is cloned.
 
-Actual result: You cannot clone the project unless you have the SSH key password.
+Actual result: You cannot clone the project unless you use the user's password.
 
 .Several Errai projects contain XSD-invalid `pom.xml` file [https://issues.jboss.org/browse/RHPAM-1742[RHPAM-1742]]
 Issue: Maven repository validation identified the following `pom.xml` files in the Errai project which are invalid according to Maven POM XSD:
@@ -69,92 +87,54 @@ Issue: Maven repository validation identified the `kie-soup-dataset-elasticsearc
 Workaround: None.
 
 .Two `ClassNotFoundExceptions` errors are thrown the first time you open the {CENTRAL} *Data Sources* perspective [https://issues.jboss.org/browse/RHPAM-1741[RHPAM-1741]]
-Issue: When you got to the {CENTRAL} *Data Sources* perspective for the first time after a clean installation, the following `ClassNotFoundExceptions` errors appear in the `server.log` file:
-[source]
-----
-org.guvnor.structure.repositories.NewBranchEvent
-org.guvnor.structure.repositories.RepositoryUpdatedEvent
-----
-Steps to reproduce:
-
-. Install {PRODUCT}.
-. Log in to {CENTRAL} with the `admin` role.
-. Go to *Admin* -> *Datasources*.
-
-Actual result: As soon as you click the *Data Sources* perspective, two errors appear in {EAP} console.
-
-Expected result: No errors appear.
-
-Workaround: Restart {CENTRAL} and go to *Admin* -> *Datasources*. These errors only appear the first time the perspective is clicked after installation.
-
-.NullPointerException error is thrown when resolving a branch [https://issues.jboss.org/browse/RHPAM-1701[RHPAM-1701]]
-Issue: In a {PRODUCT} on premise cluster installation, several NPE errors occur sin the UI and in `sever.log` file.
-
-Workaround: None.
-
-.{PRODUCT} 7.0 and earlier repositories can be imported into {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1768[RHPAM-1768]]
-Issue: {PRODUCT} 7.0 and earlier repositories (old structure repositories) that contain more than one project can be imported into {CENTRAL} even though they are not supported. When these repositories are imported, the are not fully migrated and will not perform as expected. 
-
-Steps to reproduce:
-
-. In {PRODUCT} 7.0.0 or earlier, create a repository with two projects.
-. Copy repository location from the `.niogit` directory.
-. Open {PRODUCT} 7.2.0.
-. Click *Library* -> *Import Project*.
-. Paste the repository location  select both projects. 
-
-Actual result: The projects are imported but will not perform as expected.
-
-Workaround: Do not import {PRODUCT} 7.0 and earlier repositories (old structure repositories) that contain more than one project.
-
-.A TimeoutException error occurs when logging in to a clustered {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1749[RHPAM-1749]]
-Issue: On a clustered {CENTRAL} instance, when logging in to {CENTRAL} an exception is thrown.
-
-Steps to reproduce:
-
-. Create a {CENTRAL} cluster configuration that uses ElasticSearch, AMQ Broker, and has two standalone {CENTRAL} nodes.
-. Uncomment the `<distributable/>` tag on both {CENTRAL} nodes.
-. Log in to {CENTRAL} on one of the nodes. 
-
-Actual result: An exception is thrown.
-
-Workaround: See the workaround in the https://access.redhat.com/solutions/2776221[JBoss EAP 7 does not process requests for a session in parallel] article.
-
-.Project branches created on one cluster node are not visible on other nodes [https://issues.jboss.org/browse/RHPAM-1765[RHPAM-1765]]
-Issue: In a {CENTRAL} on-premise cluster,when one node creates a new branch in a project, other nodes cannot see the branch. 
-
-Steps to reproduce:
-. Create a {PRODUCT} cluster on {EAP}.
-. On node 1, create a project.
-. On node 1, create new branch (`branch1` in `project1`).
-. On node 2, open `project1` and check the branches.
-
-Expected result: Node two can see `branch1` in `project1`.
-
-Actual result: Node two sees only the `master` branch in `project1`.
-
-Workaround: None.
-
-
-== OpenShift
-
-.Various errors occur when starting clustered {CENTRAL} on OpenShift [https://issues.jboss.org/browse/RHPAM-1747[RHPAM-1747]]
-
-Issue: When clustered {CENTRAL} is started on OpenShift using the `rhpam72-authoring-ha.yaml` template, {CENTRAL} sometimes throws various exceptions that cause the pod to restart or the deployment to fail.
-
-Steps to reproduce:
-
-. Use the `rhpam72-authoring-ha.yaml` template to deploy {PRODUCT} {PRODUCT_VERSION} images on OpenShift .
-. Check the {CENTRAL} log files.
-
-Expected result: There are no errors in the log files.
-
-Actual result: Errors appear in the log files, the pod to restarts, or the deployment fails.
-
-Workaround: None.
+Issue: When you got to the {CENTRA
 
 == {KIE_SERVER}
 
-== Decision engine
+.A container is removed from the UI even though it was not possible to stop it [https://issues.jboss.org/browse/RHPAM-1698[RHPAM-1698]]
 
-== Process designer
+Issue: A container cannot be stopped if it is blocked by an active process instance. However if you attempt to stop a blocked container from the UI, the action throws and exception and the container disappears.
+
+Steps to reproduce:
+. Create a project with a process.
+. Deploy the project and start the process.
+. Go to the *Execution Servers* page and stop the container.
+
+ Actual result: The container is removed from the UI even though it is still running.
+ 
+== Maven repository
+.WIP: Missing JWS dependencies in offline maven repo distribution [https://issues.jboss.org/browse/RHPAM-1715[RHPAM-1715]]
+
+Issue: The following key dependencies required to install {KIE_SERVER} on Red Hat JBoss Web Server are missing from the offline Maven repository:
+[sources]
+----
+org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
+org.jboss.integration:narayana-tomcat
+org.jboss:jboss-transaction-spi
+org.jboss.logging:jboss-logging
+----
+Workaround:
+. Install {PRODUCT} on Red Hat JBoss Web Server.
+. In a terminal, change directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` direcory.
+. Copy the following files to the offline Maven repository COMMENT: can we be more specific about the directory?:
+[source]
+----
+narayana-tomcat-1.0.0.Final-redhat-1.jar 
+jboss-transaction-spi-7.6.0.Final-redhat-1.jar 
+----
+endif::[]
+
+== {PLANNER}
+
+.WIP: You cannot load a planner problem from XML using XStream in OSGI [https://issues.jboss.org/browse/RHPAM-1554[RHPAM-1554]]
+
+Issue: You cannot load a planner problem from XML using XStream in OSGI. Loading fails with following exception:
+[source]
+----
+java.lang.ClassNotFoundException: org.xmlpull.v1.XmlPullParserException not found by org.apache.servicemix.bundles.xstream-java8
+----
+
+https://issues.jboss.org/browse/RHPAM-1697
+https://issues.jboss.org/browse/RHPAM-1554
+https://issues.jboss.org/browse/RHPAM-1759
+https://issues.jboss.org/browse/RHPAM-1773
