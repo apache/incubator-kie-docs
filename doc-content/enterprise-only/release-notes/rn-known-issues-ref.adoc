@@ -4,45 +4,73 @@
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
 == Installer
-.References to {EAP} 7.1 in the {PRODUCT} installer console [https://issues.jboss.org/browse/RHPAM-803[RHPAM-803]]
 
-Issue: When you run the {PRODUCT} installer from the terminal, there are references to {EAP} 7.1. 
+.WIP: The default placeholder for controller url should contain {URL_COMPONENT_CENTRAL} when installing {KIE_SERVER} and {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1774[RHPAM-1774]]
+Issue: If you use the installer to install both {CENTRAL} and {KIE_SERVER}, on the Advanced Configuration page the default value for `kie-server` is incorrect.
 
-Workaround: When you see {EAP} 7.1, read as {EAP} 7.2.
+Steps to reproduce:
+
+. Use the installer to install {PRODUCT} on {EAP}.
+. Accept all default selections.
+. On the Advanced Configuration page, select *Configure Process Server*.
+
+Expected result: The value of the `kie-server` URL is `\http://localhost:8080/controller/rest/controller`.
+
+Actual result: The value of the `kie-server` URL is `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller`
+
+Workaround: Manually change `\http://localhost:8080/controller/rest/controller` to `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller`.
+
+
+.WIP: The controller URL is not updated in the standalone.xml file if only {KIE_SERVER} is installed [https://issues.jboss.org/browse/RHPAM-1781[RHPAM-1781]]
+
+Issue: When you run the {PRODUCT} installer, and you specify a URL for the controller, the URL is not updated in the {EAP} `standalone.xml` file.
+
+Steps to reproduce:
+
+. Run the {PRODUCT} installer.
+. Specify an {EAP} installation for container.
+. Select only Process Server to install.
+. Select Advanced Configuration and update controller URL.
+. Complete the installation.
+. Open the {EAP} `standalone.xml` file and find the controller URL.
+
+Expected result: The value of the controller URL property is the URL that you entered during installation.
+
+Actual result: The value of the controller URL property is the default value.
 
 == {CENTRAL}
-.WIP: NullPointerException error is thrown when resolving a branch [https://issues.jboss.org/browse/RHPAM-1701[RHPAM-1701]]
-
-Issue: In a {PRODUCT} on premise cluster installation, several NPE errors occur sin the UI and in `sever.log` file.
-
- Workaround: None.
-
 .Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories can be imported into {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1768[RHPAM-1768]]
-Issue: Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (old structure repositories) that contain more than one project can be imported into {CENTRAL} even though they are not supported. When these repositories are imported, the are not fully migrated and will not perform as expected. 
- Steps to reproduce:
- . In {PRODUCT} 7.0.0 or earlier, create a repository with two projects.
+
+Issue: Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (old structure repositories) that contain more than one project can be imported into {CENTRAL} even though they are not supported. When these repositories are imported, the are not fully migrated and will not perform as expected.
+ 
+Steps to reproduce:
+
+. In {PRODUCT} 7.0.0 or earlier, create a repository with two projects.
 . Copy repository location from the `.niogit` directory.
 . Open {PRODUCT} 7.2.0.
 . Click *Library* -> *Import Project*.
 . Paste the repository location  select both projects. 
- Actual result: The projects are imported but will not perform as expected.
- Workaround: Do not import {Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (old structure repositories) that contain more than one project.
 
+Actual result: The projects are imported but will not perform as expected.
 
-.Pagination navigates to empty page at the end. [https://issues.jboss.org/browse/RHPAM-1759[RHPAM-1759]]
+Workaround: Do not import Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (old structure repositories) that contain more than one project.
 
-Issue: In Process Definitions, if there are 10 or fewer processes on a page, the page navigation shows "1-10 of over 10" and it is possible to go the next page even though it is empty.
+   
+.A TimeoutException error occurs when logging in to a clustered {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1749[RHPAM-1749]]
+Issue: On a clustered {CENTRAL} instance, when logging in to {CENTRAL} an exception is thrown.
 
 Steps to reproduce:
-. Open a project with an odd number of processes, for example 25 processes.
-. Go to the process definitions page.
-. Click the arrows to navigate to the last page of definitions.
+    
+. Create a {CENTRAL} cluster configuration that uses ElasticSearch, AMQ Broker, and has two standalone {CENTRAL} nodes.
+. Uncomment the `<distributable/>` tag on both {CENTRAL} nodes.
+. Log in to {CENTRAL} on one of the nodes. 
 
-Expected result: There are no more pages to view.
+Actual result: An exception is thrown.
+    
+Workaround: See the workaround in the https://access.redhat.com/solutions/2776221[JBoss EAP 7 does not process requests for a session in parallel] article.
+    
 
-Actual result: The last page is empty and the previous pages say '1-10 of over 10'.
-
-.{PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
+.WIP: {PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
 
 Issue: With {PRODUCT} integrated with Red Hat Single Sign-On, if you try to clone a project created by a user that has an SSH key set, you cannot clone it without the SSH key password. The ssh key is ignored.
 
@@ -60,7 +88,6 @@ $ ssh-add <SSH-KEY-PATH>
 +
 [source]
 ----
-
 git clone ssh://user@localhost:8001/space/project
 ----
 
@@ -87,42 +114,79 @@ Issue: Maven repository validation identified the `kie-soup-dataset-elasticsearc
 Workaround: None.
 
 .Two `ClassNotFoundExceptions` errors are thrown the first time you open the {CENTRAL} *Data Sources* perspective [https://issues.jboss.org/browse/RHPAM-1741[RHPAM-1741]]
-Issue: When you got to the {CENTRA
+
+Issue: When you got to the {CENTRAL} *Data Sources* perspective for the first time after a clean installation, the following `ClassNotFoundExceptions` errors appear in the `server.log` file:
+[source]
+----
+org.guvnor.structure.repositories.NewBranchEvent
+org.guvnor.structure.repositories.RepositoryUpdatedEvent
+----
+
+Steps to reproduce:
+
+. Log in to {CENTRAL} with the `admin` role.
+. Go to *Admin* -> *Datasources*.
+
+Actual result: As soon as you click the *Data Sources* perspective, two errors appear in {EAP} console.
+
+Expected result: No errors appear.
+
+Workaround: Restart {CENTRAL} and go to *Admin* -> *Datasources*. These errors only appear the first time the perspective is clicked after installation.
 
 == {KIE_SERVER}
 
-.A container is removed from the UI even though it was not possible to stop it [https://issues.jboss.org/browse/RHPAM-1698[RHPAM-1698]]
+.WIP: A container is removed from the UI even though it was not possible to stop it [https://issues.jboss.org/browse/RHPAM-1698[RHPAM-1698]]
 
 Issue: A container cannot be stopped if it is blocked by an active process instance. However if you attempt to stop a blocked container from the UI, the action throws and exception and the container disappears.
 
 Steps to reproduce:
+
 . Create a project with a process.
 . Deploy the project and start the process.
 . Go to the *Execution Servers* page and stop the container.
 
- Actual result: The container is removed from the UI even though it is still running.
+Actual result: The container is removed from the UI even though it is still running.
  
 == Maven repository
 .WIP: Missing JWS dependencies in offline maven repo distribution [https://issues.jboss.org/browse/RHPAM-1715[RHPAM-1715]]
 
-Issue: The following key dependencies required to install {KIE_SERVER} on Red Hat JBoss Web Server are missing from the offline Maven repository:
-[sources]
+Issue: The following key dependencies required to install {KIE_SERVER} on Red Hat JBoss Web Server are missing from the offline Maven repository. 
+
+[source]
 ----
-org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
 org.jboss.integration:narayana-tomcat
 org.jboss:jboss-transaction-spi
-org.jboss.logging:jboss-logging
 ----
+
+If you are you are performing a manual installation, you must copy the files described in the workaround.
+
 Workaround:
+
 . Install {PRODUCT} on Red Hat JBoss Web Server.
-. In a terminal, change directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` direcory.
-. Copy the following files to the offline Maven repository COMMENT: can we be more specific about the directory?:
+. In a terminal, change directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` directory where you installed {PRODUCT}.
+. Copy the following files from the `<JWS-HOME>/jws-5.0/tomcat/lib` directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` directory of the target Red Hat JBoss Web Server location.
++
 [source]
 ----
 narayana-tomcat-1.0.0.Final-redhat-1.jar 
 jboss-transaction-spi-7.6.0.Final-redhat-1.jar 
 ----
 
+== OpenShift
+.Various errors occur when starting clustered {CENTRAL} on OpenShift [https://issues.jboss.org/browse/RHPAM-1747[RHPAM-1747]]
+
+Issue: When clustered {CENTRAL} is started on OpenShift using the `rhpam72-authoring-ha.yaml` template, {CENTRAL} sometimes throws various exceptions that cause the pod to restart or the deployment to fail.
+
+Steps to reproduce:
+
+. Use the `rhpam72-authoring-ha.yaml` template to deploy {PRODUCT} {PRODUCT_VERSION} images on OpenShift .
+. Check the {CENTRAL} log files.
+
+Expected result: There are no errors in the log files.
+
+Actual result: Errors appear in the log files, the pod to restarts, or the deployment fails.
+
+Workaround: None.
 
 == {PLANNER}
 
@@ -134,7 +198,26 @@ Issue: You cannot load a planner problem from XML using XStream in OSGI. Loading
 java.lang.ClassNotFoundException: org.xmlpull.v1.XmlPullParserException not found by org.apache.servicemix.bundles.xstream-java8
 ----
 
-https://issues.jboss.org/browse/RHPAM-1697
-https://issues.jboss.org/browse/RHPAM-1554
-https://issues.jboss.org/browse/RHPAM-1759
-https://issues.jboss.org/browse/RHPAM-1773
+== Form modeler
+.WIP: Dates in Multiple Subform show wrong time zone [https://issues.jboss.org/browse/RHPAM-1697[RHPAM-1697]]
+
+Issue: When the value of `LocalDateTime` is converted to a flat value in the Multiple Subform, the time zone is wrong. 
+
+== Process designer
+.WIP: When a process containing subprocesses is created and saved, the process validation fails [https://issues.jboss.org/browse/RHPAM-1732[RHPAM-1732]]
+
+Issue: When a process containing subprocesses is created and saved, the process validation fails.
+
+Steps to reproduce:
+
+. Create a process with at least one subprocess.
+. Click *Save*.
+
+Expected result: The process and subprocesses are saved.
+
+Actual result: The following validation error appears even though all sequence flows have their source and target within the process:
+[source]
+----
+Sequence flow connectors cannot exceed the embbedded subprocess' bounds. Both source and target nodes must be in same parent process.
+----
+
