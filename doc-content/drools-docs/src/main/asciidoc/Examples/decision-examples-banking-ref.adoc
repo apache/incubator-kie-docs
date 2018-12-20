@@ -1,23 +1,23 @@
-= Banking Tutorial
 
-This tutorial demonstrates the process of developing a complete personal banking application to handle credits and debits on multiple accounts.
-It uses a set of design patterns that have been created for the process.
+// Deemed too poor of an example with too many not-to-do's (lots of things "for the sake of this example"). Excluding from output but retaining for now in case we every want to improve and use. For SME feedback that I didn't implement (since being excluded), see this PR starting at this comment: https://github.com/kiegroup/kie-docs/pull/1285#discussion_r242155174. (Stetson, 17 Dec 2018)
 
-----
-Name: BankingTutorial
-Main class: org.drools.examples.banking.BankingExamplesApp.java
-Module: drools-examples
-Type: Java application
-Rules file: org.drools.examples.banking.*.drl
-Objective: Demonstrate pattern matching, basic sorting and calculation rules.
-----
+[id='decision-examples-banking-ref_{context}']
+= Banking example decisions (pattern matching, sorting, and calculation)
 
-The class `RuleRunner` is a simple harness to execute one or more DRL files against a set of data.
-It compiles the packages  and creates the KIE base for each execution, allowing us to easily execute each scenario and inspect the outputs.
-In reality this is not a good solution for a production system, where the KIE base should be built just once and cached, but for the purposes of this tutorial it shall suffice.
+The Banking example decision set demonstrates the process of developing a complete personal banking application to handle credits and debits in multiple accounts. The example uses a set of design patterns that have been created for the banking process.
 
-.Banking Tutorial: RuleRunner
-====
+The following is an overview of the Banking example:
+
+* *Name*: `banking`
+* *Main class*: `org.drools.examples.banking.BankingExamplesApp` (in `src/main/java`)
+* *Module*: `drools-examples`
+* *Type*: Java application
+* *Rule files*: `org.drools.examples.banking.*.drl` (in `src/main/resources`)
+* *Objective*: Demonstrates pattern matching, basic sorting, and calculation
+
+In this example, the class `RuleRunner` executes one or more DRL files against a set of data. The class compiles the packages and creates the KIE base for each execution, enabling you to easily execute each scenario and inspect the outputs. In a production environment, the KIE base should be built just once and cached, but for the purposes of this example, the `RuleRunner` class is used for efficiency.
+
+.RuleRunner class
 [source,java]
 ----
 public class RuleRunner {
@@ -53,13 +53,29 @@ public class RuleRunner {
     }
 }
 ----
-====
 
-The first of our sample Java classes loads and executes a single DRL file, [path]_Example.drl_
-, but without inserting any data.
+To execute the example, run the `org.drools.examples.banking.BankingExamplesApp` class as a Java application in your IDE.
 
-.Banking Tutorial : Java BankingExample1
-====
+After the execution, a basic user interface window appears that you can use to run each example within the example set:
+
+.Banking example GUI
+image::Examples/BankingExample/Banking-GUI.png[]
+
+Each example that you run displays an execution output in the IDE console window:
+
+.BankingExample1 execution output in the IDE console
+[source]
+----
+Loading file: Example1.drl
+Rule 01 Works
+----
+
+[discrete]
+== Preliminary classes and rules
+
+The first sample Java class `BankingExample1` loads and executes a single DRL file, `Example.drl`, without inserting any data:
+
+.BankingExample1 class
 [source,java]
 ----
 public class BankingExample1 {
@@ -69,13 +85,10 @@ public class BankingExample1 {
     }
 }
 ----
-====
 
+The first sample rule `Example1.drl` has a single `eval` condition that is always true so that this rule will match and fire one time after the start:
 
-The first simple rule to execute has a single `eval` condition that will always be true, so that this rule will match and fire, once, after the start.
-
-.Banking Tutorial: Rule in Example1.drl
-====
+.Rule in Example1.drl
 [source]
 ----
 rule "Rule 01"
@@ -85,49 +98,41 @@ rule "Rule 01"
         System.out.println( "Rule 01 Works" );
 end
 ----
-====
 
+When you execute the rule, the following output shows that the rule matches and executes the single print statement:
 
-The output for the rule is below, showing that the rule matches and executes the single print statement.
-
-.Banking Tutorial: Output of BankingExample1.java
-====
+.BankingExample1.java output in the IDE console
 [source]
 ----
 Loading file: Example1.drl
 Rule 01 Works
 ----
-====
 
+The next class `BankingExample2` asserts basic facts and prints the output:
 
-The next step is to assert some simple facts and print them out.
+// Internal note: This and a couple of other Java examples are shown as invalid by the ascii Java highlighter (removing the second { in this case makes it happy, which is not correct). But I've confirmed in the IDE validator and with SMEs that the code snippets in this section are in fact all correct and that it seems to be a bug with the ascii Java validator. (Stetson, 12 Dec 2018)
 
-.Banking Tutorial: Java BankingExample2
-====
+.BankingExample2 class
 [source,java]
 ----
 public class BankingExample2 {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Number[] numbers = new Number[] {wrap(3), wrap(1), wrap(4), wrap(1), wrap(5)};
         new RuleRunner().runRules( new String[] { "Example2.drl" },
                                    numbers );
     }
 
-    private static Integer wrap( int i ) {
+    private static Integer wrap(int i) {
         return new Integer(i);
     }
 }
 ----
-====
 
+The Banking example does not use any specific facts and instead asserts a set of `java.lang.Integer` objects. In a production environment, a number is not a useful fact, but for the sake of this example, this approach is used to demonstrate basic techniques before more complexity is added.
 
-This doesn't use any specific facts but instead asserts a set of `java.lang.Integer` objects.
-This is not considered "best practice" as a number is not a useful fact, but we use it here to demonstrate basic techniques before more complexity is added.
+The `Example2.drl` rule prints the numbers:
 
-Now we will create a simple rule to print out these numbers.
-
-.Banking Tutorial: Rule in Example2.drl
-====
+.Rule in Example2.drl
 [source]
 ----
 rule "Rule 02"
@@ -137,19 +142,12 @@ rule "Rule 02"
         System.out.println( "Number found with value: " + $intValue );
 end
 ----
-====
 
+This rule identifies any facts that are `Number` objects and prints out the values. Notice the use of the abstract class `Number`. Although this example inserts `Integer` objects, the rule now identifies any kind of number. The pattern-matching functionality of the decision engine is able to match interfaces and superclasses of asserted objects.
 
-Once again, this rule does nothing special.
-It identifies any facts that are `Number` objects and prints out the values.
-Notice the use of the abstract class ``Number``: we inserted `Integer` objects but we now look for any kind of number.
-The pattern matching engine is able to match interfaces and superclasses of asserted objects.
+The output shows the DRL being loaded, the facts inserted, and then the matched and fired rules. Each inserted number is matched, fired, and printed:
 
-The output shows the DRL being loaded, the facts inserted and then the matched and fired rules.
-We can see that each inserted number is matched and fired and thus printed.
-
-.Banking Tutorial: Output of BankingExample2.java
-====
+.BankingExample2.java output in the IDE console
 [source]
 ----
 Loading file: Example2.drl
@@ -164,17 +162,16 @@ Number found with value: 4
 Number found with value: 1
 Number found with value: 3
 ----
-====
 
+You can use more efficient ways to sort numbers than using rules, but because other segments of the Banking example apply cash flows in date order in banking rules, the example uses a basic rule-based sorting technique.
 
-There are certainly many better ways to sort numbers than using rules, but since we will need to apply some cashflows in date order when we start looking at banking rules we'll develop simple rule based sorting technique.
+In the `BankingExample3.java` class, the example again inserts the `Integer` objects but uses `Example3.drl`:
 
-.Banking Tutorial: BankingExample3.java
-====
+.BankingExample3.java class
 [source,java]
 ----
 public class BankingExample3 {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Number[] numbers = new Number[] {wrap(3), wrap(1), wrap(4), wrap(1), wrap(5)};
         new RuleRunner().runRules( new String[] { "Example3.drl" },
                                    numbers );
@@ -185,13 +182,8 @@ public class BankingExample3 {
     }
 }
 ----
-====
 
-
-Again we insert our `Integer` objects, but this time the rule is slightly different:
-
-.Banking Tutorial: Rule in Example3.drl
-====
+.Rule in Example3.drl
 [source]
 ----
 rule "Rule 03"
@@ -203,18 +195,12 @@ rule "Rule 03"
         delete( $number );
 end
 ----
-====
 
+The `when` condition of the rule identifies a `Number` and extracts the value, and then ensures that no number exists that is smaller than the one found by the first pattern. The typical behavior is to match only one number, the smallest in the set. However, the deletion (retraction) of the number after it has been printed means that the smallest number has been removed, revealing the next smallest number, and so on.
 
-The first line of the rule identifies a `Number` and extracts the value.
-The second line ensures that there does not exist a smaller number than the one found by the first pattern.
-We might expect to match only one number - the smallest in the set.
-However, the deletion (retraction) of the number after it has been printed means that the smallest number has been removed, revealing the next smallest number, and so on.
+The resulting output shows that the numbers are now sorted numerically:
 
-The resulting output shows that the numbers are now sorted numerically.
-
-.Banking Tutorial: Output of BankingExample3.java
-====
+.BankingExample3.java class output in the IDE console
 [source]
 ----
 Loading file: Example3.drl
@@ -229,14 +215,15 @@ Number found with value: 3
 Number found with value: 4
 Number found with value: 5
 ----
-====
 
+[discrete]
+== Cash flow classes and rules
 
-We are ready to start moving towards our personal accounting rules.
-The first step is to create a `Cashflow` object.
+From this point, the Banking example begins to demonstrate personal accounting rules with cash flow.
 
-.Banking Tutorial: Class Cashflow
-====
+The example first creates a `Cashflow` object:
+
+.Cashflow class
 [source,java]
 ----
 public class Cashflow {
@@ -272,16 +259,17 @@ public class Cashflow {
     }
 }
 ----
-====
 
+The `Cashflow` class has the following two attributes:
 
-Class `Cashflow` has two simple attributes, a date and an amount.
-(Note that using the type `double` for monetary units is generally _not_ a good idea because floating point numbers cannot represent most numbers accurately.) There is also an overloaded constructor to set the values, and a method `toString` to print a cashflow.
-The Java code of [path]_BankingExample4.java_
- inserts five Cashflow objects, with varying dates and amounts.
+* `date`
+* `amount`
 
-.Banking Tutorial: BankingExample4.java
-====
+The class also contains an overloaded constructor to set the values, and a method `toString` to print a cash flow. Although the example uses the type `double` for efficiency, in a production environment, use a different approach for monetary units because floating point numbers cannot represent most numbers accurately.
+
+The `BankingExample4.java` class inserts five `Cashflow` objects, with varying dates and amounts:
+
+.BankingExample4.java class
 [source,java]
 ----
 public class BankingExample4 {
@@ -299,14 +287,10 @@ public class BankingExample4 {
     }
 }
 ----
-====
 
+The convenience class `SimpleDate` extends `java.util.Date`, providing a constructor that takes a String as input and defines a date format:
 
-The convenience class `SimpleDate` extends ``java.util.Date``, providing a constructor taking a String as input and defining a date format.
-The code is listed below
-
-.Banking Tutorial: Class SimpleDate
-====
+.SimpleDate class
 [source,java]
 ----
 public class SimpleDate extends Date {
@@ -317,14 +301,10 @@ public class SimpleDate extends Date {
     }
 }
 ----
-====
 
+The rule `Example4.drl` then prints the sorted `Cashflow` objects:
 
-Now, let`'s look at [path]_Example4.drl_
- to see how we print the sorted `Cashflow` objects:
-
-.Banking Tutorial: Rule in Example4.drl
-====
+.Rule in Example4.drl
 [source]
 ----
 rule "Rule 04"
@@ -336,16 +316,14 @@ rule "Rule 04"
         delete($cashflow);
 end
 ----
-====
 
+The `when` condition of the rule identifies a `Cashflow` object and extracts the date and the amount, and then ensures that no `Cashflow` object exists with an earlier date than the one found.
 
-Here, we identify a `Cashflow` and extract the date and the amount.
-In the second line of the rule we ensure that there is no Cashflow with an earlier date than the one found.
-In the consequence, we print the `Cashflow` that satisfies the rule and then delete (retract) it, making way for the next earliest ``Cashflow``.
-So, the output we generate is:
+The `then` action of the rule prints the `Cashflow` object that satisfies the rule and then deletes (retracts) it, making way for the next earliest `Cashflow`.
 
-.Banking Tutorial: Output of BankingExample4.java
-====
+The resulting output shows the selected cash flow:
+
+.BankingExample4.java class output in the IDE console
 [source]
 ----
 Loading file: Example4.drl
@@ -360,14 +338,10 @@ Cashflow: Fri Jan 05 00:00:00 GMT 2007 :: 100.0
 Cashflow: Sun Jan 07 00:00:00 GMT 2007 :: 800.0
 Cashflow: Thu Jan 11 00:00:00 GMT 2007 :: 500.0
 ----
-====
 
+Next, the example extends the `Cashflow` object, resulting in a `TypedCashflow` that can be a credit or a debit operation. The example could add this to the `Cashflow` type, but to keep the previous version of the class intact, the example uses the extension:
 
-Next, we extend our ``Cashflow``, resulting in a `TypedCashflow` which can be a credit or a debit operation.
-(Normally, we would just add this to the `Cashflow` type, but we use extension to keep the previous version of the class intact.)
-
-.Banking Tutorial: Class TypedCashflow
-====
+.TypedCashflow class
 [source,java]
 ----
 public class TypedCashflow extends Cashflow {
@@ -399,15 +373,10 @@ public class TypedCashflow extends Cashflow {
     }
 }
 ----
-====
 
+The sample class `BankingExample5` runs the `TypedCashflow` code:
 
-There are lots of ways to improve this code, but for the sake of the example this will do.
-
-Now let's create BankingExample5, a class for running our code.
-
-.Banking Tutorial: BankingExample5.java
-====
+.BankingExample5.java class
 [source,java]
 ----
 public class BankingExample5 {
@@ -430,17 +399,10 @@ public class BankingExample5 {
     }
 }
 ----
-====
 
+This class creates a set of `TypedCashflow` objects that are either credit or debit operations and uses the `Example5.drl` rule to print the sorted `TypedCashflow` objects:
 
-Here, we simply create a set of `TypedCashflow` objects which are either credit or debit operations.
-We supply them and [path]_Example5.drl_
- to the RuleEngine.
-
-Now, let`'s look at a rule printing the sorted `TypedCashflow` objects.
-
-.Banking Tutorial: Rule in Example5.drl
-====
+.Rule in Example5.drl
 [source]
 ----
 rule "Rule 05"
@@ -455,17 +417,14 @@ rule "Rule 05"
         delete($cashflow);
 end
 ----
-====
 
+The `when` condition of the rule identifies a `TypedCashflow` fact with a type of `CREDIT` and extracts the date and the amount. The condition then ensures that no `TypedCashflow` of the same type exists with an earlier date than the one found.
 
-Here, we identify a `TypedCashflow` fact with a type of `CREDIT` and extract the date and the amount.
-In the second line of the rule we ensure that there is no `TypedCashflow` of the same type with an earlier date than the one found.
-In the consequence, we print the cashflow satisfying the patterns and then delete (retract) it, making way for the next earliest cashflow of type ``CREDIT``.
+The `then` action of the rule prints the `Cashflow` object that satisfies the patterns and then deletes (retracts) it, making way for the next earliest `Cashflow` of type `CREDIT`.
 
-So, the output we generate is
+The resulting output shows the selected `TypedCashflow`:
 
-.Banking Tutorial: Output of BankingExample5.java
-====
+.BankingExample5.java class output in the IDE console
 ----
 Loading file: Example5.drl
 Inserting fact: TypedCashflow[date=Mon Jan 01 00:00:00 GMT 2007,type=Credit,amount=300.0]
@@ -477,16 +436,15 @@ Credit: Mon Jan 01 00:00:00 GMT 2007 :: 300.0
 Credit: Fri Jan 05 00:00:00 GMT 2007 :: 100.0
 Credit: Thu Jan 11 00:00:00 GMT 2007 :: 500.0
 ----
-====
 
+[discrete]
+== Accounts and allocated cash flow classes and rules
 
-Continuing our banking exercise, we are now going to process both credits and debits on two bank accounts, calculating the account balance.
-In order to do this, we create two separate `Account` objects and inject them into the `Cashflows` objects before passing them to the {ENGINE}.
-The reason for this is to provide easy access to the correct account without having to resort to helper classes.
-Let`'s take a look at the `Account` class first.  This is a simple Java object with an account number and balance:
+The next phase of the Banking example processes both credits and debits in two bank accounts and calculates the account balance. In order to do this, the example creates two separate `Account` objects and inserts them into the `Cashflow` objects before passing them to the decision engine. Creating the objects in this way provides easy access to the correct account without using helper classes.
 
-.Banking Tutorial: Class Account
-====
+The `Account` class is a basic Java object with an account number and balance:
+
+.Account class
 [source,java]
 ----
 public class Account {
@@ -521,13 +479,10 @@ public class Account {
     }
 }
 ----
-====
 
+The `AllocatedCashflow` class extends `TypedCashflow` to include an `Account` reference:
 
-Now let`'s extend our ``TypedCashflow``, resulting in ``AllocatedCashflow``, to include an `Account` reference.
-
-.Banking Tutorial: Class AllocatedCashflow
-====
+.AllocatedCashflow class
 [source,java]
 ----
 public class AllocatedCashflow extends TypedCashflow {
@@ -563,18 +518,14 @@ public class AllocatedCashflow extends TypedCashflow {
     }
 }
 ----
-====
 
+The `BankingExample6.java` creates two `Account` objects and passes one of them into each `Cashflow` object in the constructor call:
 
-The Java code of [path]_BankingExample6.java_
- creates  two `Account` objects and passes one of them into each cashflow, in the constructor call.
-
-.Banking Tutorial: BankingExample6.java
-====
+.BankingExample6.java class
 [source,java]
 ----
 public class BankingExample6 {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         Account acc1 = new Account(1);
         Account acc2 = new Account(2);
 
@@ -606,14 +557,10 @@ public class BankingExample6 {
     }
 }
 ----
-====
 
+The rules in `Example6.drl` apply each `Cashflow` object in date order and then calculate and print the balance:
 
-Now, let`'s look at the rule in [path]_Example6.drl_
- to see how we apply each cashflow in date order and calculate and print the balance.
-
-.Banking Tutorial: Rule in Example6.drl
-====
+.Rules in Example6.drl
 [source]
 ----
 rule "Rule 06 - Credit"
@@ -646,15 +593,14 @@ rule "Rule 06 - Debit"
         delete($cashflow);
 end
 ----
-====
 
+Although the example uses separate rules for credits and debits, the example does not specify a type when checking for earlier cash flows so that all cash flows are applied in date order, regardless of the cash flow type.
 
-Although we have separate rules for credits and debits, but we do not specify a type when checking for earlier cashflows.
-This is so that all cashflows are applied in date order, regardless of the cashflow type.
-In the conditions we identify the account to work with, and in the consequences we update it with the cashflow amount.
+The `when` conditions of the rules identify the relevant account and the `then` actions of the rules update the account with the cash flow amount.
 
-.Banking Tutorial: Output of BankingExample6.java
-====
+The resulting output shows the selected `AllocatedCashflow`:
+
+.BankingExample6.java class output in the IDE console
 [source]
 ----
 Loading file: Example6.drl
@@ -689,4 +635,3 @@ Account: 1 - new balance: 100.0
 Debit: Mon May 07 00:00:00 BST 2007 :: 900.0
 Account: 1 - new balance: -800.0
 ----
-====
