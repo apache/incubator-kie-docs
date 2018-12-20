@@ -3,106 +3,215 @@
 
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
+== Installer
+
+.When installing {KIE_SERVER} and {CENTRAL} using the {PRODUCT} installer, the default placeholder for the controller URL should contain {URL_COMPONENT_CENTRAL} [https://issues.jboss.org/browse/RHPAM-1774[RHPAM-1774]]
+Issue: If you use the {PRODUCT} installer to install both {CENTRAL} and {KIE_SERVER}, on the *Advanced Configuration* page the default value for {KIE_SERVER} is incorrect.
+
+Steps to reproduce:
+
+. Use the installer to install {PRODUCT} on {EAP}.
+. Accept all default selections.
+. On the *Advanced Configuration* page, select *Configure Process Server*.
+
+Expected result: The value of the {KIE_SERVER} URL is `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller`.
+
+Actual result: The value of the {KIE_SERVER} URL is `\http://localhost:8080/controller/rest/controller`.
+
+Workaround: After you complete the installation, change `\http://localhost:8080/controller/rest/controller` to `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller` in the the {EAP} `standalone.xml` and `standalone-full.xml` files.
+
+.The controller URL is not updated in the standalone.xml file if only {KIE_SERVER} is installed [https://issues.jboss.org/browse/RHPAM-1781[RHPAM-1781]]
+
+Issue: When you run the {PRODUCT} installer and you specify a URL for the controller, the URL is not updated in the {EAP} `standalone.xml` and `standalone-full.xml` files.
+
+Steps to reproduce:
+
+. Run the {PRODUCT} installer.
+. Specify an {EAP} installation for container.
+. Select only Process Server to install.
+. Select *Advanced Configuration* and update controller URL.
+. Complete the installation.
+. Open the {EAP} `standalone.xml` or  `standalone-full.xml` file and find the controller URL.
+
+Expected result: The value of the controller URL property is the URL that you entered during installation.
+
+Actual result: The value of the controller URL property is the default value.
+
+Workaround: Manually update the value of the controller URL property in the {EAP} `standalone.xml` and  `standalone-full.xml` file.
+
 == {CENTRAL}
+.Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories are not fully migrated when imported into {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1768[RHPAM-1768]]
 
-.Cannot close the standalone editor [https://issues.jboss.org/browse/RHPAM-976[RHPAM-976]]
+Issue: Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories (legacy structure repositories) that contain more than one project can be imported into {CENTRAL} even though they are not supported. When these repositories are imported, the are not fully migrated and will not perform as expected.
+ 
+Steps to reproduce:
 
-Issue: If you make a change in a standalone editor, you cannot close the editor until you save your changes.
+. In {PRODUCT} 7.0.0 or earlier, create a repository with two projects.
+. Copy the repository location from the `.niogit` directory.
+. Open {PRODUCT} 7.2.0.
+. Click *Library* -> *Import Project*.
+. Paste the repository location  and select both projects. 
+
+Actual result: The projects are imported but will not perform as expected.
+
+Workaround: Use the patching and upgrading tool to import Red Hat Decision Central 7.0 and earlier and BRMS 6.4 and earlier repositories, as described in {URL_PATCHING_UPGRADING}[_{PATCHING_UPGRADING}_].
+
+   
+.A TimeoutException error occurs when logging in to a clustered {CENTRAL} [https://issues.jboss.org/browse/RHPAM-1749[RHPAM-1749]]
+Issue: On a clustered {CENTRAL} instance, when logging in to {CENTRAL} an exception is thrown.
+
+Steps to reproduce:
+    
+. Create a {CENTRAL} cluster configuration that uses ElasticSearch and AMQ Broker, and that has two standalone {CENTRAL} nodes.
+. Uncomment the `<distributable/>` tag on both {CENTRAL} nodes.
+. Log in to {CENTRAL} on one of the nodes. 
+
+Actual result: An exception is thrown.
+    
+Workaround: See the workaround in the https://access.redhat.com/solutions/2776221[JBoss EAP 7 does not process requests for a session in parallel] article.
+    
+
+.{PRODUCT} integrated with Red Hat Single Sign-On ignores user SSH key when working with Git [https://issues.jboss.org/browse/RHPAM-1683[RHPAM-1683]]
+
+Issue: With {PRODUCT} integrated with Red Hat Single Sign-On, if you try to clone a project created by a user that has an SSH key set, you cannot clone it without the SSH key password. The SSH key is ignored.
 
 Steps to reproduce:
 
-. Open a standalone editor.
-. Make a change to asset.
-. Try to close the editor.
-
-Expected result: The editor closes.
-
-Actual result: The editor does not close.
-
-Workaround: Save any changes before closing the editor.
-
-.In guided rules, guided decision tables, and guided decision templates, the use of the "contains" operator does not add values from enumerations that have quotes. [https://issues.jboss.org/browse/RHDM-25[RHDM-25]]
-
-Issue: When enumeration is used for a string field of a fact in guided rules, guided decision tables, and guided decision templates, the resultant rule does not wrap the selected value from the enumeration drop down in quotes ("") and a validation error occurs. 
-
-ifdef::PAM[]
-.Process designer instances are very slow with Google Chrome on Linux [https://issues.jboss.org/browse/RHPAM-922[RHPAM-922]]
-
-Step to reproduce: Open three process designer instances in Google Chrome on Linux.
-
-Expected result: All instances of process designer perform at the same level, regardless of the number of instances open.
-
-Actual result: The first two instances that were opened perform as usual, but the third and all subsequent instances are very slow, even if you close the first two instances.
-
-Workaround: Set the value of `chrome://flags/#force-color-profile` to sRGB.
-
-endif::[]
-
-.Project cannot be built and deployed in {CENTRAL} when connected to a snapshot Maven repo [https://issues.jboss.org/browse/RHPAM-1544[RHPAM-1544]]
-
-Steps to reproduce:
-
-. Start the local Nexus repository.
-. Install {EAP} with {CENTRAL}.
-. Set the value of the `kie.maven.settings.custom` system property to `settings.xml` which will point to the Nexus snapshot repository.
-. Start {EAP}, log in to {EAP}, and try to create a project.
-
-Actual result: An error appears.
-
-Workaround: Remove the snapshot Maven repository from the `settings.xml` file used by {CENTRAL}.
-
-== OpenShift
-
-.Opening Case Modeler (legacy) throws a JSON exception [https://issues.jboss.org/browse/RHPAM-1431[RHPAM-1431]]
-
-Steps to reproduce:
-
-. Install Red Hat Single Sign-On in OpenShift.
-. Create a realm.
-. Install {PRODUCT} in OpenShift.
-. Open the IT-Orders orders hardware case definition.
-
-Actual result: An error occurs and the application restarts.
-
-Workaround: Replace the `keycloak.sh` script that is configuring `autodeploy`:
-
-. Download the updated `keycloak.sh` script from the https://access.redhat.com/solutions/3645362[_Business Central Authoring Environment (on Openshift) crashes when a new "Business Processes (legacy)" asset is created_] article.
-. Use the script to create a configuration map:
+. Integrate a {PRODUCT} installation with Red Hat Single Sign-On, as described in {URL_INTEGRATING_SSO}[_{INTEGRATING_SSO}_].
+. Use the {PRODUCT} *Admin* -> *SSH Keys* page to add a public SSH key.
+. Enter the following command in a terminal to add a private SSH key to your `ssh-agent`, where `<SSH-KEY-PATH>`  is the path to the SSH private key:
 +
 [source]
 ----
-$ oc create configmap sso-script --from-file=keycloak.sh=keycloak.sh
+$ ssh-add <SSH-KEY-PATH>
 ----
-. Mount the configuration map and override the previous script, where `<NAME>` is the name of the volume, for example `myapp-rhpam`:
+. Use SSH to clone the project, for example:
 +
 [source]
 ----
-$ oc volume dc/<NAME> --add --type configmap --configmap-name=sso-script --sub-path=keycloak.sh --name=keycloak-script --mount-path=/opt/eap/bin/launch/keycloak.sh
+git clone ssh://user@localhost:8001/space/project
 ----
 
-ifdef::PAM[]
+Expected result: The project is cloned.
+
+Actual result: You cannot clone the project unless you use the user's password.
+
+.Several Errai projects contain XSD-invalid `pom.xml` file [https://issues.jboss.org/browse/RHPAM-1742[RHPAM-1742]]
+Issue: Maven repository validation identified the following `pom.xml` files in the Errai project, which are invalid according to Maven POM XSD:
+[source]
+----
+org/jboss/errai/errai-ioc/4.4.1.Final-redhat-00001/errai-ioc-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-navigation/4.4.1.Final-redhat-00001/errai-navigation-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-security-server/4.4.1.Final-redhat-00001/errai-security-server-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-security-client/4.4.1.Final-redhat-00001/errai-security-client-4.4.1.Final-redhat-00001.pom.xml
+org/jboss/errai/errai-common/4.4.1.Final-redhat-00001/errai-common-4.4.1.Final-redhat-00001.pom
+----
+
+Workaround: None.
+
+.`kie-soup-dataset-elasticsearch` is an  XSD-invalid `pom.xml` file [https://issues.jboss.org/browse/RHPAM-1743[RHPAM-1743]]
+Issue: Maven repository validation identified the `kie-soup-dataset-elasticsearch` `pom.xml` fileas invalid according to Maven POM XSD.
+
+Workaround: None.
+
+.Two `ClassNotFoundExceptions` errors are thrown the first time you open the {CENTRAL} *Data Sources* perspective [https://issues.jboss.org/browse/RHPAM-1741[RHPAM-1741]]
+
+Issue: When you access the {CENTRAL} *Data Sources* perspective for the first time after a clean installation, the following `ClassNotFoundExceptions` errors appear in the `server.log` file:
+[source]
+----
+org.guvnor.structure.repositories.NewBranchEvent
+org.guvnor.structure.repositories.RepositoryUpdatedEvent
+----
+
+Steps to reproduce:
+
+. Log in to {CENTRAL} with the `admin` role.
+. Go to *Admin* -> *Datasources*.
+
+Actual result: As soon as you click the *Data Sources* perspective, two errors appear in {EAP} console.
+
+Expected result: No errors appear.
+
+Workaround: Restart {CENTRAL} and go to *Admin* -> *Datasources*. These errors only appear the first time you click the perspective after installation.
 
 == {KIE_SERVER}
-.Execution errors: Details cannot be loaded from Sybase 16.0 [https://issues.jboss.org/browse/RHPAM-1567[RHPAM-1567]]
 
-Issue: If you select a Sybase 16.0 error from the list of execution errors, the *Details* panel opens but no data is displayed and the following error appears:
+.A container is removed from the UI even though it was not possible to stop it [https://issues.jboss.org/browse/RHPAM-1698[RHPAM-1698]]
+
+Issue: A container cannot be stopped if it is blocked by an active process instance. However if you attempt to stop a blocked container from the UI, the action throws an exception and the container disappears.
+
+Steps to reproduce:
+
+. Create a project with a process.
+. Deploy the project and start the process.
+. Go to *Menu* -> *Deploy* -> *Execution Servers* and stop  the container.
+
+Actual result: The container is removed from the UI even though it is still running.
+ 
+ifdef::PAM[]
+== Maven repository
+.Missing JWS dependencies in the offline Maven repositories distribution [https://issues.jboss.org/browse/RHPAM-1715[RHPAM-1715]]
+
+Issue: The following key dependencies required to install {KIE_SERVER} on {JWS} are missing from the offline Maven repository. 
 
 [source]
 ----
-An unexpected error happened. Please try again in a few moments.
+org.jboss.integration:narayana-tomcat
+org.jboss:jboss-transaction-spi
 ----
 
-endif::[]
+If you are you are performing a manual installation, you must copy the files described in the workaround.
 
-== Decision engine
-.MVEL expression (1 + 2 * 3 + $v ) causes a "no such method or function " error for bind variable[https://issues.jboss.org/browse/RHDM-707[RHDM-707]]
+Workaround:
 
-Issue: When using an expression such as `(1 + 2 * 3 + $v)` in the consequence of a rule which uses the mvel dialect, where `$v` is a bound variable from rule constraints, the evaluation of the rule produces an exception.
+. Use the installer to install {PRODUCT} on {JWS}.
+. In a terminal, change directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` directory where the installer installed {PRODUCT}.
+. Copy the following files from the `<JWS-HOME>/jws-5.0/tomcat/lib` directory to the `<JWS-HOME>/jws-5.0/tomcat/lib` directory of the target {JWS} location.
++
+[source]
+----
+narayana-tomcat-1.0.0.Final-redhat-1.jar 
+jboss-transaction-spi-7.6.0.Final-redhat-1.jar 
+----
+endif::PAM[]
 
-Workaround: Change the expression to `(1 + (2 * 3) + $v)`.
+== OpenShift
+.Various errors occur when starting clustered {CENTRAL} on OpenShift [https://issues.jboss.org/browse/RHPAM-1747[RHPAM-1747]]
+
+Issue: When clustered {CENTRAL} is started on OpenShift using the `rhpam72-authoring-ha.yaml` template, {CENTRAL} sometimes throws various exceptions that cause the pod to restart or the deployment to fail.
+
+Steps to reproduce:
+
+. Use the `rhpam72-authoring-ha.yaml` template to deploy {PRODUCT} {PRODUCT_VERSION} images on OpenShift.
+. Check the {CENTRAL} log files.
+
+Expected result: No errors appear in the log files.
+
+Actual result: Errors appear in the log files, the pod restarts, or the deployment fails.
+
+Workaround: None.
 
 ifdef::PAM[]
 == Process designer
+.In the new process designer, when a process containing another event subprocess is created and saved, the process validation fails [https://issues.jboss.org/browse/RHPAM-1732[RHPAM-1732]]
 
-The Data Objects functionality in the process designer is disabled by the `designerdataobjects=false` configuration switch because at this time it is considered incomplete. 
-endif::[]
+Issue: In the new process designer, when a subprocess containing another event subprocess is created and saved, the process validation fails. 
+
+[NOTE]
+====
+As a result of this issue, you cannot add an event subprocess into another (embedded) subprocess in the new process designer.
+====
+
+Steps to reproduce:
+
+. Create a process with at least one subprocess.
+. Click *Save*.
+
+Expected result: The process and subprocesses are saved.
+
+Actual result: The following validation error appears even though all sequence flows have their source and target within the process:
+[source]
+----
+Sequence flow connectors cannot exceed the embbedded subprocess' bounds. Both source and target nodes must be in same parent process.
+----
+endif::PAM[]
