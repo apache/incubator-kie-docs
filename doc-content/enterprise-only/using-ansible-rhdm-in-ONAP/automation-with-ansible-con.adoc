@@ -1,0 +1,21 @@
+[id='automation-with-ansible-con']
+= Automation with Ansible
+
+Ansible provides an easy to implement automation mechanism for various physical as well as virtual network functions using protocols such as `netconf` or `cli`.  As currently used in ONAP under APPC architecture, Ansible provides VNF management framework that allows an almost cli like set of tools in a structured form. It is agentless, which means that the target VNF need not have any additional software. This construct allows for management of any VNF in a consistent manner whether it supports a standard interface/protocols such as `netconf` or not. Any action (e.g configure, restart, health check etc) can be executed on the VNF by constructing a _playbook_ (or _set of playbooks_) that is executed by an Ansible on the VNF via SSH.
+
+The Ansible Extension for APP-C allows management of VNFs via following architecture:
+
+* *Ansible Directed Graph* (*DG*) - The Ansible Directed graph is generic DG that can be used to invoke any playbook via Ansible (and hence any APP-C action, since in Ansible, VNF actions map to playbooks) corresponding to an LCM action.
+* *APP-C Ansible Adapter* - The ansible adapter is an OSGI bundle in the APP-C Karaf container that interacts with the Ansible Server. It is essentially a set of REST calls that performs two actions, submit request for a playbook to be executed, and if required get the results of the playbook after execution (if in synchronous mode).
+* *APP-C/Ansible Server Interface* - Ansible libraries are written in Python and hence cannot be executed natively from within the APP-C Karaf container. Instead, the design calls for an *Ansible Server* that can execute the Ansible playbooks and exposes a *REST* interface that is compliant with requirements of APP-C. These requirements are documented as the Server API Interface that any compliant Ansible Server must support. Exact implementation of the Ansible Server is left open and does not affect APP-C operations as long as the server follows the interface. For purposes of evaluation, a reference web server that implements this APP-C/Ansible Server interface has been developed and the code is available from the App-C ONAP repository under `appc-adapters/appc-ansible-adapter/appc-ansible-example-server` path.
+
+The workflow envisioned when application controller receives an event is as follows:
+
+. Application Controller receives event from the Event Bus for an LCM action.
+. The appropriate LCM API invokes the Dispatcher which performs the relevant lookups for A&AI and Workflow (DG information).
+. The dispatcher calls the DG relevant to the LCM action (for the VNF).
+. The DG conducts any processing of data (e.g retrieving additional information, filling templates etc) , prepares the necessary DG context variables outlined in Table 1 and then invokes the Ansible DG.
+. Ansible DG leverages the Ansible Adapter to interact with the Ansible Server.
+. Ansible Server invokes the appropriate playbook which in turn interacts with the VNF and then returns the playbook results.
+. Ansible Server returns results.
+. Ansible DG provides these results back to calling DG.
