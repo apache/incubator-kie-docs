@@ -1,0 +1,53 @@
+[id='policy-with-rhdm-con']
+= Policy with {PRODUCT}
+
+.ONAP policy creation and deployment
+image::using-ansible-rhdm-in-ONAP/ONAP-policy-create-deploy.png[ONAP policy creation and deployment]
+
+ONAP policy framework (also known as POLICY) consists of the following subcomponents:
+
+* Policy Administration Point (PAP) provides interfaces for policy creation. The interfaces are integrated with a portal to provide a GUI.
+
+* Policy Decision Point (PDP) is based on a specific rules technology. It has two components:
+
+** PDP-X is based on XACML technology. PDP-X is _stateless_ and can be deployed as a resource pool of PDP-X servers. You can scale up the number of servers to increase both capacity (horizontal scalability) and availability.
+
+** PDP-D is based on {PRODUCT} technology. PDP-D is _stateful_ and uses {PRODUCT} in its native, stateful way. The transactions persist as long as PDP-D is active. It provides the following capabilities:
+*** Advanced control loops
+*** Interfaces for various ONAP components to trigger actions and receive events
+*** Maintains state throughout work-flows across the network while handling failures in the corrective actions
+
+* Policy Enforcement Point (PEP) is where runtime policy enforcement is performed by ONAP subsystems that are policy-enabled or can respond to commands from a policy-enabled element such as a PDP. These subsystems include:
+
+** Master Services Orchestrator (MSO) provides orchestration at a very high level, with an end to end view of the infrastructure, network, and application scopes.
+** Active and Available Inventory (AAI) is the ONAP subsystem that provides real-time views of active, available, and allocated resources and services and their relationships.
+** Data Collection, Analytics, and Events (DCAE) subsystem, together with other ONAP components, gathers information regarding performance, usage, and configuration from the managed environment. Various analytic applications then use this data to detect any anomaly or significant events. Based on the analysis results,  actions are triggered such as publishing to other ONAP components such as policy, MSO or controllers.
+
+The main functions of the DCAE subsystem are as follows:
+
+* Collect, analyze, transform, and store data for analysis.
+* Provide a framework for analytics development.
+
+These functions enable closed-loop responses by various ONAP components to events or other conditions in the network.
+
+* Controllers : A controller is used to manage the state of a set of sub-domain specific resources (for example, an application or network). It executes the resource's configuration and instantiation, and is the primary agent in ongoing management such as control loop actions, migration, and scaling. ONAP uses the following controller types to manage resources in the execution environment, corresponding to their assigned controlled domain:
+** Network controller (Network configuration): A network controller (for example, a SDNC/software defined network controller), manages and controls network functions and services by carrying out its network configuration workflow and reporting the resulting status to MSO or AAI. Examples of Controlled Network Elements and services include those for Transport Network Functions, infrastructure networking (for instance, leaf, spine, and virtual switches), and Wide-Area-Networks (WANs).
+** Application controller (Application): Application controllers, such as APPC, are responsible for the lifecycle management of VFNs. The APPC HTTP API supports lifecycle management commands, enabling users to manage virtual applications and their components through other ONAP components.
+
+Both of these controllers are based on an OpenDaylight Controller framework.
+
+After a policy has been initially created or an existing policy has been modified, the Policy Distribution Framework sends the policy from the repository to its points of use, which include Policy Decision Points (PDPs) and Policy enforcement points before the policy is actually needed.
+
+Examples of policy enforcement can include the following:
+
+* Policy rules for data collection and retention by the DCAE data collection functionality.
+* Analytic policy rules, identification of anomalous or abnormal conditions, and publication of events signaling detection of such conditions by DCAE analytic applications.
+* Policy rules for associated remedial actions, or for further diagnostics, are enforced by the correct component in a control loop such as the MSO, a controller, or DCAE.
+* Policy engines such as XACML and {PRODUCT} also enforce policies and can trigger other components as a result (for example, causing a controller to take specific actions specified by the policy). Additionally, some policies (Guard Policies) may enforce checks against decided actions.
+
+The following steps illustrate a sample policy flow:
+
+. A new data flow is intercepted by the Policy Enforcement Point (PEP).
+. The PEP forwards the request to the Policy Decision Point (PDP).
+. The PDP evaluates the request against the policies it is configured with.
+. The PDP reaches a decision (Permit / Deny / Not Applicable / Indeterminate) and returns it to the PEP.
