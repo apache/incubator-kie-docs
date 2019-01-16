@@ -170,7 +170,7 @@ You should always close the logger at the end of your application.
   import org.kie.api.logger.KieRuntimeLogger;
   ...
   KieRuntimeLogger logger = KieServices.Factory.get().getLoggers().newFileLogger(ksession, "test");
-  // add invocations to the {ENGINE} here,
+  // add invocations to the {PROCESS_ENGINE} here,
   // e.g. ksession.startProcess(processId);
   ...
   logger.close();
@@ -248,14 +248,14 @@ In the following text, we will refer to two types of "multi-threading":  _logica
  _Technical multi-threading_ is what happens when multiple  threads or processes are started on a computer, for example by a Java or  C program. _Logical multi-threading_ is what we see in  a BPM process after the process reaches a parallel gateway, for  example.
 From a functional standpoint, the original process will then split  into two processes that are executed in a parallel fashion.
 
-Of course, the {ENGINE} supports logical multi-threading: for example,  processes that include a parallel gateway.
+Of course, the {PROCESS_ENGINE} supports logical multi-threading: for example,  processes that include a parallel gateway.
 We've chosen to implement logical  multi-threading using one thread: a jBPM process that includes logical multi-threading  will only be executed in one technical thread.
 The main reason for doing  this is that multiple (technical) threads need to be be able to communicate  state information with each other if they are working on the same process.
 This requirement brings with it a number of complications.
 While it might  seem that multi-threading would bring performance benefits with it, the extra  logic needed to make sure the different threads work together well means  that this is not guaranteed.
 There is also the extra overhead incurred because  we need to avoid race conditions and deadlocks.
 
-In general, the {ENGINE} executes actions in serial.
+In general, the {PROCESS_ENGINE} executes actions in serial.
 For example,  when the engine encounters a script task in a process, it will synchronously  execute that script and wait for it to complete before continuing execution.
 Similarly, if a process encounters a parallel gateway, it will sequentially  trigger each of the outgoing branches, one after the other.
 This is possible  since execution is almost always instantaneous, meaning that it is extremely  fast and produces almost no overhead.
@@ -271,7 +271,7 @@ It is important that your  service handler executes your service asynchronously 
 An example of this would be a service task that invokes an external  service.
 Since the delay in invoking this service remotely and waiting for  the results might be too long, it might be a good idea to invoke this service  asynchronously.
 This means that the handler will only invoke the service  and will notify the engine later when the results are available.
-In the  mean time, the {ENGINE} then continues execution of the process.
+In the  mean time, the {PROCESS_ENGINE} then continues execution of the process.
 
 
 Human tasks are a typical example of a service that needs to be invoked  asynchronously, as we don't want the engine to wait until a human actor  has responded to the request.

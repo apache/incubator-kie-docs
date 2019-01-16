@@ -11,7 +11,7 @@ It provides configurable strategies that control actual runtime execution (how K
 * Per Process Instance - runtime manager maintains mapping between process instance and KieSession and always provides same KieSession whenever working with given process instance
 
 Runtime Manager is primarily responsible for managing and delivering instances of RuntimeEngine to the caller.
-In turn, RuntimeEngine encapsulates two the most important elements of {ENGINE}:
+In turn, RuntimeEngine encapsulates two of the most important elements of the {PROCESS_ENGINE}:
 
 * KieSession
 * TaskService
@@ -122,7 +122,7 @@ It has following characteristics that are important to evaluate while considerin
 
 * small memory footprint - single instance of runtime engine and task service
 * simple and compact in design and usage
-* good fit for low to medium load on {ENGINE} due to synchronized access
+* good fit for low to medium load on the {PROCESS_ENGINE} due to synchronized access
 * due to single KieSession instance all state objects (such as facts) are directly visible to all process instances and vice versa
 * not contextual - meaning when retrieving instances of RuntimeEngine from singleton RuntimeManager Context instance is not important and usually EmptyContext.get() is used although null argument is acceptable as well
 * keeps track of id of KieSession used between RuntimeManager restarts to ensure it will use same session - this id is stored as serialized file on disc in temp location that depends on the environment can be one of following:
@@ -138,7 +138,7 @@ This is sort of "stateless" strategy that provides only request scope state and 
 
 It has following characteristics:
 
-* completely isolated {ENGINE} and task service operations for every request
+* completely isolated {PROCESS_ENGINE} and task service operations for every request
 * completely stateless, storing facts makes sense only for the duration of the request
 * good fit for high load, stateless processes (no facts or timers involved that shall be preserved between requests)
 * KieSession is only available during life time of request and at the end is destroyed
@@ -214,7 +214,7 @@ Here is how you can build RuntimeManager and get RuntimeEngine (that encapsulate
     // on the environment
     KieSession ksession = runtimeEngine.getKieSession();
 
-    // add invocations to the {ENGINE} here,
+    // add invocations to the {PROCESS_ENGINE} here,
     // e.g. ksession.startProcess(processId);
 
     // and last dispose the runtime engine
@@ -275,7 +275,7 @@ The complexity of knowing when to create, dispose, register handlers, etc is tak
     UserGroupCallback getUserGroupCallback();
 
     /**
-     * Delivers custom class loader that shall be used by the {ENGINE} and task service instances
+     * Delivers custom class loader that shall be used by the {PROCESS_ENGINE} and task service instances
      * @return
      */
     ClassLoader getClassLoader();
@@ -346,7 +346,7 @@ public interface RuntimeEnvironmentBuilderFactory {
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * but it does not have persistence for {ENGINE} configured so it will only store process instances in memory
+     * but it does not have persistence for {PROCESS_ENGINE} configured so it will only store process instances in memory
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
      *
      * @see DefaultRuntimeEnvironment
@@ -443,11 +443,11 @@ public interface RuntimeEnvironmentBuilderFactory {
     public RuntimeEnvironmentBuilder newClasspathKmoduleDefaultBuilder(String kbaseName, String ksessionName);
 ----
 
-Besides KieSession Runtime Manager provides access to TaskService too as integrated component of a RuntimeEngine that will always be configured and ready for communication between {ENGINE} and task service.
+Besides KieSession Runtime Manager provides access to TaskService too as integrated component of a RuntimeEngine that will always be configured and ready for communication between {PROCESS_ENGINE} and task service.
 
 Since the default builder was used, it will already come with predefined set of elements that consists of:
 
-* Persistence unit name will be set to org.jbpm.persistence.jpa (for both {ENGINE} and task service)
+* Persistence unit name will be set to org.jbpm.persistence.jpa (for both {PROCESS_ENGINE} and task service)
 * Human Task handler will be automatically registered on KieSession
 * JPA based history log event listener will be automatically registered on KieSession
 * Event listener to trigger rule task evaluation (fireAllRules) will be automatically registered on KieSession
@@ -589,7 +589,7 @@ Thus all components are provided:
 
 [NOTE]
 ====
-Whenever there is a need to interact with the {ENGINE}/task service from within handler or listener, recommended approach is to use RuntimeManager and retrieve RuntimeEngine (and then KieSession and/or TaskService) from it as that will ensure proper state managed according to strategy
+Whenever there is a need to interact with the {PROCESS_ENGINE} or task service from within handler or listener, recommended approach is to use RuntimeManager and retrieve RuntimeEngine (and then KieSession and/or TaskService) from it as that will ensure proper state managed according to strategy
 ====
 
 In addition, some filtering can be applied based on identifier (that is given as argument to the methods) to decide if given RuntimeManager shall receive handlers/listeners or not.
