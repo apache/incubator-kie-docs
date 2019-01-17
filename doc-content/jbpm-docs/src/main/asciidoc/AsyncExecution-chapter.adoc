@@ -9,7 +9,7 @@ Technical multi-threading is what happens when multiple threads or processes are
 Logical multi-threading is what we see in a BPM process after the process reaches a parallel gateway, for example.
 From a functional standpoint, the original process will then split into two processes that are executed in a parallel fashion.
 
-Of course, the {ENGINE} supports logical multi-threading: for example, processes that include a parallel gateway.
+Of course, the {PROCESS_ENGINE} supports logical multi-threading: for example, processes that include a parallel gateway.
 We've chosen to implement logical multi-threading using one thread: a jBPM process that includes logical multi-threading will only be executed in one technical thread.
 The main reason for doing this is that multiple (technical) threads need to be be able to communicate state information with each other if they are working on the same process.
 This requirement brings with it a number of complications.
@@ -19,27 +19,27 @@ There is also the extra overhead incurred because we need to avoid race conditio
 === Engine execution
 
 
-In general, the {ENGINE} executes actions in serial.
-For example, when the engine encounters a script task in a process, it will synchronously execute that script and wait for it to complete before continuing execution.
+In general, the {PROCESS_ENGINE} executes actions in serial.
+For example, when the {PROCESS_ENGINE} encounters a script task in a process, it will synchronously execute that script and wait for it to complete before continuing execution.
 Similarly, if a process encounters a parallel gateway, it will sequentially trigger each of the outgoing branches, one after the other.
 This is possible since execution is almost always instantaneous, meaning that it is extremely fast and produces almost no overhead.
 As a result, the user will usually not even notice this.
-Similarly, action scripts in a process are also synchronously executed, and the engine will wait for them to finish before continuing the process.
-For example, doing a Thread.sleep(...) as part of a script will not make the engine continue execution elsewhere but will block the engine thread during that period.
+Similarly, action scripts in a process are also synchronously executed, and the {PROCESS_ENGINE} will wait for them to finish before continuing the process.
+For example, doing a Thread.sleep(...) as part of a script will not make the {PROCESS_ENGINE} continue execution elsewhere but will block the {PROCESS_ENGINE} thread during that period.
 
 The same principle applies to service tasks.
-When a service task is reached in a process, the engine will also invoke the handler of this service synchronously.
-The engine will wait for the completeWorkItem(...) method to return before continuing execution.
+When a service task is reached in a process, the {PROCESS_ENGINE} will also invoke the handler of this service synchronously.
+The {PROCESS_ENGINE} will wait for the completeWorkItem(...) method to return before continuing execution.
 It is important that your service handler executes your service asynchronously if its execution is not instantaneous.
 
 An example of this would be a service task that invokes an external service.
 Since the delay in invoking this service remotely and waiting for the results might be too long, it might be a good idea to invoke this service asynchronously.
-This means that the handler will only invoke the service and will notify the engine later when the results are available.
-In the mean time, the {ENGINE} then continues execution of the process.
+This means that the handler will only invoke the service and will notify the {PROCESS_ENGINE} later when the results are available.
+In the mean time, the {PROCESS_ENGINE} then continues execution of the process.
 
-Human tasks are a typical example of a service that needs to be invoked asynchronously, as we don't want the engine to wait until a human actor has responded to the request.
+Human tasks are a typical example of a service that needs to be invoked asynchronously, as we don't want the {PROCESS_ENGINE} to wait until a human actor has responded to the request.
 The human task handler will only create a new task (on the task list of the assigned actor) when the human task node is triggered.
-The engine will then be able to continue execution on the rest of the process (if necessary) and the handler will notify the engine asynchronously when the user has completed the task.
+The {PROCESS_ENGINE} will then be able to continue execution on the rest of the process (if necessary) and the handler will notify the {PROCESS_ENGINE} asynchronously when the user has completed the task.
 
 === Multiple KIE sessions and persistence
 
@@ -136,7 +136,7 @@ jBPM executor operates on commands, which are essential piece of code that is go
 ----
 /**
  * Executor's Command are dedicated to contain purely business logic that should be executed.
- * It should not have any reference to underlying {ENGINE} and should not be concerned
+ * It should not have any reference to the underlying {PROCESS_ENGINE} and should not be concerned
  * with any process runtime related logic such us completing work item, sending signals, etc.
  * <br/>
  * Information that are taken from process will be delivered as part of data instance of
@@ -171,10 +171,10 @@ public interface Command {
 ----
 
 
-Looking at the interface above, there is no specific integration with the jBPM runtime engine, it's decoupled from it to put main focus on the actual logic that shall be executed as part of that command rather to worry about integration with {ENGINE}.
+Looking at the interface above, there is no specific integration with the {PROCESS_ENGINE}, it's decoupled from it to put main focus on the actual logic that shall be executed as part of that command rather to worry about integration with the {PROCESS_ENGINE}.
 This design promotes reuse of already existing logic by simply wrapping it with Command implementation.
 
-Input data is transferred from {ENGINE} to command via CommandContext.
+Input data is transferred from the {PROCESS_ENGINE} to command via CommandContext.
 It acts purely as data transfer object and puts single requirement on the data it holds - all objects must be serializable.
 
 [source,java]
@@ -226,7 +226,7 @@ public class CommandContext implements Serializable {
 ----
 
 
-Next outcome is provided to {ENGINE} via ExecutionResults, which is very similar in nature to the CommandContext and acts as data transfer object.
+Next outcome is provided to the {PROCESS_ENGINE} via ExecutionResults, which is very similar in nature to the CommandContext and acts as data transfer object.
 
 [source,java]
 ----

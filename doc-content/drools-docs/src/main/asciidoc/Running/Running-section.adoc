@@ -8,7 +8,7 @@ The `EntryPoint` provides the methods around inserting, updating and deleting fa
 The term "entry point" is related to the fact that we have multiple partitions in a Working Memory and you can choose which one you are inserting into.
 The use of multiple entry points is more common in event processing use cases, but they can be used by pure rule applications as well.
 
-The `KieRuntime` interface provides the main interaction with the engine.
+The `KieRuntime` interface provides the main interaction with the {DECISION_ENGINE}.
 It is available in rule consequences and process actions.
 In this manual the focus is on the methods and interfaces related to rules, and the methods pertaining to processes will be ignored for now.
 But you'll notice that the `KieRuntime` inherits methods from both the `WorkingMemory` and the ``ProcessRuntime``, thereby providing a unified API to work with processes and rules.
@@ -23,7 +23,7 @@ image::UserGuide/EntryPoint.png[align="center"]
 
 In order for a fact to be evaluated against the rules in a ``KieBase``, it has to be inserted into the session.
 This is done by calling the method ``insert(yourObject)``.
-When a fact is inserted into the session, some of its properties might be immediately evaluated (eager evaluation) and some might be deferred for later evaluation (lazy evaluation). The exact behaviour depends on the {ENGINE} algorithm being used.
+When a fact is inserted into the session, some of its properties might be immediately evaluated (eager evaluation) and some might be deferred for later evaluation (lazy evaluation). The exact behaviour depends on the {DECISION_ENGINE} algorithm being used.
 
 [NOTE]
 ====
@@ -82,11 +82,11 @@ ksession.delete( stiltonHandle );
 === Update
 
 
-The {ENGINE} must be notified of modified facts, so that they can be reprocessed.
+The {DECISION_ENGINE} must be notified of modified facts, so that they can be reprocessed.
 You must use the `update()` method to notify the `WorkingMemory` of changed objects for those objects that are not able to notify the `WorkingMemory` themselves.
 Notice that `update()` always takes the modified object as a second parameter, which allows you to specify new instances for immutable objects.
-On the right hand side of a rule the `modify` statement is recommended, as it makes the changes and notifies the engine in a single statement.
-Alternatively, after changing a fact object's field values through calls of setter methods you must invoke `update` immediately, event before changing another fact, or you will cause problems with the indexing within the {ENGINE}.
+On the right hand side of a rule the `modify` statement is recommended, as it makes the changes and notifies the {DECISION_ENGINE} in a single statement.
+Alternatively, after changing a fact object's field values through calls of setter methods you must invoke `update` immediately, event before changing another fact, or you will cause problems with the indexing within the {DECISION_ENGINE}.
 The modify statement avoids this problem.
 
 [source,java]
@@ -186,7 +186,7 @@ http://blog.athico.com/2010/07/glazed-lists-examples-for-drools-live.html
 == StatefulRuleSession
 
 
-The `StatefulRuleSession` is inherited by the `KieSession` and provides the rule related methods that are relevant from outside of the engine.
+The `StatefulRuleSession` is inherited by the `KieSession` and provides the rule related methods that are relevant from outside of the {DECISION_ENGINE}.
 
 .StatefulRuleSession
 image::UserGuide/StatefulRuleSession.png[align="center"]
@@ -219,9 +219,9 @@ During actions on the ``WorkingMemory``, rules may become fully matched and elig
 When a rule is fully matched a Match is created, referencing the rule and the matched facts, and placed onto the Agenda.
 The Agenda controls the execution order of these Matches using a Conflict Resolution strategy.
 
-The engine cycles repeatedly through two phases:
+The {DECISION_ENGINE} cycles repeatedly through two phases:
 
-. Working Memory Actions. This is where most of the work takes place, either in the Consequence (the RHS itself) or the main Java application process. Once the Consequence has finished or the main Java application process calls `fireAllRules()` the engine switches to the Agenda Evaluation phase.
+. Working Memory Actions. This is where most of the work takes place, either in the Consequence (the RHS itself) or the main Java application process. Once the Consequence has finished or the main Java application process calls `fireAllRules()` the {DECISION_ENGINE} switches to the Agenda Evaluation phase.
 . Agenda Evaluation. This attempts to select a rule to fire. If no rule is found it exits, otherwise it fires the found rule, switching the phase back to Working Memory Actions.
 
 
@@ -240,7 +240,7 @@ image::UserGuide/Agenda.png[align="center"]
 
 
 Conflict resolution is required when there are multiple rules on the agenda.
-(The basics to this are covered in chapter "Quick Start".) As firing a rule may have side effects on the working memory, the {ENGINE} needs to know in what order the rules should fire (for instance, firing ruleA may cause ruleB to be removed from the agenda).
+(The basics to this are covered in chapter "Quick Start".) As firing a rule may have side effects on the working memory, the {DECISION_ENGINE} needs to know in what order the rules should fire (for instance, firing ruleA may cause ruleB to be removed from the agenda).
 
 The default conflict resolution strategies employed by Drools are: Salience and LIFO (last in, first out).
 
@@ -267,7 +267,7 @@ You can also have rules with "auto focus" which means that the focus is taken fo
 Agenda groups are known as "modules" in CLIPS terminology.
 While it best to design rules that do not need control flow, this is not always possible.
 Agenda groups provide a handy way to create a "flow" between grouped rules.
-You can switch the group which has focus either from within the {ENGINE}, or via the API.
+You can switch the group which has focus either from within the {DECISION_ENGINE}, or via the API.
 If your rules have a clear need for multiple "phases" or "sequences" of processing, consider using agenda-groups for this purpose.
 
 Each time `setFocus()` is called it pushes that Agenda Group onto a stack.
@@ -326,7 +326,7 @@ ksession.getAgenda().getRuleFlowGroup( "Group C" ).clear();
 = Event Model
 
 
-The event package provides means to be notified of {ENGINE} events, including rules firing, objects being asserted, etc.
+The event package provides means to be notified of {DECISION_ENGINE} events, including rules firing, objects being asserted, etc.
 This allows you, for instance, to separate logging and auditing activities from the main part of your application (and the rules).
 
 The `WorkingMemoryEventManager` allows for listeners to be added and removed, so that events for the working memory and the agenda can be listened to.
@@ -475,7 +475,7 @@ results.getValue( "Get People" );
 
 
 With Rete you have a stateful session where objects can be asserted and modified over time, and where rules can also be added and removed.
-Now what happens if we assume a stateless session, where after the initial data set no more data can be asserted or modified and rules cannot be added or removed? Certainly it won't be necessary to re-evaluate rules, and the engine will be able to operate in a simplified way.
+Now what happens if we assume a stateless session, where after the initial data set no more data can be asserted or modified and rules cannot be added or removed? Certainly it won't be necessary to re-evaluate rules, and the {DECISION_ENGINE} will be able to operate in a simplified way.
 
 . Order the Rules by salience and position in the ruleset (by setting a sequence attribute on the rule terminal node).
 . Create an elements, one element for each possible rule match; element position indicates firing order.
@@ -513,7 +513,7 @@ You may also set the "drools.sequential.agenda" property to "sequential" or "dyn
 
 Drools provides two modes for rule execution - passive and active.
 
-As a general guideline, Passive Mode is most suitable for {ENGINE} applications which need to explicitly control when the engine shall evaluate and fire the rules, or for CEP applications making use of the Pseudo Clock. Active Mode is most effective for {ENGINE} applications which delegate control of when rules are evaluated and fired to the engine, or for typical CEP application making use of the Real Time Clock.
+As a general guideline, Passive Mode is most suitable for {DECISION_ENGINE} applications which need to explicitly control when the {DECISION_ENGINE} shall evaluate and fire the rules, or for CEP applications making use of the Pseudo Clock. Active Mode is most effective for {DECISION_ENGINE} applications which delegate control of when rules are evaluated and fired to the {DECISION_ENGINE}, or for typical CEP application making use of the Real Time Clock.
 
 
 == Passive Mode
@@ -547,11 +547,11 @@ session.dispose();
 == Active Mode
 
 
-Drools offers a `fireUntilHalt()` method, that starts the engine in Active Mode, which is asynchronous in behavior, where rules will be continually evaluated and fired, until a `halt()` call is made.
+Drools offers a `fireUntilHalt()` method, that starts the {DECISION_ENGINE} in Active Mode, which is asynchronous in behavior, where rules will be continually evaluated and fired, until a `halt()` call is made.
 
 This is specially useful for CEP scenarios that require what is commonly known as "active queries".
 
-Please note calling `fireUntilHalt()` blocks the current thread, while the engine will start and continue running asynchronously until the `halt()` is called on the KieSession. It is suggested therefore to call `fireUntilHalt()` from a dedicated thread, so the current thread does not get blocked indefinitely; this also enable the current thread to call `halt()` at a later stage, ref. examples below.
+Please note calling `fireUntilHalt()` blocks the current thread, while the {DECISION_ENGINE} will start and continue running asynchronously until the `halt()` is called on the KieSession. It is suggested therefore to call `fireUntilHalt()` from a dedicated thread, so the current thread does not get blocked indefinitely; this also enable the current thread to call `halt()` at a later stage, ref. examples below.
 
 An example outline of Drools code for a CEP application making use of Active Mode:
 [source,java]
@@ -581,13 +581,13 @@ session.halt();
 session.dispose();
 ----
 
-NOTE: Generally, it is not recommended mixing `fireAllRules()` and `fireUntilHalt()`, especially from different threads. However the engine is able to handle such situations safely, thanks to the internal state machine. If `fireAllRules()` is running and a call `fireUntilHalt()` is made, the engine will wait until the `fireAllRules()` is finished and then start `fireUntilHalt()`. However if `fireUntilHalt()` is running and `fireAllRules()` is called, the later is ignored and will just return directly. For more details about thread-safety and the internal state machine, reference section "Improved multi-threading behaviour".
+NOTE: Generally, it is not recommended mixing `fireAllRules()` and `fireUntilHalt()`, especially from different threads. However the {DECISION_ENGINE} is able to handle such situations safely, thanks to the internal state machine. If `fireAllRules()` is running and a call `fireUntilHalt()` is made, the {DECISION_ENGINE} will wait until the `fireAllRules()` is finished and then start `fireUntilHalt()`. However if `fireUntilHalt()` is running and `fireAllRules()` is called, the later is ignored and will just return directly. For more details about thread-safety and the internal state machine, reference section "Improved multi-threading behaviour".
 
 
 === Performing KieSession operations atomically when in Active Mode
 
 
-When in Active Mode, the {ENGINE} is in control of when the rule shall be evaluated and fired; therefore it is important that operations on the KieSession are performed in a thread-safe manner. Additionally, from a client-side perspective, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the engine to await until all the inserts are done, before evaluating the rules again.
+When in Active Mode, the {DECISION_ENGINE} is in control of when the rule shall be evaluated and fired; therefore it is important that operations on the KieSession are performed in a thread-safe manner. Additionally, from a client-side perspective, there might be the need for more than one operations to be called on the KieSession in between rule evaluations, but for engine to consider these as an atomic operation: for example, inserting more than one Fact at a given time, but for the {DECISION_ENGINE} to await until all the inserts are done, before evaluating the rules again.
 
 Drools offers a `submit()` method to group and perform operations on the KieSession as a thread-safe atomic action, while in Active Mode.
 
@@ -653,7 +653,7 @@ session.submit( new KieSession.AtomicAction() {
 = Propagation modes
 
 
-The introduction of PHREAK as default algorithm for the {ENGINE} made the rules' evaluation lazy.
+The introduction of PHREAK as default algorithm for the {DECISION_ENGINE} made the rules' evaluation lazy.
 This new Drools lazy behavior allowed a relevant performance boost but, in some very specific cases, breaks the semantic of a few Drools features.
 
 More precisely in some circumstances it is necessary to propagate the insertion of new fact into th session immediately.
@@ -691,11 +691,11 @@ ksession.fireAllRules();
 shouldn't cause the rule R to fire because the String satisfying the query condition has been inserted after the Integer and the passive query shouldn't react to this insertion.
 Conversely the rule should fire if the insertion sequence is inverted because the insertion of the Integer, when the passive query can be satisfied by the presence of an already existing String, will trigger it.
 
-Unfortunately the lazy nature of PHREAK doesn't allow the engine to make any distinction regarding the insertion sequence of the two facts, so the rule will fire in both cases.
+Unfortunately the lazy nature of PHREAK doesn't allow the {DECISION_ENGINE} to make any distinction regarding the insertion sequence of the two facts, so the rule will fire in both cases.
 In circumstances like this it is necessary to evaluate the rule eagerly as done by the old RETEOO-based engine.
 
-In other cases it is required that the propagation is eager, meaning that it is not immedate, but anyway has to happen before the engine/agenda starts scheduled evaluations.
-For instance this is necessary when a rule has the no-loop or the lock-on-active attribute and in fact when this happens this propagation mode is automatically enforced by the engine.
+In other cases it is required that the propagation is eager, meaning that it is not immedate, but anyway has to happen before the {DECISION_ENGINE}/agenda starts scheduled evaluations.
+For instance this is necessary when a rule has the no-loop or the lock-on-active attribute and in fact when this happens this propagation mode is automatically enforced by the {DECISION_ENGINE}.
 
 To cover these use cases, and in all other situations where an immediate or eager rule evaluation is required, it is possible to declaratively specify so by annotating the rule itself with **@Propagation(Propagation.Type)**, where Propagation.Type is an enumeration with 3 possible values:
 

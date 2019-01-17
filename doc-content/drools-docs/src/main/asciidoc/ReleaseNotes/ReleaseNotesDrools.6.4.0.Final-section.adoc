@@ -16,7 +16,7 @@ This issue required a partial rewriting of the existing incremental compilation 
 
 
 Engine's code dealing with multi-threading has been partially rewritten in order to remove a large number of synchronisation points and improve stability and predictability.
-In particular this new implementation allows a clearer separation and better interaction between the User thread (performing the insert/update/delete actions on the session), the Engine thread (doing the proper rules evaluation) and the Timer one (performing time-based actions like events expiration).
+In particular this new implementation allows a clearer separation and better interaction between the User thread (performing the insert/update/delete actions on the session), the {DECISION_ENGINE} thread (doing the proper rules evaluation) and the Timer one (performing time-based actions like events expiration).
 
 This improvement has been made possible by the new phreak algorithm introduced with Drools 6.
 In fact with in the ReteOO algorithm the network evaluation is performed during the User insert/update/delete action, meaning that each user action locks the entire engine.
@@ -24,7 +24,7 @@ Conversely with phreak the insert/update/delete is separated and the network eva
 
 More in detail this improvement has been made by 2 parts.
 First of all a new thread-safe queue has been added to store all user actions as commands.
-This queue is populated by the User thread while its entries are flushed and processed by the Engine thread during the rules evaluations phase.
+This queue is populated by the User thread while its entries are flushed and processed by the {DECISION_ENGINE} thread during the rules evaluations phase.
 The second part introduced a state machine coordinating the User, Timer and Engine threads and then providing a clearer and self-documenting way to model their interactions.
 
 == OOPath improvements
@@ -62,7 +62,7 @@ Student( $exam: /plan/exams{ /grades{ result > 20 } } )
 Student( $grade: /plan/exams{ course == "Big Data" }?/grades )
 ----
 +
-By doing so the engine will react to a change made to an exam, or if an exam is added to the plan, but not if a new grade is added to an existing exam.
+By doing so the {DECISION_ENGINE} will react to a change made to an exam, or if an exam is added to the plan, but not if a new grade is added to an existing exam.
 Of course if a OOPath chunk is not reactive, all remaining part of the OOPath from there till the end of the expression will be non-reactive as well.
 For instance the following OOPath
 +
