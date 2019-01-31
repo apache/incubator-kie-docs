@@ -1,9 +1,9 @@
 [id='case-management-designing-IT-hardware-proc']
 = Designing the case definition
 
-You design cases using the process designer in {CENTRAL}. Case design is the basis of case management and sets the specific goals and tasks for each case. The case flow can be modified dynamically during run time by adding dynamic tasks or processes.
+You design cases using the process designer in {CENTRAL}. Case design is the basis of case management and sets the specific goals and tasks for each case. The case flow can be modified dynamically during run time by adding dynamic tasks or processes. In this procedure, you will create this same case definition to familiarize yourself with the case definition design process.
 
-The *IT_Orders* sample project in {CENTRAL} includes the following *orderhardware* business process case definition. In this procedure, you will create this same case definition to familiarize yourself with the case definition design process.
+The *IT_Orders* sample project in {CENTRAL} includes the following *orderhardware* business process case definition.
 
 .orderhardware business process case definition
 image::cases/itorders-orderhardware-process.png[IT Orders case design]
@@ -11,7 +11,6 @@ image::cases/itorders-orderhardware-process.png[IT Orders case design]
 .Prerequisites
 * You have created a new case in {CENTRAL}. For more information, see <<case-management-creating-a-case-proc>>.
 * You have created the data objects. For more information, see <<data-objects-con_{context}>>.
-* You have created the Place order subprocess. For more information, see <<case-management-creating-subproc-proc>>.
 
 .Procedure
 . In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* and click *IT_Orders_New*.
@@ -39,9 +38,8 @@ image::cases/itorders-orderhardware-process.png[IT Orders case design]
 +
 . Click *Ok* to open the process designer.
 . Define process-level and case-level variables.
-.. Click image:cases/expand-proj-explorer.png[] to view the *Project Explorer*.
 .. Click *BUSINESS PROCESSES (LEGACY)* -> *orderhardware*.
-.. Click image:cases/left-arrows.png[] on the right side of the designer to open the *Diagram properties* panel.
+.. Click image:cases/left-arrows.png[] on the right side of the designer to open the *Properties* panel.
 .. Click the down arrow in the *Variable Definitions* field to open the *Editor for Variable Definitions*.
 .. Click *Add Variable*, and input the following values and click *Ok*:
 +
@@ -60,208 +58,3 @@ image::cases/case_roles-2.png[Case Roles]
 * `manager`: The employee's manager; the person who will approve or deny the requested hardware. The role cardinality is set to `1`, which means that only one person or group can be assigned to this role.
 * `supplier`: The available suppliers of IT hardware in the system. The role cardinality is set to `2`, which means that more than one supplier can be assigned to this role.
 //+
-
-. Define the work item to be triggered when a new case starts.
-+
-NOTE: By default, the process designer includes a *Milestone* object.
-+
-
-. Click *Add Asset* -> *Business Process (legacy)*.
-. Enter the following values:
-+
-* *Business Process*: `orderhardware`
-* *Package*: Select `com.myspace.it_orders_new`
-
-. Click *Ok* to open the *Business Process (legacy)* editor. The following image shows the different panels that comprise the editor.
-+
-
-.Business Process (legacy) editor
-image::cases/legacy-editor-nav.png[Editor navigation]
-+
-*1*: The canvas where you build your process diagram. Drag elements from the *Object Library* to the canvas to design your process.
-+
-*2*: The *Object Library*.
-+
-*3*: The *Properties* panel displays the properties of the selected element. If no element is selected, the panel contains process properties.
-
-== Create the Manager approval business process
-The manager approval process determines whether or not the order will be placed or rejected.
-
-.Procedure
-. In the process designer, expand *Tasks* in the *Object Library* and drag a new *User* task on the canvas.
-. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `supplier` in the *Groups* field, `Prepare hardware spec` in the *Name* field, and `PrepareHardwareSpec` in the *Task Name* field.
-. Enter the following in the *Description* field:
-+
-`Prepare hardware specification for #{initiator} (order number #{CaseId})`
-
-. Click the down arrow in the *Assignments* field, add the following new conditions in the *Prepare hardware spec Data I/O* window, and click *Save*.
-+
-image::cases/hardware-spec-data.png[Prepare hardware I/O values]
-
-. Click the *Prepare hardware spec* user task and create an new user task.
-+
-image::cases/new-user-task.png[Creating a new user task]
-
-. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `manager` in the *Actors* field, `Manager approval` in the *Name* field, and `ManagerApproval` in the *Task Name* field.
-. Enter `Approval request for new hardware for #{initiator} (order number #{CaseId})` in the *Description* field:
-. Click the down arrow in the *Assignments* field, add the following new conditions in the *ManagerApproval Data I/O* window, and click *Save*.
-+
-image::cases/manager-approval-data.png[Manager approval I/O values]
-
-. Click the *Manager approval* user task and create a Data-based Exclusive (XOR) gateway, and then click the exclusive gateway and create a new task.
-+
-image::cases/xor-gateway.png[Creating an exclusive gateway]
-
-+
-image::cases/new-task2.png[Creating a new user task]
-
-. Click the new task, and then click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Sub-Process` in the *ActivityType* field and `Place order` in the *Name* field.
-. Click the down arrow in the *Called Element* field, select *place-order.bpmn* from the *Asset Name* column, and click *Save*.
-. Click the down arrow in the *Independent* field and select *false*.
-. Click the down arrow in the *Assignments* field and add the following new conditions in the *Place order Data I/O* window.
-+
-image::cases/place-order-io.png[Place order I/O values]
-
-. Click the connection from the exclusive gateway to the *Place order* task and add the following in the *Expression* field, and click *Save*.
-+
-`return KieFunctions.isTrue(approved);`
-
-. Click the *Place order* user task and create an end event.
-+
-image::cases/place-order-endevent.png[Create an end event]
-
-. Click the exclusive gateway and create a new user task and drag the new task to align it below the *Place order* task.
-+
-image::cases/second-task.png[Align new task]
-
-. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `owner` in the *Actors* field, `Order rejected` in the *Name* field, and `OrderRejected` in the *Task Name* field.
-. Enter `Order #{CaseId} has been rejected by manager` in the *Description* field, click the down arrow in the *Assignments* field, and add the following new conditions in the *Order rejected Data I/O* window.
-+
-image::cases/order-rejected-io.png[Order rejected I/O values]
-
-. Click the connection from the exclusive gateway to the *Order rejected* task, add `return KieFunctions.isFalse(approved);` in the *Expression* field, and click *Save*.
-. Click the *Place order* user task, create an end event, click *Save*, and then *Save* to confirm your changes.
-
-== Create the Hardware spec ready Milestone
-Create a *Hardware spec ready* milestone that is reached when the required hardware specification document is completed.
-
-.Procedure
-. In the process designer, expand *Milestone* in the *Object Library* and drag a new milestone on the canvas and place it on the right side of the *Place order* end event.
-. Click the new milestone and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Hardware spec ready` in the *Name* field.
-. Select `true` from the *Adhoc autostart* menu.
-. Click the down arrow in the *Assignments* field and add the following new conditions in the *Hardware spec ready Data I/O* window.
-+
-Add `CaseData(data.get("hwSpec") != null)` by selecting *Constant* from the *Source* menu.
-
-+
-image::cases/hardware-io.png[Hardware spec ready I/O values]
-
-. Click *Save*.
-
-== Create the Manager decision Milestone
-This milestone is reached when the `managerDecision` variable has been given a response.
-
-.Procedure
-. In the process designer, expand *Milestone* in the *Object Library* and drag a new milestone on the canvas below the the *Notify requestor* script task.
-. Click the new milestone and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Manager decision` in the *Name* field.
-. Select `true` from the *Adhoc autostart* menu.
-. Click the down arrow in the *Assignments* field and add the following new conditions in the *Manager decision Data I/O* window.
-+
-Add `CaseData(data.get("managerDecision") != null)` by selecting *Constant* from the *Source* menu.
-
-+
-image::cases/manager-dec-io.png[Manager decision I/O values]
-
-. Click *Save*.
-
-== Create the Order placed Milestone
-This milestone is reached when the `ordered` variable has been given a response.
-
-.Procedure
-. In the process designer, click the default *Milestone* object.
-. In the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Milestone 1: Order placed` in the *Name* field.
-. Select `true` from the *Adhoc autostart* menu.
-. Click the down arrow in the *Assignments* field to add a new condition in the *Milestone 1: Order placed Data I/O* window.
-. Click the *Source* column drop-down, select *Constant*, and input `org.kie.api.runtime.process.CaseData(data.get("ordered") == true)`. This means that a case variable named `ordered` exists with the value `true`.
-+
-image::cases/milestone-evaluation-condition.png[Milestone evaluation condition configuration]
-+
-
-. Click *Save*.
-+
-For more information about milestones, see <<case-management-milestones-con-{context}>>.
-
-. Click *Milestone 1: Order placed* and create a new script task.
-+
-image::cases/new-task.png[new task creation]
-+
-image::cases/script-task.png[convert to a script task]
-
-. Click the new script task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Notify requestor` in the *Name* field.
-. Click the down arrow in the *Script* field, input `System.out.println("Notification::Order placed");`, and click *Ok*.
-. Click the *Notify requestor* scipt task and create a signal end event.
-+
-image::cases/end-event.png[new end event]
-+
-image::cases/signal-event.png[convert to a signal event]
-
-. Click the signal event and click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Click the down arrow in the *Signal Scope* field, select *Process Instance*.
-. Click the down arrow in the *SignalRef* field, input `Milestone 2: Order shipped`, and click *Ok*.
-
-
-== Create the Order shipped Milestone
-The condition for this milestone is that a case file variable named `shipped` is `true`. `Adhoc autostart` is not enabled for this milestone. Instead, it is triggered by a signal event when the order is ready to be sent.
-
-.Procedure
-. In the process designer, expand *Milestone* in the *Object Library* and drag a new milestone on the canvas below the the *Notify requestor* script task.
-. Click the new milestone and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Milestone 2: Order shipped` in the *Name* field.
-. Select `false` from the *Adhoc autostart* menu.
-. Click the down arrow in the *Assignments* field to add a new condition in the *Data Inputs and Assignments* window.
-. Click the *Source* column drop-down, select *Constant*, and input `org.kie.api.runtime.process.CaseData(data.get("shipped") == true)`. This means that a case variable named `shipped` exists with the value `true`.
-. Click *Save*.
-. Click *Milestone 2: Order shipped* and create a new script task.
-. Click the new script task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Send to tracking system` in the *Name* field.
-. Click the down arrow in the *Script* field, input `System.out.println("Order added to tracking system");`, and click *Ok*.
-. Click the *Send to tracking system* scipt task and create a signal end event.
-. Click the signal event and click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Click the down arrow in the *Signal Scope* field, select *Process Instance*.
-. Click the down arrow in the *SignalRef* field, input `Milestone 3: Delivered to customer`, and click *Ok*.
-
-== Create the Delivered to customer milestone
-The condition for this milestone is that a case file variable named `delivered` is `true`. `Adhoc autostart` is not enabled for this milestone. Instead, it is triggered by a signal event after the order has successfully shipped to the customer.
-
-.Procedure
-. In the process designer, expand *Milestone* in the *Object Library* and drag a new milestone on the canvas below the the *Send to tracking system* script task.
-. Click the new milestone and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `Milestone 3: Delivered to customer` in the *Name* field.
-. Select `false` from the *Adhoc autostart* menu.
-. Click the down arrow in the *Assignments* field to add a new condition in the *Milestone 2: Order shipped Data I/O* window.
-. Click the *Source* column drop-down, select *Constant*, and input `org.kie.api.runtime.process.CaseData(data.get("delivered") == true)`. This means that a case variable named `delivered` exists with the value `true`.
-. Click *Save*.
-. Click *Milestone 3: Delivered to customer* and create a new user task.
-. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
-. Input `owner` in the *Actors* field.
-. Click the down arrow in the *Assignments* field to add data input and output assignments in the *Milestone 3: Delivered to customer Data I/O* window as shown below. For the output *Data Type* column, select *Constant*, and input `org.kie.api.runtime.process.CaseData(data.get("delivered") == true)`.
-+
-image::cases/surveyIO.png[survey I/O values]
-
-. Click *Save*.
-. Input `Customer satisfaction survey` in the *Name* field.
-. Input `CustomerSurvey` in the *Task Name* field.
-. Click the *Customer satisfaction survey* user task and create an end event.
-. Click *Save*, and then *Save* to confirm your changes.
-
-The IT Orders case can be closed after all milestone sequences are completed. However, due to the ad hoc nature of cases, the case could be reopened if, for example, the order was never received by the customer or the item is faulty. Tasks can be re-triggered or added to the case definition as required, even during run time.
-
-For more information about ad hoc processes, see <<case-management-adhoc-con-{context}>>.
