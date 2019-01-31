@@ -1,0 +1,67 @@
+[id='case-management-create-manager-approval-proc']
+= Creating the Manager approval business process
+The manager approval process determines whether or not the order will be placed or rejected.
+
+.Procedure
+. In the process designer, expand *Tasks* in the *Object Library* and drag a new *User* task on the canvas.
+. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
+. Input `supplier` in the *Groups* field, `Prepare hardware spec` in the *Name* field, and `PrepareHardwareSpec` in the *Task Name* field.
+. Enter the following in the *Description* field:
++
+`Prepare hardware specification for #{initiator} (order number #{CaseId})`
+
+. Click the down arrow in the *Assignments* field, add the following new conditions in the *Prepare hardware spec Data I/O* window. For the first output assignment, select *Custom* for the *Data Type* and input `org.jbpm.document.Document`.
++
+image::cases/hardware-spec-data.png[Prepare hardware I/O values]
+
+. Click *Save*
+. Click the *Prepare hardware spec* user task and create an new user task.
++
+image::cases/new-user-task.png[Creating a new user task]
+
+. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
+. Input `manager` in the *Actors* field, `Manager approval` in the *Name* field, and `ManagerApproval` in the *Task Name* field.
+. Enter the following in the *Description* field:
++
+`Approval request for new hardware for #{initiator} (order number #{CaseId})`
+
+. Click the down arrow in the *Assignments* field, add the following new conditions in the *ManagerApproval Data I/O* window. For the first output assignment, select *Custom* for the *Data Type* and input `org.jbpm.document.Document`.
++
+image::cases/manager-approval-data.png[Manager approval I/O values]
+
+. Click *Save*.
+. Click the *Manager approval* user task and create a Data-based Exclusive (XOR) gateway, and then click the exclusive gateway and create a new task.
++
+image::cases/xor-gateway.png[Creating an exclusive gateway]
+
++
+image::cases/new-task2.png[Creating a new user task]
+
+. Click the new task, and then click image:cases/left-arrows.png[] to open the *Properties* panel.
+. Input `Sub-Process` in the *ActivityType* field and `Place order` in the *Name* field.
+. Click the down arrow in the *Called Element* field, select *place-order.bpmn* from the *Asset Name* column, and click *Save*.
+. Click the down arrow in the *Independent* field and select *false*.
+. Click the down arrow in the *Assignments* field and add the following new conditions in the *Place order Data I/O* window.
++
+image::cases/place-order-io.png[Place order I/O values]
+
+. Click the connection from the exclusive gateway to the *Place order* task and add the following in the *Expression* field, and click *Save*.
++
+`return KieFunctions.isTrue(approved);`
+
+. Click the *Place order* user task and create an end event.
++
+image::cases/place-order-endevent.png[Create an end event]
+
+. Click the exclusive gateway and create a new user task and drag the new task to align it below the *Place order* task.
++
+image::cases/second-task.png[Align new task]
+
+. Click the new user task and in the upper-right corner, click image:cases/left-arrows.png[] to open the *Properties* panel.
+. Input `owner` in the *Actors* field, `Order rejected` in the *Name* field, and `OrderRejected` in the *Task Name* field.
+. Enter `Order #{CaseId} has been rejected by manager` in the *Description* field, click the down arrow in the *Assignments* field, and add the following new conditions in the *Order rejected Data I/O* window.
++
+image::cases/order-rejected-io.png[Order rejected I/O values]
+
+. Click the connection from the exclusive gateway to the *Order rejected* task, add `return KieFunctions.isFalse(approved);` in the *Expression* field, and click *Save*.
+. Click the *Place order* user task, create an end event, click *Save*, and then *Save* to confirm your changes.
