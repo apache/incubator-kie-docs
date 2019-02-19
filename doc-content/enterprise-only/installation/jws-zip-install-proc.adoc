@@ -1,6 +1,6 @@
 [id='jws-zip-install-proc']
 
-= Installing {KIE_SERVER} with a ZIP file
+= Installing {KIE_SERVER} from a ZIP file
 
 {KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). You can use the `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file to install {KIE_SERVER} on an existing {JWS} {JWS_VERSION_LONG} or higher server instance.
 
@@ -40,8 +40,31 @@ ifdef::DM[]
 endif::DM[]
  directory to the `_JWS_HOME_/tomcat/webapps` directory.
 +
-WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {JWS} instance.
+[NOTE]
+====
+Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {JWS} instance.
+====
 . Remove the `.war` extensions from the `kie-server.war` folder.
+. Move the `kie-tomcat-integration-{PRODUCT_VERSION}.jar` file from the RHDM Core Engine distribution to the `JWS_HOME/tomcat/lib` directory.
+. Move the `jboss-jacc-api_1.5_spec-{PRODUCT_VERSION}.jar`, `slf4j-api-{PRODUCT_VERSION}.jar`, and `slf4j-jdk14-{PRODUCT_VERSION}.jar` files from the RHDM Core Engine distribution `lib` directory to the `JWS_HOME/tomcat/lib` directory.
+ifdef::DM[]
+. Copy the following libraries from the offline Maven repository to the `<JWS_HOME>/tomcat/lib` folder:
++
+[source]
+----
+org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
+org.jboss.integration:narayana-tomcat
+org.jboss.narayana.jta:narayana-jta
+org.jboss:jboss-transaction-spi
+----
+endif::DM[]
+. Add the following line to the `<host>` element in the `<TOMCAT_HOME>/conf/server.xml` file after the last Valve definition:
++
+[source]
+----
+<Valve className="org.kie.integration.tomcat.JACCValve" />
+----
++
 . Open the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file in a text editor.
 . Add users and roles to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT}. 
 //For a list of supported roles, see <<dm-roles-con>>.  
