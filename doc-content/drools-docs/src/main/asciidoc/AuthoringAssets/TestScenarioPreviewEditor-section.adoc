@@ -2,13 +2,14 @@
 = Test Scenarios
 
 The aim of the new _Test Scenarios_ editor is to help the user test the proper function of created rules and knowledge bases.
-Compared with the current Test Scenarios (Legacy) editor, the new version is significantly enhanced by an improved user experience that introduces a tabular layout, which guides the user during the definition of a scenario template and all the assorted test cases. More than that new Test Scenario supports DMN model testing.
+Compared with the current Test Scenarios (Legacy) editor, the new version is significantly enhanced by an improved user experience that introduces a tabular layout, which guides the user during the definition of a scenario template and all the assorted test cases.
 Running the defined scenarios verifies that the system works as expected and does not contain any regressions after a change.
+A considerable improvement is the full support of DMN model testing from version 7.3 onwards.
 
-.Example Test Scenario
+.Test Scenarios editor
 image::Workbench/AuthoringAssets/sc1.png[align="center"]
 
-The editor's layout consists of a table, which contains a header and the individual rows.
+The editor's layout consists of a table, which contains a header and individual rows.
 The header (test scenario template) is divided into two parts; the *given* data object fields, which represent the input information, and the *expected* data object fields, whose values are checked based on the given information and which constitute the expected result.
 The rows (test scenario definitions) represent the separate test cases.
 
@@ -16,17 +17,25 @@ An integral part of the editor is the right panel, which can be used for configu
 
 WARNING: Currently, the editor can only use the default KIE session.
 
-NOTE: Some features are available only for RULE testing and some other for DMN. Each paragraph that cover one of these features contains _(RULE/DMN only scenario)_ in the title.
+NOTE: Some features described below are available only for rule-based test scenario assets, whereas others only for DMN-based scenarios.
+If applicable, the difference is indicated in the title of a corresponding part of the document.
 
 [[_drools.testscenariopreviewcreate]]
 == Creating a Test Scenario
-To create a test scenario asset, make sure the Test Scenarios editor is enabled.
-Click *Add Asset* in the project Library a select *Test Scenario*.
-Enter a name of the test scenario, select a package and then specify *RULE* or *DMN* testing. DMN file need to be specified in case of DMN.
-After you click *Ok*, the editor opens.
+
+Follow the procedure below to create a test scenario.
+
+.Creating a test scenario asset
+. Select a project where you want to create the asset.
+. Click *Add Asset* in the project's list of assets a select *Test Scenario*.
+. Enter a name of the test scenario and select a package.
+. Specify the source type; a test scenario can either be rule-based or DMN-based.
+If the source type is a DMN file, make sure the file is available in the project and select the file from the *Choose DMN asset* picker.
+. Click *Ok* to create the asset and open the editor.
+
 All test scenarios are files with the `.scesim` file name extension.
 
-=== Loading and Importing Data Objects (RULE scenario only)
+=== Loading and Importing Data Objects (rule-based scenarios)
 
 All data objects that are located in the same package as a test scenario are automatically loaded and displayed in the right *Test Tools* panel in the *Test Editor* tab.
 To update the list of data objects in the panel in case the data objects change (for example when a new data object is created or a data object is deleted), the test scenario must be closed and reopened.
@@ -63,18 +72,18 @@ Based on the part of the table you select, different operations are available:
 
 .3+^.^| Header
 .^| *#* and *Scenario description*
-.^| insert top row, insert bottom row
+.^| insert row below
 
-.^| *GIVEN* and *EXPECTED*
-.^| insert leftmost column, insert rightmost column, insert top row, insert bottom row
+.^| *GIVEN* and *EXPECT*
+.^| insert leftmost column, insert rightmost column, insert row below
 
 
 .^| *INSTANCE 1*, *2*, etc. and *PROPERTY 1*, *2*, etc.
-.^| insert column left, insert column right, delete column, insert top row, insert bottom row
+.^| insert column left, insert column right, delete column, insert row below
 
 ^.^| Rows
 .^| --
-.^| insert column left, insert column right, delete column, insert top row, insert bottom row, insert row above, insert row below, duplicate row, delete row
+.^| insert column left, insert column right, delete column, insert row above, insert row below, duplicate row, delete row
 |===
 
 
@@ -83,17 +92,11 @@ Based on the part of the table you select, different operations are available:
 |===
 | Interaction | Description
 
-.^| _insert top row_
-.^| Inserts a new row to the very top of the table.
-
-.^| _insert bottom row_
-.^| Inserts a new row to the very bottom of the table.
-
 .^| _insert leftmost column_
-.^| Inserts a new leftmost column of either the GIVEN section, or the EXPECTED section (based on the user's selection).
+.^| Inserts a new leftmost column of either the GIVEN section, or the EXPECT section (based on the user's selection).
 
 .^| _insert rightmost column_
-.^| Inserts a new rightmost column of either the GIVEN section, or the EXPECTED section (based on the user's selection).
+.^| Inserts a new rightmost column of either the GIVEN section, or the EXPECT section (based on the user's selection).
 
 .^| _insert column left_
 .^| Inserts a new column to the left of the selected column.
@@ -116,7 +119,8 @@ If the action is performed from a property header, a new column with the parent 
 .^| Inserts a new row above the selected row.
 
 .^| _insert row below_
-.^| Inserts a new row below the selected row.
+.^| If invoked from a header cell, inserts a new row with index 1.
+Otherwise, inserts a new row below the selected row.
 
 .^| _duplicate row_
 .^| Duplicates the selected row.
@@ -134,6 +138,7 @@ Two types of headers are used; *instance* headers and *property* headers.
 Instance headers are mapped to a particular data object (a fact), whereas the property headers are mapped to a particular field of the corresponding data object.
 
 To create a valid test scenario template, follow the procedure below.
+In case of a DMN-based scenario, skip to the following section first.
 
 .Creating a test scenario template
 . Make sure all the required facts (data objects) are defined and available in the project.
@@ -148,16 +153,20 @@ Make sure you set the type of both the instance and the property header.
 .Example test scenario template
 image::Workbench/AuthoringAssets/sc5.png[align="center"]
 
-=== Automatic template creation (DMN scenario only)
+=== Automatic Template Creation (DMN-based scenarios)
 
-Every DMN scenarios are created with already a predefined template that contains all the available input and decision of the related DMN model. For each input node a GIVEN column is generated while each decision node becomes an EXPECT column.
+Each DMN-based test scenario asset is created with automatically generated template that contains all the specified inputs and decisions of the related DMN model.
+For each input node in the DMN model, a GIVEN column is added, whereas each decision node from the model is represented as an EXPECT column.
 
-This is just a default template but it is possible to remove columns and also to move a decision node from EXPECT section to GIVEN to test only a part of the whole DMN model.
+If needed, the default template can be modified at any time.
+To test only a specific part of the whole DMN model, it is possible to remove the generated columns as well as move decision nodes from the EXPECT to the GIVEN section.
 
-=== Using Aliases (RULE scenario only)
+WARNING: Decision service outputs are *not* represented in the test scenario table.
+
+=== Using Aliases (rule-based scenarios)
 
 To define multiple instances of one data object, you need to introduce an alias.
-To introduce an alias, click on a corresponding header cell and manually change the name.
+To introduce an alias, double click on a corresponding header cell and manually change the name.
 
 Once the alias is created, a new instance is added to the list of data objects in the *Test Editor* tab.
 This instance can then be used in the same way as the predefined facts.
@@ -181,21 +190,18 @@ To create test scenario definitions, follow the procedure below.
 .Creating test scenario definitions
 . Make sure the test scenario template is already correctly defined.
 . Use the contextual menus to add and remove individual test scenarios (rows in the table) as required.
-. Write a description of a test scenario definition and fill in values into each cell of the row. Double click a cell to start the inline editing.
+. Write a description of a test scenario definition and fill in values into each cell of the row. Double click a cell to start the inline editing. To skip a particular cell from the evaluation, leave it empty.
 . Fill in the required values into each row of the test scenario table.
 
 .Example test scenario definitions
 image::Workbench/AuthoringAssets/sc6.png[align="center"]
 
-=== List and Map support
-
-To use List and Map fields just bind a column to one of them and then fill the values using the collection editor popup that appear after double click.
-
 === Expressions Syntax
 
-Rule scenarios and DMN scenarios support different expression languages. A basic expression language is supported for RULE scenarios and FEEL for DMN scenarios.
+Both rule-based and DMN-based test scenarios support different expression languages.
+While rule-based test scenarios support a basic expression language, DMN-based test scenarios support the FEEL expression language.
 
-==== Expression Syntax for RULE
+==== Expression Syntax in Rule-Based Scenarios
 
 The supported syntax of the test scenario definition expressions is as follows:
 
@@ -205,7 +211,7 @@ The supported syntax of the test scenario definition expressions is as follows:
 | Operator | Description
 
 .^| `=`
-.^| Specifies equality of a value. *This is the default operator of each column and the only operator that is supported for each given column.*
+.^| Specifies equality of a value. *This is the default operator of each column and the only operator that is supported for each GIVEN column.*
 
 .^| `!`, `=!`, `<>`
 .^| Specifies inequality of a value. This operator can be combined with other operators.
@@ -220,7 +226,9 @@ The supported syntax of the test scenario definition expressions is as follows:
 .^| Specifies a list of expressions. If *all* expressions are valid, the scenario definition is evaluated as true.
 |===
 
-NOTE: An empty cell means skip it. To specify a null value use `null`.
+NOTE: To define an empty string, use `=`, `[]`, or `;`.
+To define a null value, use `null`.
+An empty cell is skipped from the evaluation.
 
 .Example Expressions
 [cols="1,2"]
@@ -254,11 +262,30 @@ NOTE: An empty cell means skip it. To specify a null value use `null`.
 
 A quick overview of the supported commands and syntax is also available in the *Scenario Cheatsheet* tab on the right side of the editor.
 
-==== Expression Syntax for DMN
+==== Expression Syntax in DMN-Based Scenarios
 
-The language supported for DMN is FEEL.
+DMN-based scenarios use the FEEL expression language.
 
-A quick overview of the supported commands and syntax is also available in the *Scenario Cheatsheet* tab on the right side of the editor.
+Supported data types are:
+
+- _numbers_ and _strings_ (strings must be delimited by quotation marks), for example `"John Doe"` or `""`;
+- _boolean values_ (`true`, `false`, and `null`);
+- _dates_ and _time_, for example `date("2019-05-13")` or `time("14:10:00+02:00")`;
+- _functions_;
+- _contexts_, for example `{x : 5, y : 3}`;
+- _ranges_ and _lists_, for example `[1 .. 10]` or `[2, 3, 4, 5]`.
+
+A quick overview of the supported syntax is also available in the *Scenario Cheatsheet* tab of the *Test Tools* panel on the right side of the editor.
+
+=== Lists and Maps
+
+It is possible to define a collection--a list or a map--as a value of a particular cell in both GIVEN and EXPECT columns.
+To do so, set the column type first (use a field whose type is a list or a map) and double click a cell in the column to input a value.
+In the opened collection editor popup, create and manage the collection.
+The created structure can be removed at any time using the *Remove* button.
+
+.Collection editor popup
+image::Workbench/AuthoringAssets/sc9.png[align="center"]
 
 [[_drools.testscenariopreviewrun]]
 == Running a Test Scenario
