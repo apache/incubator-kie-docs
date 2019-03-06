@@ -1,0 +1,54 @@
+[id='features-xml-removing']
+= Removing features XML files
+If your installation contains an older version of the {PRODUCT} features XML files (for example, `kie-karaf-features-<VERSION>-features.xml`), you must remove these files and all associated files before installing the most recent features XML files.
+
+.Prerequisites
+* Obsolete features XML files exist in your installation.
+COMMENT: How do I know if I have obsolete files? How do I know what features use the obsolete files?
+
+.Procedure
+. Enter the following command to start the {FUSE_LONG} console where COMMENT: What is INSTALLATION_DIRECTORY? The Fuse home? The Karaf home?
++
+[source]
+----
+$ ./INSTALLATION_DIRECTORY/bin/fuse
+----
+. Enter the following command to uninstall features or applications that use obsolete features XML files, where `<FEATURE_NAME>` is the name of the feature that you want to uninstall.
++
+[source]
+----
+JBossFuse:karaf@root> features:uninstall <FEATURE_NAME>
+----
++
+The following examples demonstrate how to remove features:
++
+[source]
+----
+JBossFuse:karaf@root> features:uninstall drools-module
+JBossFuse:karaf@root> features:uninstall jbpm
+JBossFuse:karaf@root> features:uninstall kie-ci
+----
+. Search Karaf home for references to bundles that use `drools`, `kie`, or `jbpm`. The following example show how to use `grep` to search for these components.
++
+[source]
+----
+karaf@root> list -t 0 -s | grep drools
+karaf@root> list -t 0 -s | grep kie
+karaf@root> list -t 0 -s | grep jbpm
+----
+COMMENT: Can you give an example of what one of these commands returns?
+. Enter the following command to remove the bundles found in the previous step,where `BUNDLE_ID` is a bundle ID returned in the search.
++
+[source]
+----
+karaf@root> osgi:uninstall BUNDLE_ID
+----
+
+. Enter the following command to remove the obsolete `drools-karaf-features` URL:
++
+[source]
+----
+karaf@root> features:removeurl
+ mvn:org.kie/kie-karaf-features/VERSION.Final-redhat-VERSION/xml/features
+----
+. Restart {FUSE}.
