@@ -1,0 +1,107 @@
+[id='pmml-invocation-kie-exec-server_{context}']
+= Applying PMML Models Using a KIE Execution Server
+
+In addition to being able to use PMML models that are embedded into a Java application, models may also be applied if they are in a container that has been deployed to a KIE execution server.
+This is done by using the new command, **ApplyPmmlModelCommand**. Using this command, a PMMLRequestData object can be sent to a KIE execution server, and a PMML4Result result object received as a reply.
+
+.Procedure
+. Make sure that you have the following dependency included in your client project...
++
+--
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+----
+[NOTE]
+If the kjar from your project is available from a Maven repository then include it as well...
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.example</groupId>
+  <artifactId>example-artifact</artifactId>
+  <version>1.0.0.Final</version>
+</dependency>
+----
+--
+. Create a class that you will use for sending requests, and receiving the responses...
+--
+[source,java]
+----
+public class ApplyScorecardModel {
+  private static final ReleaseId releaseId =
+          new ReleaseId("org.example","example-artifact","1.0.0.Final");
+  private static final String containerId = "SampleModelContainer";
+  private static KieCommands commandFactory;
+  private static ClassLoader kjarClassLoader; <1>
+  private RuleServicesClient serviceClient; <2>
+
+  // Your class instance specific attributes
+  private String rankedFirstCode;
+  private Double score;
+
+  // initialize the non-final static attributes
+  static {
+    commandFactory = KieServices.Factory.get().getCommands();
+
+    KieMavenRepository kmp = KieMavenRepository.getMavenRepository();
+    File artifactFile = kmp.resolveArtifact(releaseId).getFile();
+    if (artifactFile != null) {
+      URL urls[] = new URL[1];
+      try {
+        urls[0] = artifactFile.toURI().toURL();
+        classLoader = new KieURLClassLoader(urls,PMML4Result.class.getClassLoader());
+      } catch (MalformedURLException e) {
+        logger.error("Error getting classLoader for "+containerId);
+        logger.error(e.getMessage());
+      }
+    } else {
+      logger.warn("Did not find the artifact file for "+releaseId.toString());
+    }
+  }
+
+  public ApplyScorecardModel(KieServicesConfiguration kieConfig) {
+    KieServicesClient clientFactory = KieServicesFactory.newKieServicesClient(kieConfig);
+    serviceClient = clientFactory.getServicesClient(RuleServicesClient.class);
+  }
+  ...
+  // getters and setters
+  ...
+
+  // This is an example of the method that would actually make the call to
+  // the KIE execution server
+  public void applyModel(String occupation, int age) {
+    PMMLRequestData input = new PMMLRequestData("1234","SampleModelName"); <3>
+    input.addRequestParam(new ParameterInfo("1234","occupation",String.class,occupation));
+    input.addRequestParam(new ParameterInfo("1234","age",Integer.class,age));
+
+    CommandFactoryServiceImpl cf = (CommandFactoryServiceImpl)commandFactory;
+    ApplyPmmlModelCommand command = (ApplyPmmlModelCommand) cf.newApplyPmmlModel(request); <4>
+
+    ServiceResponse<ExecutionResults> results =
+        ruleClient.executeCommandsWithResults(CONTAINER_ID, command); <5>
+
+    if (results != null) { <6>
+      PMML4Result resultHolder = (PMML4Result)results.getResult().getValue("results");
+      if (resultHolder != null && "OK".equals(resultHolder.getResultCode())) {
+        this.score = resultHolder.getResultValue("ScoreCard","score",Double.class).get();
+        Map<String,Object> rankingMap =
+             (Map<String,Object>)resultHolder.getResultValue("ScoreCard","ranking");
+        if (rankingMap != null && !rankingMap.isEmpty()) {
+          this.rankedFirstCode = rankingMap.keySet().iterator().next();
+        }
+      }
+    }
+  }
+}
+----
+<1> The class loader is only needed if you did not include the kjar in your client project's dependencies.
+<2> The configuration of the serviceClient should be done via configuration settings. See...
+<3> Initialize a PMMLRequestData object
+<4> Create an instance of the ApplyPmmlModelCommand
+<5> Send the command using the service client, and receiving the results
+<6> Retrieve the results of the model being applied. The PMML4Result contains the result values.
+--
