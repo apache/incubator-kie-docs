@@ -1,0 +1,47 @@
+[id='template-deploy-prepare-{context}-proc']
+= Preparing the template
+
+:template_name!:
+:template_add_params:
+:modifylink!: 
+:modifytype:
+
+ifeval::["{context}"=="freeform-monitor"]
+:template_add_params: {CENTRAL_CAPITAL_UNDER}_HTTPS_SECRET={CENTRAL_ONEWORD}-app-secret -p KIE_SERVER_HTTPS_SECRET=kieserver-app-secret
+:template_name: {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-managed.yaml
+To deploy {CENTRAL} Monitoring and a single managed {KIE_SERVER} for a freeform environment,
+endif::[]
+ifeval::["{context}"=="freeform-server-immutable"]
+:template_name: {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-prod-immutable-kieserver.yaml
+:template_add_params: -p KIE_SERVER_HTTPS_SECRET=kieserver-app-secret -p KIE_SERVER_STARTUP_STRATEGY=OpenShiftStartupStrategy
+:modifylink: environment-immutable-modify-proc 
+:modifytype: single-kie-server
+To deploy an immutable {KIE_SERVER} for a freeform environment,
+endif::[]
+use the `{template_name}` template file. 
+
+.Procedure
+
+. Download the `{PRODUCT_FILE}-openshift-templates.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page.
+
+. Extract the `{template_name}` template file.
+
+ifeval::["{modifytype}"=="single-kie-server"]
+. By default, the {KIE_SERVER} uses a PostgreSQL database server in a pod. To use a MySQL database server in a pod or an external database server, modify the template as described in <<{modifylink}>>.
+endif::[]
+
+. Use one of the following methods to start deploying the template:
+* In the OpenShift Web UI, select *Add to Project -> Import YAML / JSON* and then select or paste the `{template_name}` file. In the *Add Template* window, ensure *Process the template* is selected and click *Continue*.
+* To use the OpenShift command line console, prepare the following command line:
++
+[subs="attributes,verbatim,macros"]
+----
+oc new-app -f <template-path>/{template_name} -p {template_add_params}
+----
++
+In this command line, make the following changes:
++
+** Replace `<template-path>` with the path to the downloaded template file.
+** Use as many `-p PARAMETER=value` pairs as needed to set the required parameters. 
+
+Follow the subsequent steps to set common parameters. You can view the template file to see descriptions for all parameters.
