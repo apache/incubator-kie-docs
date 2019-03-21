@@ -3,263 +3,163 @@
 
 This section highlights new features in {PRODUCT} {PRODUCT_VERSION}.
 
-== Container support
-You can install {PRODUCT} on {JWS} {JWS_VERSION_LONG} or later.
-
-You can install {PRODUCT} on {EAP} {EAP_VERSION}.
-[NOTE]
-====
-{EAP} 7.1 is not supported with {PRODUCT} {PRODUCT_VERSION}.
-====
-
-== Business application generator
-You can use the `http://start.jbpm.org` website to generate a {PRODUCT} business application based on Spring Boot starters. After you create and configure your business application, you can deploy it to an existing service or to the cloud, through OpenShift.
 
 == {CENTRAL}
-=== Experimental properties administration page
-{CENTRAL} now includes an experimental features administration page which is disabled and hidden by default. When enabled, this page displays a list of some experimental features that are in technology preview. You can enable or disable individual features from this page. To enable the experimental features administration page, set the value of the `appformer.experimental.features` property to `true`.
-[NOTE]
-====
-Some experimental features are enabled by default and might not be listed on the experimental properties administration page.
-====
-ifdef::PAM[]
-=== Enhanced process instance logs view
-The {CENTRAL} process instance logs view has been enhanced. This view enables you to view all of the log events of a process instance based on a timeline of events. On the timeline, node entered events are highlighted in blue whereas node-entered events are greyed out. By default, log events are displayed in groups of ten. You can now view additional human task node details such as ID, state, and owner.
 
-Furthermore, you can now filter process instance logs by the following categories:
+ifdef::DM[]
+=== Decision Central renamed to Business Central
+ 
+Decision Central has been renamed to Business Central to improve consistency between {PRODUCT_DM} and {PRODUCT_PAM}. However, all {PRODUCT_DM} file names and URL components remain unchanged to prevent impact on existing {PRODUCT_DM} distributions. For example, the {CENTRAL} URL in {PRODUCT_DM} continues to be `\http://HOST:PORT/decision-central`.
+endif::[]
 
-* Event type (such as, Node Entered and Node Completed)
-* Event node type (such as, All, Human Tasks, Start Nodes, End Nodes, Action Nodes, Milestones, Sub Processes, Rule Sets, and Work Items)
+=== New development mode and project deployment enhancements for {KIE_SERVER}
+You can now set {KIE_SERVER} to run in `production` mode, formerly the default setting, or in `development` mode, the new default setting. Development mode provides a flexible deployment policy that enables you to update existing deployment units (KIE containers) while maintaining active process instances for small changes, or to reset the deployment unit state before updating active process instances for bigger changes. Production mode is optimal for production environments, where each deployment creates a new deployment unit, as in previous releases.
+ 
+Along with this improvement, {CENTRAL} also includes new *Build & Install* and *Redeploy* options for building and deploying projects. In a production or development environment, you can select the *Build & Install* option to build the project and publish the KJAR file to the configured Maven repository without deploying to a {KIE_SERVER}. This option is equivalent to running `mvn clean install` for your project in the command terminal. In a development environment, you can click *Deploy* to deploy the built KJAR file to a {KIE_SERVER} without aborting any running instances (if applicable), or click *Redeploy* to deploy the built KJAR file and abort any running instances. In a production environment, the *Redeploy* option is disabled and you can click *Deploy* only to deploy the built KJAR file to a new deployment unit (KIE container) on a {KIE_SERVER}.
+ 
+To disable or enable development mode in {CENTRAL}, go to project *Settings* -> *General Settings* -> *Version* and toggle the *Development Mode* option. Do not use *Development Mode* or manually add the `SNAPSHOT` version suffix for a production environment. You can also select the {KIE_SERVER} mode by setting the system property `org.kie.server.mode` to `production` or `development` (default).
 
-For more information about process instance logs, see {URL_INTERACTING_PROCESSES_TASKS}[_{INTERACTING_PROCESSES_TASKS}_].
-endif::PAM[]
-
-=== Support for SSH Keystore
-
-{PRODUCT} uses the SSH protocol for user authentication. It now has a configurable default SSH keystore (where you can register multiple public keys), extensible APIs (for custom implementations), and support for multiple SSH public keys formats.
-
-For more information about SSH keystore, see {URL_CONFIGURING_CENTRAL}[_{CONFIGURING_CENTRAL}_].
 
 ifdef::PAM[]
-== Process engine
-=== Narayana transaction manager
-{PRODUCT} now supports DBCP 2 database connection pooling with Narayana transaction manager.
-
+=== C3 Charts Library
+ 
+The https://c3js.org/[C3] Chart library replaces the Google Charts library as the default chart library in {CENTRAL}. With this improvement, supported chart types can be rendered in the *Process & Task* dashboard in an offline environment.
+ 
+Along with this improvement, the following two new system properties are available:
+ 
+* `org.dashbuilder.renderer.default`: You can set which renderer you want to use as the default. The two possible values are `c3` and `gwtcharts`. The current default  is `c3`. If you select `c3`, the C3 Chart library is used for supported chart types. The missing map type will still use the Google Charts library. If you select `gwtcharts`, the Google Charts library is used for supported chart types.
+ 
+* `org.dashbuilder.renderer.offline`: This is a boolean property. When true, the property excludes all APIs that do not work offline and their supported chart types are not available for use. You can use this to hide the maps displayer when creating pages. Pages that already use the map displayer will show an error.
 endif::PAM[]
+=== GIT hook execution handling
+ 
+GIT hook execution handling now includes UI notifications to indicate if a script is executed successfully or with a warning or error.
+ 
 
-== Decision engine
-
-=== Rule units
-
-{PRODUCT} {PRODUCT_VERSION} now supports rule units that you can use to partition a rule set into smaller units, bind different data sources to those units, and then execute the individual unit. A rule unit consists of data sources, global variables, and rules.
-
-You can define a rule unit by implementing the `RuleUnit` interface as shown in the following example:
-
-.Example rule unit class
-[source,java]
-----
-package org.mypackage.myunit;
-
-public static class AdultUnit implements RuleUnit {
-    private int adultAge;
-    private DataSource<Person> persons;
-
-    public AdultUnit( ) { }
-
-    public AdultUnit( DataSource<Person> persons, int age ) {
-        this.persons = persons;
-        this.age = age;
-    }
-
-    // A DataSource of Persons in this rule unit
-    public DataSource<Person> getPersons() {
-        return persons;
-    }
-
-    // A global variable valid in this rule unit
-    public int getAdultAge() {
-        return adultAge;
-    }
-
-    // --- life cycle methods
-
-    @Override
-    public void onStart() {
-        System.out.println("AdultUnit started.");
-    }
-
-    @Override
-    public void onEnd() {
-        System.out.println("AdultUnit ended.");
-    }
-}
-----
-
-For more information about rule units, see the http://docs.jboss.org/drools/release/latestFinal/drools-docs/html_single/#rule-units-con[Drools Documentation].
-
-=== Multithreaded evaluation in the {DECISION_ENGINE}
-
-In {PRODUCT} {PRODUCT_VERSION}, the {DECISION_ENGINE} can now evaluate more business rules in parallel by dividing the RETE and PHREAK pattern-matching algorithms in independent partitions and evaluating them in parallel.
-
-Multithreaded evaluation is disabled by default in {PRODUCT}. To enable multithreaded evaluation for a parallel KIE base, use one of the following options:
-
-* Enable multithreaded evaluation with `KieBaseConfiguration`:
-+
-[source]
-----
-KieServices ks = KieServices.Factory.get();
-KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
-kieBaseConf.setOption(MultithreadEvaluationOption.YES);
-KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
-----
-
-* Enable the multithreaded evaluation system property:
-+
-[source]
-----
-drools.multithreadEvaluation = true
-----
-
-[WARNING]
-====
-Rules using queries, salience, or agenda groups are currently not supported by the parallel {DECISION_ENGINE}. If these rule elements are present in the KIE base, the compiler emits a warning and automatically switches back to single-threaded evaluation. However, in some cases, the {DECISION_ENGINE} might not detect the unsupported rule elements and rules might be evaluated incorrectly. For example, the {DECISION_ENGINE} might not detect when rules rely on implicit salience given by rule ordering inside the DRL file, resulting in incorrect evaluation due to the unsupported salience attribute.
-====
-
-=== Ability to declaratively set calendars in a KIE session
-
-In {PRODUCT} {PRODUCT_VERSION}, you can now declaratively set one or more calendars on a KIE session through the `kmodule.xml` configuration file, as shown in the following example:
-
-[source,xml]
-----
-<ksession name="KSession1">
-  <calendars>
-    <calendar name="monday" type="org.domain.Monday"/>
-  </calendars>
-</ksession>
-----
-
-The type is the name of the class that implements the `org.kie.api.time.Calendar` interface.
-
-
-== {KIE_SERVER}
 ifdef::PAM[]
-=== ElasticSearch connector for runtime events
-This connector enables you to easily integrate with ElasticSearch to push data from the {KIE_SERVER} and take advantage of the searching capabilities of the ElasticSearch server.
+=== Service task repository integrated with {CENTRAL}
+ 
+The {PRODUCT} service task repository (work item repository) is now integrated in {CENTRAL} so that you can add and manage service tasks across multiple business processes or across all projects in {CENTRAL}. {PRODUCT} provides a set of service tasks within the service task repository in {CENTRAL}. You can enable or disable the default service tasks and upload custom service tasks into {CENTRAL} to implement the tasks in the relevant processes.
+ 
+To configure service tasks and service task settings globally across {CENTRAL}, select the *Admin* icon in the top-right corner of the screen and select *Service Tasks Administration*.
+ 
+//.Enable service tasks and service task settings
+//image::admin-and-config/manage-service-tasks.png[Service Tasks Administration page]
+ 
+To apply the enabled service tasks to processes in a project, navigate to a project in {CENTRAL} and go to project *Settings* -> *Service Tasks*.
+ 
+//.Install service tasks for use in processes
+//image::admin-and-config/manage-service-tasks-project.png[Project-level service task settings]
+ 
+For more information about about managing service tasks in {CENTRAL}, see {URL_MANAGING_PROCESSES}#manage-service-tasks-proc[_{MANAGING_PROCESSES}_].
+ 
+=== Process documentation accessible in process designer
+ 
+The process designer in {CENTRAL} now provides a *Documentation* tab that summarizes the components, data, and visual flow of the process in a format (PDF) that you can print and share more easily.
+ 
+//.Process documentation
+//image::processes/generate-process-docs.png[Project-level service task settings]
 
-endif::PAM[]
-=== Swagger interface for {CONTROLLER} REST API
+=== Process instance administration
 
-{PRODUCT} {PRODUCT_VERSION} provides a Swagger web interface for the {CONTROLLER} REST API. You can use this Swagger interface instead of a standalone REST client or curl utility to interact with your {KIE_SERVER} templates (configurations), {KIE_SERVER} instances (remote servers), and associated KIE containers (deployment units) in {PRODUCT}.
+Process instance administration supports operations relating to the {PROCESS_ENGINE} and individual process instances. Supported operations:
 
-To access the Swagger interface for the {CONTROLLER} REST API, you can either start {CENTRAL}, which contains a built-in {CONTROLLER}, or run the {HEADLESS_CONTROLLER} application and navigate to `\http://SERVER:PORT/CONTROLLER/docs` in a web browser.
+* Retrieve process nodes using the process instance ID. Returns all nodes, including embedded subprocesses, that exist in a specific process instance. 
+* Cancel a node instance using the process instance ID and node instance ID. Cancels a specific node instance within a process instance.
+* Re-trigger a node instance using the process instance ID and node instance ID. First cancel the active node instance and then create a new instance of the same type, which recreates the node instance.
+* Update the timer using the process instance ID and timer ID. Updates the timer expiration of an active timer. For example, a case timer was initially created with a delay of one hour. After 30 minutes, you want to update the delay to two hours. The case time will then expire in 1.5 hours from the time that it was updated. You can update the following times:
+** Delay - The duration after the timer expires.
+** Period - The interval between timer expiration. This applies only to cycle timers.
+** Repeat limit - Limits the expiration to a specific number. This applies only to cycle timers.
+** Update timer relative to current time using the process instance ID and timer ID. This option is similar to the update timer option, but the update is relative to the current time. For example, if a case timer was initially created with a delay of one hour and after 30 minutes you decide to update the delay to two hours, the delay will then expire two hours from the time that it was updated.
+* List timer instances using the process instance ID. Returns all active timers found for a specific process instance.
+* Trigger a node using the process instance ID and node ID. Enables you to trigger any node in a process instance at any time.
+ 
+endif::[]
+ 
 
-Example Swagger URLs:
+=== Enhanced task instance log view
+The task instance log view now contains filtering capabilities that enable you to narrow down the timeline results according to your needs. There are now two new filter categories that enable you to filter process instances based on event types. These include either node entered, node completed, or process nodes such as human tasks, and start and end nodes. 
 
-* `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/docs` (for a {CONTROLLER} in {CENTRAL})
-* `\http://localhost:8080/my-controller/docs` (for a {HEADLESS_CONTROLLER})
-
-For more information about the {CONTROLLER} REST API, see {URL_KIE_APIS}[_{KIE_APIS}_].
-
-=== Decision Model and Notation (DMN) models
-{PRODUCT} {PRODUCT_VERSION} provides both design and runtime support for DMN 1.2 models at conformance level 3, and includes enhancements and fixes to FEEL and DMN model components to optimize the experience of implementing DMN decision services with {PRODUCT}. You can design your DMN models directly in {CENTRAL} or import existing DMN models into your {PRODUCT} projects for deployment and execution.
-
-For more information about DMN support in {PRODUCT} {PRODUCT_VERSION}, see {URL_DMN_MODELS}[_{DMN_MODELS}_].
-
-=== Executable models in Decision Model and Notation (DMN) projects
-In {PRODUCT} {PRODUCT_VERSION}, you can now use the `kie-maven-plugin` build component to generate DMN executable model classes and compile them in a {PRODUCT} project (KJAR file). DMN executable model classes are similar to executable rule models used for rule assets. This support enables DMN decision table logic in DMN projects to be evaluated more efficiently.
-
-To enable executable models in DMN projects, add the required `kie-dmn-core` dependency in the `pom.xml` file:
-
-[source,xml]
-----
-<dependency>
-  <groupId>org.kie</groupId>
-  <artifactId>kie-dmn-core</artifactId>
-  <scope>provided</scope>
-</dependency>
-----
-
-To build a DMN project with DMN model compilation enabled, navigate to your Maven project directory in a command terminal and run the following command:
-
-[source]
-----
-mvn clean install -DgenerateDMNModel=YES
-----
-
-Alternatively, you can define the DMN model property directly in the `pom.xml` file:
-
-[source,xml]
-----
-<project>
-  ...
-  <properties>
-    <generateDMNModel>YES</generateDMNModel>
-  </properties>
-  ...
-</project>
-----
-
-For more information about configuring executable models for your Maven or Java project, see {URL_PACKAGING_DEPLOYING_PROJECT}#project-build-deploy-maven-proc_packaging-deploying[_{PACKAGING_DEPLOYING_PROJECT}_].
-
-=== Deactivation of KIE containers on {KIE_SERVER}
-You can now deactivate KIE containers on {KIE_SERVER}. This enables you to stop the creation of new process instances from a specified container while enabling you to continue working on existing process instances and tasks. The deactivated container can be activated again. This feature does not require server restarts.
-
-=== {KIE_SERVER} support for rendering forms
-
-New {KIE_SERVER} support for rendering forms enables you to interact with the {KIE_SERVER} to perform the following operations:
-
-* Render process forms: Used to start new instances
-* Render case forms: Used to start new case instances, including data and role assignments
-* Render user task forms: Used to interact with user tasks, including life cycle operations
-
-Rendered forms include buttons that perform all operations based on context. For example, if a user task is in the `progress` state, you can use the *Stop*, *Release*, *Save*, and *Complete* buttons to interact with the process.
+=== Authoring collaboration
+Authoring collaboration enables users to configure the contributors or a project or space and their role (`owner`, `admin`, or `contributor`) with associated privileges. 
 
 == {PLANNER}
-=== Defining weights for constraints
+=== Deployment of the Employee Rostering starter application on OpenShift
 
-In {PLANNER}, you can now define weights for constraints inside a class marked with the `@ConstraintsConfiguration` annotation. You can assign weights to constraints by the Java or DRL name of the constraint, without needing to modify the code of the constraints.
+You can now use a template to deploy the {PLANNER}
+Employee Rostering starter application on {OPENSHIFT} with persistent data storage.
 
-== OpenShift
-=== LDAP role mapping on OpenShift deployments
 
-When deploying {PRODUCT} on {OPENSHIFT}, you can now configure LDAP role mapping.
-
-=== KJAR services in immutable OpenShift deployments
-When deploying {PRODUCT} on {OPENSHIFT} in an immutable deployment, you can now create {KIE_SERVERS} that run services from KJAR files, not from source.
-
-=== CORS support in trial deployment on OpenShift
-In a trial deployment on {OPENSHIFT}, you can use client-side JavaScript applications, served from a different domain, to access a {KIE_SERVER}.
+== Java 11
+=== Java 11 certification
+Java 11 is certified on core engines and tooling, including OpenJDK, JDK 11, and Jigsaw. With this release we are including support for OpenJDK on Windows.
 
 ifdef::PAM[]
+== {PRODUCT} on {OPENSHIFT}
+=== OpenShift startup strategy for freeform deployment
 
+You can now use the new OpenShift startup strategy feature of the {KIE_SERVER} (KIE server) when you deploy {PRODUCT} on {OPENSHIFT}. With this feature, an OpenShift-enabled {CENTRAL} or {CENTRAL} Monitoring discovers {KIE_SERVERS} in the same namespace automatically. You do not need to configure controller settings. This feature provides a freeform deployment architecture, which enables you to easily deploy any number of {KIE_SERVERS}.
 
+=== Ansible Playbook Bundle for Openshift
+An Ansible Playbook Bundle (APB) for installing {PRODUCT} on {OPENSHIFT} using the OpenShift Automation Broker is now available. You can use this APB to deploy {PRODUCT} on OpenShift interactively in the OpenShift Web Console by selecting the environment architecture and providing all settings as necessary.
+ 
 == Process designer
 
-=== Case management properties
+* Infinite canvas: Infinite canvas provides the ability to extend the canvas as large as needed for process modeling. 
 
-The following new properties have been added for case management projects and are related to modeling of case definitions:
+* Graphical constraint editor: A graphical constraint editor has been added to define constraints without coding and without knowledge of technical terminology. 
 
-* *Ad-hoc*: Supports optional modeling paths that can be recommended to users or automatically triggered by rules. Must be set to `true` to show the case management properties.
-* *Case ID Prefix*: Provides the option to add a prefix for case IDs. If no prefix is provided, the case ID defaults to `CASE-XXX` where `XXX` is an automatically generated number.
-* *Case File*: Responsible for collecting all data related to a case.
-* *Case Roles*: Defines roles and cardinality at the process level.
+* Process designer DMN support: The business rules task has been extended to support invoking Decision Model and Notation (DMN) from a process. 
 
+* Reusable sub-process: A few additional properties were added to the reusable sub-process node that are related to on-entry and on-exit scripts. 
 
-=== {CENTRAL} compensation events
+* New process designer properties: The new process designer now supports the executable and globals properties.
 
-Process managers use compensation events to roll back the actions that were completed during execution. Exception handling activities associated with the normal activities in a business transaction are triggered by compensation events.
+* Process Designer support for multi-instance sub-process and task: A multiple instance sub-process or task is a sub-process or task that enables you to execute a contained process segment or task multiple times, once for each element in a collection. 
 
-Three types of compensation events are available in {CENTRAL}:
+* Process designer RuleFlow profile: A new profile was introduced in the new process designer so that the palette only contains elements that apply to rule flow use cases targeted in {PRODUCT_DM}. When you switch the configuration in {CENTRAL} administration to the rules and planning profile for {PRODUCT_DM} (rather than the full profile for {PRODUCT_PAM}), the new process designer automatically use the RuleFlow profile. 
 
-* Intermediate boundary (catch) events: Events that are attached to activities, such as tasks that may cause an exception. These events are then associated with a task that is executed if the boundary event catches a thrown compensation signal.
-* Start (catch) events: Events that are used when defining a compensation event subprocess, which requires them in order to be able to catch a (thrown) compensation signal.
-* Intermediate or end (throw): Events that are used to throw compensation events. These events often follow decision nodes that determine whether the work flow execution succeeded up to a specific point in the process. If not, the path including the intermediate or end event is selected to trigger compensation for the activities that failed.
-
-=== {CENTRAL} resolution attribute
-
-A new diagram resolution attribute has been added to the {CENTRAL} legacy process designer to enable users to successfully import a Business Process Model and Notation (BPMN) file and convert it to a Java Business Process Model (jBPM) file while retaining the correct scale. Note that this feature has not been added to the new process designer.
-
-=== Labels on sequence flows
-
-New support for showing the label name for sequence flows coming to and from gateways, nodes, tasks, and end events. You can now click any sequence flow line to view the label name.
+* New process designer support for the BPMN resolution attribute: BPMN files that are imported into the new process designer can use this attribute to scale the imported project. 
 endif::PAM[]
+
+== Spring Boot
+=== Spring Boot 2.1.x
+{PRODUCT} support for Spring Boot has been updated from Spring Boot 1.5.x to Spring Boot 2.1.x.
+
+== Components moved from technology preview to fully supported
+ 
+=== Decision Model and Notation (DMN) designerSpring Boot
+
+The Decision Model and Notation (DMN) designer in {CENTRAL} is now fully supported in {PRODUCT} {PRODUCT_VERSION}. You can use the new DMN designer in {CENTRAL} to design DMN decision requirements diagrams (DRDs) and define decision logic for a complete DMN decision model. {PRODUCT} {PRODUCT_VERSION} provides both design and runtime support for DMN 1.2 models at conformance level 3, and includes enhancements and fixes to FEEL and DMN model components to optimize the experience of implementing DMN decision services with {PRODUCT}. 
+ 
+The improved DMN designer also includes the following notable enhancements:
+ 
+* New support for decision service nodes in DRDs
+* Automatic layout for imported DRDs
+* Improved DMN data types and constraints
+* Improved DRD validation when assets are saved or built
+ 
+For more information about DMN support in {PRODUCT} {PRODUCT_VERSION}, see the following resources:
+
+* {URL_DMN_MODELS}[_{DMN_MODELS}_]
+* {URL_GETTING_STARTED_DECISION_SERVICE}[_{GETTING_STARTED_DECISION_SERVICE}_]
+
+=== Test Scenarios designer
+The Test Scenarios designer in {CENTRAL} is now fully supported in {PRODUCT} {PRODUCT_VERSION}.
+ 
+* Data object list support: The Test Scenarios designer in {CENTRAL} now supports data object lists in {PRODUCT} {PRODUCT_VERSION}. You can now define and test scenarios that include Java collections as inputs (given values) or outputs (expected values). A concrete collection can now be defined as a value of a particular cell. The collections can be created, modified, and removed at any time during the development of a test scenario.
+ 
+* DMN support: The Test Scenarios designer in {CENTRAL} now supports DMN-based test scenario assets in {PRODUCT} {PRODUCT_VERSION}. You can now create test scenario assets that are rule-based, to test all rules inside all DRL files within the project, or DMN-based, to test all decisions defined inside one particular DMN file.
+ 
+* Visual test results: The Test Scenarios designer in {CENTRAL} now provides visual test results in {PRODUCT} {PRODUCT_VERSION}.
+ 
+== Other enhancements
+* Ability to set the `drools.trimCellsInDTable` system property to `false` in a {PRODUCT} distribution to retain intentional white space before or after values in decision table cells. 
+* New domain specific language (DSL) and fact type search filter when adding conditions or actions to guided rules and guided rule templates. 
+* Ability to include slashes in Git branch names.
+ifdef::PAM[]
+* jBPM Audit mode (none, JPA, JMS) improved to simplify setup and configuration. In addition, jBPM Audit mode now includes all of the audit logs that span across processes, user tasks, and cases.
+endif::PAM[]
+
+
