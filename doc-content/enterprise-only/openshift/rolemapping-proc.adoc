@@ -19,23 +19,26 @@ For example:
 admins = kie-server,rest-all,admin
 ----
 +
-. Create an OpenShift configuration map from the file. Run the following command:
+. Create an OpenShift configuration map from the file by entering the following command:
 +
 [subs="attributes,verbatim,macros"]
 ----
-oc create configmap ldap_role_mapping --from-file=<new_name>=<existing_name>
+oc create configmap ldap-role-mapping --from-file=<new_name>=<existing_name>
 ----
 +
-Where `new_name` is the name that the file is to have on the pods (it must be the same as the name specified in the `AUTH_ROLE_MAPPER_ROLES_PROPERTIES` file) and `existing_name` is the name of the file that you created. For example:
+Replace `<new_name>` with the name that the file is to have on the pods (it must be the same as the name specified in the `AUTH_ROLE_MAPPER_ROLES_PROPERTIES` file) and `<existing_name>` with the name of the file that you created. For example:
 +
 [subs="attributes,verbatim,macros"]
 ----
-oc create configmap ldap_role_mapping --from-file=rolemapping.properties=my-role-map
+oc create configmap ldap-role-mapping --from-file=rolemapping.properties=my-role-map
 ----
 +
-. Mount the configuration map on every deployment config that is configured for role mapping. The following deployment configs can be affected in this environment:
+. Mount the configuration map on every deployment configuration that is configured for role mapping. 
 +
 --
+ifeval::["{context}"!="openshift-operator"]
+The following deployment configurations can be affected in this environment:
+
 ifeval::["{context}"=="openshift-authoring"]
 ** `_myapp_-rhpamcentr`: {CENTRAL}
 ** `_myapp_-kieserver`: {KIE_SERVER} 
@@ -50,19 +53,20 @@ ifeval::["{context}"=="openshift-authoring-managed"]
 endif::[]
 ifeval::["{context}"=="openshift-immutable"]
 ifdef::PAM[]
-endif::PAM[]
 ** `_myapp_-rhpamcentrmon`: {CENTRAL} Monitoring
+endif::PAM[]
 ** `_myapp_-kieserver`: {KIE_SERVER} 
 endif::[]
 
-Where `myapp` is the application name. Sometimes, several {KIE_SERVER} deployments can be present under different application names. 
+Replace `myapp` with the application name. Sometimes, several {KIE_SERVER} deployments can be present under different application names. 
+endif::[]
  
 For every deployment configuration, run the command:
 
 [subs="attributes,verbatim,macros"]
 ----
- oc set volume dc/<deployment_config_name> --add --type configmap --configmap-name ldap_role_mapping --mount-path=<mapping_dir> --name=ldap_role_mapping
+ oc set volume dc/<deployment_config_name> --add --type configmap --configmap-name ldap-role-mapping --mount-path=<mapping_dir> --name=ldap-role-mapping
 ----
 
-Where `mapping_dir` is the directory name (without file name) set in the `AUTH_ROLE_MAPPER_ROLES_PROPERTIES` parameter, for example, `/opt/eap/standalone/configuration/rolemapping` .
+Replace `<mapping_dir>` with the directory name (without file name) set in the `AUTH_ROLE_MAPPER_ROLES_PROPERTIES` parameter, for example, `/opt/eap/standalone/configuration/rolemapping` .
 --
