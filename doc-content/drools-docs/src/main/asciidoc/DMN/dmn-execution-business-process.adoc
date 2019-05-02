@@ -1,0 +1,83 @@
+[id='dmn-execution-business-process']
+= Executing a DMN service using the Business Process
+
+Business processes interact with decision services by appropriate identification of the demanded
+decision service and mapping business data to decision inputs and decision result back to business data. We will
+demonstrate such interaction on sample *TrainStation* project.
+
+We will use just one data object *Train*. This data object will have 3 fields:
+
+* departureStation : String
+* destinationStation : String
+* railNumber : BigDecimal
+
+The fields *departureStation* and *destinationStation* describe the route of the train. The third
+field *railNumber* represents the rail in the station, where the train will stop at.
+
+[source,java]
+----
+public class Train {
+
+     private String departureStation;
+
+     private String destinationStation;
+
+     private BigDecimal railNumber;
+
+     // getters and setters omitted
+}
+----
+
+The logic of routing trains trough the station will be described using business process and the dmn model. Lets
+create the dmn model at first as we need details of it for invoking from business process.
+
+The dmn model will have one input node *Train* and one decision node *Rail*. The first node will represent the
+incoming train and the second one the rail number where the train should stop at.
+
+image::dmn/dmn-execution-graph.png[align="center"]
+
+As this is demo, we will specify the routing just for some trains. The decision table will return first appropriate
+rail of the station for the incoming train. If no appropriate rail is available, then null value is returned.
+
+image::dmn/dmn-execution-expression.png[align="center"]
+
+To complete the dmn model, we need to set data type of the node *Train* to be *tTrain*.
+
+image::dmn/dmn-execution-data-type.png[align="center"]
+
+Now we are ready to use our dmn model in the business process.
+
+image::dmn/dmn-execution-business-process.png[align="center"]
+
+The business process will obtain rail number from dmn model -
+*Route To Rail*. Here in properties panel we need to specify witch dmn mdoel to invoke by setting listed properties
+. Please notice expect of *Rule Language* their values depends on the dmn you are going to invoke.
+
+* *Rule Language* - set as *DMN*
+* *Namespace*
+* *Decision Name*
+* *Model Name*
+
+We have to provide also input for the DMN.
+
+image::dmn/dmn-execution-io-mapping.png[align="center"]
+
+When the *Route To Rail* is finished, we will store the rail, place the snippet into *On Exit Script*:
+
+[source,java]
+----
+train.setRailNumber(rail);
+----
+
+Once you deployed the project, run the start the corresponding process definition. Fill for example rout freom Zagreb
+ to Belgrade.
+
+image::dmn/dmn-execution-process-instance-form.png[align="center"]
+
+
+After successful execution a log message should appear in the server log:
+[source]
+----
+Train from: Zagreb, to: Belgrade,  is on rail: 1
+----
+
