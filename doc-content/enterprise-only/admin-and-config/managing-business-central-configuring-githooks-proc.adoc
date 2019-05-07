@@ -1,7 +1,7 @@
 [id='managing-business-central-configuring-githooks-proc']
-= Configuring git hooks
+= Configuring Git hooks
 
-{CENTRAL} can automatically push changes to a remote repository using Git hooks. After you configure the post-commit hook, {CENTRAL} automatically pushes your changes to the remote repository.
+You can use {CENTRAL} to automatically push changes to a remote repository using Git hooks by configuring the post-commit hook.
 
 [NOTE]
 ====
@@ -9,52 +9,55 @@ Currently only post-commit hooks are supported. Post-commit hooks are triggered 
 ====
 
 .Prerequisites
+* {Product} is installed in a {EAP} {EAP_VERSION} server instance.
 * {PRODUCT} projects exist in an external Git repository.
-* You have the credentials required for read access to that external Git repository.
-* (For Windows) You have installed and configured _cygwin_:
-+
-. Download _cygwin_ from http://[www.cygwin.com/].
-. Open http://[www.cygwin.com/install.html] and follow the instructions to install _cygwin_. Add _git_ package when asked for additional packages during the installation.
-. After successful installation, add the path to _cygwin_ _bin_ folder to your environment `PATH` variable (for example, *C:\cygwin64\bin*).
+* Read access credentials for the external Git repository.
+* (For Windows) Cygwin is installed with the Git package added during installation and the path to the Cygwin `/bin` folder is added to your environment `PATH` variable. For example, `C:\cygwin64\bin`. For more information about Cygwin installation, see http://www.cygwin.com/install.html[Installing and Updating Cygwin Packages].
 
 .Procedure
-. Log in to {CENTRAL}.
-. Select *Menu* -> *Projects*.
-. Select or create the space into which you want to import the projects.
+. In {CENTRAL}, go to *Menu* -> *Projects*.
+. Select or create the space that you want to import the Git projects into.
 . Click image:project-data/dots.png[] on the right side of the screen and select *Import Project*.
-. In the *Import Project* window, enter the URL (for example, `\https://github.com/USERNAME/REPOSITORY_NAME.git`) and credentials for the Git repository that contains the project that you want to import and click *Import*.
+. In the *Import Project* window, enter the URL of your Git repository, for example, `https://github.com/USERNAME/REPOSITORY_NAME.git`, and the credentials for the Git repository.
+. Click *Import*.
 +
-The project is added to the {CENTRAL} Git repository and is available in the created or default space.
+The project is added to the {CENTRAL} Git repository and is then available in the space.
 +
 [IMPORTANT]
 =====
 Use the HTTPS or Git protocol instead of a SCP-style SSH URL. {CENTRAL} does not support the basic SSH URL and an error appears if you use this URL.
+
+You must have your public ssh key configured in your Git provider.
+
+The Git repository must be a KJAR project, containing only a single KJAR that is compatible with the {PRODUCT} version. The KJAR content must be in the root of the repository.
 =====
 
-. In a terminal window, change to the created repository.
+. In a command terminal, navigate to the repository folder:
 +
 [source]
 ----
-cd JBOSS_HOME/bin/.niogit/REPOSITORY_NAME.git
+cd JBOSS_HOME/bin/.niogit/<SPACE>/REPOSITORY_NAME.git
 ----
 
-. Create the `post-commit` file in the `JBOSS_HOME/bin/.niogit/REPOSITORY_NAME.git/hooks` directory, set the permissions to `rwxr--r--` and add the following content:
+. Create a `post-commit` file  in a `hooks` folder with permissions set to `rwxr--r--`. For example, `JBOSS_HOME/bin/.niogit/<SPACE>/REPOSITORY_NAME.git/hooks/post-commit`.
+
+. Add the following content to the `post-commit` file:
 +
 [source]
 ----
 #!/bin/sh
-git push origin master
+git push origin +master
 ----
 
-. Make sure that the configuration was successful by creating a new guided rule in {CENTRAL}:
+. To check that the configuration was successful, create a guided rule in {CENTRAL}:
 
-.. Select *Menu* -> *Projects* -> *Add Asset* -> *Guided Rule*.
-.. Fill in the required information in the displayed *Create new Guided Rule* window.
+.. In {CENTRAL} go to *Menu* -> *Projects* -> *Add Asset* -> *Guided Rule*.
+.. On the *Create new Guided Rule* page, enter the required information.
 .. Click *Ok*.
 +
 {CENTRAL} automatically pushes all changes to the remote repository.
 
-You can also specify the `org.uberfire.nio.git.hooks` system property. Specify a directory with default hook files as the value for this property. This directory will be copied to the newly created Git repositories. See the following example of a `standalone.xml` file with this setting below:
+You can specify a directory with the hook file for the value of the `org.uberfire.nio.git.hooks` system property. This directory is copied to the newly created Git repositories. See the following example of a `standalone.xml` file with this setting:
 
 [source]
 ----
