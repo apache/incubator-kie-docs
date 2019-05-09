@@ -1,8 +1,8 @@
 [id='jws-zip-install-proc']
 
-= Installing {KIE_SERVER} with a ZIP file
+= Installing {KIE_SERVER} from ZIP files
 
-{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). You can use the `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file to install {KIE_SERVER} on an existing {JWS} {JWS_VERSION_LONG} or higher server instance.
+{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). You can use  ZIP files to install {KIE_SERVER} on an existing {JWS} {JWS_VERSION_LONG} or higher server instance.
 
 [NOTE]
 ====
@@ -10,38 +10,60 @@ To use the installer JAR file to install {KIE_SERVER}, see <<assembly_installing
 ====
 
 .Prerequisites
-* A backed-up {JWS} {JWS_VERSION_LONG} or higher server installation is available. The base directory of the {JWS} installation is referred to as `__JWS_HOME__`. 
+* The following files have been downloaded, as described in <<install-download-proc_{context}>>:
+** *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`)
+** *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* (`{PRODUCT_FILE}-maven-repository.zip`)
+* A backed-up {JWS} {JWS_VERSION_LONG} or higher server installation is available. The base directory of the {JWS} installation is referred to as `_JWS_HOME_`. 
 * Sufficient user permissions to complete the installation are granted.
 
 .Procedure
-. Download the `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file:
-.. Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required), and select the product and version from the drop-down options:
-* *Product:* {PRODUCT_SHORT}
-* *Version:* {PRODUCT_VERSION}
+. Unzip the `{PRODUCT_FILE}-add-ons.zip` file.
+. From the unzipped `{PRODUCT_FILE}-add-ons.zip` file, extract the following files:
+* `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
+ifdef::PAM[]
+* `{PRODUCT_INIT}-{PRODUCT_VERSION}-process-engine.zip` 
+endif::PAM[]
+ifdef::DM[]
+* `{PRODUCT_INIT}-{PRODUCT_VERSION}-decision-engine.zip`
+endif::DM[]
 
-.. Click *Download* next to *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`).
-.. Unzip the `{PRODUCT_FILE}-add-ons.zip` file. The
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
- file is in the unzipped directory.
-. Extract the 
-ifdef::PAM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
-endif::PAM[]
-ifdef::DM[]
-`{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip`
-endif::DM[]
- archive to a temporary directory. In the following examples, this directory is called `__TEMP_DIR__`.
-. Copy the 
-ifdef::PAM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war`
-endif::PAM[]
-ifdef::DM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war`
-endif::DM[]
- directory to the `_JWS_HOME_/tomcat/webapps` directory.
 +
-WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {JWS} instance.
+In the following instructions, the directory that contains the extracted `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file is called `JWS_TEMP_DIR` and the directory that contains the extracted 
+ifdef::PAM[]
+`{PRODUCT_INIT}-{PRODUCT_VERSION}-process-engine.zip` file is called `ENGINE_TEMP_DIR`.
+endif::PAM[]
+ifdef::DM[]
+`{PRODUCT_INIT}-{PRODUCT_VERSION}-decision-engine.zip` file is called `ENGINE_TEMP_DIR`.
+endif::DM[]
+
+. Copy the `JWS_TEMP_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war` directory to the `_JWS_HOME_/tomcat/webapps` directory.
++
+[NOTE]
+====
+Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {JWS} instance.
+====
 . Remove the `.war` extensions from the `kie-server.war` folder.
+. Move the `kie-tomcat-integration-{MAVEN_ARTIFACT_VERSION}.jar` file from the `ENGINE_TEMP_DIR` directory to the `_JWS_HOME_/tomcat/lib` directory.
+. Move the `jboss-jacc-api-<VERSION>.jar`, `slf4j-api-<VERSION>.jar`, and `slf4j-jdk14-<VERSION>.jar` files from the `ENGINE_TEMP_DIR/lib` directory to the `_JWS_HOME_/tomcat/lib` directory, where `<VERSION>` is the version artifact file name, in the `lib` directory.
+ifdef::DM[]
+. Unzip the `{PRODUCT_FILE}-maven-repository.zip` file. 
+. Copy the following libraries from the unzipped Maven repository to the `_JWS_HOME_/tomcat/lib` folder:
++
+[source]
+----
+org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
+org.jboss.integration:narayana-tomcat
+org.jboss.narayana.jta:narayana-jta
+org.jboss:jboss-transaction-spi
+----
+endif::DM[]
+. Add the following line to the `<host>` element in the `_TOMCAT_HOME_/conf/server.xml` file after the last Valve definition:
++
+[source]
+----
+<Valve className="org.kie.integration.tomcat.JACCValve" />
+----
++
 . Open the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file in a text editor.
 . Add users and roles to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT}. 
 //For a list of supported roles, see <<dm-roles-con>>.  
@@ -50,7 +72,7 @@ WARNING: Ensure the names of the {PRODUCT} deployments you are copying do not co
 [source]
 ----
 <role rolename="<ROLE_NAME>"/>
-<user username="<USER_NAME> password="<USER_PWD>" roles="<ROLE_NAME>"/>
+<user username="<USER_NAME>" password="<USER_PWD>" roles="<ROLE_NAME>"/>
 ----
 +
 If a user has more than one role, as shown in the following example, separate the roles with a comma:
@@ -59,14 +81,14 @@ If a user has more than one role, as shown in the following example, separate th
 ----
 <role rolename="admin"/>
 <role rolename="kie-server"/>
-<user username={PRODUCT_INIT}User password="user1234" roles="admin,kie-server"/>
+<user username="{PRODUCT_INIT}User" password="user1234" roles="admin,kie-server"/>
 ----
 . Complete one of the following steps in the `_JWS_HOME_/tomcat/bin` directory:
 +
 * On Linux or UNIX, create the `setenv.sh` file with the following content:
 +
 ifdef::PAM[]
-[source]
+[source] 
 ----
 CATALINA_OPTS="-Xmx1024m -Dorg.jboss.logging.provider=jdk"
 ----
