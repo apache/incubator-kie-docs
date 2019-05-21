@@ -1,0 +1,50 @@
+[id='template-deploy-ldap-{context}-proc']
+= Setting parameters for LDAP authentication for {what_deploying_brief}
+
+// local variables depending on the assembly context
+:ldap_kieserver!:
+
+ifeval::["{context}"=="freeform-monitor"]
+:ldap_kieserver:
+endif::[]
+
+ifeval::["{context}"=="freeform-server-managed"]
+:ldap_kieserver:
+endif::[]
+
+ifeval::["{context}"=="freeform-server-immutable"]
+:ldap_kieserver:
+endif::[]
+
+If you want to use LDAP authentication, complete the following additional configuration when configuring the template to deploy {what_deploying}. 
+
+[IMPORTANT]
+====
+Do not configure LDAP authentication and RH-SSO authentication in the same deployment.
+====
+
+.Prerequisite
+
+You started the configuration of the template, as described in {startlink}.
+
+.Procedure
+. In the LDAP service, create all user names in the deployment parameters. If you do not set any of the parameters, create users with the default user names. The created users must also be assigned to roles:
+** `KIE_ADMIN_USER`: default user name `adminUser`, roles: `kie-server,rest-all,admin`
+ifdef::ldap_kieserver[]
+** `KIE_SERVER_USER`: default user name `executionUser`, roles `kie-server,rest-all,guest`
+endif::ldap_kieserver[]
++
+For the user roles that you can configure in LDAP, see {URL_INSTALLING_ON_EAP}/roles-users-con#roles-users-con[Roles and users].
++
+. Set the `AUTH_LDAP*` parameters of the template. These parameters correspond to the settings of the `LdapExtended` Login module of {EAP}. For instructions about using these settings, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.0/html-single/login_module_reference/#ldapextended_login_module[LdapExtended login module]. 
++
+If the LDAP server does not define all the roles required for your deployment, you can map LDAP groups to {PRODUCT} roles. To enable LDAP role mapping, set the following parameters:
++
+** *RoleMapping rolesProperties file path* (`AUTH_ROLE_MAPPER_ROLES_PROPERTIES`): The fully qualified pathname of a file that defines role mapping, for example, `/opt/eap/standalone/configuration/rolemapping/rolemapping.properties`. You must provide this file and mount it at this path in all applicable deployment configurations; for instructions, see <<rolemapping-proc>>.
+** *RoleMapping replaceRole property* (`AUTH_ROLE_MAPPER_REPLACE_ROLE`): If set to `true`, mapped roles replace the roles defined on the LDAP server; if set to `false`, both mapped roles and roles defined on the LDAP server are set as user application roles. The default setting is `false`.
+
+.Next steps
+
+If necessary, set additional parameters. 
+
+To complete the deployment, follow the procedure in <<template-deploy-complete-{context}-proc>>.

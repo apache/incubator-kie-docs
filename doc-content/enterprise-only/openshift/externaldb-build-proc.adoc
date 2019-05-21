@@ -1,9 +1,9 @@
 [id='externaldb-build-proc']
 = Building a custom {KIE_SERVER} image for an external database
 
-If you want to use an external database server for a {KIE_SERVER} and this server is neither MySQL nor PostgreSQL, you must build a custom {KIE_SERVER} image with drivers for this server before deploying your environment.
+If you want to use an external database server for a {KIE_SERVER} and the database server is not a MySQL or PostgreSQL server, you must build a custom {KIE_SERVER} image with drivers for this server before deploying your environment.
 
-You can use this build procedure to provide drivers for the following database servers:
+Complete the steps in this build procedure to provide drivers for any of the following database servers:
 
 * Microsoft SQL Server
 * MariaDB
@@ -11,25 +11,26 @@ You can use this build procedure to provide drivers for the following database s
 * Oracle Database
 * Sybase
 
-For the tested versions of the database servers, see https://access.redhat.com/articles/3405381#TestedConfigurations70[Red Hat Process Automation Manager 7 Supported Configurations].
+For the supported versions of the database servers, see https://access.redhat.com/articles/3405381#TestedConfigurations70[Red Hat Process Automation Manager 7 Supported Configurations].
 
-The build procedure creates a custom image that extends the existing {KIE_SERVER} image. It pushes this custom image into a new `ImageStream` in the `openshift` namespace with the same version tag as the original image.
+The build procedure creates a custom image that extends the existing {KIE_SERVER} image. It pushes this custom image into a new image stream in the `openshift` namespace with the same version tag as the original image.
 
 .Prerequisites
-* You have logged on to your project in the OpenShift environment using the `oc` command as a user with the `cluster-admin` role.
-* For IBM DB2, Oracle Database, or Sybase, you have downloaded the JDBC driver from the database server vendor.
+* You are logged in to your project in the OpenShift environment using the `oc` command as a user with the `cluster-admin` role.
+* For IBM DB2, Oracle Database, or Sybase, you downloaded the JDBC driver from the database server vendor.
 
 .Procedure
-. For IBM DB2, Oracle Database, or Sybase, provide the JDBC driver JAR in a local directory or on an HTTP server. Within the local directory or HTTP server, the following paths are expected:
+. For IBM DB2, Oracle Database, or Sybase, provide the JDBC driver JAR file in a local directory or on an HTTP server. Within the local directory or HTTP server, the following paths are expected:
 +
 ** For IBM DB2, `<local_path_or_url>/com/ibm/db2/jcc/db2jcc4/10.5/db2jcc4-10.5.jar`
 ** For Oracle Database, `<local_path_or_url>/com/oracle/ojdbc7/12.1.0.1/ojdbc7-12.1.0.1.jar`
 ** For Sybase, `<local_path_or_url>/com/sysbase/jconn4/16.0_PL05/jconn4-16.0_PL05.jar`
 +
-Where `<local_path_or_url>` is the path to the local directory or the URL for the HTTP server where the driver is provided.
+Replace `<local_path_or_url>` with the path to the local directory or the URL for the HTTP server where the driver is provided.
 +
-. To install the source code for the custom build, download the `{PRODUCT_FILE}-openshift-templates.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page. Unzip the file and, using the command line, change to the `templates/contrib/jdbc` directory of the unzipped file.
-. Change to the following subdirectory:
+. Download the `{PRODUCT_FILE}-openshift-templates.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page. 
+. Unzip the file and, using the command line, change to the `templates/contrib/jdbc` directory of the unzipped file. this directory contains the source code for the custom build.
+. Change to one of the following subdirectories:
 +
 ** For Microsoft SQL Server, `mssql-driver-image`
 ** For MariaDB, `mariadb-driver-image`
@@ -37,7 +38,7 @@ Where `<local_path_or_url>` is the path to the local directory or the URL for th
 ** For Oracle Database, `oracle-driver-image`
 ** For Sybase, `sybase-driver-image`
 +
-. Run the following command:
+. Enter one of the following commands:
 +
 --
 ** For Microsoft SQL Server or MariaDB:
@@ -54,19 +55,17 @@ Where `<local_path_or_url>` is the path to the local directory or the URL for th
 ../build.sh --artifact-repo=<local_path_or_url>
 ----
 
-Where `<local_path_or_url>` is the path to the local directory or the URL for the HTTP server where the driver is provided. For example:
+Replace `<local_path_or_url>` with the path to the local directory or the URL for the HTTP server where the driver is provided. For example:
 
 ----
 ../build.sh --artifact-repo=/home/builder/drivers
 ../build.sh --artifact-repo=http://nexus.example.com/nexus/content/groups/public
 ----
 
-If you want to configure your OpenShift docker registry address in the process, add also the `--registry=<registry_name.domain_name:port>` parameter to your build command.
+If you want to configure your OpenShift docker registry address in the process, add also the `--registry=<registry_name.domain_name:port>` parameter to your build command, as illustrated in the following examples:
 
-Examples:
 ----
 ../build.sh --registry=docker-registry.custom-domain:80
-
 ../build.sh --artifact-repo=/home/builder/drivers --registry=docker-registry.custom-domain:80
 ----
 --
