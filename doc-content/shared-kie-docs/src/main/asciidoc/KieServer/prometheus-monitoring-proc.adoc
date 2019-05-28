@@ -44,18 +44,22 @@ kieserver.drools.enabled=true
 kieserver.dmn.enabled=true
 kieserver.prometheus.enabled=true
 ----
-. In the `prometheus.yaml` file of your Prometheus distribution, add the following settings to configure Prometheus to scrape metrics from {KIE_SERVER}:
+. In the `prometheus.yaml` file of your Prometheus distribution, add the following settings in the `scrape_configs` section to configure Prometheus to scrape metrics from {KIE_SERVER}:
 +
 --
 [source,yaml]
 ----
 scrape_configs:
-    metrics_path: /rest/metrics
-    static_configs:
-      - targets: ['localhost:8080']
+  job_name: 'kie-server'
+metrics_path: /SERVER_PATH/services/rest/metrics
+Basic_auth:
+username: USER_NAME
+password: PASSWORD
+static_configs:
+  - targets: ["HOST:PORT"]
 ----
 
-Replace the `targets` value with the location of your {KIE_SERVER} or {KIE_SERVERS}.
+Replace the values according to your {KIE_SERVER} location and settings.
 --
 . Start the {KIE_SERVER} instance.
 +
@@ -69,9 +73,9 @@ $ ./standalone.sh --c standalone-full.xml
 ----
 endif::[]
 
-After you start the configured {KIE_SERVER} instance, Prometheus begins collecting metrics and {KIE_SERVER} publishes the metrics to the REST API endpoint `\http://HOST:PORT/kie-server/services/rest/metrics`.
+After you start the configured {KIE_SERVER} instance, Prometheus begins collecting metrics and {KIE_SERVER} publishes the metrics to the REST API endpoint `\http://HOST:PORT/SERVER/services/rest/metrics` (or on Spring Boot, to `\http://HOST:PORT/rest/metrics`).
 --
-. In a REST client or curl utility, send a REST API request with the following components to verify that Prometheus is publishing metrics to {KIE_SERVER}:
+. In a REST client or curl utility, send a REST API request with the following components to verify that {KIE_SERVER} is publishing the metrics:
 +
 --
 For REST client:
@@ -80,7 +84,7 @@ For REST client:
 * *HTTP Headers*: Set the following header:
 ** `Accept`: `application/json`
 * *HTTP method*: Set to `GET`.
-* *URL*: Enter the {KIE_SERVER} REST API base URL and metrics endpoint, such as `\http://localhost:8080/kie-server/services/rest/metrics`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and metrics endpoint, such as `\http://localhost:8080/kie-server/services/rest/metrics` (or on Spring Boot, `\http://localhost:8080/rest/metrics`).
 
 
 For curl utility:
@@ -89,7 +93,7 @@ For curl utility:
 * `-H`: Set the following header:
 ** `accept`: `application/json`
 * `-X`: Set to `GET`.
-* *URL*: Enter the {KIE_SERVER} REST API base URL and metrics endpoint, such as `\http://localhost:8080/kie-server/services/rest/metrics`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and metrics endpoint, such as `\http://localhost:8080/kie-server/services/rest/metrics` (or on Spring Boot, `\http://localhost:8080/rest/metrics`).
 
 [source]
 ----
