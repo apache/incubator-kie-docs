@@ -1,20 +1,16 @@
 [id='dmn-execution-business-process']
 = Executing a DMN service using the Business Process
 
-Business processes interact with decision services by appropriate identification of the demanded
-decision service and mapping business data to decision inputs and decision result back to business data. We will
-demonstrate such interaction on sample *TrainStation* project.
+Business processes interact with DMN services by identification of the demanded
+DMN service and mapping business data to DMN inputs and back from DMN to business data. We will demonstrate such
+interaction on sample *TrainStation* project.
 
-We will use just one data object *Train*. This data object will have 3 fields:
+We will use just one data object *Train*. This data object will have 3 fields. The fields *departureStation* and
+*destinationStation* describe the route of the train. The third field *railNumber* represents the rail in the
+station, where the train will stop at.
 
-* departureStation : String
-* destinationStation : String
-* railNumber : BigDecimal
-
-The fields *departureStation* and *destinationStation* describe the route of the train. The third
-field *railNumber* represents the rail in the station, where the train will stop at.
-
-[source,java]
+.Train.java
+[source,java,align="center"]
 ----
 public class Train {
 
@@ -28,39 +24,38 @@ public class Train {
 }
 ----
 
-The logic of routing trains trough the station will be described using business process and the dmn model. Lets
-create the dmn model at first as we need details of it for invoking from business process.
+Now we will describe routing logic using a DMN model *Compute Rail*. The DMN model will have one input node *Train*
+and one decision node *Rail*. The first node will represent the incoming train and the second one the rail number
+where the train should stop at.
 
-The dmn model will have one input node *Train* and one decision node *Rail*. The first node will represent the
-incoming train and the second one the rail number where the train should stop at.
-
-image::dmn/dmn-execution-graph.png[align="center"]
+image::dmn/dmn-execution-graph.png[align="center",title="Compute Rail.dmn"]
 
 As this is demo, we will specify the routing just for some trains. The decision table will return first appropriate
 rail of the station for the incoming train. If no appropriate rail is available, then null value is returned.
 
-image::dmn/dmn-execution-expression.png[align="center"]
+image::dmn/dmn-execution-expression.png[align="center",title="Rail - Decision Table expression"]
 
-To complete the dmn model, we need to set data type of the node *Train* to be *tTrain*.
+To complete the DMN model, we need to set data type of the node *Train* to be *tTrain*. The data type as shown below
+needs to be created on *Data Types* tab.
 
-image::dmn/dmn-execution-data-type.png[align="center"]
+image::dmn/dmn-execution-data-type.png[align="center",title="Data Type tTrain"]
 
-Now we are ready to use our dmn model in the business process.
+Now we are ready to use our DMN model in the business process.
 
-image::dmn/dmn-execution-business-process.png[align="center"]
+image::dmn/dmn-execution-business-process.png[align="center",title="Accept Train.bpmn"]
 
-The business process will obtain rail number from dmn model -
-*Route To Rail*. Here in properties panel we need to specify witch dmn mdoel to invoke by setting listed properties
-. Please notice expect of *Rule Language* their values depends on the dmn you are going to invoke.
+The *Route To Rail* node will invoke our DMN service identified by the listed properties below. Please notice
+the *Namespace* value is always unique and you need to find it in your *Compute Rail* model.
 
 * *Rule Language* - set as *DMN*
 * *Namespace*
-* *Decision Name*
-* *Model Name*
+* *Decision Name* - Set as *Rail*
+* *Model Name* - Set as *Compute Rail*
 
-We have to provide also input for the DMN.
+Next we have to provide mapping between process data and DMN service inputs. To be able to do such mapping we have to
+ create one process variable *train* and set its type as *Train* we created in the very beginning.
 
-image::dmn/dmn-execution-io-mapping.png[align="center"]
+image::dmn/dmn-execution-io-mapping.png[align="center",title="Route To Rail data mapping"]
 
 When the *Route To Rail* is finished, we will store the rail, place the snippet into *On Exit Script*:
 
@@ -69,15 +64,34 @@ When the *Route To Rail* is finished, we will store the rail, place the snippet 
 train.setRailNumber(rail);
 ----
 
-Once you deployed the project, run the start the corresponding process definition. Fill for example rout freom Zagreb
- to Belgrade.
+The business process will finish in error state, if the rail number was not computed.
 
-image::dmn/dmn-execution-process-instance-form.png[align="center"]
+image::dmn/dmn-execution-negative-condition.png[align="center",title="No Appropriate Rail condition"]
+
+On the contrary, if the rail number was computed, we will proceed to *Accept Train* node.
+
+image::dmn/dmn-execution-positive-condition.png[align="center",title="Accept Train condition"]
+
+The *Accept Train* node will just print message about the train route and current rail. However it could be replaced
+with more complex node. Paste the snippet into *Accept Train* script field.
+
+[source,java]
+----
+com.myspace.trainstation.Train t =
+    (com.myspace.trainstation.Train) kcontext.getVariable("train");
+System.out.println("Train from: " + t.getDepartureStation() +
+                   ", to: " + t.getDestinationStation() +
+                   ",  is on rail: " + t.getRailNumber());
+----
+
+Now we can deploy the *TrainStation* project and run the corresponding process definition. Fill route from Zagreb to
+Belgrade.
+
+image::dmn/dmn-execution-process-instance-form.png[align="center",title="Process Instance starting form"]
 
 
 After successful execution a log message should appear in the server log:
-[source]
-----
+....
 Train from: Zagreb, to: Belgrade,  is on rail: 1
-----
+....
 
