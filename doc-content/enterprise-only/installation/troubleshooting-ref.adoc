@@ -1,0 +1,74 @@
+[id='patches-applying-proc']
+
+= Troubleshooting
+
+IBM DB2 database has problems with Dashbuilder::
+If you want to use an IBM DB2 database as the underlying data source for Business Central, increase the page size for the database. The default page size of 4 kB is not sufficient for the Dashbuilder table columns size.
++
+When creating the database, force the page size to 16384 as in the example below:
++
+.Adjusting Page Size
+====
+[source]
+----
+CREATE DATABASE dashb PAGESIZE 16384
+----
+====
++
+This increase in page size for the underlying database must be performed before the Red Hat JBoss BPM Suite has been run for the first time.
+
+Non-English characters are not displayed in Dashbuilder::
++
+--
+If you want to use UTF 8 to display non-English characters, set the encoding at the level of database for Dashbuilder to work correctly. For example, in MySQL, add the following to the server configuration file:
+
+[source]
+----
+[mysqld]
+character-set-server=utf8
+collation-server=utf8_general_ci
+----
+--
+
+Deadlocks occur with Microsoft SQL Server::
+If you are using Microsoft SQL Server, make sure you have configured proper transaction isolation for your database. If you do not, you may experience deadlocks. The recommended configuration is to turn on ALLOW_SNAPSHOT_ISOLATION and READ_COMMITTED_SNAPSHOT by entering the following statements:
+
+[source]
+----
+ALTER DATABASE <DBNAME> SET ALLOW_SNAPSHOT_ISOLATION ON 
+ALTER DATABASE <DBNAME> SET READ_COMMITTED_SNAPSHOT ON 
+----
+
+Oracle 11 produces multiple warnings without any cause::
++
+--
+When you use Oracle 11 as the data source, multiple warning (`WARN`) messages are produced in the logs without any corresponding Business Central activity being performed. This is expected behavior. To turn off these messages, set the level of the `org.hibernate.loader` category of the logger to `ERROR` in the `standalone.xml` file:
+
+[source]
+----
+<logger category="org.hibernate.loader">
+  <level name="ERROR"/>
+</logger>
+----
+--
+
+ifdef::BPMS[]
+Vacuumlo deletes active large objects of Red Hat JBoss BPM Suite CLOB data::
++
+--
+The vacuumlo utility program removes large objects, whose OIDs are not available in the `oid` or `lo` data columns, from a PostgreSQL database. In Red Hat JBoss BPM Suite, the `text` columns hold large object as well. As vacuumlo does not analyze any other columns than `oid` or `lo`, active objects may be deleted.
+
+To prevent vacuumlo from deleting active large objects, run the `postgresql-jbpm-lo-trigger-clob.sql` script:
+
+. Download *Red Hat JBoss BPM Suite 6.4.2 Supplementary Tools* from the https://access.redhat.com/downloads/[Red Hat Customer Portal]. The script is located in the `ddl-scripts/postgresql/` directory.
+. Make sure that the user which runs the script has the `TRIGGER` privilege on the Red Hat JBoss BPM Suite tables and the `USAGE` privilege to allow the use of the PL/pgSQL procedural language.
+. Run the script to create triggers and and the `jbpm_active_clob` table:
++
+[source]
+----
+\i postgresql-jbpm-lo-trigger-clob.sql
+----
+
+After performing these steps, `jbpm_active_clob` is maintained by the trigger and CLOB references cannot be deleted by vacuumlo.
+--
+endif::BPMS[]
