@@ -2,7 +2,14 @@
 
 = Installing {KIE_SERVER} from ZIP files
 
-{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). You can use  ZIP files to install {KIE_SERVER} on an existing {JWS} {JWS_VERSION_LONG} or higher server instance.
+{KIE_SERVER} provides the runtime environment for business assets and accesses the data stored in the assets repository (knowledge store). You can use  ZIP files to install {KIE_SERVER} on an existing 
+ifeval::["{context}" == "install-on-jws"]
+{JWS} {JWS_VERSION_LONG} or higher server instance.
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+{TOMCAT} {TOMCAT_VERSION} instance.
+endif::[]
+
 
 [NOTE]
 ====
@@ -13,7 +20,12 @@ To use the installer JAR file to install {KIE_SERVER}, see <<assembly_installing
 * The following files have been downloaded, as described in <<install-download-proc_{context}>>:
 ** *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`)
 ** *{PRODUCT} {PRODUCT_VERSION_LONG} Maven Repository* (`{PRODUCT_FILE}-maven-repository.zip`)
+ifeval::["{context}" == "install-on-jws"]
 * A backed-up {JWS} {JWS_VERSION_LONG} or higher server installation is available. The base directory of the {JWS} installation is referred to as `_JWS_HOME_`. 
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+* A backed-up {TOMCAT} {TOMCAT_VERSION} server installation is available. The base directory of the {TOMCAT} installation is referred to as `_TOMCAT_HOME_`. 
+endif::[]
 * Sufficient user permissions to complete the installation are granted.
 
 .Procedure
@@ -28,7 +40,14 @@ ifdef::DM[]
 endif::DM[]
 
 +
-In the following instructions, the directory that contains the extracted `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file is called `JWS_TEMP_DIR` and the directory that contains the extracted 
+In the following instructions, the directory that contains the extracted `{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws.zip` file is called 
+ifeval::["{context}" == "install-on-jws"]
+`JWS_TEMP_DIR`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`TOMCAT_TEMP_DIR`
+endif::[]
+ and the directory that contains the extracted 
 ifdef::PAM[]
 `{PRODUCT_INIT}-{PRODUCT_VERSION}-{URL_COMPONENT_PROCESS_ENGINE}.zip` file is called `ENGINE_TEMP_DIR`.
 endif::PAM[]
@@ -36,18 +55,39 @@ ifdef::DM[]
 `{PRODUCT_INIT}-{PRODUCT_VERSION}-{URL_COMPONENT_DECISION_ENGINE}.zip` file is called `ENGINE_TEMP_DIR`.
 endif::DM[]
 
-. Copy the `JWS_TEMP_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war` directory to the `_JWS_HOME_/tomcat/webapps` directory.
+. Copy the 
+ifeval::["{context}" == "install-on-jws"]
+`JWS_TEMP_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war` directory to the `_JWS_HOME_/tomcat/webapps` directory.
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`TOMCAT_TEMP_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-kie-server-jws/kie-server.war` directory to the `_TOMCAT_HOME_/tomcat/webapps` directory.
+endif::[]
+
 +
 [NOTE]
 ====
+ifeval::["{context}" == "install-on-jws"]
 Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {JWS} instance.
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {TOMCAT} instance.
+endif::[]
 ====
 . Remove the `.war` extensions from the `kie-server.war` folder.
+ifeval::["{context}" == "install-on-jws"]
 . Move the `kie-tomcat-integration-{MAVEN_ARTIFACT_VERSION}.jar` file from the `ENGINE_TEMP_DIR` directory to the `_JWS_HOME_/tomcat/lib` directory.
 . Move the `jboss-jacc-api-<VERSION>.jar`, `slf4j-api-<VERSION>.jar`, and `slf4j-jdk14-<VERSION>.jar` files from the `ENGINE_TEMP_DIR/lib` directory to the `_JWS_HOME_/tomcat/lib` directory, where `<VERSION>` is the version artifact file name, in the `lib` directory.
-ifdef::DM[]
 . Unzip the `{PRODUCT_FILE}-maven-repository.zip` file. 
 . Copy the following libraries from the unzipped Maven repository to the `_JWS_HOME_/tomcat/lib` folder:
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+. Move the `kie-tomcat-integration-{MAVEN_ARTIFACT_VERSION}.jar` file from the `ENGINE_TEMP_DIR` directory to the `_TOMCAT_HOME_/tomcat/lib` directory.
+. Move the `jboss-jacc-api-<VERSION>.jar`, `slf4j-api-<VERSION>.jar`, and `slf4j-jdk14-<VERSION>.jar` files from the `ENGINE_TEMP_DIR/lib` directory to the `_TOMCAT_HOME_/tomcat/lib` directory, where `<VERSION>` is the version artifact file name, in the `lib` directory.
+. Unzip the `{PRODUCT_FILE}-maven-repository.zip` file. 
+. Copy the following libraries from the unzipped Maven repository to the `_TOMCAT_HOME_/tomcat/lib` folder:
+endif::[]
+ifdef::DM[]
+
 +
 [source]
 ----
@@ -64,8 +104,15 @@ endif::DM[]
 <Valve className="org.kie.integration.tomcat.JACCValve" />
 ----
 +
+ifeval::["{context}" == "install-on-jws"]
 . Open the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file in a text editor.
-. Add users and roles to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT}. 
+. Add users and roles to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. 
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+. Open the `_TOMCAT_HOME_/tomcat/conf/tomcat-users.xml` file in a text editor.
+. Add users and roles to the `_TOMCAT_HOME_/tomcat/conf/tomcat-users.xml` file. 
+endif::[]
+In the following example, `<ROLE_NAME>` is a role supported by {PRODUCT}. 
 //For a list of supported roles, see <<dm-roles-con>>.  
 `<USER_NAME>` and `<USER_PWD>` are the user name and password of your choice:
 +
@@ -83,7 +130,14 @@ If a user has more than one role, as shown in the following example, separate th
 <role rolename="kie-server"/>
 <user username="{PRODUCT_INIT}User" password="user1234" roles="admin,kie-server"/>
 ----
-. Complete one of the following steps in the `_JWS_HOME_/tomcat/bin` directory:
+. Complete one of the following steps in the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/bin` directory:
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/bin` directory:
+endif::[]
+
 +
 * On Linux or UNIX, create the `setenv.sh` file with the following content:
 +
