@@ -1,18 +1,6 @@
 [id='imagestreams-file-install-proc']
 = Ensuring the availability of image streams and the image registry
 
-:amq-imagestream!:
-
-ifeval::["{context}"=="openshift-authoring"]
-:amq-imagestream: 
-endif::[]
-
-ifeval::["{context}"=="openshift-authoring-managed"]
-:amq-imagestream: 
-endif::[]
-
-
-
 To deploy {PRODUCT} components on {OPENSHIFT}, you must ensure that OpenShift can download the correct images from the Red Hat registry. To download the images, OpenShift requires _image streams_, which contain the information about the location of images. OpenShift also must be configured to authenticate with the Red Hat registry using your service account user name and password.
 
 Some versions of the OpenShift environment include the required image streams. You must check if they are available. If image streams are available in OpenShift by default, you can use them if the OpenShift infrastructure is configured for registry authentication server. The administrator must complete the registry authentication configuration when installing the OpenShift environment.
@@ -54,7 +42,7 @@ ifeval::["{context}"=="openshift-ansible-playbook"]
 .. Log in to OpenShift with the `oc` command as a user with administrator permissions.
 endif::[]
 
-.. Complete the steps documented in https://access.redhat.com/RegistryAuthentication#registry-service-accounts-for-shared-environments-4[Registry Service Accounts for Shared Environments]. You must log on to the Red Hat Customer Portal to access the document and to complete the steps to create a registry service account.
+.. Complete the steps documented in https://access.redhat.com/RegistryAuthentication#registry-service-accounts-for-shared-environments-4[Registry Service Accounts for Shared Environments]. You must log in to the Red Hat Customer Portal to access the document and to complete the steps to create a registry service account.
 .. Select the *OpenShift Secret* tab and click the link under *Download secret* to download the YAML secret file.
 .. View the downloaded file and note the name that is listed in the `name:` entry.
 .. Enter the following commands:
@@ -76,7 +64,7 @@ oc secrets link builder <secret_name> --for=pull -n openshift
 ----
 endif::[]
 +
-Replace `<file_name>` with the name of the downloaded file and <secret_name> with the name that is listed in the `name:` entry of the file.
+Replace `<file_name>` with the name of the downloaded file and `<secret_name>` with the name that is listed in the `name:` entry of the file.
 .. Download the `{PRODUCT_FILE}-openshift-templates.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page and extract the `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-image-streams.yaml` file.
 .. Complete one of the following actions:
 +
@@ -96,31 +84,6 @@ $ oc create -f {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-image-streams.yaml -n op
 endif::[]
 +
 *** In the OpenShift Web UI, select *Add to Project -> Import YAML / JSON* and then choose the file or paste its contents.
-ifdef::amq-imagestream[]
-+
-. If you want to deploy a high-availability {CENTRAL} (this functionality is a technology preview), complete the following additional steps:
-.. Verify if the AMQ scaledown controller image stream is present. Enter the following command:
-+
-[subs="attributes,verbatim,macros"]
-----
-$ oc get imagestreamtag -n openshift | grep amq-broker-72-scaledown-controller-openshift
-----
-+
-If the output of the command is not empty, the required image stream is available in the `openshift` namespace and no further action is required.
-+
-.. If the output of the commands is empty, complete the following steps:
-... Download the following file: https://raw.githubusercontent.com/jboss-container-images/jboss-amq-7-broker-openshift-image/amq-broker-72/amq-broker-7-scaledown-controller-image-streams.yaml
-... Complete one of the following actions:
-+
-**** Enter the following command:
-+
-[subs="attributes,verbatim,macros"]
-----
-$ oc create -f amq-broker-7-scaledown-controller-image-streams.yaml
-----
-+
-**** In the OpenShift Web UI, select *Add to Project -> Import YAML / JSON* and then choose the `amq-broker-7-scaledown-controller-image-streams.yaml` file or paste its contents.
-endif::amq-imagestream[]
 ifeval::["{context}"!="openshift-ansible-playbook"]
 +
 [NOTE]
