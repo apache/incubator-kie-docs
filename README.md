@@ -25,6 +25,10 @@ Note the following changes that apply to KIE community documentation as a result
 * **Centralized `_images` directory:** Going forward, save all new images to only the central `kie-docs/_images` directory instead of in separate sub-directories within the community content folders. Existing images have been moved already, or deleted if unused. Any images that you save outside of that central images folder will not be rendered in the output.
 * **Removed `:imagesdir:` declaration in modules:** Going forward, do not specify an `:imagesdir:` declaration in any module files or in any KIE community `index.adoc` assembly files. The images directory specification is now configured globally in the KIE community project `pom.xml` settings, and directs to the central `kie-docs/_images` directory. Only Red Hat Business Automation `main.adoc` assembly files require an `:imagesdir:` specification.
 
+For more information about these documentation changes or about contributing to this `kie-docs` documentation repository, see [Contributing to KIE documentation](https://redhat-documentation.github.io/doc-guidelines/bpm/).
+
 # Developing Drools and jBPM
 
 For guidelines on contributing to a `kiegroup` development project, see [droolsjbpm-build-bootstrap/README.md](https://github.com/kiegroup/droolsjbpm-build-bootstrap/blob/master/README.md).
+
+For guidelines on contributing to this `kie-docs` documentation repository, see [Contributing to KIE documentation](https://redhat-documentation.github.io/doc-guidelines/bpm/).
