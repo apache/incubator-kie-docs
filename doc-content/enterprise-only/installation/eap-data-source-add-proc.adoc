@@ -9,7 +9,7 @@ For production environments, specify an actual data source. Do not use the examp
 ====
 
 .Prerequisites
-* The JDBC providers that you want to use to create database connections are configured on all servers on which you want to deploy {KIE_SERVER}.
+* The JDBC providers that you want to use to create database connections are configured on all servers on which you want to deploy {KIE_SERVER}, as described in the "Creating Datasources" and "JDBC Drivers" sections of the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.2/html/configuration_guide/index[_Red Hat JBoss Enterprise Application Server Configuration Guide_].
 * The *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`) file has been downloaded, as described in <<install-download-proc_{context}>>.
 
 .Procedure
@@ -23,28 +23,6 @@ For production environments, specify an actual data source. Do not use the examp
 ----
 psql jbpm < /ddl-scripts/postgresql/postgresql-jbpm-schema.sql
 ----
-. Enter the following command to install the JDBC driver onto your application platform:
-+
-[source,shell]
-----
-./jboss-cli.sh
-module add --name=org.postgresql --resources=/path/to/postgresql-jdbc-driver.jar --dependencies=javax.api,javax.transaction.api
-----
-. Connect to the running server and create the driver and data source. In the following example, `<HOST>` is the URL of the controller, `<PORT>` is the port number used to connect to the controller, `<PASSWORD>` is the password for the database, and `<USERNAME>` is a user with access to the database.
-+
-[source,shell]
-----
-./jboss-cli.sh --connect --controller=<HOST>:<PORT>
-/subsystem=datasources/jdbc-driver=postgresql:add(driver-name=postgresql,driver-module-name=org.postgresql,driver-xa-datasource-class-name=org.postgresql.xa.PGXADataSource)
-xa-data-source add --driver-name=postgresql --password=<PASSWORD> --user-name=<USERNAME> --xa-datasource-properties=url=jdbc:postgresql://localhost:5432/jbpm --name=PostgresqlDS --jndi-name=java:jboss/datasources/PostgresqlDS
-----
-+
-[NOTE]
-====
-Always use a distributed (XA) data source with the {PRODUCT} persistence service.
-
-In general, you should use an XA data source when multiple resources are involved in a single transaction. For example, if you are using a Java Messege Service (JMS) executor (which is used by default when asynchronous tasks are included) or timers based on Quartz, you should use an XA data source.
-====
 
 . Open `_EAP_HOME_/standalone/configuration/standalone-full.xml` in a text editor and locate the `<system-properties>` tag.
 . Add the following properties to the `<system-properties>` tag where `<DATASOURCE>` is the name of your data source and `<HIBERNATE_DIALECT>` is the hibernate dialect for your database.
@@ -60,7 +38,7 @@ The default value of the `org.kie.server.persistence.ds` property is  `java:jbos
 <property name="org.kie.server.persistence.dialect" value="<HIBERNATE_DIALECT>"/>
 ----
 +
-For example:
+The following example shows how to configure a datasource for the PostgreSQL hibernate dialect:
 +
 [source,xml,subs="attributes+"]
 ----
