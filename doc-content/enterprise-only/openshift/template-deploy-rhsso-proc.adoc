@@ -4,58 +4,56 @@
 // local variables depending on the assembly context
 :sso_singleclient!:
 :sso_central!:
-:sso_kieserver!:
+:sso_serveruser!:
 // "typical" is a single KIE server where paramenert are KIE_SERVER_* not KIE_SERVERn_*
 :sso_kieserver_typical!:
 :sso_multiplekie!:
 
 ifeval::["{context}"=="freeform-monitor"]
 :sso_central:
-:sso_kieserver:
+:sso_serveruser:
 :sso_kieserver_typical!:
 endif::[]
 
 ifeval::["{context}"=="authoring"]
 :sso_central:
-:sso_kieserver:
+:sso_serveruser:
 endif::[]
 
 
 ifeval::["{context}"=="freeform-server-managed"]
 :sso_singleclient:
-:sso_kieserver:
+:sso_serveruser:
 :sso_kieserver_typical:
 endif::[]
 
 ifeval::["{context}"=="fixed"]
 :sso_singleclient:
-:sso_kieserver:
+:sso_serveruser:
 :sso_multiplekie:
 endif::[]
 
 
 ifeval::["{context}"=="additional-server-managed"]
 :sso_singleclient:
-:sso_kieserver:
 :sso_kieserver_typical:
 endif::[]
 
 
 ifeval::["{context}"=="server-immutable-s2i"]
 :sso_singleclient:
-:sso_kieserver:
 :sso_kieserver_typical:
 endif::[]
 
 ifeval::["{context}"=="server-immutable-kjar"]
 :sso_singleclient:
-:sso_kieserver:
 :sso_kieserver_typical:
 endif::[]
 
 ifeval::["{context}"=="monitoring"]
 :sso_singleclient:
 :sso_central:
+:sso_serveruser:
 endif::[]
 
 
@@ -69,43 +67,37 @@ Do not configure LDAP authentication and RH-SSO authentication in the same deplo
 
 .Prerequisites
 
+* A realm for {PRODUCT} is created in the RH-SSO authentication system.
+* User names and passwords for {PRODUCT} are created in the RH-SSO authentication system. For a list of the available roles, see <<roles-users-con>>.
+ifdef::sso_serveruser[]
+The following users are required in order to set the parameters for the environment:
+** An administrative user with the `kie-server,rest-all,admin` roles. This user can administer and use the environment. {KIE_SERVERS} use this user to authenticate with {LOCAL_CENTRAL}.
+** A server user with the `kie-server,rest-all,user` roles. This user can make REST API calls to the {KIE_SERVER}. {LOCAL_CENTRAL} uses this user to authenticate with {KIE_SERVERS}.
+endif::sso_serveruser[]
+ifndef::sso_serveruser[]
+In order to set the parameters for the environment, an administrative user with the `kie-server,rest-all,admin` roles is required. The default user name for this user is `adminUser`. This user can administer and use the environment.
+endif::sso_serveruser[]
+* Clients are created in the RH-SSO authentication system for all components of the {PRODUCT} environment that you are deploying. The client setup contains the URLs for the components. You can review and edit the URLs after deploying the environment. Alternatively, the {PRODUCT} deployment can create the clients. However, this option provides less detailed control over the environment.
 * You started the configuration of the template, as described in {startlink}.
 
 .Procedure
-. In the RH-SSO service, create all user names in the deployment parameters. If you do not set any of the parameters, create users with the default user names. The created users must also be assigned to roles:
-** `KIE_ADMIN_USER`: default user name `adminUser`, roles: `kie-server,rest-all,admin`
-ifdef::sso_kieserver[]
-** `KIE_SERVER_USER`: default user name `executionUser`, roles `kie-server,rest-all,guest`
-endif::sso_kieserver[]
-+
-For the user roles that you can configure in RH-SSO, see {URL_INSTALLING_ON_EAP}/roles-users-con#roles-users-con[Roles and users].
-+
-. In the RH-SSO service, ensure that an RH-SSO realm that applies to {PRODUCT} exists.
-ifdef::sso_singleclient[]
-ifdef::sso_central[]
-. You can create a client within RH-SSO for {LOCAL_CENTRAL}.
-endif::sso_central[]
-ifdef::sso_kieserver[]
-. You can create a client within RH-SSO for
-ifdef::sso_multiplekie[each]
-{KIE_SERVER}.
-endif::sso_kieserver[]
-Alternatively, if the client does not yet exist, the template can create it during deployment.
-endif::sso_singleclient[]
-ifndef::sso_singleclient[]
-. You can create clients within RH-SSO for {LOCAL_CENTRAL} and for {KIE_SERVER}. Alternatively, if the clients do not yet exist, the template can create them during deployment.
-endif::sso_singleclient[]
-+
+
+. Set the `KIE_ADMIN_USER` and `KIE_ADMIN_PASSWORD` parameters of the template to the user name and password of the administrative user that you created in the RH-SSO authentication system.
+ifdef::sso_serveruser[]
+. Set the `KIE_SERVER_USER` and `KIE_SERVER_PASSWORD` parameters of the template to the user name and password of the server user that you created in the RH-SSO authentication system.
+endif::sso_serveruser[]
+. Set the following parameters:
+** *RH-SSO URL* (`SSO_URL`): The URL for RH-SSO.
+** *RH-SSO Realm name* (`SSO_REALM`): The RH-SSO realm for {PRODUCT}.
+** *RH-SSO Disable SSL Certificate Validation* (`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION`): Set to `true` if your RH-SSO installation does not use a valid HTTPS certificate.
 . Complete one of the following procedures:
 ifdef::sso_singleclient[]
-.. If the client for {PRODUCT} within RH-SSO already exists,
+.. If you created the client for {PRODUCT} within RH-SSO,
 endif::sso_singleclient[]
 ifndef::sso_singleclient[]
-.. If the clients for {PRODUCT} within RH-SSO already exist,
+.. If you created the clients for {PRODUCT} within RH-SSO,
 endif::sso_singleclient[]
 set the following parameters in the template:
-*** *RH-SSO URL* (`SSO_URL`): The URL for RH-SSO.
-*** *RH-SSO Realm name* (`SSO_REALM`): The RH-SSO realm for {PRODUCT}.
 *** *{LOCAL_CENTRAL} RH-SSO Client name* (`{CENTRAL_CAPITAL_UNDER}_SSO_CLIENT`): The RH-SSO client name for {LOCAL_CENTRAL}.
 ifdef::sso_central[]
 *** *{LOCAL_CENTRAL} RH-SSO Client Secret* (`{CENTRAL_CAPITAL_UNDER}_SSO_SECRET`): The secret string that is set in RH-SSO for the client for {LOCAL_CENTRAL}.
@@ -119,35 +111,33 @@ ifdef::sso_multiplekie[]
 **** *KIE Server _n_ RH-SSO Client name* (`KIE_SERVER__n___SSO_CLIENT`): The RH-SSO client name for this {KIE_SERVER}.
 **** *KIE Server _n_ RH-SSO Client Secret* (`KIE_SERVER__n___SSO_SECRET`): The secret string that is set in RH-SSO for the client for this {KIE_SERVER}.
 endif::sso_multiplekie[]
-*** *RH-SSO Disable SSL Certificate Validation* (`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION`): Set to `true` if your RH-SSO installation does not use a valid HTTPS certificate.
 +
 .. To create the clients for {PRODUCT} within RH-SSO, set the following parameters in the template:
-*** *RH-SSO URL* (`SSO_URL`): The URL for RH-SSO.
-*** *RH-SSO Realm name* (`SSO_REALM`): The RH-SSO realm for {PRODUCT}.
 ifdef::sso_central[]
 *** *{LOCAL_CENTRAL} RH-SSO Client name* (`{CENTRAL_CAPITAL_UNDER}_SSO_CLIENT`): The name of the client to create in RH-SSO for {LOCAL_CENTRAL}.
 *** *{LOCAL_CENTRAL} RH-SSO Client Secret* (`{CENTRAL_CAPITAL_UNDER}_SSO_SECRET`): The secret string to set in RH-SSO for the client for {LOCAL_CENTRAL}.
-*** *{LOCAL_CENTRAL} Custom http Route Hostname* (`{CENTRAL_CAPITAL_UNDER}_HOSTNAME_HTTP`): The fully qualified host name to use for the HTTP endpoint for {LOCAL_CENTRAL}. If you need to create a client in RH-SSO, you cannot leave this parameter blank.
-*** *{LOCAL_CENTRAL} Custom https Route Hostname* (`{CENTRAL_CAPITAL_UNDER}_HOSTNAME_HTTPS`): The fully qualified host name to use for the HTTPS endpoint for {LOCAL_CENTRAL}. If you need to create a client in RH-SSO, you cannot leave this parameter blank.
+*** *{LOCAL_CENTRAL} Custom http Route Hostname* (`{CENTRAL_CAPITAL_UNDER}_HOSTNAME_HTTP`): The fully qualified host name to use for the HTTP endpoint for {LOCAL_CENTRAL}. If you leave this parameter blank, you must enter the correct HTTP URL for {LOCAL_CENTRAL} in RH-SSO after completing the deployment.
+*** *{LOCAL_CENTRAL} Custom https Route Hostname* (`{CENTRAL_CAPITAL_UNDER}_HOSTNAME_HTTPS`): The fully qualified host name to use for the HTTPS endpoint for {LOCAL_CENTRAL}. If you leave this parameter blank, you must enter the correct HTTPS URL for {LOCAL_CENTRAL} in RH-SSO after completing the deployment.
 endif::sso_central[]
 ifdef::sso_kieserver_typical[]
 *** *KIE Server RH-SSO Client name* (`KIE_SERVER_SSO_CLIENT`): The name of the client to create in RH-SSO for {KIE_SERVER}.
 *** *KIE Server RH-SSO Client Secret* (`KIE_SERVER_SSO_SECRET`): The secret string to set in RH-SSO for the client for {KIE_SERVER}.
-*** *KIE Server Custom http Route Hostname* (`KIE_SERVER_HOSTNAME_HTTP`): The fully qualified host name to use for the HTTP endpoint for {KIE_SERVER}. If you need to create a client in RH-SSO, you cannot leave this parameter blank.
-*** *KIE Server Custom https Route Hostname* (`KIE_SERVER_HOSTNAME_HTTPS`): The fully qualified host name to use for the HTTPS endpoint for {KIE_SERVER}. If you need to create a client in RH-SSO, you cannot leave this parameter blank.
+*** *KIE Server Custom http Route Hostname* (`KIE_SERVER_HOSTNAME_HTTP`): The fully qualified host name to use for the HTTP endpoint for {KIE_SERVER}. If you leave this parameter blank, you must enter the correct HTTP URL for the {KIE_SERVER} in RH-SSO after completing the deployment.
+*** *KIE Server Custom https Route Hostname* (`KIE_SERVER_HOSTNAME_HTTPS`): The fully qualified host name to use for the HTTPS endpoint for {KIE_SERVER}. If you leave this parameter blank, you must enter the correct HTTP URL for the {KIE_SERVER} in RH-SSO after completing the deployment.
 endif::sso_kieserver_typical[]
 ifdef::sso_multiplekie[]
 *** For each {KIE_SERVER} defined in the template:
 **** *KIE Server _n_ RH-SSO Client name* (`KIE_SERVER__n___SSO_CLIENT`): The name of the client to create in RH-SSO for this {KIE_SERVER}.
 **** *KIE Server _n_ RH-SSO Client Secret* (`KIE_SERVER__n___SSO_SECRET`): The secret string to set in RH-SSO for the client for this {KIE_SERVER}.
-**** *KIE Server _n_ Custom http Route Hostname* (`KIE_SERVER__n___HOSTNAME_HTTP`): The fully qualified host name to use for the HTTP endpoint for this {KIE_SERVER}. If you need to create a client in RH-SSO, you cannot leave this parameter blank.
-**** *KIE Server _n_ Custom https Route Hostname* (`KIE_SERVER__n___HOSTNAME_HTTPS`): The fully qualified host name to use for the HTTPS endpoint for this {KIE_SERVER}. If you need to create a client in RH-SSO, you cannot leave this parameter blank.
+**** *KIE Server _n_ Custom http Route Hostname* (`KIE_SERVER__n___HOSTNAME_HTTP`): The fully qualified host name to use for the HTTP endpoint for this {KIE_SERVER}. If you leave this parameter blank, you must enter the correct HTTP URL for the {KIE_SERVER} in RH-SSO after completing the deployment.
+**** *KIE Server _n_ Custom https Route Hostname* (`KIE_SERVER__n___HOSTNAME_HTTPS`): The fully qualified host name to use for the HTTPS endpoint for this {KIE_SERVER}. If you leave this parameter blank, you must enter the correct HTTP URL for the {KIE_SERVER} in RH-SSO after completing the deployment.
 endif::sso_multiplekie[]
-*** *RH-SSO Realm Admin Username* (`SSO_USERNAME`) and *RH-SSO Realm Admin Password* (`SSO_PASSWORD`): The user name and password for the realm administrator user for the RH-SSO realm for {PRODUCT}.
-*** *RH-SSO Disable SSL Certificate Validation* (`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION`): Set to `true` if your RH-SSO installation does not use a valid HTTPS certificate.
+*** *RH-SSO Realm Admin Username* (`SSO_USERNAME`) and *RH-SSO Realm Admin Password* (`SSO_PASSWORD`): The user name and password for the realm administrator user for the RH-SSO realm for {PRODUCT}. You must provide this user name and password in order to create the required clients.
 
 .Next steps
 
 If necessary, set additional parameters.
 
 To complete the deployment, follow the procedure in <<template-deploy-complete-{context}-proc>>.
+
+After completing the deployment, review the URLs for components of {PRODUCT} in the RH-SSO authentication system to ensure they are correct.
