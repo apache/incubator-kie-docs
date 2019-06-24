@@ -3,10 +3,27 @@
 = Configuring JDBC data sources for {KIE_SERVER}
 A data source is an object that enables a Java Database Connectivity (JDBC) client, such as an application server, to establish a connection with a database. Applications look up the data source on the Java Naming and Directory Interface (JNDI) tree or in the local application context and request a database connection to retrieve data. You must configure data sources for {KIE_SERVER} to ensure proper data exchange between the servers and the designated database.
 
+[NOTE]
+====
+For production environments, specify an actual data source. Do not use the example data source in production environments.
+====
+
 .Prerequisites
-* The JDBC providers that you want to use to create database connections are configured on all servers on which you want to deploy {KIE_SERVER}.
+* The JDBC providers that you want to use to create database connections are configured on all servers on which you want to deploy {KIE_SERVER}, as described in the "Creating Datasources" and "JDBC Drivers" sections of the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.2/html/configuration_guide/index[_Red Hat JBoss Enterprise Application Server Configuration Guide_].
+* The *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`) file has been downloaded, as described in <<install-download-proc_{context}>>.
 
 .Procedure
+. Prepare your database:
+.. Unzip `{PRODUCT_INIT}-{PRODUCT_VERSION}-add-ons.zip` in a temporary directory, for example `TEMP_DIR`.
+.. Unzip `TEMP_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-migration-tool.zip`.
+.. Change directory to the `TEMP_DIR/{PRODUCT_INIT}-{PRODUCT_VERSION}-migration-tool/ddl-scripts` directory. This directory contains DDL scripts for several database types.
+.. Import the DDL script for your database into the database that you want to use, for example:
++
+[source,shell]
+----
+psql jbpm < /ddl-scripts/postgresql/postgresql-jbpm-schema.sql
+----
+
 . Open `_EAP_HOME_/standalone/configuration/standalone-full.xml` in a text editor and locate the `<system-properties>` tag.
 . Add the following properties to the `<system-properties>` tag where `<DATASOURCE>` is the name of your data source and `<HIBERNATE_DIALECT>` is the hibernate dialect for your database.
 +
@@ -21,7 +38,7 @@ The default value of the `org.kie.server.persistence.ds` property is  `java:jbos
 <property name="org.kie.server.persistence.dialect" value="<HIBERNATE_DIALECT>"/>
 ----
 +
-For example:
+The following example shows how to configure a datasource for the PostgreSQL hibernate dialect:
 +
 [source,xml,subs="attributes+"]
 ----
