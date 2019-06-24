@@ -7,7 +7,12 @@ The {CONTROLLER} is integrated with {CENTRAL}. If you install {CENTRAL}, use the
 
 .Prerequisites
 * The *{PRODUCT} {PRODUCT_VERSION_LONG} Add Ons* (`{PRODUCT_FILE}-add-ons.zip`) file has been downloaded, as described in <<install-download-proc_{context}>>.
-* A {JWS} {JWS_VERSION_LONG} or higher server installation is available. The base directory of the {JWS} installation is referred to as `__JWS_HOME__`.
+ifeval::["{context}" == "install-on-jws"]
+* A {JWS} {JWS_VERSION_LONG} or higher server installation is available. The base directory of the {JWS} installation is referred to as `_JWS_HOME_`.
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+* A {TOMCAT} {TOMCAT_VERSION} installation is available. The base directory of the {TOMCAT} installation is referred to as `_TOMCAT_HOME_`.
+endif::[]
 * Sufficient user permissions to complete the installation are granted.
 
 .Procedure
@@ -19,31 +24,59 @@ endif::PAM[]
 ifdef::DM[]
 `{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip`
 endif::DM[]
- archive to a temporary directory. In the following examples this directory is called `__TEMP_DIR__`.
+ archive to a temporary directory. In the following examples this directory is called `_TEMP_DIR_`.
 . Copy the
 ifdef::PAM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip/controller.war`
+`_TEMP_DIR_/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip/controller.war`
 endif::PAM[]
 ifdef::DM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip/controller.war`
+`_TEMP_DIR_/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws.zip/controller.war`
 endif::DM[]
- directory to the `_JWS_HOME_/tomcat/webapps` directory.
+ directory to the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/webapps`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/webapps`
+endif::[]
+  directory.
 +
 [NOTE] 
 ====
-Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the {JWS} instance.
+Ensure the names of the {PRODUCT} deployments you are copying do not conflict with your existing deployments in the 
+ifeval::["{context}" == "install-on-jws"]
+{JWS}
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+{TOMCAT}
+endif::[]
+ instance.
 ====
 
 . Remove the `.war` extensions from the `controller.war` folder.
 . Copy the contents of the
 ifdef::PAM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws/SecurityPolicy/`
+`_TEMP_DIR_/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws/SecurityPolicy/`
 endif::PAM[]
 ifdef::DM[]
-`__TEMP_DIR__/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws/SecurityPolicy/`
+`_TEMP_DIR_/{PRODUCT_INIT}-{PRODUCT_VERSION}-controller-jws/SecurityPolicy/`
 endif::DM[] 
- directory to `__JWS_HOME__/bin`. When asked to overwrite files, select *Yes*.
-. Add the `kie-server` role and user to the `_JWS_HOME_/tomcat/conf/tomcat-users.xml` file. In the following example,  `<USERNAME>` and `<PASSWORD>` are the user name and password of your choice:
+ directory to 
+ifeval::["{context}" == "install-on-jws"]
+ `_JWS_HOME_/bin`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+ `_TOMCAT_HOME_/bin`
+endif::[]
+. When asked to overwrite files, select *Yes*.
+. Add the `kie-server` role and user to the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/conf/tomcat-users.xml`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/conf/tomcat-users.xml`
+endif::[]
+ file. In the following example,  `<USERNAME>` and `<PASSWORD>` are the user name and password of your choice:
 +
 [source]
 ----
@@ -51,7 +84,14 @@ endif::DM[]
 <user username="<USER_NAME>" password="<PASSWORD>" roles="kie-server"/>
 ----
 
-. Complete one of the following tasks in the `_JWS_HOME_/tomcat/bin` directory of the instance running {KIE_SERVER}:
+. Complete one of the following tasks in the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/bin`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/bin`
+endif::[]
+ directory of the instance running {KIE_SERVER}:
 +
 * On Linux or UNIX, create the `setenv.sh` file with the following content:
 +
@@ -108,11 +148,25 @@ set CATALINA_OPTS= -Xmx1024m
 ----
 endif::DM[]
 
-. In the `_JWS_HOME_/tomcat/bin` directory of the instance running the {HEADLESS_CONTROLLER}, create a readable `setenv.sh` file with the following content:
+. In the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/bin`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/bin`
+endif::[]
+ directory of the instance running the {HEADLESS_CONTROLLER}, create a readable `setenv.sh` file with the following content:
 +
 `CATALINA_OPTS="-Dorg.kie.server.user=<USERNAME> -Dorg.kie.server.pwd=<USER_PWD>"`
 +
-. To start the {HEADLESS_CONTROLLER}, enter one of the following commands in the `_JWS_HOME_/tomcat/bin` directory:
+. To start the {HEADLESS_CONTROLLER}, enter one of the following commands in the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/bin`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/bin`
+endif::[] 
+directory:
 +
 ** On Linux or UNIX-based systems:
 +
@@ -126,7 +180,14 @@ $ ./startup.sh
 ----
 startup.bat
 ----
-. After a few minutes, review the `_JWS_HOME_/tomcat/logs` directory and correct any errors.
+. After a few minutes, review the 
+ifeval::["{context}" == "install-on-jws"]
+`_JWS_HOME_/tomcat/logs`
+endif::[]
+ifeval::["{context}" == "install-on-tomcat"]
+`_TOMCAT_HOME_/tomcat/logs`
+endif::[]
+ directory and correct any errors.
 . To verify that the {HEADLESS_CONTROLLER} is working on {JWS}, enter the following command. In this command, replace `<CONTROLLER>` and `<CONTROLLER_PWD>` with the values in the `tomcat-users.xml` file. The output of this command provides information about the {KIE_SERVER} instance.
 +
 [source]
