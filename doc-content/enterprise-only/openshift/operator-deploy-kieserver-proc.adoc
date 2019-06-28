@@ -1,0 +1,105 @@
+[id='operator-deploy-kieserver-proc']
+= Setting custom {KIE_SERVER} configuration of the environment
+
+Every environment type in {operator_name} includes one or several {KIE_SERVERS} by default.
+
+Optionally, you can set custom configuration for {KIE_SERVERS}. In this case, default {KIE_SERVERS} are not created and only the {KIE_SERVERS} that you configure are deployed.
+
+.Prerequisites
+
+* You completed basic configuration of a {PRODUCT} environment using {operator_name} in the installer wizard according to the instructions in <<operator-deploy-basic-proc>>.
+* If you want to use RH-SSO or LDAP for authentication, you completed security configuration according to the instructions in <<operator-deploy-security-proc>>.
+
+.Procedure
+. If the *Installation*, *Security*, or *Console* tab is open, click *Next* until you view the *KIE Servers* tab.
+. Click *Add new KIE Server* to add a new {KIE_SERVER} configuration.
+. In the *Id* field, enter an identifier for the {KIE_SERVER}. If the {KIE_SERVER} connects to a {CENTRAL} or {CENTRAL} Monitoring instance, this identifier determines which server group the server joins.
+. In the *Name* field, enter a name for the {KIE_SERVER}.
+. In the *Deployments* field, enter the number of similar {KIE_SERVERS} that are to be deployed. The installer can deploy several {KIE_SERVERS} with the same configuration. The identifiers and names of the {KIE_SERVERS} are modified automatically and remain unique.
+. If you created the secret for {KIE_SERVER} according to the instructions in <<secrets-kie-create-proc>>, enter the name of the secret in the *Secret* field.
+. Optionally, enter the number of replicas for the {KIE_SERVER} in the *Replicas* field.
+. If you want to use a custom image for the {KIE_SERVER}, for example, if you created an image with an external database driver according to instructions in <<externaldb-build-proc>>, complete the following additional steps:
+.. Click *Set KIE Server image*.
+.. Enter the name of the image stream in the *Name* field. If you created a custom image for using an external database server other than MySQL or PostgreSQL, as described in <<externaldb-build-proc>>, enter the following value:
++
+*** For Microsoft SQL Server, `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-mssql-openshift`
+*** For MariaDB, `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-mariadb-openshift`
+*** For IBM DB2, `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-db2-openshift`
+*** For Oracle Database, `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-oracle-openshift`
+*** For Sybase, `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-sybase-openshift`
++
+.. If the image stream is not in the `openshift` namespace, enter the namespace in the *Namespace* field.
+. If you want to configure an immutable {KIE_SERVER} using Source to Image (S2I), complete the following additional steps:
+.. Click *Set Build configuration (Source to Image)*.
+.. In the *KIE Server container deployment* field, enter the identifying information of the decision services (KJAR files) that the deployment must pull from the Maven repository. The format is: `<containerId>=<groupId>:<artifactId>:<version>`. You can provide two or more KJAR files using the `|` separator, as illustrated in the following example: `containerId=groupId:artifactId:version|c2=g2:a2:v2`.
+.. If your OpenShift environment does not have a connection to the public Internet, enter the URL of the Maven mirror that you set up according to <<offline-repo-proc>> in the *Maven mirror URL* field.
+.. In the *Artifact directory* field, enter the path within the project that contains the required binary files (KJAR files and any other necessary files) after a successful Maven build. Normally this directory is the target directory of the build. However, you can provide prebuilt binaries in this directory in the Git repository.
+.. In the *S2I Git URI* field, enter the URI for the Git repository that contains the source for your services.
+.. In the *Reference* field, enter the branch in the Git repository.
+.. Optionally, in the *Context directory* field, enter the path to the source within the project downloaded from the Git repository. By default, the root directory of the downloaded project is the source directory.
+.. If you want to set a Git Webhook so that changes in the Git repository cause an automatic rebuild of the {KIE_SERVER}, click *Add new Webhook*. Then select the type of the Webhook in the *Type* field and enter the secret string for the Webhook in the *Secret* field.
+.. If you want to use a custom base {KIE_SERVER} image for the S2I build, click *Set Base build image*. Then enter the name of the image stream in the *Name* field. If the image stream is not in the `openshift` namespace, enter the namespace in the *Namespace* field.
+. Optionally, enter requested and maximum CPU and memory limits in the fields under *Resource quotas*. If you are configuring several {KIE_SERVERS}, the limits apply to each server separately.
+. If you selected RH-SSO authentication, configure RH-SSO for the {KIE_SERVER}:
+.. Enter the client name in the *Client name* field and the client secret in the *Client secret* field. If a client with this name does not exist, the deployment attempts to create a new client with this name and secret.
+.. If the deployment is to create a new client, enter the HTTP and HTTPS URLs that will be used for accessing the {KIE_SERVER} into the *SSO HTTP URL* and *SSO HTTPS URL* fields. This information is recorded in the client.
+ifdef::PAM[]
+. Select the database that the {KIE_SERVER} must use. The following values are available:
+** `mysql`: A MySQL server, created in a separate pod.
+** `postgresql`: A PostgreSQL server, created in a separate pod. Use this setting unless you have a specific reason to use any other setting.
+** `h2`: A built-in `h2` database engine that does not require a separate pod. Do not scape the {KIE_SERVER} pod if you use this setting.
+** `external`: An external database server. If you use any database server except PostgreSQL or MySQL, you must provide a {KIE_SERVER} image with the database server driver according to instructions in <<externaldb-build-proc>>.
+. Optionally, in the *Size* field, enter the size of the peristence volume to create for the database server.
+. If you selected an external database server, provide the following information in additional fields:
+.. *Driver*: Enter the database server driver, depending on the server type:
++
+*** `mysql`
+*** `postgresql`
+*** `mariadb`
+*** `mssql`
+*** `db2`
+*** `oracle`
+*** `sybase`
++
+.. *Dialect*: Enter the Hibernate dialect for the server, depending on the server type:
++
+*** `org.hibernate.dialect.MySQL5InnoDBDialect` (used for MySQL and MariaDB)
+*** `org.hibernate.dialect.PostgreSQL82Dialect`
+*** `org.hibernate.dialect.SQLServer2012Dialect` (used for MS SQL)
+*** `org.hibernate.dialect.DB2Dialect`
+*** `org.hibernate.dialect.Oracle10gDialect`
+*** `org.hibernate.dialect.SybaseASE157Dialect`
++
+.. *Host*: Enter the host name of the external database server.
+.. *Port*: Enter the port number of the external database server.
+.. *Jdbc URL*: Enter the JDBC URL for the external database server.
+.. *NonXA*: Select this box if you want to configure the data source in non-XA mode.
+.. *JNDI name*: Enter the JNDI name that the application uses for the data source.
+.. *User name* and *Password*: Enter the user name and password for the external database server.
+.. *Background validation*: Optionally, select this box to enable background SQL valication and enter the background validation interval.
+.. Optionally, set the minimum and maximum connection pool sizes, valid connection checker class, and exception sorter class for the database server.
+endif::PAM[]
+. Optionally, depending on your needs, set environment variables. To set an environment variable, click *Add new Environment variable*, then enter the name and value for the variable in the *Name* and *Value* fields.
+** If you want to configure your {KIE_SERVER} deployment to use Prometheus to collect and store metrics, set the `PROMETHEUS_SERVER_EXT_DISABLED` environment variable to `false`. For instructions about configuring Prometheus metrics collection, see {URL_MANAGING_KIE_SERVER}#prometheus-monitoring-ocp-proc_execution-server[_{MANAGING_KIE_SERVER}_].
+** If you want to use an external Maven repository, set the following variables:
+*** `MAVEN_REPO_URL`: The URL for the Maven repository
+*** `MAVEN_REPO_ID`: An identifier for the Maven repository, for example, `repo-custom`
+*** `MAVEN_REPO_USERNAME`: The user name for the Maven repository
+*** `MAVEN_REPO_PASSWORD`: The password for the Maven repository
+** If your OpenShift environment does not have a connection to the public Internet, configure access to a Maven mirror that you set up according to <<offline-repo-proc>>. Set the following variables:
+*** `MAVEN_MIRROR_URL`: The URL for the Maven mirror repository that you set up in <<offline-repo-proc>>. This URL must be accessible from a pod in your OpenShift environment. If you configured this {KIE_SERVER} as S2I, you already entered this URL.
+*** `MAVEN_MIRROR_OF`: The value that determines which artifacts are to be retrieved from the mirror. If you configured this {KIE_SERVER} as S2I, do not set this value. For instructions about setting the `mirrorOf` value, see https://maven.apache.org/guides/mini/guide-mirror-settings.html[Mirror Settings] in the Apache Maven documentation. The default value is `external:*`. With this value, Maven retrieves every required artifact from the mirror and does not query any other repositories.
++
+If you configure an external Maven repository (`MAVEN_REPO_URL`), change `MAVEN_MIRROR_OF` to exclude the artifacts in this repository from the mirror, for example, `external:*,!repo-custom`. Replace `repo-custom` with the ID that you configured in `MAVEN_REPO_ID`.
++
+If your authoring environment uses a built-in {CENTRAL} Maven repository, change `MAVEN_MIRROR_OF` to exclude the artifacts in this repository from the mirror: `external:*,!repo-{PRODUCT_INIT}centr`.
+
+.Next steps
+To configure additional {KIE_SERVERS}, click *Add new KIE Server* again and repeat the procedure for the new server configuration.
+
+ifdef::PAM[]
+If you want to deploy the environment with the default configuration Smart Router, click *Finish* and then click *Deploy* to deploy the environment. Otherwise, continue to set configuration parameters for Smart Router.
+endif::PAM[]
+ifdef::DM[]
+Click *Finish* and then click *Deploy* to deploy the environment.
+endif::DM[]
