@@ -3,7 +3,6 @@
 
 {PRODUCT} integration with {FUSE} on Karaf is provided through Karaf features. You can install individual components of {PRODUCT} for {FUSE} on Karaf using these features.
 
-COMMENT: Is this the first step in the process? Are there any prerequisites? I assume we need a Fuse installed in Karaf.
 The following features XML files facilitate {PRODUCT} and {FUSE} on Karaf integration:
 
 * `rhba-features-<FUSE-VERSION>-features.xml`
@@ -14,6 +13,9 @@ This file is part of {FUSE} installed in Karaf where `<FUSE-VERSION>` is the ver
 +
 This file is part of {PRODUCT} and provides {PRODUCT} features, which define the OSGi features that can be deployed into {FUSE_LONG}. OSGi users can install features from this file to install {PRODUCT} into {FUSE} and use it in their applications. You can find this features file in the online and offline Maven repository that is distributed with {PRODUCT}. The group ID, artifact, and version (GAV) of this file is `org.kie:kie-karaf-features:{PRODUCT_INIT}-{PRODUCT_VERSION_LONG}`.
 
+.Prerequisites
+* An Apache Karaf container in {FUSE_LONG} is avaiable. For information about installing {FUSE} in Apache Karaf, see https://access.redhat.com/documentation/en-us/red_hat_fuse/7.3/html/installing_on_apache_karaf/index[_Installing Red Hat Fuse on the Apache Karaf container_].
+
 .Procedure
 To install features, enter following command:
 
@@ -23,24 +25,6 @@ $ JBossFuse:karaf@root> feature:install <FEATURE_NAME>
 ----
 
 In this command, `<FEATURE_NAME>` is one of the following features:
-COMMENT: Need a description of each of these features. Should expand the table to include all of the features.
-
-* drools-common
-* drools-module
-* drools-templates
-* drools-decisiontable
-* drools-jpa
-* kie
-* kie-ci
-* kie-spring
-* kie-aries-blueprint
-* jbpm-commons
-* jbpm-human-task
-* jbpm
-* droolsjbpm-hibernate
-* h2
-* kie-camel
-* jbpm-workitems-camel
 
 The following table provides examples of use cases for some of the features listed above.
 
@@ -48,38 +32,53 @@ The following table provides examples of use cases for some of the features list
 [cols="1,1", frame="all", options="header"]
 |===
 | Feature
-| Use Case
+| Description
 ifdef::DM[]
-|`drools-module`
-| Uses {PRODUCT} for rules evaluation, without requiring persistence, processes, or decision tables.
+|
+|
 
-|``drools-jpa``
+|`drools-module`
+| Contains the core and compiler of drools, used to create KieBases and KieSessions from plain DRL. It also contains the implementation of the executable model. Uses {PRODUCT} for rules evaluation, without requiring persistence, processes, or decision tables.
+
+|`drools -template`
+| Contains the drools templates.
+
+|drools-jpa`
 | Uses {PRODUCT} for rules evaluation with persistence and transactions, but without requiring processes or decision tables. The `drools-jpa` feature includes the ``drools-module``, however you might also need to install the `droolsjbpm-hibernate` feature, or ensure that a compatible hibernate bundle is installed.
 
-|``drools-decisiontable``
+|`drools-decisiontable`
 | Uses {PRODUCT} with decision tables.
 endif::[]
 ifdef::PAM[]
-|``jbpm``
+|`jbpm`
 | Uses {PRODUCT}. The `jbpm` feature includes the `drools-module` and ``drools-jpa``. You might need to install the `droolsjbpm-hibernate` feature, or ensure that a compatible hibernate bundle is installed.
 
-|``jbpm`` and `jbpm-human-task`
+|`jbpm` and `jbpm-human-task`
 | Uses {PRODUCT} with human tasks.
 endif::[]
+|`droolsjbpm-hibernate`
+|
+
+
+|`jbpm-workitems-camel
+| Provides the `jbpm-workitems-camel` component.
 
 | core engine JARs and `kie-ci`
 | Uses {PRODUCT} with `KieScanner` (`kie-ci`) to download kJARs from a Maven repository.
 
-|``kie-spring``
-| Uses KIE-Spring integration.
+|`kie-camel`
+|
 
-|``kie-spring`` and `kie-aries-blueprint`
+|`kie-spring` and `kie-aries-blueprint`
 | Uses KIE-Aries-Blueprint integration.
 
 |``kie-kamel``
 | Provides the `kie-kamel` component.
 
-|``jbpm-workitems-camel``
-| Provides the `jbpm-workitems-camel` component.
-
 |===
+
+Use `org.drools.osgi.spring.OsgiKModuleBeanFactoryPostProcessor` instead of `org.kie.spring.KModuleBeanFactoryPostProcessor` to postprocess KIE elements in an OSGi environment.
+
+Do not install the `drools-module` feature before the `kie-spring` feature. Otherwise, the `drools-compiler` bundle does not detect packages exported by `kie-spring`.
+
+If you installed the features in the incorrect order, run `osgi:refresh drools-compiler_bundle_ID`  to force the drools-compiler to rebuild its Import-Package metadata.
