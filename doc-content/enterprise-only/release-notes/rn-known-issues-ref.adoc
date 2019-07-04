@@ -2,30 +2,101 @@
 = Known issues
 
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
-.Title
-Issue:
-Steps to reproduce:
 
-
-Expected result:
-Actual result:
-
-Workaround:
+COMMENT: Before finalizing, RHPAM or RHDM jiras must be created for each issue. Original jiras are linked in this draft so SMEs can find their issues easily and will be removed before publishing.
 
 
 ifdef::DM[]
 
 endif::[]
 
+== {CENTRAL}
+
+.You cannot add a new group in {CENTRAL} integrated with RH-SSO [https://issues.jboss.org/browse/RHPAM-2036[RHPAM-2036]]
+
+Issue: The following exception occurs when you try to add a new group in {CENTRAL} if {CENTRAL} is integrated with RH-SSO 7.3.0:
+[source]
+----
+java.lang.NoSuchMethodError:org.keycloak.representations.idm.RoleRepresentation.setScopeParamRequired(Ljava/lang/Boolean;)
+----
+
+Steps to reproduce:
+
+. Open {CENTRAL}.
+. Open the *Admin* page.
+. Open *Groups*.
+. Try to create a new group.
+
+
+Expected result: The new group is created.
+
+Actual result: A dialog box with the listed exception appears.
+
+Workaround: None.
+
+.Human task comments are not retained when a process instance is finished [https://issues.jboss.org/browse/JBPM-8556[JBPM-8556]]
+
+Issue: Human task comments are retained and visible only while the respective process instance is running. When the process instance is completed or aborted, comments from human tasks disappear even though the tasks are still visible in {CENTRAL}.
+
+Steps to reproduce:
+
+. Start a process instance with two consecutive human tasks.
+. Comment on the first human task.
+. Claim, start, and complete the first task.
+. Check the log file to confirm that the comments are retained for the completed task.
+. Abort the process instance or complete the task preventing the instance from finishing.
+. Navigate to the log file for the first task again.
+
+Expected result: Data about the first task is available in the log file.
+
+Actual result: The first task is still available in {CENTRAL} but no data is available in the log file.
+
+Workaround: None.
+
+
+.When you create an asset, the package drop-down button does not appear immediately [https://issues.jboss.org/browse/RHPAM-2133[RHPAM-2133]]
+
+Issue: When you create an asset, the package drop-down button is invisible and an error about package selection appears.
+
+Steps to reproduce:
+
+. Create a project in {CENTRAL}.
+. Try to create a business process.
+
+Expected result: The package drop-down button is visible and you can create the business process.
+
+Actual result: The package drop-down button is initially invisible and it appears after several seconds.
+
+Workaround: Wait until the package drop-down button is visible or reopen the dialog window for asset creation.
+
+== Decision Model and Notation (DMN)
+
+.Importing DMN the `namespace` definitions attribute causes a validation error [https://issues.jboss.org/browse/DROOLS-4187-[DROOLS-4187]]
+
+Issue: If you have a DMN file that includes the `namespace` definitions attribute and name both populated imported into another DMN file that does not use the `drools:modelName` extension in the Import node, validation of the imported model fails.
+
+Steps to Reproduce:
+
+Actual Result:
+
+Expected Result:
+
+Workaround:
+
+
+
 ifdef::PAM[]
+
+
 
 == Process designer
 
-.Greater than (>) and less than (<) symbols in datatypes break a process [https://issues.jboss.org/browse/RHPAM-2193[RHPAM-2193]]
+.Greater than (>) and less than (<) symbols in data types break a process [https://issues.jboss.org/browse/RHPAM-2193[RHPAM-2193]]
 
-Issue: If you place greater than (>) and less than (<) symbols in a dataype for a process variable,  you cannot reopen the process. The XML dditor will be appear instead.
+Issue: If you place greater than (>) and less than (<) symbols in a data type for a process variable,  you cannot reopen the process. The XML editor appears instead.
 
 Steps to reproduce:
+
 . Create a process and add the `list1:java.util.List<String>` process variable.
 . Save and reopen the process.
 
@@ -34,4 +105,136 @@ Expected result: The process opens.
 Actual result: The process does not open.
 
 Workaround: None.
+
+
+.If a case task actor is invalid, the resulting BPMN file is also invalid [https://issues.jboss.org/browse/JBPM-8603[JBPM-8603]]
+
+Issue: The new process designer sometimes generates an invalid XML file . A user task with an actor assigned is generated as a a `potentialOwner` element in the XSD file.
+
+[source]
+----
+<bpmn2:potentialOwner id="5058b718-8866-4ccd-b793-d5ebf48de5a2">
+<bpmn2:resourceAssignmentExpression id="_gN_feI4_Eem2-an8Fwu06w">
+<bpmn2:formalExpression id="_gN_feY4_Eem2-an8Fwu06w">manager</bpmn2:formalExpression>
+</bpmn2:resourceAssignmentExpression>
+</bpmn2:potentialOwner>
+----
+
+The id of the `potentialOwner` element is missing an underscore at the beginning, which means that if the first element is a number, this is now an invalid ID.
+
+Tasks that have `ioSpecification` should always define an `inputSet` and `outputSet`, even if those are empty.
+
+Steps to reproduce:
+
+Create a user task with no output mapping. This will generate the following output:
+
+[source]
+----
+<bpmn2:ioSpecification id="_rEnOQY5AEem2-an8Fwu06w">
+<bpmn2:dataInput id="38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputX" drools:dtype="Object" itemSubjectRef="_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputXItem" name="TaskName"/>
+<bpmn2:dataInput id="38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputX" drools:dtype="Object" itemSubjectRef="_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputXItem" name="Skippable"/>
+<bpmn2:inputSet id="_rEnOQo5AEem2-an8Fwu06w">
+<bpmn2:dataInputRefs>_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputX</bpmn2:dataInputRefs>
+<bpmn2:dataInputRefs>_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputX</bpmn2:dataInputRefs>
+</bpmn2:inputSet>
+</bpmn2:ioSpecification>
+----
+
+Expected result: The output includes an empty `outputSet` attribute.
+
+Actual result: The output does not include an `outputSet` attribute.
+
+Workaround: None.
+
+
+.Service Task is not usable at runtime [https://issues.jboss.org/browse/JBPM-8581[JBPM-8581]]
+
+Issue: If you execute a Java method with the current implementation of the General Service Task, you will encounter the following limitations:
+
+* It is not possible to send data to the java method you are invoking.
+* It is not possible to receive data from the java method you invoked.
+* It is possible to chose a Web service to call in a general service task, but it is not possible to use it at runtime.
+* If you have properly configured a service task in the legacy process designer, many properties will be lost and it will not be possible to use Service Task at runtime after migration:
+
+
+Workaround: None.
+
+.Nodes and distribution lines do not fully align horizontally [https://issues.jboss.org/browse/JBPM-8555[JBPM-8555]]
+
+Issue: If you drag a node, the align and distribution mechanism correctly displays the alignment lines and also applies the snap-to-line behavior when the mouse moves. However, it is not possible to align the nodes horizontally which means that it is difficult to have the connectors precisely aligned horizontally.
+
+
+Steps to reproduce:
+
+. Create a process.
+. Try to align a node and connector horizontally.
+
+Expected result: The node and connector are aligned.
+
+Actual result: The node and connector are not aligned.
+
+Workaround: None.
+
+.The multiple instance properties of a multiple instance sub-process are not visible for nodes inside of a multiple instance sub-process [https://issues.jboss.org/browse/JBPM-8512[JBPM-8512]]
+
+Issue: If you model a process with a multiple instance sub-process as a multiple instance node, the multiple instance Data Input and multiple instance Data Output variables are not visible for nodes inside of the multiple instance sub-process.
+
+
+Steps to Reproduce:
+
+. Create a multiple instance sub-process for execution by selecting the multiple instance collection input/output from an existing process level list and setting new variables for multiple instance data input and output.
+. Add a user task inside of the multiple instance sub-process.
+. Try to configure  a user task so that is uses multiple instance data input/output.
+
+Actual Result: The new variables for multiple instance data input and output are not listed in the data I/O editor Source/Target fields.
+
+Expected Result: The new variables for multiple instance data input and output are listed in the data I/O editor Source/Target fields and you can use the new variables for multiple instance data input and output.
+
+Workaround: To use variables for multiple instance data input and output, define them in *Process Data* -> *Process Variables* before creating the multiple instance sub-process for execution.
+
+.Data output associations do not work correctly when they are declared twice [https://issues.jboss.org/browse/JBPM-8489-[JBPM-8489]]
+
+Issue: If the data output variable associated with a user task is declared twice, it is not stored in the resulting XML file.
+
+
+Steps to Reproduce:
+
+Actual Result:
+
+Expected Result:
+Workaround:
+
 endif::[]
+
+== Scenario simulation
+
+.Scenario Designer can not access the parent data object fields [https://issues.jboss.org/browse/DROOLS-4259[DROOLS-4259]]
+
+Issue: Scenario Designer can not access a parent data object field, even if the field has public `getter` and `setter` attributes.
+
+Steps to Reproduce:
+
+. Create a scenario with a field that is declared in the parent class.
+. Run the scenario.
+
+Actual Result: The scenario fails because it cannot access the data object in the parent class.
+
+Expected Result: The scenario runs successfully.
+
+Workaround: Include the data object in the child class.
+
+.Rule scenarios with maps of simple types fail [https://issues.jboss.org/browse/DROOLS-4243[DROOLS-4243]]
+
+Issue: Rule scenarios with maps of simple types fail.
+
+Steps to Reproduce:
+
+. Create a scenario.
+. Create a map with a simple type value, for example `Map<String, String>`.
+. Run the scenario.
+
+Actual Result: The scenario fails.
+
+Expected Result: The scenario runs successfully.
+
+Workaround: None.
