@@ -9,23 +9,36 @@ endif::[]
 ifeval::["{context}" == "install-on-tomcat"]
 * {PRODUCT} is installed on {TOMCAT}.
 endif::[]
-
+* The Red Hat Process Automation Manager 7.4.0 Maven Repository (`rhpam-7.4.0-maven-repository.zip`) file has been downloaded, as described in  <<install-download-proc_{context}>>.
+* You want to configure one of the following supported databases and Hibernate dialects:
++
+** DB2: `org.hibernate.dialect.DB2Dialect`
+** MSSQL: `org.hibernate.dialect.SQLServer2012Dialect`
+** MySQL: `org.hibernate.dialect.MySQL5InnoDBDialect`
+** MariaDB: `org.hibernate.dialect.MySQL5InnoDBDialect`
+** Oracle: `org.hibernate.dialect.Oracle10gDialect`
+** PostgreSQL: `org.hibernate.dialect.PostgreSQL82Dialect`
+** PostgreSQL plus: `org.hibernate.dialect.PostgresPlusDialect`
+** Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
 
 .Procedure
-. Copy the following libraries from the offline Maven repository to the
+. Unzip the `rhpam-7.4.0-maven-repository.zip` offline Maven repository file.
+. Copy the following libraries from the unzipped offline Maven repository to the
 ifeval::["{context}" == "install-on-jws"]
-`JWS_HOME/tomcat/lib` folder:
+`JWS_HOME/tomcat/lib`
 endif::[]
 ifeval::["{context}" == "install-on-tomcat"]
-`TOMCAT_HOME/tomcat/lib` folder:
+`TOMCAT_HOME/tomcat/lib`
 endif::[]
+ folder where `VERSION` is the version of that library:
 +
 [source]
 ----
-org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec
-org.jboss.integration:narayana-tomcat
-org.jboss.narayana.jta:narayana-jta
-org.jboss:jboss-transaction-spi
+org/jboss/spec/javax/transaction/jboss-transaction-api_1.2_spec/{VERSION}/jboss-transaction-api_1.2_spec-{VERSION}.jar
+org/jboss/integration/narayana-tomcat/{VERSION}/narayana-tomcat-{VERSION}.jar
+org/jboss/narayana/jta/narayana-jta/{VERSION}/narayana-jta-{VERSION}.jar
+org/jboss/jboss-transaction-spi/{VERSION}/jboss-transaction-spi-{VERSION}.jar
+
 ----
 . Copy your database JDBC driver to the
 ifeval::["{context}" == "install-on-jws"]
@@ -136,6 +149,11 @@ The pooling data source configuration relies on additional resource that have be
 . Configure {KIE_SERVER} to use the data source:
 .. Open one of the following scripts in a text editor:
 +
+[NOTE]
+====
+The `setenv.sh` or `setenv.bat` script should already exist. However, if it does not, create it.
+====
++
 * For Linux or Unix:
 +
 [source]
@@ -168,24 +186,9 @@ endif::[]
 +
 [source]
 ----
-CATALINA_OPTS=”
+CATALINA_OPTS=”-Xmx1024m
+-Dorg.jboss.logging.provider=jdk
 -Dorg.kie.server.persistence.ds=java:comp/env/poolingXaDs
 -Dorg.kie.server.persistence.tm=JBossTS
 -Dorg.kie.server.persistence.dialect=${<hibernate.dialect>}”
 ----
-+
-The following dialects are supported:
-
-* DB2: `org.hibernate.dialect.DB2Dialect`
-* MSSQL: `org.hibernate.dialect.SQLServer2012Dialect`
-* MySQL: `org.hibernate.dialect.MySQL5InnoDBDialect`
-* MariaDB: `org.hibernate.dialect.MySQL5InnoDBDialect`
-* Oracle: `org.hibernate.dialect.Oracle10gDialect`
-* PostgreSQL: `org.hibernate.dialect.PostgreSQL82Dialect`
-* PostgreSQL plus: `org.hibernate.dialect.PostgresPlusDialect`
-* Sybase: `org.hibernate.dialect.SybaseASE157Dialect`
-+
-[NOTE]
-====
-The `setenv.sh` script should already exist. However, if it does not, create it.
-====
