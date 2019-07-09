@@ -1,15 +1,15 @@
 [id='clustering-bc-configure-standalone_proc']
 = Configuring and running {CENTRAL} in a cluster
-After you install {EAP} and {CENTRAL} you can use Elasticsearch and the AMQ Broker to configure the cluster.
+After you install {EAP} and {CENTRAL} you can use {DATAGRID} and the AMQ Broker to configure the cluster.
 
-[NOTE] 
+[NOTE]
 ====
 These steps describe a basic cluster configuration. For more complex configurations, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.2/html-single/configuration_guide/[_Red Hat JBoss EAP 7.2 Configuration Guide_].
 ====
 
 .Prerequisites
 
-* Elasticsearch is installed as described in <<clustering-elasticsearch-proc_{context}>>.
+* {DATAGRID} {DATAGRID_VERSION_LONG} is installed as described in <<clustering-datagrid-proc_{context}>>.
 * AMQ Broker is installed and configured, as described in <<JMS-broker-configure_{context}>>.
 * {EAP} and {PRODUCT} are installed on each node of the cluster as described in <<clustering-download-eap-bc-proc>>.
 * An NFS server with a mounted partition is available.
@@ -19,7 +19,7 @@ These steps describe a basic cluster configuration. For more complex configurati
 . Edit or add the following properties to the `<system-properties>` element and replace the following placeholders:
 * `<AMQ_USER>` and `<AMQ_PASSWORD>` are the credentials that you defined when creating the AMQ Broker.
 * `<AMQ_BROKER_IP_ADDRESS>` is the IP address of the AMQ Broker.
-* `<ELASTICSEARCH_NODE_IP>` is the IP address where Elasticseach is installed.
+* `<INFINISPAN_NODE_IP>` is the IP address where {DATAGRID} is installed.
 * `<SHARED_NETWORK_FOLDER>` is the network folder that all {CENTRAL}s in the cluster use to exchange data. This folder must be the same on all nodes of the cluster.
 
 +
@@ -27,18 +27,28 @@ These steps describe a basic cluster configuration. For more complex configurati
 ----
 <system-properties>
   <property name="appformer-jms-connection-mode" value="REMOTE"/>
-  <property name="appformer-jms-username" value="<AMQ_USER>  "/>
+  <property name="appformer-jms-username" value="<AMQ_USER>"/>
   <property name="appformer-jms-password" value="<AMQ_USER_PASSWORD>"/>
-  <property name="appformer-jms-url" value="tcp://<AMQ_BROKER_IP_ADDRESS>:61616?ha=true&amp;retryInterval=1000&amp;retryIntervalMultiplier=1.0&amp;reconnectAttempts=-1"/>
-  <property name="org.appformer.ext.metadata.elastic.port" value="9300"/>
-  <property name="org.appformer.ext.metadata.elastic.host" 
-      value="<ELASTICSEARCH_NODE_IP>"/>
-  <property name="org.appformer.ext.metadata.elastic.cluster" 
-      value="kie-cluster"/>
-  <property name="org.appformer.ext.metadata.index" value="elastic"/> 
-  <property name="org.appformer.ext.metadata.elastic.retries" value="10"/>
-  <property name="org.uberfire.nio.git.dir" value="<SHARED_NETWORK_FOLDER>"/>
-  <property name="es.set.netty.runtime.available.processors" value="false"/>
+  <property name="appformer-jms-url"
+     value="tcp://<AMQ_BROKER_IP_ADDRESS>:61616?ha=true&amp;retryInterval=1000&amp;retryIntervalMultiplier=1.0&amp;reconnectAttempts=-1"/>
+  <property name="org.appformer.ext.metadata.infinispan.port"
+     value="11222"/>
+  <property name="org.appformer.ext.metadata.infinispan.host"
+     value="<INFINISPAN_NODE_IP>"/>
+  <property name="org.appformer.ext.metadata.infinispan.realm"
+     value="ApplicationRealm"/>
+  <property name="org.appformer.ext.metadata.infinispan.username"
+     value=""/>
+  <property name="org.appformer.ext.metadata.infinispan.password"
+     value=""/>
+  <property name="org.appformer.ext.metadata.infinispan.cluster"
+     value="kie-cluster"/>
+  <property name="org.appformer.ext.metadata.index"
+     value="infinispan"/>
+  <property name="org.uberfire.nio.git.dir"
+     value="<SHARED_NETWORK_FOLDER>"/>
+  <property name="es.set.netty.runtime.available.processors"
+     value="false"/>
 </system-properties>
 ----
 . Save the `standalone-full-ha.xml` file.
