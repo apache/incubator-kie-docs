@@ -3,164 +3,258 @@
 
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
+
 ifdef::DM[]
 
-== Upgrading
-
-.After upgrading to {PRODUCT} 7.3.0, rules do not fire.
-
-Issue: If you upgrade to {PRODUCT} 7.3.0, rules do not fire because of a change to packages in the `kmodule.xml` file. For more information, see
-https://access.redhat.com/solutions/4014541[Rules don't fire after upgrading to RHDM 7.3.0].
 endif::[]
 
 == {CENTRAL}
-ifdef::DM[]
-.All line separators in the right-hand side of rules in the spreadsheet are escaped [https://issues.jboss.org/browse/RHDM-903[RHDM-903]]
 
-Issue: If you have multiple lines in the *ACTION* column of a spreadsheet, all line separators are converted to `\n`. This conversion causes a build error.
+.You cannot add a new group in {CENTRAL} integrated with RH-SSO [https://issues.jboss.org/browse/RHPAM-2036[RHPAM-2036]]
 
-Steps to reproduce:
-
-. Add more than one line to a row in the in *ACTION* column of a spreadsheet.
-. Build the spreadsheet with {PRODUCT}.
-
-Expected result: The spreadsheet builds successfully.
-
-Actual result: The build fails with errors similar to `line 1:15 no viable alternative at character '\'`.
-
-Workaround: Ensure that rows in the *ACTION* column of a spreadsheet do not contain more than one line in each row.
-endif::[]
-
-.You cannot upload a spreadsheet that contains a large decision table [https://issues.jboss.org/browse/RHDM-488[RHDM-488]]
-
-Issue: If you try to upload a spreadsheet that contains a large decision table into {CENTRAL}, an out-of-memory error appears in the `error.log` file.
+Issue: The following exception occurs when you try to add a new group in {CENTRAL} if {CENTRAL} is integrated with RH-SSO 7.3.0:
+[source]
+----
+java.lang.NoSuchMethodError:org.keycloak.representations.idm.RoleRepresentation.setScopeParamRequired(Ljava/lang/Boolean;)
+----
 
 Steps to reproduce:
 
-. Create a spreadsheet that contains a large decision table.
-. Create a new project in {CENTRAL}.
-. Click *Add Asset* and then select *Spreadsheet Decision Table*.
-. Attach the spreadsheet that contains the large decision table.
-. Review the server `error.log` file.
+. Open {CENTRAL}.
+. Open the *Admin* page.
+. Open *Groups*.
+. Try to create a new group.
 
-Actual result: An out-of-memory error appears in the `error.log` file.
 
-Workaround: None.
+Expected result: The new group is created.
 
-.An unexpected error occurs if you delete a project that contains a business process [https://issues.jboss.org/browse/RHPAM-1943[RHPAM-1943]]
+Actual result: A dialog box with the listed exception appears.
 
-Issue: If you delete a project that contains a business process, an unexpected error occurs.
+Workaround: Add the group in RH-SSO instead of adding it in {CENTRAL}.
+
+
+.When you create an asset, the package drop-down button does not appear immediately [https://issues.jboss.org/browse/RHPAM-2133[RHPAM-2133]]
+
+Issue: When you create an asset, the package drop-down button is invisible and an error about package selection appears.
 
 Steps to reproduce:
 
 . Create a project in {CENTRAL}.
-. Add a business process asset to the project.
-. Save the business process asset.
-. Delete the business process asset.
+. Try to create a business process.
 
-Expected result: The business process asset is deleted.
+Expected result: The package drop-down button is visible and you can create the business process.
 
-Actual result: An error occurs.
+Actual result: The package drop-down button is initially invisible and it appears after several seconds.
 
-Workaround: None.
+Workaround: Wait until the package drop-down button is visible or reopen the dialog window for asset creation.
 
 ifdef::PAM[]
-.The palette of an existing process is not in sync with project settings changes [https://issues.jboss.org/browse/RHPAM-1925[RHPAM-1925]]
 
-Issue: If you enable or disable a service task in the *Administration* page  or install or uninstall a service task in the project's settings *Service tasks* section, when you open the process the palette displays the original state of the service task. If you install a service task, the service task is not shown in the palette. If you uninstall a service task, the service task is still shown in the palette.
 
-Steps to reproduce:
 
-. Create a project.
-. Create a process called P1.
-. In the project's settings, install a new service task.
-. Create a process called P2.
-. Verify that the service task is present in the palette of process P2.
-. Create a process using the newly added task.
-. Go to process P1.
-. Examine the palette and observe that the service task is not available.
-. Go to the project's settings and uninstall the service task.
-. Go to process P2.
-. Examine the palette and observe that the service task is still present in the diagram and available in the palette.
+== Process designer
 
-Expected result: The palette reflects the state of the process.
+.Human task comments are not retained when a process instance is finished [https://issues.jboss.org/browse/RHPAM-2258[RHPAM-2258]]
 
-Actual result: The palette is out of sync with the state of the process.
-
-Workaround: After you install or uninstall an item in the service repository, close and reopen the process designer editor.
-
-endif::PAM[]
-
-== Installer
-.The controller URL is not updated in the standalone.xml file if only {KIE_SERVER} is installed [https://issues.jboss.org/browse/RHPAM-1781[RHPAM-1781]]
-
-Issue: When you run the {PRODUCT} installer and you specify a URL for the controller, the URL is not updated in the {EAP} `standalone.xml` and `standalone-full.xml` files.
+Issue: Human task comments are retained and visible only while the respective process instance is running. When the process instance is completed or aborted, comments from human tasks disappear even though the tasks are still visible in {CENTRAL}.
 
 Steps to reproduce:
 
-. Run the {PRODUCT} installer.
-. Specify an {EAP} installation for container.
-. Select only Process Server to install.
-. Select *Advanced Configuration* and update controller URL.
-. Complete the installation.
-. Open the {EAP} `standalone.xml` or  `standalone-full.xml` file and find the controller URL.
+. Start a process instance with two consecutive human tasks.
+. Comment on the first human task.
+. Claim, start, and complete the first task.
+. Check the *Comments* tab of the human task to confirm that the comments are retained for the completed task.
+. Abort the process instance or complete the task preventing the instance from finishing.
+. Navigate to the log file for the first task again.
 
-Expected result: The value of the controller URL property is the URL that you entered during installation.
+Expected result: Data about the first task is available in the *Comments* tab of the human task .
 
-Actual result: The value of the controller URL property is the default value.
+Actual result: The first task is still available in {CENTRAL} but no data is available in the log file.
 
-Workaround: Manually update the value of the controller URL property in the {EAP} `standalone.xml` and  `standalone-full.xml` file.
+Workaround: None.
 
 
-== {KIE_SERVER}
+.Greater than (>) and less than (<) symbols in data types break a process [https://issues.jboss.org/browse/RHPAM-2193[RHPAM-2193]]
 
-.You cannot deploy a KJAR with a PMML asset to a {KIE_SERVER} Spring Boot starter on Windows [https://issues.jboss.org/browse/RHDM-852[RHDM-852]]
-
-Issue: If a KJAR contains a PMML asset, you cannot deploy it as a container on a {KIE_SERVER} that is running in the `kie-server-spring-boot-starter` Spring Boot starter on Microsoft Windows.
+Issue: If you place greater than (>) and less than (<) symbols in a data type for a process variable,  you cannot reopen the process. The XML editor appears instead.
 
 Steps to reproduce:
 
-. Create a KJAR that contains a PMML asset.
-. Start `kie-server-spring-boot-starter` on Windows.
-. Deploy the KJAR to a {KIE_SERVER} that is running the `kie-server-spring-boot-starter` Spring Boot starter on Microsoft Windows.
+. Create a process and add the `list1:java.util.List<String>` process variable.
+. Save and reopen the process.
 
-Expected result: The KJAR is deployed successfully.
+Expected result: The process opens.
 
-Actual result: The KJAR cannot be deployed.
+Actual result: The process does not open.
+
+Workaround: None.
+
+
+.If a case task actor is invalid, the resulting BPMN file is also invalid [https://issues.jboss.org/browse/RHPAM-2240[RHPAM-2240]]
+
+Issue: The new process designer sometimes generates an invalid XML file. A user task with an actor assigned is generated as a a `potentialOwner` element in the XSD file.
+
+[source]
+----
+<bpmn2:potentialOwner id="5058b718-8866-4ccd-b793-d5ebf48de5a2">
+<bpmn2:resourceAssignmentExpression id="_gN_feI4_Eem2-an8Fwu06w">
+<bpmn2:formalExpression id="_gN_feY4_Eem2-an8Fwu06w">manager</bpmn2:formalExpression>
+</bpmn2:resourceAssignmentExpression>
+</bpmn2:potentialOwner>
+----
+
+The id of the `potentialOwner` element is missing an underscore at the beginning, which means that if the first element is a number, this is now an invalid ID.
+
+Tasks that have `ioSpecification` should always define an `inputSet` and `outputSet`, even if those are empty.
+
+Steps to reproduce:
+
+Create a user task with no output mapping. This will generate the following output:
+
+[source]
+----
+<bpmn2:ioSpecification id="_rEnOQY5AEem2-an8Fwu06w">
+<bpmn2:dataInput id="38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputX" drools:dtype="Object" itemSubjectRef="_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputXItem" name="TaskName"/>
+<bpmn2:dataInput id="38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputX" drools:dtype="Object" itemSubjectRef="_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputXItem" name="Skippable"/>
+<bpmn2:inputSet id="_rEnOQo5AEem2-an8Fwu06w">
+<bpmn2:dataInputRefs>_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputX</bpmn2:dataInputRefs>
+<bpmn2:dataInputRefs>_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputX</bpmn2:dataInputRefs>
+</bpmn2:inputSet>
+</bpmn2:ioSpecification>
+----
+
+Expected result: The output includes an empty `outputSet` attribute.
+
+Actual result: The output does not include an `outputSet` attribute.
 
 Workaround: None.
 
-ifdef::DM[]
-== OpenShift
 
-.User password is displayed in the Readiness and Liveness probes [https://issues.jboss.org/browse/RHDM-848[RHDM-848]]
+.Nodes and distribution lines do not fully align horizontally [https://issues.jboss.org/browse/RHPAM-2241[RHPAM-2241]]
 
-Issue: If you deploy {PRODUCT} on OpenShift, the user password is displayed in both the Readiness and Liveness probes.
+Issue: It is difficult to precisely align some nodes horizontally.
+
+
+Steps to reproduce:
+
+. Create a process.
+. Try to align a node and connector horizontally.
+
+Expected result: The node and connector are aligned.
+
+Actual result: The node and connector are not aligned.
 
 Workaround: None.
-endif::DM[]
 
-ifdef::PAM[]
-== OpenShift
+.The multiple instance properties of a multiple instance subprocess are not visible for nodes inside of a multiple instance subprocess [https://issues.jboss.org/browse/RHPAM-2257[RHPAM-2257]]
 
-.User password is displayed in the Readiness and Liveness probes [https://issues.jboss.org/browse/RHPAM-1829[RHPAM-1829]]
-Issue: If you deploy {PRODUCT} on OpenShift, the user password is displayed in both the Readiness and Liveness probes.
+Issue: If you model a process with a multiple instance subprocess as a multiple instance node, the multiple instance Data Input and multiple instance Data Output variables are not visible for nodes inside of the multiple instance subprocess.
+
+
+Steps to reproduce:
+
+. Create a multiple instance subprocess for execution by selecting the multiple instance collection input/output from an existing process level list and setting new variables for multiple instance data input and output.
+. Add a user task inside of the multiple instance subprocess.
+. Try to configure  a user task so that is uses multiple instance data input/output.
+
+Expected result: The new variables for multiple instance data input and output are listed in the data I/O editor *Source* and *Target* fields and you can use the new variables for multiple instance data input and output.
+
+Actual result: The new variables for multiple instance data input and output are not listed in the data I/O editor *Source* and *Target* fields.
+
+Workaround: To use variables for multiple instance data input and output, define them in *Process Data* -> *Process Variables* before creating the multiple instance subprocess for execution.
+
+.Data output associations do not work correctly when they are declared twice [https://issues.jboss.org/browse/RHPAM-2242[RHPAM-2242]]
+
+Issue: If the data output variable associated with a user task is declared twice, it is not stored in the resulting XML file.
+
+Steps to reproduce:
+
+. In {CENTRAL}, create a user task.
+. Open the *Properties* panel.
+. Expand the *Implementation/Execution* section.
+. Click *Assignments*.
+. In the *Data Outputs and Assignment* area, add a data output variable twice by using the same variable name.
+
+Expected result: Two variables with the same name are stored in the BPMN XML file.
+
+Actual result: The variables are not stored in the resulting BPMN XML file (XML) so when the process runs or loads, the data output assignments are missing.
 
 Workaround: None.
-endif::PAM[]
 
-== {PLANNER}
+endif::[]
 
-.`ScoreCalculationCountLimit` termination does not work with multi-threaded solving [https://issues.jboss.org/browse/RHDM-740[RHDM-740]]
+== {OPENSHIFT}
+.Validation sub-element is missing for data sources [https://issues.jboss.org/browse/RHPAM-2226[RHDM-2226]]
 
-Issue: {PLANNER} configured with the score calculation count termination (`ScoreCalculationCountLimit`) does not terminate. The score calculation count termination is primarily used for testing.
+Issue: If you create a custom template for deploying {KIE_SERVER} on {OPENSHIFT}
+and the server uses a MySQL or PostgreSQL database, {KIE_SERVER} data sources do not contain the validation sub-element where connection checkers and exception sorters are defined.
 
-Workaround: Use another type of termination.
+Steps to reproduce:
 
-//ifdef::PAM[]
-//== Smart Router
+. Create a custom template for deploying {KIE_SERVER} on {OPENSHIFT}
+with a MySQL or PostgreSQL database.
+. View the contents of the template file.
 
-//.With IBM Java, Smart Router with HTTPS enabled causes the `NoSuchAlgorithmException` exception [https://issues.jboss.org/browse/RHPAM-1576[RHPAM-1576]]
+Expected result: The template contains the expected data sources.
 
-//Issue: With IBM Java, when Smart Router is started with HTTPS enabled the `NoSuchAlgorithmException` exception occurs.
-//endif::PAM[]
+Actual result: The template does not contain the expected data sources.
+
+Work around:
+
+Add the following environment variables and values to your templates:
+
+* For MySQL:
++
+[source]
+----
+name: RHPAM_CONNECTION_CHECKER
+value: "org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLValidConnectionChecker"
+name: RHPAM_EXCEPTION_SORTER
+value: "org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLExceptionSorter"
+----
+
+* For PostgreSQL:
++
+[source]
+----
+name: RHPAM_CONNECTION_CHECKER
+value: "org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLValidConnectionChecker"
+name: RHPAM_EXCEPTION_SORTER
+value: "org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLExceptionSorter"
+----
+
+
+== Test scenarios
+
+.Test scenarios designer can not access the parent data object fields [https://issues.jboss.org/browse/RHDM-1014[RHDM-1014]]
+
+Issue: Test scenarios designer cannot access a parent data object field, even if the field has public `getter` and `setter` attributes.
+
+Steps to reproduce:
+
+. Create a scenario with a field that is declared in the parent class.
+. Run the scenario.
+. Click *View Alerts* and review any alerts.
+
+Expected result: The scenario runs successfully.
+
+Actual result: The scenario fails because it cannot access the data object in the parent class.
+
+
+Workaround: Include the data object in the child class.
+
+.Rule-based test scenarios that contain maps of simple types fail [https://issues.jboss.org/browse/RHDM-1015[RHDM-1015]]
+
+Issue: All rule-based test scenarios that contain a map of simple types as a cell value, for example `Map<String` or `String`, fail.
+
+Steps to reproduce:
+
+. Create a scenario.
+. Create a map with a simple type value, for example `Map<String, String>`.
+. Run the scenario.
+
+Expected result: The scenario runs successfully.
+
+Actual result: The scenario fails.
+
+Workaround: None.
