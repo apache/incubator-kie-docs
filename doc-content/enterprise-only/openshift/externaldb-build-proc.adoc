@@ -1,7 +1,7 @@
 [id='externaldb-build-proc']
-= Building a custom {KIE_SERVER} image for an external database
+= Building a custom {KIE_SERVER} extension image for an external database
 
-If you want to use an external database server for a {KIE_SERVER} and the database server is not a MySQL or PostgreSQL server, you must build a custom {KIE_SERVER} image with drivers for this server before deploying your environment.
+If you want to use an external database server for a {KIE_SERVER} and the database server is not a MySQL or PostgreSQL server, you must build a custom {KIE_SERVER} extension image with drivers for this server before deploying your environment.
 
 Complete the steps in this build procedure to provide drivers for any of the following database servers:
 
@@ -11,61 +11,79 @@ Complete the steps in this build procedure to provide drivers for any of the fol
 * Oracle Database
 * Sybase
 
-For the supported versions of the database servers, see https://access.redhat.com/articles/3405381#TestedConfigurations70[Red Hat Process Automation Manager 7 Supported Configurations].
+For the supported versions of the database servers, see https://access.redhat.com/articles/3405381[Red Hat Process Automation Manager 7 Supported Configurations].
 
-The build procedure creates a custom image that extends the existing {KIE_SERVER} image. The procedure pushes this custom image into a new image stream in the `openshift` namespace with the same version tag as the original image.
+The build procedure creates a custom extension image that extends the existing {KIE_SERVER} image. You must import this custom extension image into your OpenShift environment and then reference it in the `EXTENSION_IMAGE` parameter.
 
 .Prerequisites
-* You are logged in to your project in the OpenShift environment using the `oc` command as a user with the `cluster-admin` role.
-* For IBM DB2, Oracle Database, or Sybase, you downloaded the JDBC driver from the database server vendor.
+* You are logged in to your OpenShift environment using the `oc` command. Your OpenShift user must have the `registry-editor` role.
+* For Oracle Database or Sybase, you downloaded the JDBC driver from the database server vendor.
+* You have installed the following required software:
+** Docker
+** Cekit version 3
+** The following libraries and extensions for Cekit:
+*** `odcs-client`, provided by the `python3-odcs-client` package or similar package
+*** `docker`, provided by the `python3-docker` package or similar package
+*** `docker-squash`, provided by the `python3-docker-squash` package or similar package
+*** `behave`, provided by the `python3-behave` package or similar package
+*** `s2i`, provided by the `source-to-image` package or similar package
 
 .Procedure
-. For IBM DB2, Oracle Database, or Sybase, provide the JDBC driver JAR file in a local directory or on an HTTP server. Within the local directory or HTTP server, the following paths are expected:
-+
-** For IBM DB2, `<local_path_or_url>/com/ibm/db2/jcc/db2jcc4/10.5/db2jcc4-10.5.jar`
-** For Oracle Database, `<local_path_or_url>/com/oracle/ojdbc7/12.1.0.1/ojdbc7-12.1.0.1.jar`
-** For Sybase, `<local_path_or_url>/com/sysbase/jconn4/16.0_PL05/jconn4-16.0_PL05.jar`
-+
-Replace `<local_path_or_url>` with the path to the local directory or the URL for the HTTP server where the driver is provided.
-+
+. For IBM DB2, Oracle Database, or Sybase, provide the JDBC driver JAR file in a local directory.
 . Download the `{PRODUCT_FILE}-openshift-templates.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal. 
 . Unzip the file and, using the command line, change to the `templates/contrib/jdbc` directory of the unzipped file. This directory contains the source code for the custom build.
-. Change to one of the following subdirectories:
+. Run one of the following commands, depending on the database server type:
 +
-** For Microsoft SQL Server, `mssql-driver-image`
-** For MariaDB, `mariadb-driver-image`
-** For IBM DB2, `db2-driver-image`
-** For Oracle Database, `oracle-driver-image`
-** For Sybase, `sybase-driver-image`
+** For Microsoft SQL Server:
 +
-. Enter one of the following commands:
-+
---
-** For Microsoft SQL Server or MariaDB:
-
 [subs="attributes,verbatim,macros"]
 ----
-../build.sh
+make build mssql
 ----
-
-** For IBM DB2, Oracle Database, or Sybase:
-
++
+** For MariaDB:
++
 [subs="attributes,verbatim,macros"]
 ----
-../build.sh --artifact-repo=<local_path_or_url>
+make build mariadb
 ----
++
+** For IBM DB2:
++
+[subs="attributes,verbatim,macros"]
+----
+make build db2
+----
++
+** For Oracle Database:
++
+[subs="attributes,verbatim,macros"]
+----
+make build oracle artifact=/tmp/ojdbc7.jar version=7.0
+----
++
+In this command, replace `/tmp/ojdbc7.jar` with the path name of the downloaded Oracle Database driver and `7.0` with the version of the driver.
++
+** For Sybase:
++
+[subs="attributes,verbatim,macros"]
+----
+make build sybase artifact=/tmp/jconn4-16.0_PL05.jar version=16.0_PL05
+----
++
+In this command, replace `/tmp/jconn4-16.0_PL05.jar` with the path name of the downloaded Sybase driver and `16.0_PL05` with the version of the driver.
++
+. Run the following command to list the Docker images that are available locally:
++
+[subs="attributes,verbatim,macros"]
+----
+docker images
+----
++
+Note the name of the image that was built, for example, `jboss-kie-db2-extension-openshift-image`, and the version tag of the image, for example, `11.1.4.4` (not the `latest` tag).
++
+. Access the registry of your OpenShift environment directly and push the image to the registry. Depending on your user permissions, you can push the image into the `openshift` namespace or into a project namespace. For instructions about accessing the registry and pushing the images, see https://docs.openshift.com/container-platform/3.11/install_config/registry/accessing_registry.html#access[Accessing the Registry Directly].
+. When configuring your {KIE_SERVER} deployment with a template that supports an external database server, set the following parameters:
+** *Drivers Extension Image* (`EXTENSIONS_IMAGE`): The ImageStreamTag definition of the extension image, for example, `jboss-kie-db2-extension-openshift-image:11.1.4.4`
+** *Drivers ImageStream Namespace* (`EXTENSIONS_IMAGE_NAMESPACE`): The namespace to which you uploaded the extension image, for example, `openshift` or your project namespace.
 
-Replace `<local_path_or_url>` with the path to the local directory or the URL for the HTTP server where the driver is provided. Example:
-
-----
-../build.sh --artifact-repo=/home/builder/drivers
-../build.sh --artifact-repo=http://nexus.example.com/nexus/content/groups/public
-----
-
-If you want to configure your OpenShift docker registry address in the process, add also the `--registry=<registry_name.domain_name:port>` parameter to your build command, as illustrated in the following examples:
-
-----
-../build.sh --registry=docker-registry.custom-domain:80
-../build.sh --artifact-repo=/home/builder/drivers --registry=docker-registry.custom-domain:80
-----
---
