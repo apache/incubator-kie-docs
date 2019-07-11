@@ -1,15 +1,15 @@
 [id='clustering-bc-configure-domain-proc']
 = Configuring a {EAP} {EAP_VERSION} domain-mode cluster for {CENTRAL}
-Configure the {CENTRAL} cluster in domain mode with Elasticsearch and the JMS broker resource adapter integrated with {EAP}. By using domain mode with a cluster, you can centrally manage and publish configurations for your servers.
+Configure the {CENTRAL} cluster in domain mode with {DATAGRID} and the JMS broker resource adapter integrated with {EAP}. By using domain mode with a cluster, you can centrally manage and publish your server configurations.
 
-[NOTE] 
+[NOTE]
 ====
-These steps describe a basic cluster configuration. For more complex configurations, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.0/html/configuration_guide[_Red Hat JBoss EAP 7.2 Configuration Guide_].
+These steps describe a basic cluster configuration. For more complex configurations, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.2/html/configuration_guide[_Red Hat JBoss EAP 7.2 Configuration Guide_].
 ====
 
 .Prerequisites
 
-* Elasticsearch is installed as described in <<clustering-elasticsearch-proc_{context}>>.
+* {DATAGRID} {DATAGRID_VERSION_LONG} is installed as described in <<clustering-datagrid-proc_{context}>>.
 * {EAP} is installed on each node of the cluster as described in <<clustering-download-eap-bc-proc>>.
 * An NFS server with a mounted partition is available.
 
@@ -30,24 +30,32 @@ These steps describe a basic cluster configuration. For more complex configurati
 </server-group>
 ----
 . Edit or add the following properties to the `<system-properties>` element and replace the following placeholders:
-* `<ELASTICSEARCH_NODE_IP>` is the IP addresses where Elasticseach is installed.
-* `<JMS_USER>` is a {EAP} application user. It is the user that {CENTRAL} uses to connect to the  embedded JMS broker. 
+* `<INFINISPAN_NODE_IP>` is the IP address where {DATAGRID} is installed.
+* `<JMS_USER>` is a {EAP} application user. It is the user that {CENTRAL} uses to connect to the  embedded JMS broker.
 * `<JMS_USER_PASSWORD>` is the password for `<JMS_USER>`.
 +
 [source,xml]
 ----
 <system-properties>
   <property name="appformer-jms-connection-mode" value="JNDI"/>
-  <property name="appformer-jms-username" value="<JMS_USER>  "/>
+  <property name="appformer-jms-username" value="<JMS_USER>"/>
   <property name="appformer-jms-password" value="<JMS_USER_PASSWORD>"/>
-  <property name="org.appformer.ext.metadata.elastic.port" value="9300"/>
-  <property name="org.appformer.ext.metadata.elastic.host" 
-      value="<ELASTICSEARCH_NODE_IP>"/>
-  <property name="org.appformer.ext.metadata.elastic.cluster" 
-      value="kie-cluster"/>
-  <property name="org.appformer.ext.metadata.index" value="elastic"/> 
-  <property name="org.appformer.ext.metadata.elastic.retries" value="10"/>
-  <property name="appformer-jms-connection-factory" value="java:/ConnectionFactory"/> 
+  <property name="org.appformer.ext.metadata.infinispan.port"
+     value="11222"/>
+  <property name="org.appformer.ext.metadata.infinispan.host"
+     value="<INFINISPAN_NODE_IP>"/>
+  <property name="org.appformer.ext.metadata.infinispan.realm"
+     value="ApplicationRealm"/>
+  <property name="org.appformer.ext.metadata.infinispan.username"
+     value=""/>
+  <property name="org.appformer.ext.metadata.infinispan.password"
+     value=""/>
+  <property name="org.appformer.ext.metadata.infinispan.cluster"
+     value="kie-cluster"/>
+  <property name="org.appformer.ext.metadata.index"
+     value="infinispan"/>
+  <property name="appformer-jms-connection-factory"
+     value="java:/ConnectionFactory"/>
 </system-properties>
 ----
 .  In the `<subsystem xmlns="urn:jboss:domain:messaging-activemq:2.0">` element, make the following changes:

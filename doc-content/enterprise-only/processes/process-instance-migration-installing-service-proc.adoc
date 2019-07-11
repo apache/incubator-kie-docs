@@ -1,0 +1,61 @@
+[id='process-instance-migration-installing-service-proc']
+= Installing the process instance migration service
+
+You can use the process instance migration (PIM) service to create, export and execute migration plans. The PIM service is provided through a GitHub repository. To install the PIM service, clone the GitHub repository, then run the service and access it in a web browser.
+
+.Prerequisites
+* You have defined processes in a backup-ed {PRODUCT} development environment.
+
+.Procedure
+. Download the `{PRODUCT_FILE}-add-ons.zip` file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page for {PRODUCT} {PRODUCT_VERSION}.
+. Unzip the downloaded archive.
+. Move the `{PRODUCT_FILE}-process-migration-service-standalone.jar` file from the add-ons archive to a desired location.
+. In the location, create a YAML file containing the kieserver and Thorntail configuration, for example:
++
+----
+thorntail:
+  deployment:
+    process-migration.war:
+      jaxrs:
+        application-path: /rest
+      web:
+        login-config:
+          auth-method: BASIC
+          security-domain: pim
+        security-constraints:
+          - url-pattern: /*
+            roles: [ admin ]
+          - url-pattern: /health/*
+  datasources:
+    data-sources:
+      pimDS:
+        driver-name: h2
+        connection-url: jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        user-name: DS_USERNAME
+        password: DS_PASSWORD
+  security:
+    security-domains:
+      pim:
+        classic-authentication:
+          login-modules:
+            UsersRoles:
+              code: UsersRoles
+              flag: required
+              module-options:
+                usersProperties: application-users.properties
+                rolesProperties: application-roles.properties
+kieservers:
+  - host: http://localhost:8080/kie-server/services/rest/server
+    username: KIESERVER_USERNAME
+    password: KIESERVER_PASSWORD
+  - host: http://localhost:8280/kie-server/services/rest/server
+    username: KIESERVER_USERNAME
+    password: KIESERVER_PASSWORD1
+----
+. Start the PIM service:
++
+[source,subs="attributes+"]
+----
+$ java -jar {PRODUCT_FILE}-process-migration-service-standalone.jar -s./config.yml
+----
+. After the PIM service is up and running, enter `http://localhost:8080` in a web browser.
