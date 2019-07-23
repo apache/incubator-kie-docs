@@ -1,0 +1,93 @@
+[id='enumerations-advanced-ref_{context}']
+
+= Advanced enumeration options for rule assets
+
+For advanced use cases with enumeration definitions in your {PRODUCT} project, consider the following extended options for defining enumerations:
+
+Mapping between DRL values and values in {CENTRAL}::
+If you want the enumeration values to appear differently or more completely in the {CENTRAL} interface than they appear in the DRL source, use a mapping in the format `'fact.field' : ['sourceValue1=UIValue1','sourceValue2=UIValue2', ... ]` for your enumeration definition values.
++
+--
+For example, in the following enumeration definition for loan status, the options `A` or `D` are used in the DRL file but the options `Approved` or `Declined` are displayed in {CENTRAL}:
+
+[source]
+----
+'Loan.status' : ['A=Approved','D=Declined']
+----
+--
+
+Enumeration value dependencies::
+If you want the selected value in one drop-down list to determine the available options in a subsequent drop-down list, use the format `'fact.fieldB[fieldA=value1]' : ['value2', 'value3', ... ]` for your enumeration definition.
++
+--
+For example, in the following enumeration definition for insurance policies, the `policyType` field accepts the values `Home` or `Car`. The type of policy that the user selects determines the policy `coverage` field options that are then available:
+
+[source]
+----
+'Insurance.policyType' : ['Home', 'Car']
+'Insurance.coverage[policyType=Home]' : ['property', 'liability']
+'Insurance.coverage[policyType=Car]' : ['collision', 'fullCoverage']
+----
+
+NOTE: Enumeration dependencies are not applied across rule conditions and actions. For example, in this insurance policy use case, the selected policy in the rule condition does not determine the available coverage options in the rule actions, if applicable.
+
+--
+
+External data sources in enumerations::
+If you want to retrieve a list of enumeration values from an external data source instead of defining the values directly in the enumeration definition, on the class path of your project, add a helper class that returns a `java.util.List` list of strings. In the enumeration definition, instead of specifying a list of values, identify the helper class that you configured to retrieve the values externally.
++
+--
+For example, in the following enumeration definition for loan applicant region, instead of defining applicant regions explicitly in the format `'Applicant.region' : ['country1', 'country2', ... ]`, the enumeration uses a helper class that returns the list of values defined externally:
+
+[source]
+----
+'Applicant.region' : (new com.mycompany.DataHelper()).getListOfRegions()
+----
+
+In this example, a `DataHelper` class contains a `getListOfRegions()` method that returns a list of strings. The enumerations are loaded in the drop-down list for the relevant field in the rule asset.
+
+You can also load dependent enumeration definitions dynamically from a helper class by identifying the dependent field as usual and enclosing the call to the helper class within quotation marks:
+
+[source]
+----
+'Applicant.region[countryCode]' : '(new com.mycompany.DataHelper()).getListOfRegions("@{countryCode}")'
+----
+
+If you want to load all enumeration data entirely from an external data source, such as a relational database, you can implement a Java class that returns a `Map<String, List<String>>` map. The key of the map is the `fact.field` mapping and the value is a `java.util.List<String>` list of values.
+
+For example, the following Java class defines loan applicant regions for the related enumeration:
+
+[source,java]
+----
+public class SampleDataSource {
+
+  public Map<String, List<String>> loadData() {
+    Map data = new HashMap();
+
+    List d = new ArrayList();
+    d.add("AU");
+    d.add("DE");
+    d.add("ES");
+    d.add("UK");
+    d.add("US");
+    ...
+    data.put("Applicant.region", d);
+
+    return data;
+  }
+
+}
+----
+
+The following enumeration definition correlates to this example Java class. The enumeration contains no references to fact or field names because they are defined in the Java class:
+
+[source]
+----
+=(new SampleDataSource()).loadData()
+----
+
+The `=` operator enables {CENTRAL} to load all enumeration data from the helper class. The helper methods are statically evaluated when the enumeration definition is requested for use in an editor.
+
+NOTE: Defining an enumeration without a fact and field definition is currently not supported in {CENTRAL}. To define the enumeration for the associated Java class in this way, use the DRL source in your {PRODUCT} project.
+
+--
