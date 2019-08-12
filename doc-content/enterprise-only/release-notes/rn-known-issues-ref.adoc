@@ -4,11 +4,22 @@
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
 
-ifdef::DM[]
-
-endif::[]
-
 == {CENTRAL}
+.A guided scorecard cannot be tested with the Test Scenario (Legacy) asset [https://issues.jboss.org/browse/RHPAM-2307[RHPAM-2307]]
+
+Issue: If a guided scorecard name begins with a lowercase letter, you cannot test the scorecard with the Test Scenario (Legacy) asset.
+
+Steps to reproduce:
+
+. Create a guided scorecard with a name that begins with a lowercase letter.
+. Import the guided scorecard into {CENTRAL}.
+. Click *Test*.
+
+Expected result: The test completes successfully.
+
+Actual result: The test fails.
+
+Workaround: Make sure that guided scorecard names do not begin with lowercase letters.
 
 .You cannot add a new group in {CENTRAL} integrated with RH-SSO [https://issues.jboss.org/browse/RHPAM-2036[RHPAM-2036]]
 
@@ -187,6 +198,44 @@ Issue: Task operations such as *Start*, *Complete*, or *Claim* are noticeably sl
 
 
 endif::[]
+
+ifdef::PAM[]
+== {KIE_SERVER}
+.Query-related operations return errors when {KIE_SERVER} runs on either {JWS} or SpringBoot with DB2 [https://issues.jboss.org/browse/RHPAM-2292[RHPAM-2292]]
+
+Issue: Query-related operations return errors when {KIE_SERVER} runs on either {JWS} or SpringBoot with DB2.
+
+Steps to reproduce:
+
+. Create a `query-definitions.json` file that contains content similar to the following example and add it to {KIE_SERVER} on {JWS}:
++
+[source]
+----
+
+[
+  {
+    "query-name" : "first-query",
+    "query-source" : "${org.kie.server.persistence.ds}",
+    "query-expression" : "select * from ProcessInstanceLog",
+    "query-target" : "PROCESS"
+
+  }
+]
+----
+. Start {KIE_SERVER}. {KIE_SERVER} tries to register the new default query.
+
+Expected result: The default query is successfully registered.
+
+Actual result: An error code is returned, for example:
+[source]
+----
+com.ibm.db2.jcc.am.XaException: [jcc][t4][10401][12066][4.24.92]
+XA exception: XAER_OUTSIDE ERRORCODE=-4228, SQLSTATE=null
+----
+
+Workaround: For {JWS}, set `defaultAutoCommit=false` in the `XADataSource`. For SpringBoot, set `spring.datasource.defaultAutoCommit=false` in application properties. This property must be added to the Narayana data source.
+endif::[]
+
 
 == {OPENSHIFT}
 .Validation sub-element is missing for data sources [https://issues.jboss.org/browse/RHPAM-2226[RHPAM-2226]]
