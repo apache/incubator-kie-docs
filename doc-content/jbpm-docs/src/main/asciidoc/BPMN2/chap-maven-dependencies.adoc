@@ -1,0 +1,543 @@
+[[_chap_maven_dependencies]]
+= Apache Maven
+
+http://maven.apache.org/[Apache Maven] is a distributed build automation tool used in Java application development to build and manage software projects. Apart from building, publishing, and deploying capabilities, using Maven for your Red Hat JBoss BRMS and Red Hat JBoss BPM suite projects ensures the following:
+
+* The build process is easy and a uniform build system is implemented across projects.
+* All of the required JAR files for a project are made available at compile time.
+* A proper project structure is configured.
+* Dependencies and versions are well managed.
+* No need for additional build processing, as Maven builds output into a number of predefined types, such as JAR and WAR.
+
+[[_maven_repositories]]
+== Maven Repositories
+
+Maven uses repositories to store Java libraries, plug-ins, and other build artifacts. These repositories can be local or remote. Red Hat JBoss BRMS and Red Hat JBoss BPM Suite products maintain local and remote maven repositories that you can add to your project for accessing the rules, processes, events, and other project dependencies. You must configure Maven to use these repositories and the Maven Central Repository to provide correct build functionality.
+
+When building projects and archetypes, Maven dynamically retrieves Java libraries and Maven plug-ins from local or remote repositories. Doing so promotes sharing and reuse of dependencies across projects.
+
+[[_using_maven_repository_in_your_project]]
+== Using the Maven Repository in Your Project
+
+You can direct Maven to use the Red Hat JBoss Enterprise Application Platform Maven repository in your project in one of the following ways:
+
+* Configure the Project Object Model (POM) file (`pom.xml`).
+* Modify the Maven settings file (`settings.xml`).
+
+The recommended approach is to direct Maven to use the Red Hat JBoss Enterprise Application Platform Maven repository across all projects by using the Maven global or user settings.
+
+From version 6.1.0 onwards, Red Hat JBoss BPM Suite and Red Hat JBoss BRMS are designed to be used in combination with https://maven.repository.redhat.com/ga/[Red Hat JBoss Middleware Maven Repository] and Maven Central repository as dependency sources. Ensure that both repositories are available for project builds.
+
+[[_maven_configuration_file]]
+== Maven Project Configuration File
+
+To use Maven for building and managing your Red Hat JBoss BRMS and Red Hat JBoss BPM Suite projects, you must configure your projects to be built with Maven. To do so, Maven provides the POM file (`pom.xml`) that holds configuration details for your project.
+
+`pom.xml` is an XML file that contains information about the project (such as project name, version, description, developers, mailing list, and license), and build details (such as dependencies, location of the source, test, target directories, repositories, and plug-ins).
+
+When you generate a Maven project, a `pom.xml` file is automatically generated. You can edit `pom.xml` to add more dependencies and new repositories. Maven downloads all of the JAR files and the dependent JAR files from the Maven repository when you compile and package your project.
+
+Find the schema for the `pom.xml` file at http://maven.apache.org/maven-v4_0_0.xsd.
+
+For more information about POM files, see http://maven.apache.org/pom.html[Apache Maven Project POM Reference].
+
+[[_maven_settings_file]]
+== Maven Settings File
+
+The Maven settings file (`settings.xml`) is used to configure Maven execution. You can locate this file in the following locations:
+
+* In the Maven install directory at `$_M2_HOME_/conf/settings.xml`. These settings are called global settings.
+* In the user's install directory at `$_USER_HOME_/.m2/settings.xml`. These settings are called user settings.
+* A custom location specified by the system property `kie.maven.settings.custom`.
+
+NOTE: The settings used is a merge of the files located in these locations.
+
+The following is an example of a Maven `settings.xml` file. Note the `activeByDefault` tag, which specifies the default profile. In the following example, it is a profile with a remote Maven repository. 
+[source,xml]
+----
+<settings>
+  <profiles>
+    <profile>
+      <id>my-profile</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>fusesource</id>
+          <url>http://repo.fusesource.com/nexus/content/groups/public/</url>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
+        ...
+      </repositories>
+    </profile>
+  </profiles>
+  ...
+</settings>
+----
+
+[[_dependency_management]]
+== Dependency Management
+
+In order to use the correct Maven dependencies in your {PRODUCT} project, you must add relevant Bill Of Materials (BOM) files to the project's `pom.xml` file. Adding the BOM files ensures that the correct versions of transitive dependencies from the provided Maven repositories are included in the project.
+
+See the https://access.redhat.com/documentation/en/red-hat-jboss-bpm-suite/6.4/single/installation-guide/#supported_comps[Supported Component Versions] chapter of _Red Hat JBoss BPM Suite Installation Guide_ to view the supported BOM components.
+
+Declare the BOM in `pom.xml`. For example:
+
+.BOM for Red Hat JBoss BPM Suite {PRODUCT_VERSION}.0
+====
+[source,xml]
+----
+<dependencyManagement>
+ <dependencies>
+  <dependency>
+   <groupId>org.jboss.bom.brms</groupId>
+   <artifactId>jboss-brms-bpmsuite-platform-bom</artifactId>
+   <version>6.4.2.GA-redhat-2</version>
+   <type>pom</type>
+   <scope>import</scope>
+  </dependency>
+ </dependencies>
+</dependencyManagement>
+<dependencies>
+<!-- Your dependencies -->
+</dependencies>
+----
+====
+
+To check the current BOM version, see the https://access.redhat.com/documentation/en/red-hat-jboss-bpm-suite/6.4/single/installation-guide/#supported_comps[Supported Component Versions] chapter of _Red Hat JBoss BPM Suite Installation Guide_.
+
+Furthermore, declare dependencies needed for your project in the `dependencies` tag.
+
+* For a basic Red Hat JBoss BPM Suite project, declare the following dependencies:
++
+[[_embedded_jbpm_engine_dependencies]]
+.Embedded jBPM Engine Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-kie-services</artifactId>
+</dependency>
+
+<!-- Dependency needed for default WorkItemHandler implementations. -->
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems</artifactId>
+</dependency>
+
+<!-- Logging dependency. You can use any logging framework compatible with slf4j. -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
+
+* For a Red Hat JBoss BPM Suite project that uses CDI, declare the following dependencies:
++
+[[_cdi_enabled_jbpm_engine_dependencies]]
+.CDI-Enabled jBPM Engine dependencies 
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-kie-services</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-services-cdi</artifactId>
+</dependency>
+----
+
+* For a basic Red Hat JBoss BRMS project, declare the following dependencies:
++
+[[_embedded_drools_engine_dependencies]]
+.Embedded Drools Engine Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-compiler</artifactId>
+</dependency>
+
+<!-- Dependency for persistence support. -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-persistence-jpa</artifactId>
+</dependency>
+
+<!-- Dependencies for decision tables, templates, and scorecards.
+For other assets, declare org.drools:drools-workbench-models-* dependencies. -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-decisiontables</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-templates</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-scorecards</artifactId>
+</dependency>
+
+<!-- Dependency for loading KJARs from a Maven repository using KieScanner. -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+</dependency>
+
+<!-- Dependency for loading KJARs from a Maven repository using KieScanner in an OSGi environment. -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci-osgi</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
++
+Do not use both `kie-ci` and `kie-ci-osgi` in one `pom.xml` file.
+* To use the Intelligent Process Server, declare the following dependencies:
++
+[[_client_application_intelligent_process_server_dependencies]]
+.Client Application Intelligent Process Server Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-api</artifactId>
+</dependency>
+
+<!-- Dependency for Red Hat JBoss BRMS functionality. -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-core</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
+
+* To create a remote client for Red Hat JBoss BPM Suite or Red Hat JBoss BRMS, declare the following dependencies:
++
+.Client Dependencies
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.remote</groupId>
+  <artifactId>kie-remote-client</artifactId>
+</dependency>
+----
+
+* To use assets in `KJAR` packaging, the preferred way is to include `kie-maven-plugin`:
++
+.Kie Maven Plugin
+[source,xml]
+----
+<!-- BOM does not resolve plugin versioning. Consult section Supported Components of Red Hat JBoss BPM Suite Installation Guide for newest version number. -->
+
+<packaging>kjar</packaging>
+<build>
+ <plugins>
+  <plugin>
+   <groupId>org.kie</groupId>
+   <artifactId>kie-maven-plugin</artifactId>
+   <version>6.5.0.Final-redhat-7</version>
+   <extensions>true</extensions>
+  </plugin>
+ </plugins>
+</build>
+----
+* For testing purposes, declare the following dependencies:
++
+[[_testing_dependencies]]
+.Testing Dependencies
+[source,xml]
+----
+<!-- JUnit dependency -->
+<dependency>
+  <groupId>junit</groupId>
+  <artifactId>junit</artifactId>
+  <version>${junit.version}</version>
+  <scope>test</scope>
+</dependency>
+
+<!-- Red Hat JBoss BPM Suite integration services dependency -->
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-shared-services</artifactId>
+  <classifier>btm</classifier>
+  <scope>test</scope>
+</dependency>
+
+<!-- Logging dependency -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+  <scope>test</scope>
+</dependency>
+
+<!-- Persistence tests dependencies -->
+<dependency>
+  <groupId>org.hibernate</groupId>
+  <artifactId>hibernate-entitymanager</artifactId>
+  <version>${hibernate.version}</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.hibernate</groupId>
+  <artifactId>hibernate-core</artifactId>
+  <version>${hibernate.core.version}</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>com.h2database</groupId>
+  <artifactId>h2</artifactId>
+  <version>${h2.version}</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.codehaus.btm</groupId>
+  <artifactId>btm</artifactId>
+  <version>${btm.version}</version>
+  <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+</dependency>
+----
++
+Alternatively, for extensive testing of Red Hat JBoss BPM Suite, include the `jbpm-test` dependency. Note that `jbpm-test` includes some of the previous dependencies, for example the `junit` dependency, dependencies required for persistence tests, and others.
++
+.Declaring jbpm-test Dependency
+[source,xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-test</artifactId>
+</dependency>
+----
++
+To include the `jbpm-test` dependency as part of your KJAR, set the dependency scope to `provided`. Doing so ensures that the dependency is available at runtime, thereby avoiding unresolved dependency errors. The recommended practice is to use only business resources in your KJAR and not include `jbpm-test` dependency in it. It is a best practice to keep the test suite for the KJAR in a separate project.
++
+
+[NOTE]
+====
+If you are deploying Red Hat JBoss BRMS or Red Hat JBoss BPM Suite on Red Hat JBoss EAP 7, you must make changes to the project BOM files. For more information on the BOM changes, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_bpm_suite/6.4/html-single/migration_guide/#chap_eap_migration[Red Hat JBoss EAP Migration] chapter in the _Red Hat JBoss BPM Suite Migration Guide_.
+
+For more information on BOM usage in Red Hat JBoss EAP 7, see the https://access.redhat.com/documentation/en/red-hat-jboss-enterprise-application-platform/7.0/paged/development-guide/chapter-2-using-maven-with-jboss-eap[Using Maven with JBoss EAP] chapter in the _Red Hat JBoss EAP Development Guide_.
+====
+
+
+[[_integrated_maven_dependencies]]
+== Integrated Maven Dependencies
+
+Throughout the Red Hat JBoss BRMS and BPM Suite documentation, various code samples are presented with KIE API for the 6.1._x_ releases. These code samples will require Maven dependencies in the various `pom.xml` file and should be included like the following example:
+[source,xml]
+----
+<dependency>
+  <groupId>commons-logging</groupId>
+  <artifactId>commons-logging</artifactId>
+  <version>1.1.1-redhat-2</version>
+  <scope>compile</scope>
+</dependency>
+----
+
+All the Red Hat JBoss related product dependencies can be found at the following location: https://maven.repository.redhat.com/ga/[Red Hat Maven Repository].
+
+[[_uploading_artifacts_to_maven_repository]]
+== Uploading Artifacts to Maven Repository
+
+There may be scenarios when your project may fail to fetch dependencies from a remote repository configured in its `pom.xml`. In such cases, you can programmatically upload dependencies to Red Hat JBoss BPM Suite by uploading artifacts to the embedded maven repository through Business Central. Red Hat JBoss BPM Suite uses a servlet for the maven repository interactions. This servlet processes a GET request to download an artifact and a POST request to upload one. You can leverage the servlet's POST request to upload an artifact to the repository using REST. To do this, implement the Http basic authentication and issue an HTTP POST request in the following format:
+
+[source]
+----
+PROTOCOL://HOST_NAME:PORT/CONTEXT_ROOT/maven2/[GROUP_ID replacing '.' with '/']/ARTIFACT_ID/VERSION/ARTIFACT_ID-VERSION.jar
+----
+
+For example, to upload the `org.slf4j:slf4j-api:1.7.7.jar`, where `_ARTIFACT_ID_` is `slf4j-api`, `_GROUP_ID_` is `slf4j`, and `_VERSION_` is `1.7.7`, the URI must be:
+
+[source]
+----
+http://localhost:8080/business-central/maven2/org/slf4j/slf4j-api/1.7.7/slf4j-api-1.7.7.jar
+----
+
+The following example illustrates uploading a JAR located at `/tmp` directory as a user `bpmsAdmin` with the password `abcd1234!`, to an instance of Red Hat JBoss BPM Suite running locally:
+
+[source,java]
+----
+package com.rhc.example;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class UploadMavenArtifact {
+  private static final Logger LOG = LoggerFactory.getLogger(UploadMavenArtifact.class);
+
+  public static void main(String[] args) {
+
+    // Maven coordinates:
+    String groupId = "com.rhc.example";
+    String artifactId = "bpms-upload-jar";
+    String version = "1.0.0-SNAPSHOT";
+
+    // File to upload:
+    File file = new File("/tmp/" + artifactId + "-" + version + ".jar");
+
+    // Server properties:
+    String protocol = "http";
+    String hostname = "localhost";
+    Integer port = 8080;
+    String username = "bpmsAdmin";
+    String password = "abcd1234!";
+
+    // Create the HttpEntity (body of our POST):
+    FileBody fileBody = new FileBody(file);
+    MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+    builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+    builder.addPart("upfile", fileBody);
+    HttpEntity entity = builder.build();
+
+    // Calculate the endpoint from the Maven coordinates:
+    String resource = "/business-central/maven2/" + groupId.replace('.', '/') + "/" + artifactId +"/" + version + "/" + artifactId + "-" + version + ".jar";
+
+    LOG.info("POST " + hostname + ":" + port + resource);
+
+    // Set up HttpClient to use Basic pre-emptive authentication with the provided credentials:
+    HttpHost target = new HttpHost(hostname, port, protocol);
+    CredentialsProvider credsProvider = new BasicCredentialsProvider();
+    credsProvider.setCredentials(
+      new AuthScope(target.getHostName(), target.getPort()),
+      new UsernamePasswordCredentials(username,password));
+    CloseableHttpClient httpclient = HttpClients.custom().setDefaultCredentialsProvider(credsProvider).build();
+    HttpPost httpPost = new HttpPost(resource);
+    httpPost.setEntity(entity);
+    AuthCache authCache = new BasicAuthCache();
+    BasicScheme basicAuth = new BasicScheme();
+    authCache.put(target, basicAuth);
+    HttpClientContext localContext = HttpClientContext.create();
+    localContext.setAuthCache(authCache);
+
+    try {
+      // Perform the HTTP POST:
+      CloseableHttpResponse response = httpclient.execute(target, httpPost, localContext);
+      LOG.info(response.toString());
+      // Now check your artifact repository!
+    } catch (ClientProtocolException e) {
+      LOG.error("Protocol Error", e);
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      LOG.error("IOException while getting response", e);
+      throw new RuntimeException(e);
+    }
+  }
+}
+----
+
+[float]
+=== Alternative Maven Approach
+
+An alternative Maven approach is to configure your projects `pom.xml` by adding the repository as shown below:
+
+[source,xml]
+----
+<distributionManagement>
+  <repository>
+    <id>guvnor-m2-repo</id>
+    <name>maven repo</name>
+    <url>http://localhost:8080/business-central/maven2/</url>
+    <layout>default</layout>
+  </repository>
+</distributionManagement>
+----
+
+Once you specify the repository information in the `pom.xml`, add the corresponding configuration in `settings.xml` as shown below:
+
+[source,xml]
+----
+<server>
+  <id>guvnor-m2-repo</id>
+  <username>bpmsAdmin</username>
+  <password>abcd1234!</password>
+  <configuration>
+    <wagonProvider>httpclient</wagonProvider>
+    <httpConfiguration>
+      <all>
+        <usePreemptive>true</usePreemptive>
+      </all>
+    </httpConfiguration>
+  </configuration>
+</server>
+----
+
+Now when you run the `mvn deploy` command, the JAR file gets uploaded.
+
+[[_deploying_red_hat_jboss_bpm_suite_artifacts_to_red_hat_jboss_fuse]]
+== Deploying Red Hat JBoss BPM Suite Artifacts to Red Hat JBoss Fuse
+
+Red Hat JBoss Fuse is an open source Enterprise Service Bus (ESB) with an elastic footprint and is based on Apache Karaf. The {PRODUCT_VERSION} version of {PRODUCT} supports deployment of runtime artifacts to Fuse.
+
+With the 6.1 release, {PRODUCT} runtime components (in the form of JARs) are OSGi enabled. The runtime engines JARs `MANIFEST.MF` files describe their dependencies, amongst other things. You can plug these JARs directly into an OSGi environment, like Fuse.
+
+[WARNING]
+.POM Parser Limitations in OSGi Environments
+====
+{PRODUCT} uses a scanner to enable continuous integration, resolution, and fetching of artifacts from remote Maven repositories. This scanner, called KIE-CI, uses a native Maven parser called Plexus to parse Maven POMs. However, this parser is not OSGi compatible and fails to instantiate in an OSGi environment. KIE-CI automatically switches to a simpler POM parser called `MinimalPomParser`.
+
+The `MinimalPomParser` is a very simple POM parser implementation provided by Drools and is limited in what it can parse. It ignores some POM file parts, such as the parent POM of a KJAR. This means that users must not rely on those POM features (such as dependencies declared in the parent POM in their KJARs) when using KIE-CI in an OSGi environment.
+====
+
+[float]
+=== Separating Assets and Code
+
+One of the main advantage of deploying {PRODUCT} artifacts on Red Hat JBoss Fuse is that each bundle is isolated, running in its own classloader. This allows you to separate the logic (code) from the assets. Business users can produce and change the rules and processes (assets) and package them in their own bundle, keeping them separate from the project bundle (code), created by the developer team. Assets can be updated without needing to change the project code.
