@@ -1,0 +1,582 @@
+[[_chap_business_central]]
+= Business Central
+
+
+Business Central is the web based user interface used for both Red Hat JBoss BRMS 6 and Red Hat JBoss BPM Suite 6.
+
+It is the user interface for the business rules manager and has been combined with the core drools engine and other tools.
+It allows a business user to manage rules in a multi user environment and implement changes in a controlled fashion.
+
+The Business Central is used when:
+
+* Users need to manage versions/deployment of rules.
+* Multiple users of different skill levels need to access and edit rules.
+* You need an infrastructure to manage rules.
+
+
+Business Central is managed by the Business Analysts, Rule experts, Developers and Administrators (rule administrators).
+
+The main features of the Business Central are:
+
+
+
+* Multiple types of rule editors (GUI, text) including:-
+** Guided Rule Editor
+** Rule Templates
+** Decision Tables
+* Store multiple rule "assets" together as a package
+* Domain Specific Language support
+* Complex Event Processing support
+* Version control (historical assets)
+* Testing of rules
+* Validation and verification of rules
+* Categorization
+* Build and deploy including:-
+** Assembly of assets into a binary package for use with a ChangeSet or KnowledgeBuilder.
+* REST API to manipulate assets.
+
+
+[[_logging_on]]
+== Logging on to Business Central
+
+
+Log into Business Central after the server has successfully started.
+
+
+. Navigate to http://localhost:8080/business-central in a web browser. If the user interface has been configured to run from a domain name, substitute `localhost` for the domain name. For example http://www.example.com:8080/business-central.
+. Log in with the user credentials that were created during installation. For example: User = `helloworlduser` and password = ``Helloworld@123``.
+
+
+[[_the_jboss_brms_user_interface]]
+== The Home Screen
+
+
+The *Home* view or the "landing page" is the default view for the application.
+There are two menu items available in this view: *Authoring* and *Deployment*, besides the *Home* menu option.
+
+The following screen shows what the Home view looks like:
+
+.Business central home screen
+image::3271.png[A screenshot of the BRMS Home Screen]
+
+<1> The main menu contains the links to the `Home` page and all available perspectives.
+<2> The perspective menu contains menus for the selected perspective.
+<3> The perspective area contains the perspective tools (here the home page with links to individual perspectives and their views), such as views and editors.
+
+=== Perspectives
+
+Business Central provides the following groups of perspectives accessible from the main menu:
+
+* *Authoring* group:
+** *Project Authoring* perspective contains:
+*** The *Project Explorer* view with the overview of available repository structure, and information on available resources, such as, business process definitions, form definitions, and others.
+*** The editor area on the right of the *Project Explorer* view, where the respective editor appears when a resource is opened.
+*** The *Messages* view with validation messages.
+** *Contributors* perspective enables you to view the number of commits sorted by the organizational unit, repository, author, and other criteria.
+** *Artifact Repository* perspective contains a list of jars which can be added as dependencies. The available operations in this perspective are upload/download artifact and open (view) the `pom.xml` file.
++
+The view is available for users with the `admin` role only.
++
+** *Administration* perspective contains:
+*** The *File Explorer* view with available asset repositories
+*** The editor area on the right of the *File Explorer* view, where the respective editor appears when a resource is opened.
++
+The *Administration* perspective allows an administrator to connect a Knowledge Store to a repository with assets and to create a new repository. For more information, see the _{PRODUCT} Administration and Configuration Guide_.
++
+The view is available for users with the `admin` role only.
++
+* *Deploy* group:
+** *Execution Servers* perspective contains a list of the deployed Realtime Decision Server templates and containers associated with the templates.
+* *Tasks* group:
+** *Task List* perspective contains a list of Tasks produced by Human Task of the Process instances or produced manually. Only Tasks assigned to the logged-in user are visible. It allows you to claim Tasks assigned to a group you are a member of.
+* *Extensions*
+** *PlugIn Management* perspective enables you to customize and create new Business Central perspectives and plugins.
+** *Apps* perspective enables you to browse, categorize and open custom perspective plugins.
+** *Data Sets* perspective enables you to define and connect to external data sets.
+
+[[_embedding_business_central]]
+== Embedding Business Central
+
+
+Business Central provides a set of editors to author assets in different formats.
+A specialized editor is used according to the asset format.
+
+Business Central provides the ability to embed it in your own (Web) Applications using standalone mode.
+This allows you to edit rules, processes, decision tables, and other assets in your own applications without switching to Business Central.
+
+In order to embed Business Central in your application, you will need the Business Central application deployed and running in a web/application server and, from within your own web applications, an iframe with proper HTTP query parameters as described in the following table.
+
+.HTTP Query Parameters for Standalone Mode
+[cols="15%,50%,15%,20%", frame="all", options="header"]
+|===
+|
+							Parameter Name
+
+|
+							Explanation
+
+|
+							Allow Multiple Values
+
+|
+							Example
+
+
+|
+							standalone
+
+|
+							This parameter switches Business Central to standalone mode.
+
+|
+							no
+
+|
+							(none)
+
+
+|
+							path
+
+|
+							Path to the asset to be edited. Note that asset should already exists.
+
+|
+							no
+
+|
+							git://master@uf-playground/todo.md
+
+
+|
+							perspective
+
+|
+							Reference to an existing perspective name.
+
+|
+							no
+
+|
+							org.guvnor.m2repo.client.perspectives.GuvnorM2RepoPerspective
+
+
+|
+							header
+
+|
+							Defines the name of the header that should be displayed (useful for context menu headers).
+
+|
+							yes
+
+|
+							ComplementNavArea
+
+|===
+
+
+The following example demonstrates how to set up an embedded Author Perspective for Business Central.
+
+[source,html]
+----
+
+===test.html===
+ <html>
+  <head>
+    <title>Test</title>
+  </head>
+  <body>
+    <iframe id="ifrm" width="1920" height="1080" src='http://localhost:8080/business-central?standalone=&perspective=AuthoringPerspective&header=AppNavBar'></iframe>
+  </body>
+</html>
+----
+
+
+X-frame options can be set in `web.xml`
+ of business-central.
+The default value for [parameter]``x-frame-options`` is as follows:
+
+[source,html]
+----
+<param-name>x-frame-options</param-name>
+  <param-value>SAMEORIGIN</param-value>
+----
+
+[[_sect_project_authoring]]
+== Project Authoring
+
+
+Projects and the associated assets can be authored from the Project Explorer.
+The Project Explorer can be accessed from the Home screen by clicking on *Authoring* -> *Project Authoring*.
+
+.The Project Explorer screen
+image::3273.png[A screenshot of the BRMS Project Explorer]
+
+
+The project authoring screen is divided into 3 sections:
+
+* _Project Explorer_: The left pane of the project authoring screen is the project explorer that allows you to navigate through projects and create the required packages and assets. Clicking on the ( image:4345.png[] ) button allows you to set the view to Project view or Repository view. The contents of the project can be navigated in a tree view by clicking on the *Show as Folders* or in a single-line path by clicking on the *Show as Links*.
+* _Content area_: The content area shows the assets which are opened for editing. It has a toolbar with buttons like *Save*, *Delete*, *Rename*, *Copy*, and *Validate* that can be used to perform the required actions on the assets that are being worked upon.
+* _Problems_: The problems area shows the validation errors of the project that occur while saving or validating a particular asset.
+
+
+[[_changing_the_layout]]
+=== Changing the Layout
+
+
+The layout of any panel can be changed by the user.
+Each panel can be resized and repositioned, except for the Project Explorer panel, which can only be resized and not repositioned.
+
+[float]
+==== Resizing the layout
+
+
+The layout can be resized in the following ways:
+
+. To resize the width of the screen:
+.. Move the mouse pointer over the vertical panel splitter. The pointer changes to image:4620.png[].
+.. Adjust the width of the screen by dragging the splitter and setting it at the required position.
+. To resize the height of the screen:
+.. Hover the cursor over the horizontal panel splitter. The pointer changes to image:4619.png[].
+.. Adjust the height of the screen by dragging the splitter and setting the required position.
+
+
+[float]
+==== Repositioning the layout
+
+
+To reposition the layout, do the following:
+
+. Move the mouse pointer on the title of the panel. The pointer changes to image:4621.png[].
+. Press and hold the left click of the mouse and drag the screen to the required location. A image:4622.png[] symbol indicating the target position is displayed to set the position of the screen.
+
+
+[[_creating_new_assets]]
+=== Creating new assets
+
+
+Assets can be created using the *New Item* perspective menu option.
+
+.Creating new Asset screen
+image::3274.png[A screen shot of Creating New Asset]
+
+
+Clicking on an Asset from the *New Item* menu will open a *Create new (Asset-type)* pop-up dialog where a user can enter the name of the Asset.
+
+.Create new pop-up dialog
+image::3275.png[A screen shot of Create new pop-up dialog]
+
+
+[[_asset_metadata_and_versioning]]
+=== Asset Metadata and Versioning
+
+
+Most assets within Business Central have some metadata and versioning information associated with them.
+In this section, we will go through the metadata screens and version management for one such asset (a DRL asset). Similar steps can be used to view and edit metadata and versions for other assets.
+
+[float]
+==== Metadata Management
+
+
+To open up the metadata screen for a DRL asset, click on the *Overview*
+ tab.
+If an asset doesn't have an *Overview*
+ tab, it means that there is no metadata associated with that asset.
+
+
+image::6593.png[]
+
+
+The *Overview*
+ section opens up in the *Version history*
+ tab, and you can switch to the actual metadata by clicking on the *Metadata*
+ tab.
+
+The metadata section allows you to view or edit the ``Tags``, ``Subject``, ``Type``, `External Link` and `Source metadata` for that asset.
+However, the most interesting metadata is the description of the asset that you can view/edit in the description field and the comments that you and other people with access to this asset can enter and view.
+
+Comments can be entered in the text box provided in the comments section.
+Once you have finished entering a comment, press enter for it to appear in the comments section.
+
+[IMPORTANT]
+====
+You must hit the *Save* button for all metadata changes to be persisted, including the comments.
+====
+
+[float]
+==== Version Management
+
+
+Every time you make a change in an asset and save it, a new version of the asset is created.
+You can switch between different versions of an asset in one of two ways:
+
+* Click the *Latest Version* button in the asset toolbar and select the version that you are interested in. Business Central will load this version of the asset.
++
+image::6594.png[]
+* Alternatively, open up the *Overview* section. The *Version history* section shows you all the available versions. *Select* the version that you want to restore.
+
+
+In both cases, the *Save* button will change to *Restore*.
+Click this button to persist changes.
+
+== Asset Locking Support
+
+
+The default locking mechanism for locking a BPM and BRMS asset while updating it in Business Central is pessimistic.
+Whenever you open and modify an asset in Business Central, it automatically locks the asset for your exclusive use, in order to avoid conflicts in a multi-user setup.
+The pessimistic lock is automatically released when your session ends or when you save or close the asset.
+
+The pessimistic lock feature is provided in order to help prevent users from overwriting each other's changes.
+However, there may be cases when you may want to edit a file locked by another user.
+Business Central allows you to force unlock a locked asset.
+To do this:
+
+.Procedure: Unlocking assets
+. Open the asset.
+. Click on the *Overview* tab and open up the *Metadata* screen.
++
+If the asset is already being edited by another user, the following will be displayed in the *Lock status*
+field:
++
+`Locked by <user_name>`
+. To edit the asset locked by another user, click *Force unclock asset* button.
++
+The following confirmation popup message is displayed:
++
+`Are you sure you want to release the lock of this asset? This might cause <user_name> to lose unsaved changes!`
+. Click *Yes* to confirm.
++
+The asset goes back to unlocked state.
+
+
+[[_sect_project_editor]]
+== Project Editor
+
+[[_the_project_editor]]
+=== The Project Editor
+
+
+The Project Editor helps a user to build and deploy projects.
+This view provides access to the various properties of a Red Hat JBoss BRMS Project that can be edited through the Web interface.
+Properties like Group artifact version, Dependencies, Metadata, Knowledge Base Settings and Imports can be managed from this view.
+The editor shows the configuration options for the current active project and the content changes when you move around in your code repository.
+
+To access the Project Editor:
+
+. Click *Authoring* -> *Project Authoring*.
+. Select your project.
+. Click *Open Project Editor*.
+
+[[_project_settings]]
+=== Project Settings
+
+.Project General Settings
+The Project settings screen allows a user to set the Group, Artifact, and Version ID's for a project.
+It edits the `pom.xml`
+ setting file since we use Maven to build our projects.
+
+.Project Editor - Project Settings
+image::5664.png[]
+
+
+.Dependencies
+The Dependencies option allows you to set the dependencies for the current project.You access the dependencies by using *Project Settings* -> *Dependencies* option.
+You can add dependencies from the Artifact repository by clicking the *Add from repository* button or by entering the Group ID, Artifact ID and Version ID of a project directly by clicking on the *Add* button.
+
+.Project Editor - Project Dependencies
+image::5906.png[]
+
+
+.Metadata
+The Metadata screen displays various data and version history of a project.
+It enables you to edit metadata details, add descriptions, and participate in discussions which are specific to a selected asset.
+You can add metadata to a project, a knowledge base (kmodule) and project imports. Each metadata tab provides the following fields:
+
+* `Tags`: A tagging system for grouping the assets.
+* `Note`: A comment from the last asset update.
+* `URI`: A unique identifier of the asset inside of the Git repository.
+* `Subject`, `Type`, `External link`, `Source`: Miscellaneous asset meta data.
+* `Lock status` - Lock status of an asset.
+
+.Knowledge Base Settings - Metadata
+image::5799.png[A screenshot of the BRMS Project Editor - Metadata Screen]
+
+[[_knowledge_base_settings]]
+=== Knowledge Base Settings
+
+.Knowledge Bases and Sessions
+The Knowledge Base Settings allows the user to create the KIE bases and sessions using the `kmodule.xml`
+ project descriptor file of your project.
+Accordingly, it edits the `kmodule.xml`
+ project setting file.
+
+
+The Knowledge bases and sessions page lists all the knowledge bases by name.
+It contains the Add, Rename, Delete, and Make Default options above the list.
+Only one knowledge base can be set as default at a time.
+
+.Project Editor - Knowledge Base Settings
+image::5791.png[A screenshot of the BRMS Project Editor - Knowledge Base and Session Settings Screen]
+
+
+The *Included Knowledge Bases*
+ section displays the models, rules, and any other content in the included knowledge base.
+It will only be visible and usable by selecting the knowledge base from the Knowledge Base list to the left.
+You can Add and Delete content from this list.
+
+The *Packages* section allows users to Add and Delete packages which are specified to the knowledge base.
+
+The *Equals Behavior* section allows the user to choose between `Identity` or `Equality` assertion modes.
+
+* `Identity` uses an `IdentityHashMap` to store all asserted objects.
+* `Equality` uses a `HashMap` to store all asserted objects.
+
+
+[NOTE]
+====
+See the kbase attributes section of the Red Hat JBoss BRMS Development Guide for further details about `Identity` and `Equality` assertion modes.
+====
+
+
+The *Event Processing Mode*
+ section allows the user to choose between `Cloud` and `Stream` processing modes.
+
+* `Cloud` processing mode is the default processing mode. It behaves in the same manner as any pure forward-chaining rules engine.
+* `Stream` processing mode is ideal when the application needs to process streams of events.
+
+
+[NOTE]
+====
+See the kbase attributes section of the Red Hat JBoss BRMS Development Guide for further details about `Cloud` and `Stream` processing modes.
+====
+
+
+The *Knowledge Sessions* table lists all the knowledge sessions in the selected knowledge base.
+By clicking the image:5798.png[Add Icon] button, you are able to add a new knowledge session to the table.
+
+* The `Name` field displays the name of the session.
+* The `Default` option can only be allocated to one of each type of session.
+* The `State` drop-down allows either Stateless or Stateful types.
+* The `Clock` drop-down allows either Realtime or Pseudo choices.
+* Clicking the image:5691.png[Pencil Icon] opens a pop-up that displays more properties for the knowledge session.
+
+
+.Metadata
+See <<_project_settings>> for more information about metadata.
+
+[[_imports1]]
+=== Imports
+
+.External Data Objects
+The External Data Objects specify a set of imports, or external data objects, used in the project.
+Each asset in a project has its own imports.
+The imports are used as suggestions when using the guided editors the workbench offers; accordingly, this makes it easier to work with the workbench as there is no need to type each import in every file that uses it.
+By changing the Import settings, the `project.imports`
+ setting files are edited.
+Data Objects are usually provided by the Java runtime.
+For example [class]``java.util.List``.
+
+.Project Editor - Imports
+image::5792.png[A screenshot of the BRMS Project Editor - Imports Screen]
+
+
+To add a fact model to the imports section, click *New Item*. This displays a pop-up dialog to *Add Import* information.Once the Import Type has been entered, click *OK*.
+
+To remove a fact model from the imports section, click *Remove*.
+
+[NOTE]
+====
+The imports listed in the import suggestions are not automatically added into the knowledge base or into the packages of the workbench.
+Each import needs to be added into each file.
+====
+
+.Metadata
+See <<_project_settings>> for more information about Metadata.
+
+[[_repos]]
+=== Repositories
+.Validation
+The *Validation* section enables you to select which maven repositories are used to check the uniqueness of your project's GAV (group ID, artifact ID, and version).
+
+.Project Editor - Validation
+image::5793.png[A screenshot of the BRMS Project Editor - Validation Screen]
+
+=== Persistence
+
+.Persistence descriptor
+The *Persistence descriptor* section enables you to modify *persistence.xml* through GUI. You can:
+
+* Define a persistence unit provider.
+* Define a data source.
+* Change predefined properties for your persistence unit.
+* Add new properties to your persistence unit.
+* Manage persistable data objects.
++
+The persistable data objects are based on the JPA specification and all the underlying metadata are automatically generated.
+
+Alternatively, click *Source* tab to edit the *persistence.xml* directly.
+
+.Persistence descriptor
+image::5794.png[A screenshot of the BRMS Project Editor - Persistence Descriptor]
+
+[[_administration_menu]]
+== Administration menu
+
+
+You can manage Organizational Units and Repositories from the Administration view.
+Click *Authoring* -> *Administration* to get to this view.
+For more details on creating and managing these assets, see <<_chap_setting_up_a_new_project>>.
+
+.The Administration Screen
+image::3391.png[ A screenshot of the BRMS Administration menu]
+
+
+[[_sect_rename_copy_delete_assets]]
+== Rename, Copy, Delete assets
+
+[[_renaming_a_file_or_folder]]
+=== Renaming a file or folder
+
+
+Users can rename a file or a folder directly in Project Explorer.
+
+. To rename a file or a folder, open *Project Explorer* by selecting *Authoring* -> *Project Authoring*.
+. Click the Gear image:4766.png[] icon in the upper right hand corner of the *Project Explorer* view and in the menu that opens, select *Repository View*. Click the gear icon again to select the option *Show as Links* (if not already selected).
+. Click the Rename image:5028.png[] icon to the right of the file or folder you want to rename. In the displayed *Rename this item* dialog box, enter the new name and click the *Rename item* button.
+
+
+[[_deleting_a_file_or_folder]]
+=== Deleting a file or folder
+
+
+Users can delete a file or a folder directly in Project Explorer.
+
+. To delete a file or a folder, open *Project Explorer* by selecting *Authoring* -> *Project Authoring*.
+. Click the Gear icon (image:4766.png[]) in the upper right hand corner of the *Project Explorer* view and in the menu that opens, select *Repository View*. Click the gear icon again to select the option *Show as Links* (if not already selected).
+. Click the Delete icon (image:4767.png[]) to the right of the file or folder you want to rename. In the displayed *Delete this item* dialog box, click the *Delete item* button.
+
+
+[[_copying_a_file_or_folder]]
+=== Copying a file or folder
+
+
+Users can copy a file or a folder directly in Project Explorer.
+
+. To copy a file or a folder, open *Project Explorer* by selecting *Authoring* -> *Project Authoring*.
+. Click the Gear image:4766.png[] icon in the upper right hand corner of the *Project Explorer* view and in the menu that opens, select *Repository View*. Click the gear icon again to select the option *Show as Links* (if not already selected).
+. Click the Copy image:5029.png[] icon to the right of the file or folder you want to copy. In the displayed *Copy this item* dialog box, enter the new name and click the *Create copy* button.
+
+
+[[_administrative_view]]
+== Deployment Menu: The Artifact Repository
+
+
+The *Artifact Repository*
+ explores the Guvnor M2 repository.
+It shows the list of available kjar files used by the existing projects and allows a user to upload, download and manage the kjar files.
+It can be accessed by clicking on the *Authoring* -> *Artifact Repository*
+ menu on the toolbar.
+
+.The Artifact Repository Screen
+image::4306.png[A screenshot of the BRMS Asset Editor - Guvnor M2 Repository Explorer]

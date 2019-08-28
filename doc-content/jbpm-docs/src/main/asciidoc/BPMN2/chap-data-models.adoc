@@ -1,0 +1,358 @@
+[[_chap_data_models]]
+= Data Models
+
+
+Data models are models of data objects.
+A data object is a custom complex data type (for example, a Person object with data fields Name, Address, and Date of Birth).
+
+Data models are saved in data models definitions stored in your Project.
+ifdef::BPMS[]
+Red{nbsp}Hat JBoss{nbsp}BPM{nbsp}Suite
+endif::BPMS[]
+ifdef::BRMS[]
+Red{nbsp}Hat JBoss{nbsp}BRMS
+endif::BRMS[]
+ provides the Data modeler, a custom graphical editor, for defining data objects.
+
+[[data_modeler]]
+== Data Modeler
+ifdef::BPMS[]
+
+The Data Modeler is the built-in editor for creating data objects as part of a Project data model from Business Central.
+Data objects are custom data types implemented as POJOs.
+These custom data types can then be used in any resource (such as a Process) after importing them.
+endif::BPMS[]
+ifdef::BRMS[]
+
+The Data Modeler is the built-in editor for creating facts or data objects as part of a Project data model from the Business Central. Data objects are custom data types implemented as POJOs.
+These custom data types can be then used in any resource (such as a Guided Decision Table) after they have been imported.
+endif::BRMS[]
+
+To open the editor, open the Project Authoring perspective, click *New Item* -> *Data Object* on the perspective menu.
+If you want to edit an existing model, these files are located under *Data Objects* in *Project Explorer*.
+
+You will be prompted to enter the name of this model object when creating a new model, and asked to select a location for it (in terms of the package). On successful addition, it will bring up the editor where you can create fields for your model object.
+
+The Data Modeler supports roundtrips between the `Editor` and `Source` tabs, along with source code preservation.
+This allows you to make changes to your model in external tools, like JBDS, and the Data Modeler updates the necessary code blocks automatically.
+
+In the main editor window the user can
+
+* Add/delete fields
+* Select a given field. When a field is selected then the field information will be loaded in all the domain editors.
++
+
+
+image::user-guide-7226.png[]
+* Select the data object class. For example, by clicking on the data object name (on the main window) instead of loading the field properties, the domain editors will load the class properties.
++
+
+image::7227.png[]
+
+[[_available_field_types]]
+== Available Field Types
+
+Data object fields can be assigned to any of the following types:
+
+* *Java Object Primitive Types:*
++
+`BigDecimal`, `BigInteger`, `Boolean`, `Byte`, `Character`, `Date`, `Double`, `Float`, `Integer`, `Long`, `Short`, and `String`.
+
+* *Java Primitive Types:*
++
+`boolean`, `byte`, `char`, `double`, `float`, `int`, `long`, and `short`.
+
+* *Java Enum Types:*
++
+Java enum types defined in current project or imported as a dependency. See <<_adding_dependencies1,Adding Dependencies>>.
+
+* *Current project Data Objects:*
++
+Any user defined data object automatically becomes available to be assigned as a field type.
+
+* *Project Dependencies:*
++
+Other Java classes imported as a Java dependency in current project.
+See <<_adding_dependencies1,Adding Dependencies>>.
+
+
+[[_annotations_in_data_modeler]]
+== Annotations in Data Modeler
+
+
+{PRODUCT} supports all Drools annotations by default, and can be customized using the *Drools & jBPM* domain screen. For further information about available domain screens, see <<_domain_screens>>.
+
+To add or edit custom or pre-defined annotations, switch to the *Source* tab and modify the source code directly. You can edit the source code directly in both Red Hat JBoss Developer Studio and Business Central. Use the *Advanced* screen to manage arbitrary annotations.
+
+When creating or adding fields to a persistable data object, the JPA annotations that are added by default will generate a model that can be used by {PRODUCT} at runtime.
+In general, modifying the default configurations where the model will be used by processes is not recommended.
+
+{PRODUCT} 6.2 onwards supports the use of JPA specific annotations, with Hibernate available as the default JPA implementation.
+Other JPA annotations are also supported where the JPA provider is loaded on the classpath.
+
+[NOTE]
+====
+When adding an annotation in the Data Modeler, the annotation class should be on the workbench classpath, or a project dependency can be added to a `.jar` file that has the annotation. The Data Modeler will run a validation check to confirm that the annotation is on the classpath, and the project will not build if the annotation is not present.
+====
+
+[[_creating_a_data_object]]
+== Creating a Data Object
+
+. In the Project Authoring perspective, click *New Item* -> *Data Object* on the perspective menu. 
+. Enter the name and select the package. The name must be unique across the package, but it is possible to have two data objects with the same name in two different packages. 
+. To make your Data Object persistable, check the *Persistable* checkbox.
+. Click *Ok*.
+. Create fields of the data object:
++
+.. Click *add field* in the main editor window to add a field to the object with the attributes *Id*, *Label* and *Type*. Required attributes are marked with *.
+* *Id*: The ID of the field unique within the data object.
+* *Label*: The label to be used in the *Fields* panel. This field is optional.
+* *Type*: The data type of the field.
++
+image::DataModelerNewField2-new.png[]
+.. Click *Create* to create the new field and close the *New field* window. Alternatively, click *Create and continue* to keep the *New field* window open.
+
++
+To edit an attribute, select the attribute and use the general properties screen.
+
+
+.Using a data object
+[IMPORTANT]
+====
+To use a data object, make sure you import the data model into your resource. Unless both the data model and your resource, for example a guided rule editor, are in the same package, this is necessary even if both are in the same project.
+====
+
+[[_persistable_data_objects]]
+== Persistable Data Objects
+
+
+From {PRODUCT} 6.2 onwards, the Data Modeler supports the generation of persistable data objects. Persistable data objects are based on the JPA specification. When you check the *Persistable* checkbox, the platform will use default persistence settings. You can make a data object persistable in two ways:
+
+* When creating a new data object.
++
+When creating a new object, follow the procedure in <<_creating_a_data_object>>.
+
+* When a data object has already been created.
+
+To make an already created data object persistable:
+
+. Open your data object in Business Central.
+. Click the *Editor* tab.
+. Select the *Persistence* icon from the menu on the right:
++
+image::persistenceicon.png[]
+
+. Check *Persistable*. 
+. Click *Save* to save your changes.
+
+
+[[_domain_screens]]
+== Data Object Domain Screens
+
+
+The following domain screen tabs can be selected from the right side of the data object editor screen.
+
+[float]
+=== Drools & jBPM
+
+
+The *Drools & jBPM* screen allows configuration of Drools-specific attributes.
+
+The Data Modeler in Business Central supports editing of the pre-defined annotations of fact model classes and attributes.
+The following Drools annotations are supported, and can be customized using the *Drools & jBPM* interface:
+
+* [property]``TypeSafe``
+* [property]``ClassReactive``
+* [property]``PropertyReactive``
+* [property]``Role``
+* [property]``Timestamp``
+* [property]``Duration``
+* [property]``Expires``
+* [property]``Remotable``
+
+.The Drools & jBPM Class View
+image::DataModelerDroolsAndJBPM.png[]
+
+For the fields within the fact model, the [property]``position`` and [property]``Equals`` annotations are supported.
+The *Drools & jBPM* screen when a specific field is selected looks as follows:
+
+.The Drools & jBPM Field View
+image::72230.png[]
+
+
+
+
+[float]
+=== Persistence
+
+
+The *Persistence* screen can be used to configure attributes on basic JPA annotations for persistence.
+For fine tuning of annotations, or to add specific annotations, use the *Advanced* screen.
+
+.The Class Persistence View
+image::DataModelerPersistence.png[]
+
+
+The *Persistence* screen when a specific field is selected looks as follows:
+
+.The Field Persistence View
+image::72231.png[]
+
+
+The following annotations can be managed via the *Persistence* screen.
+
+.Type Annotations
+[cols="35%,65%", options="header"]
+|===
+| Annotation
+| Automatically Generated when the Data Object is Persistable
+
+|javax.persistence.Entity
+|Yes
+
+|javax.persistence.Table
+|No
+|===
+
+.Field Annotations
+[cols="30%,40%,30%", options="header"]
+|===
+| Annotation
+| Automatically Generated when the Data Object is Persistable
+| Responsible UI Element
+
+|javax.persistence.Id
+|Yes
+|Is Identifier
+
+|javax.persistence.GeneratedValue
+|Yes
+|Generation strategy
+
+|javax.persistence.SequenceGenerator
+|Yes
+|Sequence Generator
+
+|javax.persistence.Column
+|No
+|Column Properties attributes
+
+|javax.persistence.OneToOne
+|No
+|Relationship Type
+
+|javax.persistence.OneToMany
+|Yes - when a field has one or multiple values
+|Relationship Type
+
+|javax.persistence.ManyToOne
+|Yes - when a field has multiple values
+|Relationship Type
+
+|javax.persistence.ManyToMany
+|No
+|Relationship Type
+
+|javax.persistence.ElementCollection
+|Yes - generated by the UI when a new field has one or multiple of a base java type, such as Integer, Boolean, String. This annotation cannot be edited with the *⁠Persistence*
+ screen tool (use the *Advanced*
+ screen tool instead).
+|Created by a field marked as `list`.
+|===
+
+
+All other JPA annotations can be added using the *Advanced*
+ screen.
+
+[float]
+=== Advanced
+
+
+The *Advanced*
+ screen is used for fine-tuning of annotations.
+Annotations can be configured, added and removed using the Advanced Domain screen.
+These can be any annotation that is on the classpath.
+
+
+image::DataModelerAdvanced.png[]
+
+
+After you click on the *add annotation*
+ option, the *Add new Annotation*
+ window is displayed.
+It is required to enter a fully qualified class name of an annotation and by pressing the *search* icon, the annotation definition is loaded into the wizard.
+Then it is possible to set different annotation parameters (required parameters are marked with *).
+
+
+image::72232.png[]
+
+
+If possible, the wizard will provide a suitable editor for the given parameters.
+
+
+image::72233.png[]
+
+
+If it is not possible to provide a customized editor, the wizard will provide a generic parameter editor.
+
+
+image::72234.png[]
+
+
+After you enter all the required parameters, the *Finish*
+ button is enabled and the annotation can be added to the given field or data object.
+
+[[_attribute_relationships]]
+== Configuring Relationships Between Data Objects
+
+
+When an attribute type is defined as another data object, the relationship is identified and defined by the image:Info_icon.png[]
+ symbol in the object attribute list.
+You can jump to the data object definition to view and edit by clicking on the icon.
+
+Relationship customization is only relevant where the data object is persistable.
+
+Relationships can be configured by selecting an attribute with a relationship and choosing the *Persistence* button on the right.
+Under *Relationship Properties*, click the *Relationship Type* property editing option.
+
+
+image::DataModelerRelationshipConfig.png[]
+
+
+Attempting to delete a data object that is used by a different data object will show the *Usage Detected* screen.
+It is still possible to delete the object from here, however this will stop your project from building successfully until the resulting errors are resolved.
+
+[[_persistence_descriptor]]
+== Persistence Descriptor
+
+Business central contains a `persistence.xml` file with default persistence settings. To configure persistence settings, click *Project Settings: Project General Settings* -> *Persistence descriptor*.
+
+image::PersistenceXML-new.png[]
+
+Use the *Advanced properties* section to change or delete or add properties.
+
+
+image::7229.png[]
+
+
+If you open the *Project persistable Data Objects* section in the Persistence Descriptor, you will see two buttons:
+
+* *Add class* enables the user to add arbitrary classes to the `persistence.xml` file to be declared as entities.
+* *Add project persistable classes* will automatically load all the persistable data objects in the current project.
+
+image::7228.png[]
+
+ifdef::BPMS[]
+
+[[_deployment_descriptor]]
+== Deployment Descriptor
+
+
+Deployment Descriptor editor can also be accessed through the Project Editor menu, and allows configuration of the `kie-deployment-descriptor.xml`
+ file for deployment in the jBPM runtime.
+Automatic configuration of the JPA Marshalling Strategies is only available in JBoss BPM Suite.
+
+
+image::DeploymentDescriptor.png[]
+
+endif::BPMS[]

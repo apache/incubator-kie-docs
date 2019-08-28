@@ -1,0 +1,219 @@
+[[_chap_testing]]
+= Testing
+
+[[_testing_scenarios]]
+== Test Scenarios
+
+
+Test Scenarios is a powerful feature that provides the ability for developers to validate the functionality of rules, models, and events.
+In short, Test Scenarios provide you the ability to test your knowledge base before deploying it and putting it into production.
+
+Test Scenarios can be executed one at the time or as a group.
+The group execution contains all the Scenarios from one package.
+Test Scenarios are independent, one Scenario can not affect or modify the other.
+
+After running all the Test Scenarios a report panel is shown.
+It contains either a success message or a failure message for test scenarios that were run.
+
+.Test Scenario Screen
+image::5956.png[Test Scenario for the BRMS User Guide 6.0.2]
+
+
+[[_creating_a_test_scenario]]
+== Creating a Test Scenario
+
+
+Creating a Test Scenario requires you to provide data for conditions which resemble an instance of your fact or project model.
+This is matched against a given set of rules and if the expected results are matched against the actual results, the Test Scenario is deemed to have passed.
+
+.Creating a new Test Scenario
+. In Business Central, click *Authoring* -> *Project Authoring* to open the *Projects* view.
+. Select a project for your test scenario.
+. Click *New Item* -> *Test Scenario*.
+. Enter the name, select the package, and click *OK*.
+. You will be presented with the Test Scenario edit screen.
++
+image:5594.png[]
+
+
+.Importing a model for the Test Scenario
+Data objects from the same package are available by default. For example, given the package structure `org.company.project`, and the following:
+
+* A data object _Fact1_ in package `org.company`.
+* A _Fact2_ in package `org.company.project`.
+
+If you create your test scenario in `org.company`, `org.company.Fact1` is available but you must import `org.company.Fact2`. To import data objects:
+
+. Open your test scenario.
+. Click the *Data Objects* tab.
+. Click *New Item*, select your import and click *Ok*. The imports can be specific to your project's data model or generic ones like `String` or `Double` objects.
+
+
+.Providing Test Scenario Facts
+. After importing data objects, click the *Editor* tab. At minimum, there are two sections that require input: *GIVEN* and *EXPECT*.
+* *GIVEN*: The input facts for the test.
+* *EXPECT*: The expected results given the input facts.
++
+*GIVEN* the input parameters, *EXPECT* these rules to be activated or fired. You can also *EXPECT* facts to be present and to have specific field values or *EXPECT* rules not to fire at all.
++
+If the expectations are met, the test scenario has passed and your rules are correct. Otherwise, the test scenario fails.
+
+[[_providing_given_facts]]
+.Providing Given Facts
+. To add a new fact, click image:5686.png[] next to the *GIVEN* label. Provide your fact data in the *New Input* dialog window based on the data models that you have imported in the *Data Objects* tab.
++
+image:6210.png[]
++
+You can select a particular data object from the model and give it a variable name, called *Fact Name* in the window, or choose to activate a rule flow group instead. Activating a rule flow group allows rules from the specified rule flow group to be tested by activating the group in advance. To add a given fact and activate a rule flow group:
+
+.. Add the given fact.
+.. Click image:5686.png[] again and add the rule flow group activation.
+
+. Optionally, add restrictions on the object you will insert. 
+.. Click *Add a field* and select a property of your object. 
++
+image::5606.png[]
+.. Click image:6191.png[] next to the property. 
+* Click *Create a new fact* if the property type is another fact object. 
+* Click *Literal value* otherwise. 
++
+See <<_additional_test_scenario_features>> for more information.
+.. Provide the value. For example:
++
+image::5607.png[]
++
+The example above is equivalent to the following:
++
+[source,java]
+----
+Customer fact1 = new Customer();
+fact1.setHasInternetService(true);
+insert(fact1);
+----
+
+
+.Providing Expected Rules
+. Once you are satisfied with the *GIVEN* conditions, you can expect rules that will be fired, facts created, or field values in existing facts changed. Click image:5686.png[] next to the *EXPECT* label to start adding expected results.
++
+image:5611.png[]
+. You can provide one of three expectations given the set of data that was created in the Given section:
+* *Rule:* enables you to check for firing of a particular rule. Either type the name of a rule that is expected to be fired or select it from the list of rules. Click the *OK* when done.
+* *Fact value:* enables you to check a specific object instance and its values. In the following example, given a Customer object with the `hasInternetService` boolean set to `true`, we expect the same object to have the `hasPhoneService` boolean set to `true`:
++
+image::factvalues.png[]
+  
+* *Any fact that matches:* enables you to check any objects in the working memory and the values of their field. In the following example, given a Customer object which has internet service, a new object RecurringPayment is expected to be inserted into the working memory with the `amount` field set to `5`: 
++
+image::5612.png[]
+
+
+.Reviewing, Saving, and Running a Scenario
+. Click *Save* in the upper right corner to save your scenario. Ensure you regularly save and review your scenarios.
+. Click *Run scenario* in the upper right corner to execute your test. The results are displayed at the bottom of this screen in a new panel called *Reporting*.
++
+image::5613.png[]
+. If you created more tests in one file, you can run all the tests in a sequence. Click *Run all scenarios* to do so.
+. Also note the *Audit log:*, which informs you about inserted facts and fired rules:
++
+image::auditlog.png[]
+
+
+[[_additional_test_scenario_features]]
+== Additional Test Scenario Features
+
+
+In addition to the previous Test Scenario features, Test Scenarios include various other features.
+
+.Calling Methods
+. `Call Method` enables you to call a method on an existing fact in the beginning of the rule execution. This feature is accessed by clicking image:6176.png[] next to the *CALL METHOD* label.
++
+
+.Call Method
+image::6175.png[]
+. After selecting an existing fact from the drop-down list, click *Add*. The green arrow button image:6187.png[] enables you to call a method on the fact.
++
+
+.Invoke a Method
+image::6188.png[]
+
+
+.Using Globals in a Test Scenario
+Globals are named objects that are visible to the rule engine but are different from the objects for facts. Accordingly, the changes in the object of a global do not trigger the reevaluation of rules. You can use and validate global fields in a Test Scenario. 
+
+To make a global variable accessible for your test scenario:
+
+. Click *New Item* -> *Global Variable(s)* to create a global definition.
+. Define your global variable name and type.
+. Import the object type in your test. If you do not import the type of your global variable, the variable will not be accessible for your test.
+
+
+.Adding a New Global
+. Click image:6176.png[] next to the *(globals)* label to add a global and click *Add*.
++
+image::6189.png[New Global pop up dialog for JBoss BRMS Test Scenario feature.]
+
+Adding restrictions on fields is similar to adding fields and restrictions in the *Given* section. See <<_providing_given_facts>> for further information.
+
+
+.Configuring Rules
+. The *(configuration)* label enables the you to set additional constraints on the firing of rules by providing the following options:
++
+* `Allow these rules to fire:` enables you to select which rules are allowed to fire.
+* `Prevent these rules from firing:` enables you to prevent certain rules from firing for the test scenario.
+* `All rules may fire` allows all the rules to fire for the given test.
+
++
+
+.Configuration
+image::6193.png[Configuration rules option for JBoss BRMS Test Scenario features]
+. If you select one of the following: 
+* *Allow these rules to fire:*
+* *Prevent these rules from firing:*
++
+Enter the rules into the empty field. Clicking image:6176.png[] next to the empty field to select which rules are affected by the condition.
++
+
+.Selecting rules
+image::6194.png[Configuration select rule options for the JBoss BRMS Test Scenario feature.]
+. Choose a rule from the drop-down list and click *OK*. The selected rules will appear in the field next to the rules configuration option.
+
+
+.Date and Time Configuration
+. The *Use real date and time* option uses real time when running the test scenario.
++
+
+.Real Date and Time
+image::6195.png[Use real date and time choice for the Expect feature in JBoss BRMS Test Scenarios]
+. The *Use a simulated date and time* option enables you to specify the year, month, day, hour, and minute associated with the test scenario.
++
+
+.Title
+image::6196.png[Simulated date and time for Test Scenarios in JBoss BRMS 6.0.2]
+
+
+.Advanced Fact Data
+. After providing fields to editable properties as part of your created fact, click image:6191.png[] to open the *Field value* dialogue. You can edit literal values or provide advanced fact data.
++
+
+.Advanced Options
+image::6197.png[Advanced Fact Data options for JBoss BRMS Test Scenarios.]
+. In the *Advanced Options...* section, you can choose between the following, depending on the type of fact created and the model objects used for the particular test scenario.
+* *Bound variable* sets the value of the field to the fact bound to the selected variable. The field type must match the bound variable type.
+* *Create new fact* enables you to create a new fact and assign it as a field value of the parent fact. Click on the fact to be assigned as a field value to be supplied with a drop down of various field values. These values may be given further field values.
+
+
+
+.Adding More Sections
+* The *Editor* tab enables you to add *GIVEN*, *CCALL METHOD*, and *EXPECT* sections to the scenario. Click *More* below the *EXPECT* section to do so. This will open a block with all three sections that can be removed by clicking image:6209.png[].
+
+
+.Modifying or Deleting an Existing Fact
+When you create more tests in one file, it is recommended to delete facts inserted by previous tests. When you insert a new *GIVEN* fact, notice the following fields:
+
+* *Modify an existing fact* enables you to edit a fact between knowledge base executions.
+* *Delete an existing fact* enables you to remove facts between executions.
+
++
+
+.Modifying and Deleting Existing Facts
+image::6211.png[Modify and Delete and existing fact options for JBoss BRMS Test Scenarios]
