@@ -15,11 +15,31 @@ After you install RH-SSO, you must install the RH-SSO client adapter for {EAP} a
 * *Version:* {RH-SSO_VERSION}
 . Download *Red Hat Single Sign-on {RH-SSO_VERSION} Client Adapter for JBoss EAP 7* (`rh-sso-{RH-SSO_VERSION}-eap7-adapter.zip`).
 . Unzip and install `rh-sso-{RH-SSO_VERSION}-eap7-adapter.zip`. For installation instructions, see the "JBoss EAP Adapter" section of the https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/7.3/html-single/securing_applications_and_services_guide/#jboss_adapter[_Red Hat Single Sign On Securing Applications and Services Guide_].
-. Go to `_EAP_HOME_/standalone/configuration` and open the `standalone.xml` and `standalone-full.xml` files. 
++
+NOTE: Install the adapter with the `-Dserver.config=standalone-full.xml` property.
+
+. Go to `_EAP_HOME_/standalone/configuration` and open the `standalone-full.xml` file.
 . Delete the `<single-sign-on/>` element from both of the files.
-. Navigate to the `_EAP_HOME_/standalone/configuration` directory in your {EAP} installation and edit the `standalone.xml` and `standalone-full.xml` files to add the RH-SSO subsystem configuration. For example:
+. Navigate to the `_EAP_HOME_/standalone/configuration` directory in your {EAP} installation and open the `standalone-full.xml` file in a text editor.
+. Add the `<system-properties>` subsystem following subsystem:
 +
 --
+[source,xml,subs="attributes+"]
+----
+<system-properties>
+  <property name="org.jbpm.workbench.kie_server.keycloak" value="true"/>
+  <property name="org.uberfire.ext.security.management.api.userManagementServices" value="KCAdapterUserManagementService"/>
+  <property name="org.uberfire.ext.security.management.keycloak.authServer" value="http://localhost:8180/auth"/>
+</system-properties>
+----
+--
+//For version 7.6: (just the last two properties)
+//<system-properties>
+//<property name="org.uberfire.ext.security.management.api.userManagementServices" //value="KCAdapterUserManagementService"/>
+//<property name="org.uberfire.ext.security.management.keycloak.authServer" value="http://localhost:8180/auth"/>
+//</system-properties>
+. Add the RH-SSO subsystem configuration. For example:
++
 [source,xml,subs="attributes+"]
 ----
 <subsystem xmlns="urn:jboss:domain:keycloak:1.1">
@@ -35,7 +55,7 @@ After you install RH-SSO, you must install the RH-SSO client adapter for {EAP} a
  </secure-deployment>
 </subsystem>
 ----
-
++
 In this example:
 
 * `secure-deployment name` is the name of your application's WAR file.
@@ -51,9 +71,7 @@ In this example:
 ====
 The RH-SSO server converts the user names to lower case. Therefore, after integration with RH-SSO, your user name will appear in lower case in {PRODUCT}. If you have user names in upper case hard coded in business processes, the application might not be able to identify the upper case user.
 ====
---
 +
-
 . Navigate to `_EAP_HOME_/bin/` and enter the following command to start the {EAP} server:
 +
 --
