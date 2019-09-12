@@ -204,7 +204,6 @@ rule "Explode Cart"
     agenda-group "init"
     auto-focus true
     salience 10
-    dialect "java"
   when
     $order : Order( grossTotal == -1 )
     $item : Purchase() from $order.items
@@ -230,9 +229,8 @@ The `"show items"` agenda group contains only one rule, `"Show Items"`. For each
 ----
 rule "Show Items"
     agenda-group "show items"
-    dialect "mvel"
   when
-    $order : Order( )
+    $order : Order()
     $p : Purchase( order == $order )
   then
    textArea.append( $p.product + "\n");
@@ -248,7 +246,6 @@ The `"evaluate"` agenda group also gains focus from the `"Explode Cart"` rule. T
 // fish food and do not already have a fish food sample.
 rule "Free Fish Food Sample"
     agenda-group "evaluate" // <1>
-    dialect "mvel"
   when
     $order : Order()
     not ( $p : Product( name == "Fish Food") && Purchase( product == $p ) ) // <2>
@@ -279,7 +276,6 @@ If the order facts meet all of these requirements, then a new product is created
 // do not already have a tank.
 rule "Suggest Tank"
     agenda-group "evaluate"
-    dialect "java"
   when
     $order : Order()
     not ( $p : Product( name == "Fish Tank") && Purchase( product == $p ) ) // <1>
@@ -302,7 +298,6 @@ The `"do checkout"` rule in the Pet Store example has no agenda group and no `wh
 [source]
 ----
 rule "do checkout"
-    dialect "java"
   when
   then
     doCheckout(frame, kcontext.getKieRuntime());
@@ -320,7 +315,6 @@ The `"checkout"` agenda group contains three rules for processing the order chec
 ----
 rule "Gross Total"
     agenda-group "checkout"
-    dialect "mvel"
   when
     $order : Order( grossTotal == -1)
     Number( total : doubleValue ) from accumulate( Purchase( $price : product.price ),
@@ -332,7 +326,6 @@ end
 
 rule "Apply 5% Discount"
     agenda-group "checkout"
-    dialect "mvel"
   when
     $order : Order( grossTotal >= 10 && < 20 )
   then
@@ -342,7 +335,6 @@ end
 
 rule "Apply 10% Discount"
     agenda-group "checkout"
-    dialect "mvel"
   when
     $order : Order( grossTotal >= 20 )
   then
