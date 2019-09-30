@@ -1,21 +1,23 @@
 [id='cust-marshalling-cms']
 
-= Using a Custom Document Marshalling Strategy for a Content Management System (CMS)
+= Using a custom document marshalling strategy for a content management system (CMS)
 
 The document marshalling strategy for your project determines where documents are stored for use with forms and processes. The default document marshalling strategy in {PRODUCT} is `org.jbpm.document.marshalling.DocumentMarshallingStrategy`. This strategy uses a `DocumentStorageServiceImpl` class that stores documents locally in your `_PROJECT_HOME_/docs` folder. If you want to store form and process documents in a custom location, such as in a centralized content management system (CMS), add a custom document marshalling strategy to your project. You can set this document marshalling strategy in Business Central or in the `kie-deployment-descriptor.xml` file directly.
 
+.Procedure
 . Create a custom marshalling strategy `.java` file that includes an implementation of the `org.kie.api.marshalling.ObjectMarshallingStrategy` interface. This interface enables you to implement the variable persistence required for your custom document marshalling strategy.
 +
 --
 The following methods in this interface help you create your strategy:
 
-* [method]``boolean accept(Object object)``: Determines if the given object can be marshalled by the strategy.
-* [method]``byte[] marshal(Context context, ObjectOutputStream os, Object object)``: Marshals the given object and returns the marshalled object as `byte[]``.
-* [method]``Object unmarshal(Context context, ObjectInputStream is, byte[] object, ClassLoader classloader)``: Reads the object received as `byte[]`` and returns the unmarshalled object.
-* [method]``void write(ObjectOutputStream os, Object object)``: Same as [method]``marshal`` method, provided for backward compatibility.
-* [method]``Object read(ObjectInputStream os)``: Same as [method]``unmarshal``, provided for backward compatibility.
+* `boolean accept(Object object)`: Determines if the specified object can be marshalled by the strategy
+* `byte[] marshal(Context context, ObjectOutputStream os, Object object)`: Marshals the specified object and returns the marshalled object as `byte[]`
+* `Object unmarshal(Context context, ObjectInputStream is, byte[] object, ClassLoader classloader)`: Reads the object received as `byte[]` and returns the unmarshalled object
+* `void write(ObjectOutputStream os, Object object)`: Same as the `marshal` method, provided for backward compatibility
+* `Object read(ObjectInputStream os)`: Same as the `unmarshal` method, provided for backward compatibility
 
-Example `ObjectMarshallingStrategy` implementation for storing and retrieving data from a Content Management Interoperability Services (CMIS) system:
+The following code sample is an example `ObjectMarshallingStrategy` implementation for storing and retrieving data from a Content Management Interoperability Services (CMIS) system:
+
 [source,java]
 ----
 package org.jbpm.integration.cmis.impl;
@@ -222,20 +224,19 @@ public class OpenCMISPlaceholderResolverStrategy extends OpenCMISSupport impleme
 ----
 --
 . In {CENTRAL}, go to *Menu* -> *Design* -> *Projects*.
-. Click on the project name and click *Settings*.
+. Click the project name and click *Settings*.
 +
 .Settings tab
 image::processes/settings-tab.png[Selecting the settings tab]
 . Click *Deployments* -> *Marshalling Strategies*-> *Add Marshalling Strategy*.
 . Enter `org.jbpm.document.marshalling.DocumentMarshallingStrategy` in the *Name* field to use the default document marshalling strategy or enter the identifier of a custom document marshalling strategy.
-. Select *Reflection* from the *Resolver* pull-down menu.
-. Click *Test* to ensure correctness of your deployment descriptor file.
-. Click *Build* -> *Deploy*.
+. Select *Reflection* from the *Resolver* drop-down menu.
+. Click *Test* to validate your deployment descriptor file.
+. Click *Deploy* to build and deploy the updated project.
 +
-Alternatively, you can navigate to `~/META_INF/kie-wb-deployment-descriptor.xml` in your project and edit the deployment descriptor file directly with the required `<marshalling-strategies>` elements.
+Alternatively, if you are not using {CENTRAL}, you can navigate to `_PROJECT_HOME_/src/main/resources/META_INF/kie-deployment-descriptor.xml` (if applicable) and edit the deployment descriptor file with the required `<marshalling-strategies>` elements.
 +
-Example `kie-deployment-descriptor.xml` file with custom document marshalling strategy:
-+
+.Example deployment descriptor file with default document marshalling strategy
 [source,xml]
 ----
 <deployment-descriptor
@@ -256,4 +257,4 @@ Example `kie-deployment-descriptor.xml` file with custom document marshalling st
   </marshalling-strategies>
 ----
 
-. To enable documents stored in a custom location to be attached to forms and processes, create a document variable in the relevant processes and map task inputs and outputs to that document variable in Business Central.
+. To enable documents stored in a custom location to be attached to forms and processes, create a document variable in the relevant processes and map task inputs and outputs to that document variable in {CENTRAL}.
