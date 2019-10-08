@@ -1,6 +1,6 @@
 [id='clustering-bc-configure-standalone_proc']
 = Configuring and running {CENTRAL} in a cluster
-After you install {EAP} and {CENTRAL} you can use {DATAGRID} and the AMQ Broker to configure the cluster.
+After you install {EAP} and {CENTRAL} you can use {DATAGRID} and the AMQ Broker to configure the cluster. Complete these steps on each node of the cluster.
 
 [NOTE]
 ====
@@ -12,18 +12,24 @@ These steps describe a basic cluster configuration. For more complex configurati
 * {DATAGRID} {DATAGRID_VERSION_LONG} is installed as described in <<clustering-datagrid-proc_{context}>>.
 * AMQ Broker is installed and configured, as described in <<JMS-broker-configure_{context}>>.
 * {EAP} and {PRODUCT} are installed on each node of the cluster as described in <<clustering-download-eap-bc-proc>>.
-* An NFS server with a mounted partition is available.
+* An NFS server with an exported share is available, as described in <<nfs-server-configure_{context}>>.
 
 .Procedure
-. Open the `_EAP_HOME_/standalone/configuration/standalone-full-ha.xml` file in a text editor.
-. Edit or add the following properties to the `<system-properties>` element and replace the following placeholders:
+. Mount the directory shared over NFS as `/data`. Enter the following commands as the root user:
++
+[subs="attributes,verbatim,macros"]
+----
+mkdir /data
+mount <NFS_SERVER_IP>:<DATA_SHARE> /data
+----
++
+Replace _<NFS_SERVER_IP>_ with the IP address or hostname of the NFS server machine. Replace _<DATA_SHARE>_ with the share name that you configured (for example, `/opt/kie/data`).
++
+. Open the `_EAP_HOME_/standalone/configuration/standalone-full.xml` file in a text editor.
+. Edit or add the properties under the `<system-properties>` element and replace the following placeholders:
 * `<AMQ_USER>` and `<AMQ_PASSWORD>` are the credentials that you defined when creating the AMQ Broker.
 * `<AMQ_BROKER_IP_ADDRESS>` is the IP address of the AMQ Broker.
-* `<SERVER_NAME>` is the server name specified in your {DATAGRID} server configuration.
-* `<SASL_QOP>` is the combination of auth, auth-int and auth-conf values for your {DATAGRID} server configuration.
 * `<INFINISPAN_NODE_IP>` is the IP address where {DATAGRID} is installed.
-* `<SHARED_NETWORK_FOLDER>` is the network folder that all {CENTRAL}s in the cluster use to exchange data. This folder must be the same on all nodes of the cluster.
-
 +
 [source,xml]
 ----
@@ -39,35 +45,43 @@ These steps describe a basic cluster configuration. For more complex configurati
      value="<INFINISPAN_NODE_IP>"/>
   <property name="org.appformer.ext.metadata.infinispan.realm"
      value="ApplicationRealm"/>
-  <property name="org.appformer.ext.metadata.infinispan.server.name"
-     value="<SERVER_NAME>"/>
-  <property name="org.appformer.ext.metadata.infinispan.sasl.qop"
-     value="<SASL_QOP>"/>
-  <property name="org.appformer.ext.metadata.infinispan.username"
-     value=""/>
-  <property name="org.appformer.ext.metadata.infinispan.password"
-     value=""/>
   <property name="org.appformer.ext.metadata.infinispan.cluster"
      value="kie-cluster"/>
   <property name="org.appformer.ext.metadata.index"
      value="infinispan"/>
   <property name="org.uberfire.nio.git.dir"
-     value="<SHARED_NETWORK_FOLDER>"/>
+     value="/data"/>
   <property name="es.set.netty.runtime.available.processors"
      value="false"/>
 </system-properties>
 ----
-. Save the `standalone-full-ha.xml` file.
++
+. Optional: If the {DATAGRID} deployment requires authentication, edit or add the properties under the `<system-properties>` element and replace the following placeholders:
+* `<SERVER_NAME>` is the server name specified in your {DATAGRID} server configuration.
+* `<SASL_QOP>` is the combination of auth, auth-int and auth-conf values for your {DATAGRID} server configuration.
++
+[source,xml]
+----
+<property name="org.appformer.ext.metadata.infinispan.server.name"
+   value="<SERVER_NAME>"/>
+<property name="org.appformer.ext.metadata.infinispan.sasl.qop"
+   value="<SASL_QOP>"/>
+<property name="org.appformer.ext.metadata.infinispan.username"
+   value=""/>
+<property name="org.appformer.ext.metadata.infinispan.password"
+   value=""/>
+----
+. Save the `standalone-full.xml` file.
 . To start the cluster, navigate to `__EAP_HOME__/bin` and enter one of the following commands:
 ** On Linux or UNIX-based systems:
 +
 [source,bash]
 ----
-$ ./standalone.sh -c standalone-full-ha.xml
+$ ./standalone.sh -c standalone-full.xml
 ----
 ** On Windows:
 +
 [source,bash]
 ----
-standalone.bat -c standalone-full-ha.xml
+standalone.bat -c standalone-full.xml
 ----
