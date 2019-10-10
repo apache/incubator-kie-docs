@@ -1,0 +1,45 @@
+[id='hacep-server-proc']
+= Implementing the HA CEP server
+
+The high-availability (HA) CEP server runs on the {OPENSHIFT} environment. It includes all necessary {PRODUCT_DROOLS} rules and other code required to process events.
+
+You must prepare the source, build it, and then deploy it on {OPENSHIFT}. 
+
+.Procedure
+
+.  Download the `{PRODUCT_FILE}-reference-implementation.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal.
+. Extract the contents of the file and then extract the `{PRODUCT_INIT}-{BOM_VERSION}-openshift-drools-hacep-distribution.zip` file.
+. Change to the `openshift-drools-hacep-distribution/sources` directory.
+. Review and modify the server code based on the sample project in the `sample-hacep-project/sample-hacep-project-kjar` directory. The complex event processing logic is defined by the DRL rules in the `src/main/resources/org.drools.cep` subdirectory.
+. Build the project using the standard Maven command:
++
+----
+mvn clean install -DskipTests
+----
++
+. Use the OpenShift operator infrastructure to install Red Hat AMQ Streams. For information about installing Red Hat AMQ Streams, see https://access.redhat.com/documentation/en-us/red_hat_amq/7.3/html/using_amq_streams_on_openshift_container_platform/index[_Using AMQ Streams on OpenShift Container Platform_].
+. Using the `KafkaTopic` resource on {OPENSHIFT}, create the topics from all the YAML files in the `kafka-topics` subdirectory. 
++
+For instructions about creating topics using the `KafkaTopic` resource, see https://access.redhat.com/documentation/en-us/red_hat_amq/7.4/html/using_amq_streams_on_openshift_container_platform/using-the-topic-operator-str[Using the topic operator] in the Red Hat AMQ documentation.
++
+. In order to enable application access to the ConfigMap that is used in the leader election, you must configure role-based access control. Change to the `springboot` directory and enter the following commands:
++
+----
+oc create -f kubernetes/service-account.yaml
+oc create -f kubernetes/role.yaml
+oc create -f kubernetes/role-binding.yaml
+----
++
+For more information about configuring role-based access control in {OPENSHIFT}, see https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html/authentication/using-rbac[Using RBAC to define and apply permissions] in the {OPENSHIFT} produt documentation.
++
+. In the `springboot` directory, enter the following commands to build the Docker image and push it into the Docker registry that is configured on your system. This build imports the built `sample-hacep-project-kjar` code as a Maven dependency and includes it in the `BOOT-INF/lib` directory of the `openshift-kie-springboot.jar` file. The Docker build then uses the JAR file to create the image.
++
+----
+docker login --username=<user username>
+docker build -t <user_username>/openshift-kie-springboot:<tag> .  
+docker push <user_username>/openshift-kie-springboot:<tag>
+----
++
+Alternatively, to use Podman for the build process, replace `docker` with `podman` in the commands. 
++
+. In the OpenShift user interface, create a YAML source. Paste in the contents of the `kubernetes/deployment_registry.yaml` and change the Docker image name as necessary. Click *Deploy* to deploy the server.
