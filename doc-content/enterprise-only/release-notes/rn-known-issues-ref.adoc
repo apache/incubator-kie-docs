@@ -3,12 +3,134 @@
 
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
+ifdef::PAM[]
+== Installation
+
+.{PRODUCT} in {JWS} data source configuration is missing elements [https://issues.jboss.org/browse/RHPAM-2428[RHPAM-2428]]
+
+Issue: When you install {PRODUCT} in {JWS} and configure a data source, there are some missing elements that are needed for the setup to work properly.
+
+Steps to reproduce:
+
+. Install {PRODUCT} on {JWS}.
+. Configure database for an Oracle database.
+. Configure an Oracle database.
+. Leave default change URL and add username and password
+. Try running the server.
+
+Expected result:
+
+Actual result:
+
+Workaround: Modify the resource in `context.xml` to contain missing elements, refer to documentation:
+
+[source]
+----
+<Resource auth="Container"
+		 type="oracle.jdbc.xa.client.OracleXADataSource"
+		 maxIdle="30" maxTotal="100"
+		 maxWaitMillis="10000"
+		 name="processServerDS"
+		 password="<USERNAME>"
+		 factory="org.apache.tomcat.jdbc.naming.GenericNamingResourcesFactory"
+		 url="jdbc:oracle:thin:@oracle-12cr1.rhev-ci-vms.eng.example.com:1521:<USERNAME>"
+		 URL="jdbc:oracle:thin:@oracle-12cr1.rhev-ci-vms.eng.example.com:1521:<USERNAME>"
+     username="<USERNAME>"/>
+----
+
+.The {PRODUCT} installer creates an incorrect password vault for the created data source [https://issues.jboss.org/browse/RHPAM-2407[RHPAM-2407]]
+
+Issue:
+If you install {PRODUCT} with the installer and configure database settings, the  `datasource` element in `standalone` files is wrong and connection to the database fails.
+
+Steps to reproduce:
+
+. Use the installer to install {KIE_SERVER} only onto {EAP}.
+. When prompted, click *Configure Advanced Properties* -> *Configure Database Settings*.
+. Open the `standalone.xml` or `standalone-full.xml` file to verify user credentials.
+
+Expected result: The datasource element in the `standalone` files should look similar to the following, where `<NEWDATASOURCE>` is the name of your database:
+[source]
+----
+<password>${VAULT::datasource.<NEWDATASOURCE>::password::1}</password>
+----
+
+Actual Result: The datasource element in the `standalone` files looks similar to the following:
+
+[source]
+----
+<password>:datasource.<NEWDATASOURCE>::password::1</password>
+----
+
+Workaround:
+
+Replace the `password` entry with the correct password vault entry for the database. In this example, `<NEWDATASOURCE>` is the name of your database:
+
+[source]
+----
+${VAULT::datasource.<NEWDATASOURCE>::password::1}
+----
+
+== {CENTRAL}
+
+.The *Bulk Reassign* check boxes on the *Task List* page reset before finishing the selected operation [https://issues.jboss.org/browse/RHPAM-2387[RHPAM-2387]]
+
+Issue: If you select multiple tasks on the *Task List* page and then select a bulk reassignment operation, when the dialog box appears over the *Task List* page, the previously selected tasks are no longer selected.
+
+Steps to reproduce:
+
+On the *Task List* page, select multiple tasks and choose a bulk reassignment operation.
+
+Expected result: A dialog box appears on top of the *Task List* page. The list of tasks is visible on the *Task List* page and the previously selected tasks are still selected.
+
+Actual result:  A dialog box appears on top of the *Task List* page. The list of tasks is visible on the *Task List* page and the previously selected tasks are not selected.
+
+Workaround: None.
+
+.The *Bulk Reassign* operation fails if you include tasks that are in a state that does not allow reassignment [https://issues.jboss.org/browse/RHPAM-2386[RHPAM-2386]]
+
+Issue: If you select multiple tasks with various statuses, for example *Ready* and *Reserved*, including tasks that are in a state that does not allow reassignment, for example *Suspended* and *Completed*, then the bulk reassign operation fails.
+
+Steps to reproduce:
+
+. Select tasks with various statuses and include one in a suspended state.
+. Run the bulk reassignment. An error message appears telling you that some of the the tasks could not be reassigned because they were not in the correct state.
+. Click *OK*.
+
+Expected result: The dialog box closes and tasks are reassigned, except the tasks listed as failed in the dialog box.
+
+Actual result: The dialog box does not close. When you close it manually by clicking the *x* in the top right corner, and you check the status of the previously selected tasks, only the tasks processed before first failure are reassigned.
+
+Workaround: Before running the bulk action, filter the tasks and omit any task that would interrupt the reassignment.
+
+== Process designer
+
+.In the new process designer, some end events have incorrect icons [https://issues.jboss.org/browse/RHPAM-2413[RHPAM-2413]]
+
+Issue:
+In the new process designer, signal, escalation, compensation, and message end events are not filled, but they should be according to the BPMN 2.0 specification.
+
+Workaround: None.
+
+endif::[]
+
+ifdef::DM[]
+== {PLANNER}
+
+.{PLANNER} is missing an environment variable for  thread pool queue size [https://issues.jboss.org/browse/RHDM-1096[RHDM-1096]]
+endif::[]
+
+Issue: The `org.optaplanner.server.ext.thread.pool.queue.size` system property has been added to the {KIE_SERVER} {PLANNER} extension. This property cannot be directly set on the {KIE_SERVER} image.
+
+Workaround: Use the existing `JAVA_OPTS_APPEND` environment variable and append the system property.
+
 == {OPENSHIFT}
 .In a high-availability authoring environment, when one user imports a project, another user is unable to see it [https://issues.jboss.org/browse/AF-2062[AF-2062]]
 
-Issue: When multiple users connect to a high-availability {CENTRAL} and one of them creates a project, another user can not see the project.
+Issue: When multiple users connect to a high-availability {CENTRAL} and one user creates a project, another user can not see the project.
 
 Steps to reproduce:
+
 . Log in to {CENTRAL} as two different users (A and B) from two different hosts or browsers.
 . As user A and as user B, open the same space.
 . As user A, import a project using an external Git repository URL.
@@ -30,3 +152,72 @@ Workaround: Configure the role change again.
 Issue: If you import a sample project in high-availability {CENTRAL}, the project can appear in the list several times. Some copies might not have all of the assets. The environment can slow down when this issue occurs.
 
 Workaround: Ensure one copy has all of the assets, then remove all other copies. If {CENTRAL} performance is slow, restart all of the nodes connected to it.
+
+.In a high-availability authoring environment, project creation fails when a {CENTRAL} node is down [https://issues.jboss.org/browse/[AF-2143]]
+
+Issue: When you create a project, the project creation does not complete. The cause is one {CENTRAL} node in a high-availability authoring environment going down.
+
+Workaround: Create the project again.
+
+.In a high-availability authoring environment, asset creation is not completed when a {CENTRAL} node is down [https://issues.jboss.org/browse/[AF-2144]]
+
+Issue: When you create an asset, the asset is not indexed. It is displayed in {CENTRAL} but you can not use it. The cause is one {CENTRAL} node in a high-availability authoring environment going down.
+
+Workaround: In the *Project Explorer* view, open the asset and click *Save*.
+
+
+.In a high-availability authoring environment, multi-project import slows down {CENTRAL} [https://issues.jboss.org/browse/[AF-2078]]
+
+Issue: When a user imports multiple projects in a high-availability {CENTRAL} with multi-project import enabled, {CENTRAL} slows down and consumes significant resources.
+
+Steps to reproduce:
+
+. In the *Settings* menu of {CENTRAL}, enable multi-project import.
+. Enter a space and import all samples at one time.
+
+Expected result: {CENTRAL} operates normally and imports the samples.
+
+Actual result: {CENTRAL} slows down and consumes a lot of resources. In a {OPENSHIFT} environment, the pod eventually fails.
+
+Workaround: Restart all {CENTRAL} nodes. To avoid this issue, do not enable multi-project import.
+
+.The {KIE_SERVER} pod fails to start after a user updates the BusyBox image on {OPENSHIFT} [https://issues.jboss.org/browse/RHPAM-2431[RHPAM-2431]]
+
+Issue: In a {OPENSHIFT} environment, a {KIE_SERVER} pod fails to start or restart with the latest version of the BusyBox image.
+
+Steps to reproduce:
+
+. In your {OPENSHIFT} environment, use a template or operator to deploy a {KIE_SERVER} that uses a MySQL or PostgreSQL database server.
+. Enter the following command to manually update the OpenShift registry to the latest BusyBox image:
++
+[source]
+----
+$ docker pull busybox
+----
+
+. Scale the {KIE_SERVER} pod down to 0 replicas and then scale up.
+
+Expected result: The {KIE_SERVER} pod starts normally.
+
+Actual result: The {KIE_SERVER} pod fails to start and remains at 0 replicas.
+
+Workaround:
+
+. On a local machine that has access to the cluster and has Docker installed, enter the following command to pull the BusyBox image version 1.28.4:
++
+[source]
+----
+$ docker pull docker.io/busybox:1.28.4
+----
+
+. Enter the following comand to tag the image with the latest tag:
++
+[source]
+----
+docker tag docker.io/busybox:1.28.4 myopenshiftcluster/openshift/busybox:latest
+----
+
+. Push the image into your {OPENSHIFT} environment. For instructions, refer to the following documentation:
++
+** For  {OPENSHIFT} version 3.11, see the "Accessing the Registry" section of the https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html-single/developer_guide/index[OpenShift Container Platform 3.11 Developer Guide].
+** For  {OPENSHIFT} version 4.1, see the "Accessing the Registry" section of https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/registry/index[Configuring registries for OpenShift Container Platform 4.1].
