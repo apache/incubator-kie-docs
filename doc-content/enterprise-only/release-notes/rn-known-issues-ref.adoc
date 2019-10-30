@@ -3,351 +3,451 @@
 
 This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
 
+ifdef::PAM[]
+
+== Installation
+
+//approved
+.{PRODUCT} in a {JWS} datasource configuration is missing elements [https://issues.jboss.org/browse/RHPAM-2428[RHPAM-2428]]
+
+Issue: When you use the installer to install {PRODUCT} in {JWS} and you configure a datasource, there are some missing elements that are needed for the setup to work properly.
+
+Steps to reproduce:
+
+. Use the installer to install {PRODUCT} on {JWS}.
+. When prompted, click *Configure Advanced Properties* -> *Configure Database Settings*.
+. Configure your settings and add a user name and password.
+. Try running the server.
+
+Expected result: {PRODUCT} starts.
+
+Actual result: {PRODUCT} does not start.
+
+Workaround: Modify the resource in the `context.xml` file as described in the "Configuring JDBC Web Server data sources" section of {URL_INSTALLING_ON_JWS}[_{INSTALLING_ON_JWS}_].
+
+//approved
+.On {EAP}, the {PRODUCT} installer creates an incorrect password vault for the created datasource [https://issues.jboss.org/browse/RHPAM-2407[RHPAM-2407]]
+
+Issue: If you use the installer to install {PRODUCT} on {EAP} and you configure database settings, the `datasource` element in the `standalone` files is wrong and connection to the database fails.
+
+Steps to reproduce:
+
+. Use the installer to install {KIE_SERVER} only onto {EAP}.
+. When prompted, click *Configure Advanced Properties* -> *Configure Database Settings*.
+. Open the `standalone.xml` or `standalone-full.xml` file to verify user credentials.
+
+Expected result: The datasource element in the `standalone` files should look similar to the following, where `<NEWDATASOURCE>` is the name of your database:
+[source]
+----
+<password>${VAULT::datasource.<NEWDATASOURCE>::password::1}</password>
+----
+
+Actual Result: The datasource element in the `standalone` files looks similar to the following:
+
+[source]
+----
+<password>:datasource.<NEWDATASOURCE>::password::1</password>
+----
+
+Workaround: Replace the `<password>` entry with the correct password vault entry for the database. In this example, `<NEWDATASOURCE>` is the name of your database:
+
+[source]
+----
+${VAULT::datasource.<NEWDATASOURCE>::password::1}
+----
+
+endif::[]
+
 
 == {CENTRAL}
 
-.Guided rules expose parentheses outside of an expression [https://issues.jboss.org/browse/RHDM-1046[RHDM-1046]]
+//approved by Barbora Siskova
+.You cannot start a task if the Elytron adapter is installed [https://issues.jboss.org/browse/RHPAM-2450[RHPAM-2450]]
 
-Issue: When you create a guided rule, if you select the field for multiple values and each value is enclosed in
-parenthesis, for example `(red), (blue)`,  an invalid rule is generated.
-
+Issue: If {CENTRAL} on {EAP} is integrated with RH-SSO using the Elytron adapter, errors are displayed after a task is started.
 
 Steps to reproduce:
 
-. Open {CENTRAL}.
-. Open any project.
-. Create the data object `Car` with the field `color:String`.
-. Create a new guided decision table.
-. Define a new *Condition* column:
-+
-*Pattern:* `$c : Car`
-+
-*Calculation Type*: `Literal value`
-+
-*Field*: `color`
-+
-*Operator*: `is contained in the (comma separated) list`
-+
-*Header*: `Car color is`
-. Select the *Model* tab and enter `(red), (blue)` in the corresponding cell.
+. Install {PRODUCT} on {EAP}.
+. Configure {CENTRAL} with RH-SSO using the Elytron adapter.
+. Import a process sample.
+. Start the process.
+. Start a task.
 
-Expected result: The `$c : Car(color in ("(red)", "(blue)"))` rule is generated.
+Expected result: The task starts correctly.
 
-Actual result: The `$c : Car( color in ("red)", "(blue") )` rule is generated.
+Actual result: The task does not start and an error is displayed.
 
-Workaround: In the *Model* tab, enter the values as shown in the following example:
+Workaround: Use the legacy adapter instead of the Elytron adapter. Enter the following command to install the legacy adapter:
 
 [source]
 ----
-((red), (blue))
+./bin/jboss-cli.sh -c --file=bin/adapter-install.cli
 ----
 
 
+//approved
+.An error might occur if you import a sample project twice [https://issues.jboss.org/browse/RHPAM-2434[RHPAM-2434]]
 
-.A guided scorecard cannot be tested with the Test Scenario (Legacy) asset [https://issues.jboss.org/browse/RHPAM-2307[RHPAM-2307]]
-
-Issue: If a guided scorecard name begins with a lowercase letter, you cannot test the scorecard with the Test Scenario (Legacy) asset.
-
-Steps to reproduce:
-
-. Create a guided scorecard with a name that begins with a lowercase letter.
-. Import the guided scorecard into {CENTRAL}.
-. Click *Test*.
-
-Expected result: The test completes successfully.
-
-Actual result: The test fails.
-
-Workaround: Make sure that guided scorecard names do not begin with lowercase letters.
-
-.You cannot add a new group in {CENTRAL} integrated with RH-SSO [https://issues.jboss.org/browse/RHPAM-2036[RHPAM-2036]]
-
-Issue: The following exception occurs when you try to add a new group in {CENTRAL} if {CENTRAL} is integrated with RH-SSO 7.3.0:
-[source]
-----
-java.lang.NoSuchMethodError:org.keycloak.representations.idm.RoleRepresentation.setScopeParamRequired(Ljava/lang/Boolean;)
-----
+Issue: An `Unable to complete your request` error might appear if you import a sample project that has already been imported.
 
 Steps to reproduce:
 
-. Open {CENTRAL}.
-. Open the *Admin* page.
-. Open *Groups*.
-. Try to create a new group.
+* Import a sample project twice. Note that this error does not always occur.
 
-
-Expected result: The new group is created.
-
-Actual result: A dialog box with the listed exception appears.
-
-Workaround: Add the group in RH-SSO instead of adding it in {CENTRAL}.
-
-
-.When you create an asset, the package drop-down button does not appear immediately [https://issues.jboss.org/browse/RHPAM-2133[RHPAM-2133]]
-
-Issue: When you create an asset, the package drop-down button is invisible and an error about package selection appears.
-
-Steps to reproduce:
-
-. Create a project in {CENTRAL}.
-. Try to create a business process.
-
-Expected result: The package drop-down button is visible and you can create the business process.
-
-Actual result: The package drop-down button is initially invisible and it appears after several seconds.
-
-Workaround: Wait until the package drop-down button is visible or reopen the dialog window for asset creation.
+Workaround: If the sample project that failed to import is present in your space, remove it then import it again.
 
 ifdef::PAM[]
 
+//approved
+.In the guided rule editor, you cannot use the `is contained in comma separated list` constraint in combination with complex values [https://issues.jboss.org/browse/RHPAM-2457[RHPAM-2457]]
 
+Issue: In the guided rule editor, you cannot use the `is contained in comma separated list` constraint in combination with complex values. Complex values are values that contain a comma or are wrapped by brackets.
+
+Workaround: None.
+
+//approved
+.The *Bulk Reassign* check boxes on the *Task List* page reset before finishing the selected operation [https://issues.jboss.org/browse/RHPAM-2387[RHPAM-2387]]
+
+Issue: If you select multiple tasks on the *Task List* page and then select a bulk reassignment operation, when the dialog box appears over the *Task List* page, the previously selected tasks are no longer selected.
+
+Steps to reproduce:
+
+* On the *Task List* page, select multiple tasks and choose a bulk reassignment operation.
+
+Expected result: A dialog box appears on top of the *Task List* page. The list of tasks is visible on the *Task List* page and the previously selected tasks are still selected.
+
+Actual result:  A dialog box appears on top of the *Task List* page. The list of tasks is visible on the *Task List* page and the previously selected tasks are not selected.
+
+Workaround: None.
+
+//approved
+.The *Bulk Reassign* operation fails if you include tasks that are in a state that does not allow reassignment [https://issues.jboss.org/browse/RHPAM-2386[RHPAM-2386]]
+
+Issue: If you select multiple tasks with various states, for example *Ready* and *Reserved*, including tasks that are in a state that does not allow reassignment, for example *Suspended* and *Completed*, then the bulk reassign operation fails.
+
+Steps to reproduce:
+
+. Select tasks with various states and include one task that is in the *Suspended* state.
+. Run the bulk reassignment. An error message appears telling you that some of the the tasks could not be reassigned because they were not in the correct state.
+. Click *OK*.
+
+Expected result: The dialog box closes and the operation is attempted on all of the tasks. Results for particular tasks are presented separately as notifications.
+
+Actual result: The dialog box does not close. When you close it manually by clicking the *x* in the top right corner, and you check the states of the previously selected tasks, only the tasks processed before first failure are reassigned.
+
+Workaround: Before running the bulk action, filter the tasks and omit any task that will interrupt the reassignment.
+
+endif::[]
+
+.In the DMN designer, the DMN file validation operation does not report invalid operators [https://issues.jboss.org/browse/RHDM-1119[RHDM-1119]]
+
+Issue: In the DMN designer, if the DMN model contains an invalid operator (an operator that does not exist), for example `>>>>`, the validation operation does not report the invalid operator.
+
+Workaround: None.
+
+ifdef::DM[]
+
+//approved
+.Users cannot test DMN context expression in test scenarios [https://issues.jboss.org/browse/RHDM-1116[RHDM-1116]]
+
+Issue: If you test DMN context expressions using the test scenario designer and the test fails, the corrected output has the wrong format.
+
+Steps to reproduce:
+
+* Create two tests where the second test is created according to the hint message in the first test, while retaining the same input as the first test.
+
+Expected result: The corrected output has the correct format, as shown in the following example:
+
+`{"key_a" : "value_a", "key_b" : "value_b", ...}`
+
+Actual result: The corrected output has an incorrect format (missing double quotes), as shown in the following example:
+
+`{key_a : value_a, key_b : value_b, ...}`
+
+
+
+== Decision engine
+
+.The executable model does not fully parse multi-line patterns [https://issues.jboss.org/browse/RHDM-1098[RHDM-1098]]
+
+Issue: When a pattern has multiple lines, the executable model does not fully parse its conditions. Only the first line is parsed.
+
+Workaround: None.
+
+endif::[]
+
+== High availability
+
+//approved
+.In a high-availability authoring environment, when one user imports a project, another user is unable to see it [https://issues.jboss.org/browse/RHPAM-2470[RHPAM-2470]]
+
+Issue: When multiple users connect to a high-availability {CENTRAL} and one user creates a project, another user cannot see the project.
+
+Steps to reproduce:
+
+//approved
+. Log in to {CENTRAL} as two different users (A and B) from two different hosts or browsers.
+. As user A and as user B, open the same space.
+. As user A, import a project using an external Git repository URL.
+
+Expected result: As user B, you can see the imported project in the space.
+
+Actual result: As user B, you cannot see the imported project in the space.
+
+Workaround: As user B, reload the space.
+
+//approved
+.In a high-availability authoring environment, role changes in {CENTRAL} are not saved [https://issues.jboss.org/browse/RHPAM-2342[RHPAM-2342]]
+
+Issue: If you configure a role change in high-availability {CENTRAL}, the change can be lost after a time and the roles reset to defaults.
+
+Workaround: Configure the role change again.
+
+//approved
+.In a high-availability authoring environment, an imported project in {CENTRAL} appears multiple times [https://issues.jboss.org/browse/RHPAM-2372[RHPAM-2372]]
+
+Issue: If you import a sample project in high-availability {CENTRAL}, the project can appear in the list several times. Some copies might not have all of the assets. The environment can slow down when this issue occurs.
+
+Workaround: Ensure one copy has all of the assets, then remove all other copies. If {CENTRAL} performance is slow, restart all of the nodes connected to it.
+
+//approved
+.In a high-availability authoring environment, project creation fails when a {CENTRAL} node is down [https://issues.jboss.org/browse/RHPAM-2475[RHPAM-2475]]
+
+Issue: When you create a project, the project creation does not complete. The cause is one {CENTRAL} node in a high-availability authoring environment going down.
+
+Workaround: Create the project again.
+
+//approved
+.In a high-availability authoring environment, asset creation is not completed when a {CENTRAL} node is down [https://issues.jboss.org/browse/RHPAM-2476[RHPAM-2476]]
+
+Issue: When you create an asset, the asset is not indexed. It is displayed in {CENTRAL} but you cannot use it. The cause is one {CENTRAL} node in a high-availability authoring environment going down.
+
+Workaround: In the *Project Explorer* view, open the asset and click *Save*.
+
+//approved
+.In a high-availability authoring environment, multi-project import slows down {CENTRAL} [https://issues.jboss.org/browse/RHPAM-2477[RHPAM-2477]]
+
+Issue: When a user imports multiple projects in a high-availability {CENTRAL} with multi-project import enabled, {CENTRAL} slows down and consumes significant resources.
+
+Steps to reproduce:
+
+. In the *Settings* menu of {CENTRAL}, enable multi-project import.
+. Enter a space and import all samples at one time.
+
+Expected result: {CENTRAL} operates normally and imports the samples.
+
+Actual result: {CENTRAL} slows down and consumes a lot of resources. In a {OPENSHIFT} environment, the pod eventually fails.
+
+Workaround: Restart all {CENTRAL} nodes. To avoid this issue, do not enable multi-project import.
+
+ifdef::PAM[]
 
 == Process designer
 
-.Human task comments are not retained when a process instance is finished [https://issues.jboss.org/browse/RHPAM-2258[RHPAM-2258]]
+//approved
+.If you try to migrate a process with a sequence flow without the source and target nodes set, you should receive a warning message, but you do not [https://issues.jboss.org/browse/RHPAM-2453[RHPAM-2453]]
 
-Issue: Human task comments are retained and visible only while the respective process instance is running. When the process instance is completed or aborted, comments from human tasks disappear even though the tasks are still visible in {CENTRAL}.
+Issue: If a process in the legacy process designer contains a sequence flow without the source and target nodes set, and you try to migrate that process to the new process designer, you should receive a warning message, but you do not. It is also not possible to migrate process.
 
 Steps to reproduce:
 
-. Start a process instance with two consecutive human tasks.
-. Comment on the first human task.
-. Claim, start, and complete the first task.
-. Check the *Comments* tab of the human task to confirm that the comments are retained for the completed task.
-. Abort the process instance or complete the task preventing the instance from finishing.
-. Navigate to the log file for the first task again.
+. Create a process in the legacy process designer.
+. Add a sequence flow to the process, do not set the source and target nodes, and then save the process.
+. Click the *Migrate* button.
 
-Expected result: Data about the first task is available in the *Comments* tab of the human task .
+Expected result: You see a message telling you that the source and target nodes for a sequence flow are not set and you cannot migrate the process.
 
-Actual result: The first task is still available in {CENTRAL} but no data is available in the log file.
+Actual result: No message appears and you cannot migrate the process.
 
 Workaround: None.
 
+//approved
+.If you migrate a process from the legacy process designer to the new process designer, you receive an incorrect warning that a node will be ignored [https://issues.jboss.org/browse/RHPAM-2452[RHPAM-2452]]
 
-.Greater than (>) and less than (<) symbols in data types break a process [https://issues.jboss.org/browse/RHPAM-2193[RHPAM-2193]]
-
-Issue: If you place greater than (>) and less than (<) symbols in a data type for a process variable,  you cannot reopen the process. The XML editor appears instead.
+Issue:  If you migrate a process from the legacy process designer to the new process designer, you receive a warning that a node will be ignored. However, the node is not ignored and is migrated successfully.
 
 Steps to reproduce:
 
-. Create a process and add the `list1:java.util.List<String>` process variable.
-. Save and reopen the process.
+. Create a Start to End process in the legacy process designer.
+. Migrate the process to the new process designer.
 
-Expected result: The process opens.
+Expected result: No warning about ignoring elements are shown if no elements will be ignored after migration.
 
-Actual result: The process does not open.
+Actual result: Warnings are shown that some unknown element will be ignored.
+
+Workaround: Ignore the warnings and confirm that all nodes migrate successfully.
+
+//approved
+.In the new process designer, the warning message for migrating a `Group` element is missing [https://issues.jboss.org/browse/RHPAM-2454[RHPAM-2454]]
+
+Issue: If you migrate a process that contains a `Group` element from the legacy process designer to the new process designer, the warning message about ignoring the node is missing.
+
+Steps to reproduce:
+
+. Create a process in the legacy process designer.
+. Add a `Group` element to the process and then save the process.
+. Migrate the process from the legacy process designer to the new process designer.
+
+Expected result: You see a warning message about ignoring the node.
+
+Actual result: You do not see the warning message.
 
 Workaround: None.
 
+//approved
+.In the new process designer, some end events have incorrect icons [https://issues.jboss.org/browse/RHPAM-2413[RHPAM-2413]]
 
-.If a case task actor is invalid, the resulting BPMN file is also invalid [https://issues.jboss.org/browse/RHPAM-2240[RHPAM-2240]]
-
-Issue: The new process designer sometimes generates an invalid XML file. A user task with an actor assigned is generated as a a `potentialOwner` element in the XSD file.
-
-[source]
-----
-<bpmn2:potentialOwner id="5058b718-8866-4ccd-b793-d5ebf48de5a2">
-<bpmn2:resourceAssignmentExpression id="_gN_feI4_Eem2-an8Fwu06w">
-<bpmn2:formalExpression id="_gN_feY4_Eem2-an8Fwu06w">manager</bpmn2:formalExpression>
-</bpmn2:resourceAssignmentExpression>
-</bpmn2:potentialOwner>
-----
-
-The id of the `potentialOwner` element is missing an underscore at the beginning, which means that if the first element is a number, this is now an invalid ID.
-
-Tasks that have `ioSpecification` should always define an `inputSet` and `outputSet`, even if those are empty.
-
-Steps to reproduce:
-
-Create a user task with no output mapping. This will generate the following output:
-
-[source]
-----
-<bpmn2:ioSpecification id="_rEnOQY5AEem2-an8Fwu06w">
-<bpmn2:dataInput id="38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputX" drools:dtype="Object" itemSubjectRef="_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputXItem" name="TaskName"/>
-<bpmn2:dataInput id="38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputX" drools:dtype="Object" itemSubjectRef="_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputXItem" name="Skippable"/>
-<bpmn2:inputSet id="_rEnOQo5AEem2-an8Fwu06w">
-<bpmn2:dataInputRefs>_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_TaskNameInputX</bpmn2:dataInputRefs>
-<bpmn2:dataInputRefs>_38B29C0C-6BD8-4275-ACCE-D5D97DEBB2CB_SkippableInputX</bpmn2:dataInputRefs>
-</bpmn2:inputSet>
-</bpmn2:ioSpecification>
-----
-
-Expected result: The output includes an empty `outputSet` attribute.
-
-Actual result: The output does not include an `outputSet` attribute.
+Issue:
+In the new process designer, signal, escalation, compensation, and message end events are not filled, but they should be according to the BPMN 2.0 specification.
 
 Workaround: None.
-
-
-.Nodes and distribution lines do not fully align horizontally [https://issues.jboss.org/browse/RHPAM-2241[RHPAM-2241]]
-
-Issue: It is difficult to precisely align some nodes horizontally.
-
-
-Steps to reproduce:
-
-. Create a process.
-. Try to align a node and connector horizontally.
-
-Expected result: The node and connector are aligned.
-
-Actual result: The node and connector are not aligned.
-
-Workaround: None.
-
-.The multiple instance properties of a multiple instance subprocess are not visible for nodes inside of a multiple instance subprocess [https://issues.jboss.org/browse/RHPAM-2257[RHPAM-2257]]
-
-Issue: If you model a process with a multiple instance subprocess as a multiple instance node, the multiple instance Data Input and multiple instance Data Output variables are not visible for nodes inside of the multiple instance subprocess.
-
-Steps to reproduce:
-
-. Create a multiple instance subprocess for execution by selecting the multiple instance collection input/output from an existing process level list and setting new variables for multiple instance data input and output.
-. Add a user task inside of the multiple instance subprocess.
-. Try to configure  a user task so that is uses multiple instance data input/output.
-
-Expected result: The new variables for multiple instance data input and output are listed in the data I/O editor *Source* and *Target* fields and you can use the new variables for multiple instance data input and output.
-
-Actual result: The new variables for multiple instance data input and output are not listed in the data I/O editor *Source* and *Target* fields.
-
-Workaround: To use variables for multiple instance data input and output, define them in *Process Data* -> *Process Variables* before creating the multiple instance subprocess for execution.
-
-.Data output associations do not work correctly when they are declared twice [https://issues.jboss.org/browse/RHPAM-2242[RHPAM-2242]]
-
-Issue: If the data output variable associated with a user task is declared twice, it is not stored in the resulting XML file.
-
-Steps to reproduce:
-
-. In {CENTRAL}, create a user task.
-. Open the *Properties* panel.
-. Expand the *Implementation/Execution* section.
-. Click *Assignments*.
-. In the *Data Outputs and Assignment* area, add a data output variable twice by using the same variable name.
-
-Expected result: Two variables with the same name are stored in the BPMN XML file.
-
-Actual result: The variables are not stored in the resulting BPMN XML file (XML) so when the process runs or loads, the data output assignments are missing.
-
-Workaround: None.
-
-== {PROCESS_ENGINE_CAP}
-.Task operations are slow [https://issues.jboss.org/browse/RHPAM-2259[RHPAM-2259]]
-
-Issue: Task operations such as *Start*, *Complete*, or *Claim* are noticeably slower when the {KIE_SERVER} API or `UserTaskService` is used. This issue appeared when a join was added to the `getTaskInstanceById` query. The performance of these operations will be restored to the previous state in a future patch release.
-
 
 endif::[]
-
-ifdef::PAM[]
-== {KIE_SERVER}
-.Query-related operations return errors when {KIE_SERVER} runs on either {JWS} or SpringBoot with DB2 [https://issues.jboss.org/browse/RHPAM-2292[RHPAM-2292]]
-
-Issue: Query-related operations return errors when {KIE_SERVER} runs on either {JWS} or SpringBoot with DB2.
-
-Steps to reproduce:
-
-. Create a `query-definitions.json` file that contains content similar to the following example and add it to {KIE_SERVER} on {JWS}:
-+
-[source]
-----
-
-[
-  {
-    "query-name" : "first-query",
-    "query-source" : "${org.kie.server.persistence.ds}",
-    "query-expression" : "select * from ProcessInstanceLog",
-    "query-target" : "PROCESS"
-
-  }
-]
-----
-. Start {KIE_SERVER}. {KIE_SERVER} tries to register the new default query.
-
-Expected result: The default query is successfully registered.
-
-Actual result: An error code is returned, for example:
-[source]
-----
-com.ibm.db2.jcc.am.XaException: [jcc][t4][10401][12066][4.24.92]
-XA exception: XAER_OUTSIDE ERRORCODE=-4228, SQLSTATE=null
-----
-
-Workaround: For {JWS}, set `defaultAutoCommit=false` in the `XADataSource`. For SpringBoot, set `spring.datasource.defaultAutoCommit=false` in application properties. This property must be added to the Narayana data source.
-endif::[]
-
 
 == {OPENSHIFT}
-.Validation sub-element is missing for data sources [https://issues.jboss.org/browse/RHPAM-2226[RHPAM-2226]]
 
-Issue: If you create a custom template for deploying {KIE_SERVER} on {OPENSHIFT}
-and the server uses a MySQL or PostgreSQL database, {KIE_SERVER} data sources do not contain the validation sub-element where connection checkers and exception sorters are defined.
+.The role properties file configuration is available for internal authentication [https://issues.jboss.org/browse/RHPAM-2247[RHPAM-2247]]
+
+Issue: The role properties file configuration should be available only when RH-SSO or LDAP authentication is used. However, currently it is also available when internal authentication is used.
 
 Steps to reproduce:
 
-. Create a custom template for deploying {KIE_SERVER} on {OPENSHIFT}
-with a MySQL or PostgreSQL database.
-. View the contents of the template file.
+. Open the Business Automation Operator UI.
+. Assign values to mandatory parameters.
+. Retain the authentication mode `Internal`.
+. Complete the role properties file configuration.
+. Deploy the result.
 
-Expected result: The template contains the expected data sources.
+Expected result: When internal authentication is used, it is not possible to specify the role properties file.
 
-Actual result: The template does not contain the expected data sources.
+Actual result: When internal authentication is used, it is possible to specify the role properties file.
 
-Work around:
 
-Add the following environment variables and values to your templates:
+Workaround: If you plan to use internal authentication, leave the role properties file property in Business Automation Operator UI empty.
 
-* For MySQL:
+
+.Resource requests have an incorrect name in the customer resource (CR) YAML file [https://issues.jboss.org/browse/RHPAM-2248[RHPAM-2248]]
+
+Issue: Resource requests are specified as `request` in the Business Automation Operator UI, however in the customer resource definition (CRD) they are specified as `requests`. Therefore, CPU and memory requests from the UI are not applied.
+
+Steps to reproduce:
+
+. Open the Business Automation Operator UI.
+. Assign values to mandatory parameters.
+. Complete CPU and memory requests for Console.
+. Check the resulting YAML file.
+
+Expected result: In the generated YAML file, resource requests are specified as `requests`.
+
+Actual result: In the generated YAML file, resource requests are specified as `request`.
+
+Workaround: In the generated YAML file, change the resource request specification from `request` to `requests`.
+
+.Product environment fails to deploy on Amazon Web Services (AWS) with AWS Elastic Block Storage (EBS) because of AWS EBS volume plugin lack of support for `ReadWriteMany` (`RWX`) persistent volume access mode [https://issues.jboss.org/browse/RHPAM-2480[RHPAM-2480]]
+
+Issue: Several templates used for installing {PRODUCT} on {OPENSHIFT}, as well as deployment of several environment types using the Business Automation Operator, fail to deploy on AWS with EBS. The templates and environment types include persistent volume claims that require support for the `ReadWriteMany` access mode and the AWS EBS volume plugin does not provision persistent volumes with this access mode.
+
+ifdef::PAM[]
+The following templates are affected:
+
+* `rhpam75-managed.yaml`
+* `rhpam75-prod.yaml`
+* `rhpam75-prod-immutable-monitor.yaml`
+* `rhpam75-authoring.yaml`
+* `rhpam75-authoring-ha.yaml`
+
+endif::[]
+
+
+ifdef::DM[]
+The `rhdm75-authoring-ha.yaml` template is affected.
+
+endif::[]
+
+Workaround: Deploy an NFS server and provision the persistent volumes using NFS. For information about provisioning persistent volumes using NFS, see one of the following guides:
+
+* For {OPENSHIFT} version 3, see the "Persistent storage using NFS" section of the  https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html/configuring_clusters/[OpenShift Container Platform 3.11 Installation and Configuration] guide.
+
+* For {OPENSHIFT} version 4, see the "Persistent storage using NFS" section of the  https://access.redhat.com/documentation/en-us/openshift_container_platform/4.2/html/storage[OpenShift Container Platform 4.2 Storage] guide.
+
+.Optaweb Vehicle Routing tests fail due to different versions of dependencies [https://issues.jboss.org/browse/RHDM-1129[RHDM-1129]]
+
+Issue: Optaweb Vehicle Routing is distributed with the incorrect `package-lock.json` file. As a result, snapshot tests of the `optaweb-vehicle-routing-frontend` module fail because of changes in HTML code generated by different versions of dependencies.
+
+Workaround:
+
+. Change directory to the `optaweb-vehicle-routing-frontend` module.
+. Enter the following command to download the required dependencies:
 +
 [source]
 ----
-name: RHPAM_CONNECTION_CHECKER
-value: "org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLValidConnectionChecker"
-name: RHPAM_EXCEPTION_SORTER
-value: "org.jboss.jca.adapters.jdbc.extensions.mysql.MySQLExceptionSorter"
+$ npm install
 ----
-
-* For PostgreSQL:
+. Enter the following command to run the tests:
 +
 [source]
 ----
-name: RHPAM_CONNECTION_CHECKER
-value: "org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLValidConnectionChecker"
-name: RHPAM_EXCEPTION_SORTER
-value: "org.jboss.jca.adapters.jdbc.extensions.postgres.PostgreSQLExceptionSorter"
+$ npm test
+----
+. Press the u key to update failing snapshots.
+
+.The `optaweb-employee-rostering` example fails to build with the offline Maven repository ZIP files [https://issues.jboss.org/browse/RHPAM-2465[RHPAM-2465]]
+
+Issue: When you build the `optaweb-employee-rostering` example with only {CENTRAL} and the {PRODUCT} offline Maven repository, the build fails with the following message:
+
+[source]
+----
+Could not resolve dependencies for project org.optaweb.employeerostering:employee-rostering-server:jar:7.26.0.Final-redhat-00004: The following artifacts could not be resolved: net.jcip:jcip-annotations:jar:1.0.0.redhat-8, org.jboss.logging:jboss-logging:jar:3.3.2.Final-redhat-00001: Could not find artifact net.jcip:jcip-annotations:jar:1.0.0.redhat-8 in bxms-product-repo
 ----
 
+Workaround: Use the  the https://maven.repository.redhat.com/ga[Red Hat GA repository] to fetch the missing artifacts.
 
-== Test scenarios
+//approved
+.{PLANNER} is missing an environment variable for  thread pool queue size [https://issues.jboss.org/browse/RHDM-1096[RHDM-1096]]
 
-.Test scenarios designer can not access the parent data object fields [https://issues.jboss.org/browse/RHDM-1014[RHDM-1014]]
+Issue: The `org.optaplanner.server.ext.thread.pool.queue.size` system property has been added to the {KIE_SERVER} {PLANNER} extension. This property cannot be directly set on the {KIE_SERVER} image.
 
-Issue: Test scenarios designer cannot access a parent data object field, even if the field has public `getter` and `setter` attributes.
+Workaround: Use the existing `JAVA_OPTS_APPEND` environment variable and append the system property.
 
-Steps to reproduce:
+//approved
+.The {KIE_SERVER} pod fails to start after a user updates the BusyBox image on {OPENSHIFT} [https://issues.jboss.org/browse/RHPAM-2431[RHPAM-2431]]
 
-. Create a scenario with a field that is declared in the parent class.
-. Run the scenario.
-. Click *View Alerts* and review any alerts.
-
-Expected result: The scenario runs successfully.
-
-Actual result: The scenario fails because it cannot access the data object in the parent class.
-
-
-Workaround: Include the data object in the child class.
-
-.Rule-based test scenarios that contain maps of simple types fail [https://issues.jboss.org/browse/RHDM-1015[RHDM-1015]]
-
-Issue: All rule-based test scenarios that contain a map of simple types as a cell value, for example `Map<String` or `String`, fail.
+Issue: In a {OPENSHIFT} environment, a {KIE_SERVER} pod fails to start or restart with the latest version of the BusyBox image.
 
 Steps to reproduce:
 
-. Create a scenario.
-. Create a map with a simple type value, for example `Map<String, String>`.
-. Run the scenario.
+. In your {OPENSHIFT} environment, use a template or operator to deploy a {KIE_SERVER} that uses a MySQL or PostgreSQL database server.
+. Enter the following command to manually update the OpenShift registry to the latest BusyBox image:
++
+[source]
+----
+$ docker pull busybox
+----
 
-Expected result: The scenario runs successfully.
+. Scale the {KIE_SERVER} pod down to 0 replicas and then scale up.
 
-Actual result: The scenario fails.
+Expected result: The {KIE_SERVER} pod starts normally.
 
-Workaround: None.
+Actual result: The {KIE_SERVER} pod fails to start and remains at 0 replicas.
+
+Workaround:
+
+. On a local machine that has access to the cluster and has Docker installed, enter the following command to pull the BusyBox image version 1.28.4:
++
+[source]
+----
+$ docker pull docker.io/busybox:1.28.4
+----
+
+. Enter the following comand to tag the image with the latest tag:
++
+[source]
+----
+docker tag docker.io/busybox:1.28.4 myopenshiftcluster/openshift/busybox:latest
+----
+
+. Push the image into your {OPENSHIFT} environment. For instructions, refer to the following documentation:
++
+** For  {OPENSHIFT} version 3.11, see the "Accessing the Registry" section of the https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html-single/developer_guide/index[OpenShift Container Platform 3.11 Developer Guide].
+** For  {OPENSHIFT} version 4.1, see the "Accessing the Registry" section of https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/registry/index[Configuring registries for OpenShift Container Platform 4.1].
