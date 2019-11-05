@@ -141,7 +141,7 @@ endif::[]
 ----
 rule "All full-time employees have red ID badges"
   when
-    forall( $emp : Employee( type == "fulltime")
+    forall( $emp : Employee( type == "fulltime" )
                    Employee( this == $emp, badgeColor = "red" ) )
   then
     // True, all full-time employees have red ID badges.
@@ -211,8 +211,8 @@ endif::[]
 ----
 rule "Validate zipcode"
   when
-    Person($personAddress : address)
-    Address(zipcode == "23920W") from $personAddress
+    Person( $personAddress : address )
+    Address( zipcode == "23920W" ) from $personAddress
   then
     // Zip code is okay.
 end
@@ -224,7 +224,7 @@ end
 rule "Validate zipcode"
   when
     $p : Person()
-    $a : Address(zipcode == "23920W") from $p.address
+    $a : Address( zipcode == "23920W" ) from $p.address
   then
     // Zip code is okay.
 end
@@ -236,11 +236,23 @@ end
 rule "Apply 10% discount to all items over US$ 100 in an order"
   when
     $order : Order()
-    $item  : OrderItem( value > 100) from $order.items
+    $item  : OrderItem( value > 100 ) from $order.items
   then
     // Apply discount to `$item`.
 end
 ----
+
+[NOTE]
+====
+For large collections of objects, instead of adding an object with a large graph that the {DECISION_ENGINE} must iterate over frequently, add the collection directly to the KIE session and then join the collection in the condition, as shown in the following example:
+
+[source]
+----
+when
+  $order : Order()
+  OrderItem( value > 100, order == $order )
+----
+====
 
 .Example rule with `from` and `lock-on-active` rule attribute
 [source]
@@ -250,7 +262,7 @@ rule "Assign people in North Carolina (NC) to sales region 1"
   lock-on-active true
   when
     $p : Person()
-    $a : Address( state == "NC") from $p.address
+    $a : Address( state == "NC" ) from $p.address
   then
     modify ($p) {} // Assign the person to sales region 1.
 end
@@ -260,7 +272,7 @@ rule "Apply a discount to people in the city of Raleigh"
   lock-on-active true
   when
     $p : Person()
-    $a : Address( city == "Raleigh") from $p.address
+    $a : Address( city == "Raleigh" ) from $p.address
   then
     modify ($p) {} // Apply discount to the person.
 end
@@ -311,8 +323,8 @@ Use this to define an entry point, or _event stream_, corresponding to a data so
 ----
 rule "Authorize withdrawal"
   when
-    WithdrawRequest($ai : accountId, $am : amount) from entry-point "ATM Stream"
-    CheckingAccount(accountId == $ai, balance > $am)
+    WithdrawRequest( $ai : accountId, $am : amount ) from entry-point "ATM Stream"
+    CheckingAccount( accountId == $ai, balance > $am )
   then
     // Authorize withdrawal.
 end
