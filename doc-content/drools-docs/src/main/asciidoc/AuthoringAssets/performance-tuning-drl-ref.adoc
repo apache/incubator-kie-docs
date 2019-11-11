@@ -1,0 +1,79 @@
+[id='performance-tuning-drl-ref_{context}']
+
+= Performance tuning considerations with DRL
+
+The following key concepts or suggested practices can help you optimize DRL rules and {DECISION_ENGINE} performance. These concepts are summarized in this section as a convenience and are explained in more detail in the cross-referenced documentation, where applicable. This section will expand or change as needed with new releases of {PRODUCT}.
+
+Define the property and value of pattern constraints from left to right::
+In DRL pattern constraints, ensure that the fact property name is on the left side of the operator and that the value (constant or a variable) is on the right side. The property name must always be the key in the index and not the value. For example, write `Person( firstName == "John" )` instead of `Person( "John" == firstName )`. Defining the constraint property and value from right to left can hinder {DECISION_ENGINE} performance.
++
+--
+For more information about DRL patterns and constraints, see xref:drl-rules-WHEN-con_drl-rules[].
+--
+
+List the most restrictive rule conditions first::
+For rules with multiple conditions, list the conditions from most to least restrictive so that the {DECISION_ENGINE} can avoid assessing the entire set of conditions if the more restrictive conditions are not met.
++
+--
+For example, the following conditions are part of a travel-booking rule that applies a discount to travelers who book both a flight and a hotel together. In this scenario, customers rarely book hotels with flights to receive this discount, so the hotel condition is rarely met and the rule is rarely executed. Therefore, the first condition ordering is more efficient because it prevents the {DECISION_ENGINE} from evaluating the flight condition frequently and unnecessarily when the hotel condition is not met.
+
+.Preferred condition order: hotel and flight
+[source]
+----
+when
+  $h:hotel() // Rarely booked
+  $f:flight()
+----
+
+.Inefficient condition order: flight and hotel
+[source]
+----
+when
+  $f:flight()
+  $h:hotel() // Rarely booked
+----
+
+For more information about DRL patterns and constraints, see xref:drl-rules-WHEN-con_drl-rules[].
+--
+
+Avoid iterating over large collections of objects with excessive `from` clauses::
+Avoid using the `from` condition element in DRL rules to iterate over large collections of objects, as shown in the following example:
++
+--
+.Example conditions with `from` clause
+[source]
+----
+when
+  $c: Company()
+  $e : Employee ( salary > 100000.00) from $c.employees
+----
+
+In such cases, the {DECISION_ENGINE} iterates over the large graph every time the rule condition is evaluated and impedes  rule evaluation.
+
+Alternatively, instead of adding an object with a large graph that the {DECISION_ENGINE} must iterate over frequently, add the collection directly to the KIE session and then join the collection in the condition, as shown in the following example:
+
+.Example conditions without `from` clause
+[source]
+----
+when
+  $c: Company();
+  Employee (salary > 100000.00, company == $c)
+----
+
+In this example, the {DECISION_ENGINE} iterates over the list only one time and can evaluate rules more efficiently.
+
+For more information about the `from` element or other DRL condition elements, see xref:drl-rules-WHEN-elements-ref_drl-rules[].
+--
+
+Use {DECISION_ENGINE} event listeners instead of `System.out.println` statements in rules for debug logging::
+You can use `System.out.println` statements in your rule actions for debug logging and console output, but doing this for many rules can impede rule evaluation. As a more efficient alternative, use the built-in {DECISION_ENGINE} event listeners when possible. If these listeners do not meet your requirements, use a system logging utility supported by the {DECISION_ENGINE}, such as Logback, Apache Commons Logging, or Apache Log4j.
++
+--
+For more information about supported {DECISION_ENGINE} event listeners and logging utilities, see
+ifdef::DM,PAM[]
+{URL_DECISION_ENGINE_DOC}#engine-event-listeners-con_decision-engine[_{DECISION_ENGINE_DOC}_].
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:engine-event-listeners-con_decision-engine[].
+endif::[]
+--
