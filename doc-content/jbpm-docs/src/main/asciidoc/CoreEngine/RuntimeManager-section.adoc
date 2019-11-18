@@ -3,12 +3,12 @@
 
 == Overview
 
-RuntimeManager has been introduced to simplify and empower usage of knowledge API especially in context of processes.
-It provides configurable strategies that control actual runtime execution (how KieSessions are provided) and by default provides following:
+RuntimeManager has been introduced to simplify and empower usage of knowledge API, especially in the context of processes.
+It provides configurable strategies that control actual runtime execution (how KieSessions are provided) and by default provides the following:
 
 * Singleton - runtime manager maintains single KieSession regardless of number of processes available
 * Per Request - runtime manager delivers new KieSession for every request
-* Per Process Instance - runtime manager maintains mapping between process instance and KieSession and always provides same KieSession whenever working with given process instance
+* Per Process Instance - runtime manager maintains mapping between process instance and KieSession and always provides the same KieSession whenever working with given process instance
 
 Runtime Manager is primarily responsible for managing and delivering instances of RuntimeEngine to the caller.
 In turn, RuntimeEngine encapsulates two of the most important elements of the {PROCESS_ENGINE}:
@@ -26,7 +26,7 @@ public interface RuntimeManager {
 	/**
 	 * Returns <code>RuntimeEngine</code> instance that is fully initialized:
 	 * <ul>
-	 * 	<li>KiseSession is created or loaded depending on the strategy</li>
+	 * 	<li>KieSession is created or loaded depending on the strategy</li>
 	 * 	<li>TaskService is initialized and attached to ksession (via listener)</li>
 	 * 	<li>WorkItemHandlers are initialized and registered on ksession</li>
 	 * 	<li>EventListeners (process, agenda, working memory) are initialized and added to ksession</li>
@@ -87,7 +87,7 @@ public interface RuntimeEngine {
 RuntimeManager will ensure that regardless of the strategy it will provide same capabilities when it comes to initialization and configuration of the RuntimeEngine.
 That means
 
-* KieSession will be loaded with same factories (either in memory or JPA based)
+* KieSession will be loaded with the same factories (either in memory or JPA based)
 * WorkItemHandlers will be registered on every KieSession (either loaded from db or newly created)
 * Event listeners (Process, Agenda, WorkingMemory) will be registered on every KieSession (either loaded from db or newly created)
 * TaskService will be configured with:
@@ -118,21 +118,21 @@ kie-workbench web application too because it depends on jbpm-services.
 *Singleton strategy* - instructs RuntimeManager to maintain single instance of RuntimeEngine (and in turn single instance of KieSession and TaskService). Access to the RuntimeEngine is synchronized and by that thread safe although it comes with a performance penalty due to synchronization.
 This strategy is similar to what was available by default in jBPM version 5.x and it's considered easiest strategy and recommended to start with.
 
-It has following characteristics that are important to evaluate while considering it for given scenario:
+It has the following characteristics that are important to evaluate while considering it for given scenario:
 
 * small memory footprint - single instance of runtime engine and task service
 * simple and compact in design and usage
 * good fit for low to medium load on the {PROCESS_ENGINE} due to synchronized access
 * due to single KieSession instance all state objects (such as facts) are directly visible to all process instances and vice versa
 * not contextual - meaning when retrieving instances of RuntimeEngine from singleton RuntimeManager Context instance is not important and usually EmptyContext.get() is used although null argument is acceptable as well
-* keeps track of id of KieSession used between RuntimeManager restarts to ensure it will use same session - this id is stored as serialized file on disc in temp location that depends on the environment can be one of following:
+* keeps track of id of KieSession used between RuntimeManager restarts to ensure it will use same session - this id is stored as serialized file on disc in temp location that depends on the environment can be one of the following:
 ** value given by jbpm.data.dir system property
 ** value given by jboss.server.data.dir system property
 ** value given by java.io.tmpdir system property
 
 [WARNING]
 ====
-A combination of Singleton strategy and EJB Timer Scheduler (default in kie-server) has a limitation that it may raise Hibernate issues under load. It's not recommended in production use.
+A combination of Singleton strategy and EJB Timer Scheduler (default in kie-server) has a limitation that it may raise Hibernate issues under load. It's not recommended for production use.
 ====
 
 
@@ -141,7 +141,7 @@ As request RuntimeManager will consider one or more invocations within single tr
 It must return same instance of RuntimeEngine within single transaction to ensure correctness of state as otherwise operation done in one call would not be visible in the other.
 This is sort of "stateless" strategy that provides only request scope state and once request is completed RuntimeEngine will be permanently destroyed - KieSession information will be removed from the database in case persistence was used.
 
-It has following characteristics:
+It has the following characteristics:
 
 * completely isolated {PROCESS_ENGINE} and task service operations for every request
 * completely stateless, storing facts makes sense only for the duration of the request
@@ -151,9 +151,9 @@ It has following characteristics:
 
 *Per process instance strategy* - instructs RuntimeManager to maintain a strict relationship between KieSession and ProcessInstance.
 That means that KieSession will be available as long as the ProcessInstance that it belongs to is active.
-This strategy provides the most flexible approach to use advanced capabilities of the {PROCESS_ENGINE} like rule evaluation in isolation (for given process instance only), maximum performance and reduction of potential bottlenecks intriduced by synchronization; and at the same time reduces number of KieSessions to the actual number of process instances rather than number of requests (in contrast to per request strategy).
+This strategy provides the most flexible approach to use advanced capabilities of the {PROCESS_ENGINE} like rule evaluation in isolation (for given process instance only), maximum performance and reduction of potential bottlenecks introduced by synchronization; and at the same time reduces number of KieSessions to the actual number of process instances rather than number of requests (in contrast to per request strategy).
 
-It has following characteristics:
+It has the following characteristics:
 
 * most advanced strategy to provide isolation to given process instance only
 * maintains strict relationship between KieSession and ProcessInstance to ensure it will always deliver same KieSession for given ProcessInstance
@@ -363,7 +363,7 @@ public interface RuntimeEnvironmentBuilderFactory {
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * This one is tailored to works smoothly with kjars as the notion of kbase and ksessions
+     * This one is tailored to work smoothly with kjars as the notion of kbase and ksessions
      * @param groupId group id of kjar
      * @param artifactId artifact id of kjar
      * @param version version number of kjar
@@ -378,7 +378,7 @@ public interface RuntimeEnvironmentBuilderFactory {
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * This one is tailored to works smoothly with kjars as the notion of kbase and ksessions
+     * This one is tailored to work smoothly with kjars as the notion of kbase and ksessions
      * @param groupId group id of kjar
      * @param artifactId artifact id of kjar
      * @param version version number of kjar
@@ -395,7 +395,7 @@ public interface RuntimeEnvironmentBuilderFactory {
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * This one is tailored to works smoothly with kjars as the notion of kbase and ksessions
+     * This one is tailored to work smoothly with kjars as the notion of kbase and ksessions
      * @param releaseId <code>ReleaseId</code> that described the kjar
      * @return new instance of <code>RuntimeEnvironmentBuilder</code> that is already preconfigured with defaults
      *
@@ -408,7 +408,7 @@ public interface RuntimeEnvironmentBuilderFactory {
      * <ul>
      * 	<li>DefaultRuntimeEnvironment</li>
      * </ul>
-     * This one is tailored to works smoothly with kjars as the notion of kbase and ksessions
+     * This one is tailored to work smoothly with kjars as the notion of kbase and ksessions
      * @param releaseId <code>ReleaseId</code> that described the kjar
      * @param kbaseName name of the kbase defined in kmodule.xml stored in kjar
      * @param ksessionName name of the ksession define in kmodule.xml stored in kjar
@@ -499,8 +499,8 @@ Extensions are not always needed as the default implementations of RegisterableI
 Following is a list of available implementations that might be useful (they are ordered in the hierarchy of inheritance):
 
 * org.jbpm.runtime.manager.impl.SimpleRegisterableItemsFactory - simplest possible implementations that comes empty and is based on reflection to produce instances of handlers and listeners based on given class names
-* org.jbpm.runtime.manager.impl.DefaultRegisterableItemsFactory - extension of the Simple implementation that introduces defaults described above and still provides same capabilities as Simple implementation
-* org.jbpm.runtime.manager.impl.KModuleRegisterableItemsFactory - extension of default implementation that provides specific capabilities for kmodule and still provides same capabilities as Simple implementation
+* org.jbpm.runtime.manager.impl.DefaultRegisterableItemsFactory - extension of the Simple implementation that introduces defaults described above and still provides the same capabilities as Simple implementation
+* org.jbpm.runtime.manager.impl.KModuleRegisterableItemsFactory - extension of default implementation that provides specific capabilities for kmodule and still provides the same capabilities as Simple implementation
 * org.jbpm.runtime.manager.impl.cdi.InjectableRegisterableItemsFactory - extension of default implementation that is tailored for CDI environments and provides CDI style approach to finding handlers and listeners via producers
 
 Alternatively, simple (stateless or requiring only KieSession) work item handlers might be registered in the well known way - defined as part of CustomWorkItem.conf file that shall be placed on class path.
@@ -552,7 +552,7 @@ public interface WorkItemHandlerProducer {
 }
 ----
 
-Event listener producer shall be annotated with proper qualifier to indicate what type of listeners they provide, so pick one of following to indicate they type:
+Event listener producer shall be annotated with proper qualifier to indicate what type of listeners they provide, so pick one of the following to indicate their type:
 
 * @Process - for ProcessEventListener
 * @Agenda - for AgendaEventListener
