@@ -5,48 +5,53 @@ You can deploy the {PLANNER} Employee Rostering starter application to {OPENSHIF
 
 .Prerequisites
 * You are logged in to the target OpenShift environment using the `oc` command line tool. For more information about this tool, see https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html-single/cli_reference/[CLI Reference].
-* Maven and a Java Development Kit are installed on your local machine.
-* A `bash` shell environment is available on your local machine.
+* Maven and a Java Development Kit are installed on your local system.
+* A `bash` shell environment is available on your local system.
 
 .Procedure
 . Download the `{PRODUCT_FILE}-maven-repository.zip` file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal.
 . Expand the downloaded archive.
-. Copy the contents of the `jboss-rhba-{PRODUCT_VERSION_LONG}.GA-maven-repository/maven-repository` subdirectory into the `~/.m2` directory.
+. Copy the contents of the `jboss-rhba-{PRODUCT_VERSION_LONG}.GA-maven-repository/maven-repository` subdirectory into the `~/.m2/repository` directory.
 . Download the `{PRODUCT_FILE}-reference-implementation.zip` file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal.
 . Expand the downloaded archive.
 . Unzip the `{PRODUCT_INIT}-{PRODUCT_VERSION}-employee-rostering.zip` file that is extracted from the reference implementation archive.
 . Using the command line, change to the `employee-rostering-distribution-{MAVEN_ARTIFACT_VERSION}/sources` folder.
+. To build the OptaWeb Employee Rostering application, run the following command:
++
+[source]
+----
+mvn clean install -DskipTests -DskipITs
+----
+. Log in to an OpenShift account or a Red Hat Code Ready Container instance. In the following example, `<account-url>` is the URL for an OpenShift account or Red Hat Code Ready Container instance and `<login-token>` is the login token for that account:
++
+[source]
+----
+oc login <account-url> --token <login-token>
+----
+. Create a new project to host OptaWeb Employee Rostering:
++
+[source]
+----
+oc new-project employee-rostering
+----
 . Run the provision script to build and deploy the application:
 +
 [source]
 ----
-./provision.sh setup employee-rostering --binary
+./provision.sh
 ----
-+
-[NOTE]
-====
-If the current OpenShift user name contains characters that are not letters or numbers, the deployment might fail. You can resolve this issue by providing an additional parameter: `./provision.sh setup employee-rostering --binary --project-suffix optaweb`.  This example uses "optaweb", but you can use any value for the suffix.
-====
 +
 Compilation and packaging might take up to 10 minutes to complete. These processes continually show progress on the command line output.
 +
-When the operation is completed, the following message is displayed: `Uploading file "target/ROOT.war" as binary input for the build ...`.
-. Use the OpenShift web UI to view the details for the deployed application. Click the link in the *Routes* section to open the starter application. The first startup can take up to a minute as additional building is completed on the OpenShift platform.
+When the operation completes, the following message is displayed, where `<URL>` is the URL for the deployment:
++
+[source]
+----
+You can access the application at <URL> once the deployment is done.
+----
+. Enter the URL that you used earlier in the procedure, for either an OpenShift account or Red Hat Code Ready Container instance, to access the deployed application. The first startup can take up to a minute because additional building is completed on the OpenShift platform.
 +
 [NOTE]
 ====
-If the application does not open for more than a minute after clicking the link, perform a hard refresh of your browser page.
+If the application does not open a minute after clicking the link, perform a hard refresh of your browser page.
 ====
-+
-. Optionally, you can use other actions provided by the provision script:
-.. Deploy updates to the code to an existing deployment:
-[source,bash]
-----
-./provision.sh deploy employee-rostering --binary
-----
-+
-.. Remove the application:
-[source,bash]
-----
-./provision.sh delete employee-rostering
-----
