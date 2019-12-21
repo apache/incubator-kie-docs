@@ -24,6 +24,7 @@ Optionally, you can set custom configuration for {KIE_SERVERS}. In this case, de
 //endif::PAM[]
 complete the following additional steps:
 .. Click *Set KIE Server image*.
+.. If you want to use a Docker image name and not an OpenShift image stream tag, change the *Kind* value to `DockerImage`.
 .. Enter the name of the image stream in the *Name* field. 
 //ifdef::PAM[]
 //If you created a custom image for using an external database server other than MySQL or PostgreSQL, as described in <<externaldb-build-proc>>, enter the following value:
@@ -41,16 +42,26 @@ complete the following additional steps:
 .. In the *KIE Server container deployment* field, enter the identifying information of the decision services (KJAR files) that the deployment must pull from the Maven repository. The format is `<containerId>=<groupId>:<artifactId>:<version>` or, if you want to specify an alias name for the container, `<containerId>(<aliasId>)=<groupId>:<artifactId>:<version>`. You can provide two or more KJAR files using the `|` separator, as illustrated in the following example: `containerId=groupId:artifactId:version|c2(alias2)=g2:a2:v2`.
 .. If your OpenShift environment does not have a connection to the public Internet, enter the URL of the Maven mirror that you set up according to <<offline-repo-proc>> in the *Maven mirror URL* field.
 .. In the *Artifact directory* field, enter the path within the project that contains the required binary files (KJAR files and any other necessary files) after a successful Maven build. Normally this directory is the target directory of the build. However, you can provide prebuilt binaries in this directory in the Git repository.
+.. If you want to use a custom base {KIE_SERVER} image for the S2I build, click *Set Base build image* and then enter the name of the image stream in the *Name* field. If the image stream is not in the `openshift` namespace, enter the namespace in the *Namespace* field. If you want to use a Docker image name and not an OpenShift image stream tag, change the *Kind* value to `DockerImage`.
 .. If you want to create the immutable server from source in a Git repository using the Source to Image (S2I) process, click the *Set Git source* button and enter information in the following fields:
 *** *S2I Git URI*:The URI for the Git repository that contains the source for your services.
 *** *Reference*: The branch in the Git repository.
 *** *Context directory*: (Optional) The path to the source within the project downloaded from the Git repository. By default, the root directory of the downloaded project is the source directory.
 .. If you are using S2I and want to set a Git Webhook so that changes in the Git repository cause an automatic rebuild of the {KIE_SERVER}, click *Add new Webhook*. Then select the type of the Webhook in the *Type* field and enter the secret string for the Webhook in the *Secret* field.
-.. If you want to use a custom base {KIE_SERVER} image for the S2I build, click *Set Base build image*. Then enter the name of the image stream in the *Name* field. If the image stream is not in the `openshift` namespace, enter the namespace in the *Namespace* field.
 . Optionally, enter requested and maximum CPU and memory limits in the fields under *Resource quotas*. If you are configuring several {KIE_SERVERS}, the limits apply to each server separately.
 . If you selected RH-SSO authentication, configure RH-SSO for the {KIE_SERVER}:
 .. Enter the client name in the *Client name* field and the client secret in the *Client secret* field. If a client with this name does not exist, the deployment attempts to create a new client with this name and secret.
 .. If the deployment is to create a new client, enter the HTTP and HTTPS URLs that will be used for accessing the {KIE_SERVER} into the *SSO HTTP URL* and *SSO HTTPS URL* fields. This information is recorded in the client.
+. If you want to interact with the {KIE_SERVER} through JMS API using an external AMQ message broker, enable the *Enable JMS Integration* setting. Additional fields for configuring JMS Integration are displayed and you must enter the values as necessary:
+* *User name*, *Password*: The user name and password of a standard broker user, if user authentication in the broker is required in your environment.
+* *Executor*: Select this setting to disable the JMS executor. The executor is enabled by default.
+* *Executor transacted*: Select this setting to enable JMS transactions on the executor queue.
+* *Enable signal*: Select this setting to enable signal configuration through JMS.
+* *Enable audit*: Select this setting to enable audit logging through JMS.
+* *Audit transacted*: Select this setting to enable JMS transactions on the audit queue.
+* *Queue executor*, *Queue request*, *Queue response*, *Queue signal*, *Queue audit*: Custom JNDI names of the queues to use. If you set any of these values, you must also set the *AMQ queues* parameter.
+* *AMQ Queues*: AMQ queue names, separated by commas. These queues are automatically created when the broker starts and are accessible as JNDI resources in the JBoss EAP server. If you are using any custom queue names, you must enter the names of all the queues uses by the server in this field.
+* *Enable SSL integration*: Select this setting if you want to use an SSL connection to the AMQ broker. In this case you must also provide the name of the secret that you created in <<secrets-amq-create-proc>> and the names and passwords of the key store and trust store that you used for the secret. 
 ifdef::PAM[]
 . Select the database that the {KIE_SERVER} must use. The following values are available:
 ** `mysql`: A MySQL server, created in a separate pod.
@@ -118,3 +129,4 @@ endif::PAM[]
 ifdef::DM[]
 Click *Finish* and then click *Deploy* to deploy the environment.
 endif::DM[]
+ 
