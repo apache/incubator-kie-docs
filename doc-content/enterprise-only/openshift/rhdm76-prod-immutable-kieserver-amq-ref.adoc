@@ -4,10 +4,10 @@
     Changes to .adoc or HTML files may be overwritten! Please change the
     generator or the input template (https://github.com/jboss-container-images/jboss-kie-modules/tree/master/tools/gen-template-doc/*.in)
 ////
-[id='rhdm75-kieserver-ref']
-= rhdm75-kieserver.yaml template
+[id='rhdm76-prod-immutable-kieserver-amq-ref']
+= rhdm76-prod-immutable-kieserver-amq.yaml template
 
-Application template for a managed KIE Server, for Red Hat Decision Manager 7.5 - Deprecated
+Application template for an immutable KIE server in a production environment integrated with ActiveMQ, for Red Hat Decision Manager 7.6 - Deprecated
 
 
 
@@ -21,61 +21,80 @@ https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/
 |Variable name |Image Environment Variable |Description |Example value |Required
 
 |`APPLICATION_NAME` | -- | The name for the application. | myapp | True
-|`MAVEN_MIRROR_URL` | `MAVEN_MIRROR_URL` | Maven mirror that KIE server must use. If you configure a mirror, this mirror must contain all artifacts that are required for deploying your services. | -- | False
-|`MAVEN_MIRROR_OF` | `MAVEN_MIRROR_OF` | Maven mirror configuration for KIE server. | external:* | False
-|`MAVEN_REPO_ID` | `EXTERNAL_MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhdmcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | repo-custom | False
-|`MAVEN_REPO_URL` | `EXTERNAL_MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | http://nexus.nexus-project.svc.cluster.local:8081/nexus/content/groups/public/ | True
-|`MAVEN_REPO_USERNAME` | `EXTERNAL_MAVEN_REPO_USERNAME` | Username to access the Maven repository, if required. | -- | False
-|`MAVEN_REPO_PASSWORD` | `EXTERNAL_MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | -- | False
-|`DECISION_CENTRAL_SERVICE` | `WORKBENCH_SERVICE_NAME` | The Service name for the optional Decision Central, where it can be reached, to allow service lookups (for example, maven repo usage), if required. | myapp-rhdmcentr | False
-|`DECISION_CENTRAL_MAVEN_USERNAME` | `RHDMCENTR_MAVEN_REPO_USERNAME` | Username to access the Maven service hosted by Decision Central inside EAP. | mavenUser | False
-|`DECISION_CENTRAL_MAVEN_PASSWORD` | `RHDMCENTR_MAVEN_REPO_PASSWORD` | Password to access the Maven service hosted by Decision Central inside EAP. | maven1! | False
-|`KIE_ADMIN_USER` | `KIE_ADMIN_USER` | KIE administrator username. | adminUser | False
-|`KIE_ADMIN_PWD` | `KIE_ADMIN_PWD` | KIE administrator password. | -- | False
-|`KIE_SERVER_USER` | `KIE_SERVER_USER` | KIE server username. (Sets the org.kie.server.user system property) | executionUser | False
-|`KIE_SERVER_PWD` | `KIE_SERVER_PWD` | KIE server password. (Sets the org.kie.server.pwd system property) | -- | False
+|`KIE_ADMIN_USER` | `KIE_ADMIN_USER` | KIE administrator user name | adminUser | False
+|`KIE_ADMIN_PWD` | `KIE_ADMIN_PWD` | KIE administrator password | -- | False
+|`KIE_SERVER_USER` | `KIE_SERVER_USER` | KIE server user name (Sets the org.kie.server.user system property) | executionUser | False
+|`KIE_SERVER_PWD` | `KIE_SERVER_PWD` | KIE server password. If this parameter is not set, the password is automatically generated. (Sets the org.kie.server.pwd system property) | -- | False
 |`IMAGE_STREAM_NAMESPACE` | -- | Namespace in which the ImageStreams for Red Hat Decision Manager images are installed. These ImageStreams are normally installed in the openshift namespace. You should only need to modify this if you installed the ImageStreams in a different namespace/project. | openshift | True
 |`KIE_SERVER_IMAGE_STREAM_NAME` | -- | The name of the image stream to use for KIE server. Default is "rhdm-kieserver-rhel8". | rhdm-kieserver-rhel8 | True
-|`IMAGE_STREAM_TAG` | -- | A named pointer to an image in an image stream. Default is "7.5.0". | 7.5.0 | True
-|`KIE_SERVER_MODE` | `KIE_SERVER_MODE` | The KIE Server mode. Valid values are 'DEVELOPMENT' or 'PRODUCTION'. In production mode, you can not deploy SNAPSHOT versions of artifacts on the KIE server and can not change the version of an artifact in an existing container. (Sets the org.kie.server.mode system property). | `PRODUCTION` | False
+|`IMAGE_STREAM_TAG` | -- | A named pointer to an image in an image stream. Default is "7.6.0". | 7.6.0 | True
 |`KIE_MBEANS` | `KIE_MBEANS` | KIE server mbeans enabled/disabled. (Sets the kie.mbeans and kie.scanner.mbeans system properties) | enabled | False
-|`DROOLS_SERVER_FILTER_CLASSES` | `DROOLS_SERVER_FILTER_CLASSES` | KIE server class filtering. (Sets the org.drools.server.filter.classes system property) | true | False
+|`DROOLS_SERVER_FILTER_CLASSES` | `DROOLS_SERVER_FILTER_CLASSES` | KIE server class filtering (Sets the org.drools.server.filter.classes system property) | true | False
 |`PROMETHEUS_SERVER_EXT_DISABLED` | `PROMETHEUS_SERVER_EXT_DISABLED` | If set to false, the prometheus server extension will be enabled. (Sets the org.kie.prometheus.server.ext.disabled system property) | false | False
 |`KIE_SERVER_HOSTNAME_HTTP` | `HOSTNAME_HTTP` | Custom hostname for http service route. Leave blank for default hostname, e.g.: insecure-<application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
-|`KIE_SERVER_HOSTNAME_HTTPS` | `HOSTNAME_HTTPS` | Custom hostname for https service route. Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
-|`KIE_SERVER_HTTPS_SECRET` | -- | The name of the secret containing the keystore file. | kieserver-app-secret | True
-|`KIE_SERVER_HTTPS_KEYSTORE` | `HTTPS_KEYSTORE` | The name of the keystore file within the secret. | keystore.jks | False
-|`KIE_SERVER_HTTPS_NAME` | `HTTPS_NAME` | The name associated with the server certificate. | jboss | False
-|`KIE_SERVER_HTTPS_PASSWORD` | `HTTPS_PASSWORD` | The password for the keystore and certificate. | mykeystorepass | False
+|`KIE_SERVER_HOSTNAME_HTTPS` | `HOSTNAME_HTTPS` | Custom hostname for https service route.  Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
+|`KIE_SERVER_HTTPS_SECRET` | -- | The name of the secret containing the keystore file | kieserver-app-secret | True
+|`KIE_SERVER_HTTPS_KEYSTORE` | `HTTPS_KEYSTORE` | The name of the keystore file within the secret | keystore.jks | False
+|`KIE_SERVER_HTTPS_NAME` | `HTTPS_NAME` | The name associated with the server certificate | jboss | False
+|`KIE_SERVER_HTTPS_PASSWORD` | `HTTPS_PASSWORD` | The password for the keystore and certificate | mykeystorepass | False
 |`KIE_SERVER_BYPASS_AUTH_USER` | `KIE_SERVER_BYPASS_AUTH_USER` | Allows the KIE server to bypass the authenticated user for task-related operations, for example, queries. (Sets the org.kie.server.bypass.auth.user system property) | false | False
-|`KIE_SERVER_MEMORY_LIMIT` | -- | KIE server Container memory limit. | 1Gi | False
-|`KIE_SERVER_CONTAINER_DEPLOYMENT` | `KIE_SERVER_CONTAINER_DEPLOYMENT` | KIE Server Container deployment configuration with optional alias. Format: containerId=groupId:artifactId:version\|c2(alias2)=g2:a2:v2 | rhdm-kieserver-library=org.openshift.quickstarts:rhdm-kieserver-library:1.5.0-SNAPSHOT | False
-|`KIE_SERVER_MGMT_DISABLED` | `KIE_SERVER_MGMT_DISABLED` | Disable management api and don't allow KIE containers to be deployed/undeployed or started/stopped. Sets the property org.kie.server.mgmt.api.disabled to true and org.kie.server.startup.strategy to LocalContainersStartupStrategy. | true | False
-|`SSO_URL` | `SSO_URL` | RH-SSO URL. | https://rh-sso.example.com/auth | False
-|`SSO_REALM` | `SSO_REALM` | RH-SSO Realm name. | -- | False
-|`KIE_SERVER_SSO_CLIENT` | `SSO_CLIENT` | KIE Server RH-SSO Client name. | -- | False
+|`KIE_SERVER_CONTAINER_DEPLOYMENT` | `KIE_SERVER_CONTAINER_DEPLOYMENT` | KIE Server Container deployment configuration with optional alias. Format: containerId=groupId:artifactId:version\|c2(alias2)=g2:a2:v2 | rhdm-kieserver-hellorules=org.openshift.quickstarts:rhdm-kieserver-hellorules:1.6.0-SNAPSHOT | True
+|`SOURCE_REPOSITORY_URL` | -- | Git source URI for application | https://github.com/jboss-container-images/rhdm-7-openshift-image.git | True
+|`SOURCE_REPOSITORY_REF` | -- | Git branch/tag reference | master | False
+|`CONTEXT_DIR` | -- | Path within Git project to build; empty for root project directory. | quickstarts/hello-rules/hellorules | False
+|`GITHUB_WEBHOOK_SECRET` | -- | GitHub trigger secret | -- | True
+|`GENERIC_WEBHOOK_SECRET` | -- | Generic build trigger secret | -- | True
+|`MAVEN_MIRROR_URL` | -- | Maven mirror to use for S2I builds | -- | False
+|`MAVEN_REPO_ID` | `EXTERNAL_MAVEN_REPO_ID` | The id to use for the maven repository, if set. Default is generated randomly. | my-repo-id | False
+|`MAVEN_REPO_URL` | `EXTERNAL_MAVEN_REPO_URL` | Fully qualified URL to a Maven repository. | -- | False
+|`MAVEN_REPO_USERNAME` | `EXTERNAL_MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | -- | False
+|`MAVEN_REPO_PASSWORD` | `EXTERNAL_MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | -- | False
+|`DECISION_CENTRAL_SERVICE` | `WORKBENCH_SERVICE_NAME` | The Service name for the optional Decision Central, where it can be reached, to allow service lookups (for example, maven repo usage), if required. | myapp-rhdmcentr | False
+|`DECISION_CENTRAL_MAVEN_USERNAME` | `RHDMCENTR_MAVEN_REPO_USERNAME` | User name for accessing the Maven service hosted by Decision Central inside EAP. | mavenUser | False
+|`DECISION_CENTRAL_MAVEN_PASSWORD` | `RHDMCENTR_MAVEN_REPO_PASSWORD` | Password to access the Maven service hosted by Decision Central inside EAP. | maven1! | False
+|`ARTIFACT_DIR` | -- | List of directories from which archives will be copied into the deployment folder. If unspecified, all archives in /target will be copied. | -- | False
+|`KIE_SERVER_MEMORY_LIMIT` | -- | KIE server Container memory limit | 1Gi | False
+|`KIE_SERVER_MGMT_DISABLED` | `KIE_SERVER_MGMT_DISABLED` | Disable management api and don't allow KIE containers to be deployed/undeployed or started/stopped. Sets the property org.kie.server.mgmt.api.disabled to true and org.kie.server.startup.strategy to LocalContainersStartupStrategy. | true | True
+|`KIE_SERVER_JMS_QUEUE_REQUEST` | `KIE_SERVER_JMS_QUEUE_REQUEST` | JNDI name of request queue for JMS. The default value is queue/KIE.SERVER.REQUEST | queue/KIE.SERVER.REQUEST | False
+|`KIE_SERVER_JMS_QUEUE_RESPONSE` | `KIE_SERVER_JMS_QUEUE_RESPONSE` | JNDI name of response queue for JMS. The default value is queue/KIE.SERVER.RESPONSE | queue/KIE.SERVER.RESPONSE | False
+|`AMQ_USERNAME` | `AMQ_USERNAME` | User name for standard broker user. It is required for connecting to the broker. If left empty, it will be generated. | -- | False
+|`AMQ_PASSWORD` | `AMQ_PASSWORD` | Password for standard broker user. It is required for connecting to the broker. If left empty, it will be generated. | -- | False
+|`AMQ_ROLE` | `AMQ_ROLE` | User role for standard broker user. | admin | True
+|`AMQ_QUEUES` | `AMQ_QUEUES` | Queue names, separated by commas. These queues will be automatically created when the broker starts. Also, they will be made accessible as JNDI resources in EAP. These are the default queues needed by KIE Server. If using custom Queues, use the same values here as in the KIE_SERVER_JMS_QUEUE_RESPONSE and KIE_SERVER_JMS_QUEUE_REQUEST parameters. | queue/KIE.SERVER.REQUEST,queue/KIE.SERVER.RESPONSE | False
+|`AMQ_GLOBAL_MAX_SIZE` | `AMQ_GLOBAL_MAX_SIZE` | Specifies the maximum amount of memory that message data can consume. If no value is specified, half of the system's memory is allocated. | 10 gb | False
+|`AMQ_SECRET` | -- | The name of a secret containing AMQ SSL related files. | broker-app-secret | True
+|`AMQ_TRUSTSTORE` | `AMQ_TRUSTSTORE` | The name of the AMQ SSL Trust Store file. | broker.ts | False
+|`AMQ_TRUSTSTORE_PASSWORD` | `AMQ_TRUSTSTORE_PASSWORD` | The password for the AMQ Trust Store. | changeit | False
+|`AMQ_KEYSTORE` | `AMQ_KEYSTORE` | The name of the AMQ keystore file. | broker.ks | False
+|`AMQ_KEYSTORE_PASSWORD` | `AMQ_KEYSTORE_PASSWORD` | The password for the AMQ keystore and certificate. | changeit | False
+|`AMQ_PROTOCOL` | `AMQ_PROTOCOL` | Broker protocols to configure, separated by commas. Allowed values are: `openwire`, `amqp`, `stomp` and `mqtt`. Only `openwire` is supported by EAP. | openwire | False
+|`AMQ_BROKER_IMAGESTREAM_NAME` | -- | AMQ Broker Image Stream Name | amq-broker:7.5 | True
+|`AMQ_IMAGE_STREAM_NAMESPACE` | -- | Namespace in which the ImageStreams for Red Hat AMQ images are installed. These ImageStreams are normally installed in the openshift namespace. You should only need to modify this if you installed the ImageStreams in a different namespace/project. | openshift | True
+|`SSO_URL` | `SSO_URL` | RH-SSO URL | https://rh-sso.example.com/auth | False
+|`SSO_REALM` | `SSO_REALM` | RH-SSO Realm name | -- | False
+|`KIE_SERVER_SSO_CLIENT` | `SSO_CLIENT` | KIE Server RH-SSO Client name | -- | False
 |`KIE_SERVER_SSO_SECRET` | `SSO_SECRET` | KIE Server RH-SSO Client Secret | 252793ed-7118-4ca8-8dab-5622fa97d892 | False
-|`SSO_USERNAME` | `SSO_USERNAME` | RH-SSO Realm Admin Username used to create the Client if it doesn't exist. | -- | False
-|`SSO_PASSWORD` | `SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client. | -- | False
-|`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | `SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation. | false | False
-|`SSO_PRINCIPAL_ATTRIBUTE` | `SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as username. | preferred_username | False
-|`AUTH_LDAP_URL` | `AUTH_LDAP_URL` | LDAP Endpoint to connect for authentication. | ldap://myldap.example.com | False
-|`AUTH_LDAP_BIND_DN` | `AUTH_LDAP_BIND_DN` | Bind DN used for authentication. | uid=admin,ou=users,ou=example,ou=com | False
-|`AUTH_LDAP_BIND_CREDENTIAL` | `AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication. | Password | False
+|`SSO_USERNAME` | `SSO_USERNAME` | RH-SSO Realm admin user name used to create the Client if it doesn't exist | -- | False
+|`SSO_PASSWORD` | `SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client | -- | False
+|`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | `SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation | false | False
+|`SSO_PRINCIPAL_ATTRIBUTE` | `SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as user name. | preferred_username | False
+|`AUTH_LDAP_URL` | `AUTH_LDAP_URL` | LDAP Endpoint to connect for authentication | ldap://myldap.example.com | False
+|`AUTH_LDAP_BIND_DN` | `AUTH_LDAP_BIND_DN` | Bind DN used for authentication | uid=admin,ou=users,ou=example,ou=com | False
+|`AUTH_LDAP_BIND_CREDENTIAL` | `AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication | Password | False
 |`AUTH_LDAP_JAAS_SECURITY_DOMAIN` | `AUTH_LDAP_JAAS_SECURITY_DOMAIN` | The JMX ObjectName of the JaasSecurityDomain used to decrypt the password. | -- | False
 |`AUTH_LDAP_BASE_CTX_DN` | `AUTH_LDAP_BASE_CTX_DN` | LDAP Base DN of the top-level context to begin the user search. | ou=users,ou=example,ou=com | False
 |`AUTH_LDAP_BASE_FILTER` | `AUTH_LDAP_BASE_FILTER` | LDAP search filter used to locate the context of the user to authenticate. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. A common example for the search filter is (uid={0}). | (uid={0}) | False
 |`AUTH_LDAP_SEARCH_SCOPE` | `AUTH_LDAP_SEARCH_SCOPE` | The search scope to use. | `SUBTREE_SCOPE` | False
 |`AUTH_LDAP_SEARCH_TIME_LIMIT` | `AUTH_LDAP_SEARCH_TIME_LIMIT` | The timeout in milliseconds for user or role searches. | 10000 | False
 |`AUTH_LDAP_DISTINGUISHED_NAME_ATTRIBUTE` | `AUTH_LDAP_DISTINGUISHED_NAME_ATTRIBUTE` | The name of the attribute in the user entry that contains the DN of the user. This may be necessary if the DN of the user itself contains special characters, backslash for example, that prevent correct user mapping. If the attribute does not exist, the entry's DN is used. | distinguishedName | False
-|`AUTH_LDAP_PARSE_USERNAME` | `AUTH_LDAP_PARSE_USERNAME` | A flag indicating if the DN is to be parsed for the username. If set to true, the DN is parsed for the username. If set to false the DN is not parsed for the username. This option is used together with usernameBeginString and usernameEndString. | true | False
-|`AUTH_LDAP_USERNAME_BEGIN_STRING` | `AUTH_LDAP_USERNAME_BEGIN_STRING` | Defines the String which is to be removed from the start of the DN to reveal the username. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | -- | False
-|`AUTH_LDAP_USERNAME_END_STRING` | `AUTH_LDAP_USERNAME_END_STRING` | Defines the String which is to be removed from the end of the DN to reveal the username. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | -- | False
+|`AUTH_LDAP_PARSE_USERNAME` | `AUTH_LDAP_PARSE_USERNAME` | A flag indicating if the DN is to be parsed for the user name. If set to true, the DN is parsed for the user name. If set to false the DN is not parsed for the user name. This option is used together with usernameBeginString and usernameEndString. | true | False
+|`AUTH_LDAP_USERNAME_BEGIN_STRING` | `AUTH_LDAP_USERNAME_BEGIN_STRING` | Defines the String which is to be removed from the start of the DN to reveal the user name. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | -- | False
+|`AUTH_LDAP_USERNAME_END_STRING` | `AUTH_LDAP_USERNAME_END_STRING` | Defines the String which is to be removed from the end of the DN to reveal the user name. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | -- | False
 |`AUTH_LDAP_ROLE_ATTRIBUTE_ID` | `AUTH_LDAP_ROLE_ATTRIBUTE_ID` | Name of the attribute containing the user roles. | memberOf | False
 |`AUTH_LDAP_ROLES_CTX_DN` | `AUTH_LDAP_ROLES_CTX_DN` | The fixed DN of the context to search for user roles. This is not the DN where the actual roles are, but the DN where the objects containing the user roles are. For example, in a Microsoft Active Directory server, this is the DN where the user account is. | ou=groups,ou=example,ou=com | False
 |`AUTH_LDAP_ROLE_FILTER` | `AUTH_LDAP_ROLE_FILTER` | A search filter used to locate the roles associated with the authenticated user. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. The authenticated userDN is substituted into the filter anywhere a {1} is used. An example search filter that matches on the input username is (member={0}). An alternative that matches on the authenticated userDN is (member={1}). | (memberOf={1}) | False
 |`AUTH_LDAP_ROLE_RECURSION` | `AUTH_LDAP_ROLE_RECURSION` | The number of levels of recursion the role search will go below a matching context. Disable recursion by setting this to 0. | 1 | False
-|`AUTH_LDAP_DEFAULT_ROLE` | `AUTH_LDAP_DEFAULT_ROLE` | A role included for all authenticated users. | user | False
+|`AUTH_LDAP_DEFAULT_ROLE` | `AUTH_LDAP_DEFAULT_ROLE` | A role included for all authenticated users | user | False
 |`AUTH_LDAP_ROLE_NAME_ATTRIBUTE_ID` | `AUTH_LDAP_ROLE_NAME_ATTRIBUTE_ID` | Name of the attribute within the roleCtxDN context which contains the role name. If the roleAttributeIsDN property is set to true, this property is used to find the role object's name attribute. | name | False
 |`AUTH_LDAP_PARSE_ROLE_NAME_FROM_DN` | `AUTH_LDAP_PARSE_ROLE_NAME_FROM_DN` | A flag indicating if the DN returned by a query contains the roleNameAttributeID. If set to true, the DN is checked for the roleNameAttributeID. If set to false, the DN is not checked for the roleNameAttributeID. This flag can improve the performance of LDAP queries. | false | False
 |`AUTH_LDAP_ROLE_ATTRIBUTE_IS_DN` | `AUTH_LDAP_ROLE_ATTRIBUTE_IS_DN` | Whether or not the roleAttributeID contains the fully-qualified DN of a role object. If false, the role name is taken from the value of the roleNameAttributeId attribute of the context name. Certain directory schemas, such as Microsoft Active Directory, require this attribute to be set to true. | false | False
@@ -107,6 +126,33 @@ https://cloud.google.com/container-engine/docs/services/[container-engine docume
 .1+| `${APPLICATION_NAME}-kieserver-ping`
 |8888 | ping
 .1+| The JGroups ping port for clustering.
+.1+| `${APPLICATION_NAME}-amq-jolokia`
+|8161 | amq-jolokia-console
+.1+| The broker's console and Jolokia port.
+.1+| `${APPLICATION_NAME}-amq-amqp`
+|5672 | amq-amqp
+.1+| The broker's AMQP port.
+.1+| `${APPLICATION_NAME}-amq-amqp-ssl`
+|5671 | amq-amqp-ssl
+.1+| The broker's AMQP SSL port.
+.1+| `${APPLICATION_NAME}-amq-mqtt`
+|1883 | amq-mqtt
+.1+| The broker's MQTT port.
+.1+| `${APPLICATION_NAME}-amq-mqtt-ssl`
+|8883 | amq-mqtt-ssl
+.1+| The broker's MQTT SSL port.
+.1+| `${APPLICATION_NAME}-amq-stomp`
+|61613 | amq-stomp
+.1+| The broker's STOMP port.
+.1+| `${APPLICATION_NAME}-amq-stomp-ssl`
+|61612 | amq-stomp-ssl
+.1+| The broker's STOMP SSL port.
+.1+| `${APPLICATION_NAME}-amq-tcp`
+|61616 | amq-tcp
+.1+| The broker's OpenWire port.
+.1+| `${APPLICATION_NAME}-amq-tcp-ssl`
+|61617 | amq-tcp-ssl
+.1+| The broker's OpenWire (SSL) port.
 |=============
 
 
@@ -123,9 +169,24 @@ https://access.redhat.com/documentation/en-us/openshift_enterprise/3.2/html/arch
 
 |insecure-${APPLICATION_NAME}-kieserver-http | none | `${KIE_SERVER_HOSTNAME_HTTP}`
 |`${APPLICATION_NAME}-kieserver-https` | TLS passthrough | `${KIE_SERVER_HOSTNAME_HTTPS}`
+|`${APPLICATION_NAME}-amq-jolokia-console` | TLS passthrough | <default>
+|`${APPLICATION_NAME}-amq-tcp-ssl` | TLS passthrough | <default>
 |=============
 
 
+
+=== Build Configurations
+
+A `buildConfig` describes a single build definition and a set of triggers for when a new build should be created.
+A `buildConfig` is a REST object, which can be used in a POST to the API server to create a new instance. Refer to
+the https://docs.okd.io/latest/dev_guide/builds/index.html#defining-a-buildconfig[Openshift documentation]
+for more information.
+
+|=============
+| S2I image  | link | Build output | BuildTriggers and Settings
+
+|rhdm-kieserver-rhel8:7.6.0 |  link:../../../kieserver/image.yaml[`rhdm-7/rhdm-kieserver-rhel8`] | `${APPLICATION_NAME}-kieserver:latest` | GitHub, Generic, ImageChange, ConfigChange
+|=============
 
 
 === Deployment Configurations
@@ -143,6 +204,7 @@ https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/
 |Deployment | Triggers
 
 |`${APPLICATION_NAME}-kieserver` | ImageChange
+|`${APPLICATION_NAME}-amq` | ImageChange
 |============
 
 
@@ -157,7 +219,8 @@ for more information.
 |============
 |Deployment | Replicas
 
-|`${APPLICATION_NAME}-kieserver` | 1
+|`${APPLICATION_NAME}-kieserver` | 2
+|`${APPLICATION_NAME}-amq` | 1
 |============
 
 
@@ -183,7 +246,8 @@ information.
 |============
 |Deployment | Image
 
-|`${APPLICATION_NAME}-kieserver` | `${KIE_SERVER_IMAGE_STREAM_NAME}`
+|`${APPLICATION_NAME}-kieserver` | `${APPLICATION_NAME}-kieserver`
+|`${APPLICATION_NAME}-amq` | `${AMQ_BROKER_IMAGESTREAM_NAME}`
 |============
 
 
@@ -194,6 +258,11 @@ information.
 .${APPLICATION_NAME}-kieserver
 ----
 Http Get on http://localhost:8080/services/rest/server/readycheck
+----
+
+.${APPLICATION_NAME}-amq
+----
+/bin/bash -c /opt/amq/bin/readinessProbe.sh
 ----
 
 
@@ -220,6 +289,16 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |http | 8080 | `TCP`
 |https | 8443 | `TCP`
 |ping | 8888 | `TCP`
+.9+| `${APPLICATION_NAME}-amq`
+|console-jolokia | 8161 | `TCP`
+|amq-amqp | 5672 | `TCP`
+|amqp-ssl | 5671 | `TCP`
+|amq-mqtt | 1883 | `TCP`
+|mqtt-ssl | 8883 | `TCP`
+|amq-stomp | 61613 | `TCP`
+|stomp-ssl | 61612 | `TCP`
+|amq-tcp | 61616 | `TCP`
+|amq-tcp-ssl | 61617 | `TCP`
 |=============
 
 
@@ -229,75 +308,95 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |=======================================================================
 |Deployment |Variable name |Description |Example value
 
-.68+| `${APPLICATION_NAME}-kieserver`
+.72+| `${APPLICATION_NAME}-kieserver`
 |`WORKBENCH_SERVICE_NAME` | The Service name for the optional Decision Central, where it can be reached, to allow service lookups (for example, maven repo usage), if required. | `${DECISION_CENTRAL_SERVICE}`
-|`KIE_ADMIN_USER` | KIE administrator username. | `${KIE_ADMIN_USER}`
-|`KIE_ADMIN_PWD` | KIE administrator password. | `${KIE_ADMIN_PWD}`
-|`KIE_SERVER_MODE` | The KIE Server mode. Valid values are 'DEVELOPMENT' or 'PRODUCTION'. In production mode, you can not deploy SNAPSHOT versions of artifacts on the KIE server and can not change the version of an artifact in an existing container. (Sets the org.kie.server.mode system property). | `${KIE_SERVER_MODE}`
+|`KIE_ADMIN_USER` | KIE administrator user name | `${KIE_ADMIN_USER}`
+|`KIE_ADMIN_PWD` | KIE administrator password | `${KIE_ADMIN_PWD}`
+|`KIE_SERVER_MODE` | -- | `DEVELOPMENT`
 |`KIE_MBEANS` | KIE server mbeans enabled/disabled. (Sets the kie.mbeans and kie.scanner.mbeans system properties) | `${KIE_MBEANS}`
-|`DROOLS_SERVER_FILTER_CLASSES` | KIE server class filtering. (Sets the org.drools.server.filter.classes system property) | `${DROOLS_SERVER_FILTER_CLASSES}`
+|`DROOLS_SERVER_FILTER_CLASSES` | KIE server class filtering (Sets the org.drools.server.filter.classes system property) | `${DROOLS_SERVER_FILTER_CLASSES}`
 |`PROMETHEUS_SERVER_EXT_DISABLED` | If set to false, the prometheus server extension will be enabled. (Sets the org.kie.prometheus.server.ext.disabled system property) | `${PROMETHEUS_SERVER_EXT_DISABLED}`
 |`KIE_SERVER_BYPASS_AUTH_USER` | Allows the KIE server to bypass the authenticated user for task-related operations, for example, queries. (Sets the org.kie.server.bypass.auth.user system property) | `${KIE_SERVER_BYPASS_AUTH_USER}`
 |`KIE_SERVER_ID` | -- | --
 |`KIE_SERVER_ROUTE_NAME` | -- | `${APPLICATION_NAME}-kieserver`
-|`KIE_SERVER_USER` | KIE server username. (Sets the org.kie.server.user system property) | `${KIE_SERVER_USER}`
-|`KIE_SERVER_PWD` | KIE server password. (Sets the org.kie.server.pwd system property) | `${KIE_SERVER_PWD}`
+|`KIE_SERVER_USER` | KIE server user name (Sets the org.kie.server.user system property) | `${KIE_SERVER_USER}`
+|`KIE_SERVER_PWD` | KIE server password. If this parameter is not set, the password is automatically generated. (Sets the org.kie.server.pwd system property) | `${KIE_SERVER_PWD}`
 |`KIE_SERVER_CONTAINER_DEPLOYMENT` | KIE Server Container deployment configuration with optional alias. Format: containerId=groupId:artifactId:version\|c2(alias2)=g2:a2:v2 | `${KIE_SERVER_CONTAINER_DEPLOYMENT}`
-|`MAVEN_MIRROR_URL` | Maven mirror that KIE server must use. If you configure a mirror, this mirror must contain all artifacts that are required for deploying your services. | `${MAVEN_MIRROR_URL}`
-|`MAVEN_MIRROR_OF` | Maven mirror configuration for KIE server. | `${MAVEN_MIRROR_OF}`
 |`MAVEN_REPOS` | -- | RHDMCENTR,EXTERNAL
-|`RHDMCENTR_MAVEN_REPO_ID` | -- | repo-rhdmcentr
 |`RHDMCENTR_MAVEN_REPO_SERVICE` | The Service name for the optional Decision Central, where it can be reached, to allow service lookups (for example, maven repo usage), if required. | `${DECISION_CENTRAL_SERVICE}`
 |`RHDMCENTR_MAVEN_REPO_PATH` | -- | `/maven2/`
-|`RHDMCENTR_MAVEN_REPO_USERNAME` | Username to access the Maven service hosted by Decision Central inside EAP. | `${DECISION_CENTRAL_MAVEN_USERNAME}`
+|`RHDMCENTR_MAVEN_REPO_USERNAME` | User name for accessing the Maven service hosted by Decision Central inside EAP. | `${DECISION_CENTRAL_MAVEN_USERNAME}`
 |`RHDMCENTR_MAVEN_REPO_PASSWORD` | Password to access the Maven service hosted by Decision Central inside EAP. | `${DECISION_CENTRAL_MAVEN_PASSWORD}`
-|`EXTERNAL_MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhdmcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | `${MAVEN_REPO_ID}`
-|`EXTERNAL_MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | `${MAVEN_REPO_URL}`
-|`EXTERNAL_MAVEN_REPO_USERNAME` | Username to access the Maven repository, if required. | `${MAVEN_REPO_USERNAME}`
+|`EXTERNAL_MAVEN_REPO_ID` | The id to use for the maven repository, if set. Default is generated randomly. | `${MAVEN_REPO_ID}`
+|`EXTERNAL_MAVEN_REPO_URL` | Fully qualified URL to a Maven repository. | `${MAVEN_REPO_URL}`
+|`EXTERNAL_MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | `${MAVEN_REPO_USERNAME}`
 |`EXTERNAL_MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | `${MAVEN_REPO_PASSWORD}`
+|`KIE_SERVER_JMS_QUEUE_REQUEST` | JNDI name of request queue for JMS. The default value is queue/KIE.SERVER.REQUEST | `${KIE_SERVER_JMS_QUEUE_REQUEST}`
+|`KIE_SERVER_JMS_QUEUE_RESPONSE` | JNDI name of response queue for JMS. The default value is queue/KIE.SERVER.RESPONSE | `${KIE_SERVER_JMS_QUEUE_RESPONSE}`
+|`MQ_SERVICE_PREFIX_MAPPING` | -- | `${APPLICATION_NAME}-amq7=AMQ`
+|`AMQ_USERNAME` | User name for standard broker user. It is required for connecting to the broker. If left empty, it will be generated. | `${AMQ_USERNAME}`
+|`AMQ_PASSWORD` | Password for standard broker user. It is required for connecting to the broker. If left empty, it will be generated. | `${AMQ_PASSWORD}`
+|`AMQ_PROTOCOL` | Broker protocols to configure, separated by commas. Allowed values are: `openwire`, `amqp`, `stomp` and `mqtt`. Only `openwire` is supported by EAP. | tcp
+|`AMQ_QUEUES` | Queue names, separated by commas. These queues will be automatically created when the broker starts. Also, they will be made accessible as JNDI resources in EAP. These are the default queues needed by KIE Server. If using custom Queues, use the same values here as in the KIE_SERVER_JMS_QUEUE_RESPONSE and KIE_SERVER_JMS_QUEUE_REQUEST parameters. | `${AMQ_QUEUES}`
+|`HTTPS_KEYSTORE_DIR` | -- | `/etc/kieserver-secret-volume`
+|`HTTPS_KEYSTORE` | The name of the keystore file within the secret | `${KIE_SERVER_HTTPS_KEYSTORE}`
+|`HTTPS_NAME` | The name associated with the server certificate | `${KIE_SERVER_HTTPS_NAME}`
+|`HTTPS_PASSWORD` | The password for the keystore and certificate | `${KIE_SERVER_HTTPS_PASSWORD}`
 |`KIE_SERVER_MGMT_DISABLED` | Disable management api and don't allow KIE containers to be deployed/undeployed or started/stopped. Sets the property org.kie.server.mgmt.api.disabled to true and org.kie.server.startup.strategy to LocalContainersStartupStrategy. | `${KIE_SERVER_MGMT_DISABLED}`
 |`KIE_SERVER_STARTUP_STRATEGY` | -- | OpenShiftStartupStrategy
-|`HTTPS_KEYSTORE_DIR` | -- | `/etc/kieserver-secret-volume`
-|`HTTPS_KEYSTORE` | The name of the keystore file within the secret. | `${KIE_SERVER_HTTPS_KEYSTORE}`
-|`HTTPS_NAME` | The name associated with the server certificate. | `${KIE_SERVER_HTTPS_NAME}`
-|`HTTPS_PASSWORD` | The password for the keystore and certificate. | `${KIE_SERVER_HTTPS_PASSWORD}`
 |`JGROUPS_PING_PROTOCOL` | -- | openshift.DNS_PING
 |`OPENSHIFT_DNS_PING_SERVICE_NAME` | -- | `${APPLICATION_NAME}-kieserver-ping`
 |`OPENSHIFT_DNS_PING_SERVICE_PORT` | -- | 8888
-|`SSO_URL` | RH-SSO URL. | `${SSO_URL}`
+|`SSO_URL` | RH-SSO URL | `${SSO_URL}`
 |`SSO_OPENIDCONNECT_DEPLOYMENTS` | -- | ROOT.war
-|`SSO_REALM` | RH-SSO Realm name. | `${SSO_REALM}`
+|`SSO_REALM` | RH-SSO Realm name | `${SSO_REALM}`
 |`SSO_SECRET` | KIE Server RH-SSO Client Secret | `${KIE_SERVER_SSO_SECRET}`
-|`SSO_CLIENT` | KIE Server RH-SSO Client name. | `${KIE_SERVER_SSO_CLIENT}`
-|`SSO_USERNAME` | RH-SSO Realm Admin Username used to create the Client if it doesn't exist. | `${SSO_USERNAME}`
-|`SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client. | `${SSO_PASSWORD}`
-|`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation. | `${SSO_DISABLE_SSL_CERTIFICATE_VALIDATION}`
-|`SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as username. | `${SSO_PRINCIPAL_ATTRIBUTE}`
+|`SSO_CLIENT` | KIE Server RH-SSO Client name | `${KIE_SERVER_SSO_CLIENT}`
+|`SSO_USERNAME` | RH-SSO Realm admin user name used to create the Client if it doesn't exist | `${SSO_USERNAME}`
+|`SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client | `${SSO_PASSWORD}`
+|`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation | `${SSO_DISABLE_SSL_CERTIFICATE_VALIDATION}`
+|`SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as user name. | `${SSO_PRINCIPAL_ATTRIBUTE}`
 |`HOSTNAME_HTTP` | Custom hostname for http service route. Leave blank for default hostname, e.g.: insecure-<application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTP}`
-|`HOSTNAME_HTTPS` | Custom hostname for https service route. Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTPS}`
-|`AUTH_LDAP_URL` | LDAP Endpoint to connect for authentication. | `${AUTH_LDAP_URL}`
-|`AUTH_LDAP_BIND_DN` | Bind DN used for authentication. | `${AUTH_LDAP_BIND_DN}`
-|`AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication. | `${AUTH_LDAP_BIND_CREDENTIAL}`
+|`HOSTNAME_HTTPS` | Custom hostname for https service route.  Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTPS}`
+|`AUTH_LDAP_URL` | LDAP Endpoint to connect for authentication | `${AUTH_LDAP_URL}`
+|`AUTH_LDAP_BIND_DN` | Bind DN used for authentication | `${AUTH_LDAP_BIND_DN}`
+|`AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication | `${AUTH_LDAP_BIND_CREDENTIAL}`
 |`AUTH_LDAP_JAAS_SECURITY_DOMAIN` | The JMX ObjectName of the JaasSecurityDomain used to decrypt the password. | `${AUTH_LDAP_JAAS_SECURITY_DOMAIN}`
 |`AUTH_LDAP_BASE_CTX_DN` | LDAP Base DN of the top-level context to begin the user search. | `${AUTH_LDAP_BASE_CTX_DN}`
 |`AUTH_LDAP_BASE_FILTER` | LDAP search filter used to locate the context of the user to authenticate. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. A common example for the search filter is (uid={0}). | `${AUTH_LDAP_BASE_FILTER}`
 |`AUTH_LDAP_SEARCH_SCOPE` | The search scope to use. | `${AUTH_LDAP_SEARCH_SCOPE}`
 |`AUTH_LDAP_SEARCH_TIME_LIMIT` | The timeout in milliseconds for user or role searches. | `${AUTH_LDAP_SEARCH_TIME_LIMIT}`
 |`AUTH_LDAP_DISTINGUISHED_NAME_ATTRIBUTE` | The name of the attribute in the user entry that contains the DN of the user. This may be necessary if the DN of the user itself contains special characters, backslash for example, that prevent correct user mapping. If the attribute does not exist, the entry's DN is used. | `${AUTH_LDAP_DISTINGUISHED_NAME_ATTRIBUTE}`
-|`AUTH_LDAP_PARSE_USERNAME` | A flag indicating if the DN is to be parsed for the username. If set to true, the DN is parsed for the username. If set to false the DN is not parsed for the username. This option is used together with usernameBeginString and usernameEndString. | `${AUTH_LDAP_PARSE_USERNAME}`
-|`AUTH_LDAP_USERNAME_BEGIN_STRING` | Defines the String which is to be removed from the start of the DN to reveal the username. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | `${AUTH_LDAP_USERNAME_BEGIN_STRING}`
-|`AUTH_LDAP_USERNAME_END_STRING` | Defines the String which is to be removed from the end of the DN to reveal the username. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | `${AUTH_LDAP_USERNAME_END_STRING}`
+|`AUTH_LDAP_PARSE_USERNAME` | A flag indicating if the DN is to be parsed for the user name. If set to true, the DN is parsed for the user name. If set to false the DN is not parsed for the user name. This option is used together with usernameBeginString and usernameEndString. | `${AUTH_LDAP_PARSE_USERNAME}`
+|`AUTH_LDAP_USERNAME_BEGIN_STRING` | Defines the String which is to be removed from the start of the DN to reveal the user name. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | `${AUTH_LDAP_USERNAME_BEGIN_STRING}`
+|`AUTH_LDAP_USERNAME_END_STRING` | Defines the String which is to be removed from the end of the DN to reveal the user name. This option is used together with usernameEndString and only taken into account if parseUsername is set to true. | `${AUTH_LDAP_USERNAME_END_STRING}`
 |`AUTH_LDAP_ROLE_ATTRIBUTE_ID` | Name of the attribute containing the user roles. | `${AUTH_LDAP_ROLE_ATTRIBUTE_ID}`
 |`AUTH_LDAP_ROLES_CTX_DN` | The fixed DN of the context to search for user roles. This is not the DN where the actual roles are, but the DN where the objects containing the user roles are. For example, in a Microsoft Active Directory server, this is the DN where the user account is. | `${AUTH_LDAP_ROLES_CTX_DN}`
 |`AUTH_LDAP_ROLE_FILTER` | A search filter used to locate the roles associated with the authenticated user. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. The authenticated userDN is substituted into the filter anywhere a {1} is used. An example search filter that matches on the input username is (member={0}). An alternative that matches on the authenticated userDN is (member={1}). | `${AUTH_LDAP_ROLE_FILTER}`
 |`AUTH_LDAP_ROLE_RECURSION` | The number of levels of recursion the role search will go below a matching context. Disable recursion by setting this to 0. | `${AUTH_LDAP_ROLE_RECURSION}`
-|`AUTH_LDAP_DEFAULT_ROLE` | A role included for all authenticated users. | `${AUTH_LDAP_DEFAULT_ROLE}`
+|`AUTH_LDAP_DEFAULT_ROLE` | A role included for all authenticated users | `${AUTH_LDAP_DEFAULT_ROLE}`
 |`AUTH_LDAP_ROLE_NAME_ATTRIBUTE_ID` | Name of the attribute within the roleCtxDN context which contains the role name. If the roleAttributeIsDN property is set to true, this property is used to find the role object's name attribute. | `${AUTH_LDAP_ROLE_NAME_ATTRIBUTE_ID}`
 |`AUTH_LDAP_PARSE_ROLE_NAME_FROM_DN` | A flag indicating if the DN returned by a query contains the roleNameAttributeID. If set to true, the DN is checked for the roleNameAttributeID. If set to false, the DN is not checked for the roleNameAttributeID. This flag can improve the performance of LDAP queries. | `${AUTH_LDAP_PARSE_ROLE_NAME_FROM_DN}`
 |`AUTH_LDAP_ROLE_ATTRIBUTE_IS_DN` | Whether or not the roleAttributeID contains the fully-qualified DN of a role object. If false, the role name is taken from the value of the roleNameAttributeId attribute of the context name. Certain directory schemas, such as Microsoft Active Directory, require this attribute to be set to true. | `${AUTH_LDAP_ROLE_ATTRIBUTE_IS_DN}`
 |`AUTH_LDAP_REFERRAL_USER_ATTRIBUTE_ID_TO_CHECK` | If you are not using referrals, you can ignore this option. When using referrals, this option denotes the attribute name which contains users defined for a certain role, for example member, if the role object is inside the referral. Users are checked against the content of this attribute name. If this option is not set, the check will always fail, so role objects cannot be stored in a referral tree. | `${AUTH_LDAP_REFERRAL_USER_ATTRIBUTE_ID_TO_CHECK}`
 |`AUTH_ROLE_MAPPER_ROLES_PROPERTIES` | When present, the RoleMapping Login Module will be configured to use the provided file. This property defines the fully-qualified file path and name of a properties file or resource which maps roles to replacement roles. The format is original_role=role1,role2,role3 | `${AUTH_ROLE_MAPPER_ROLES_PROPERTIES}`
 |`AUTH_ROLE_MAPPER_REPLACE_ROLE` | Whether to add to the current roles, or replace the current roles with the mapped ones. Replaces if set to true. | `${AUTH_ROLE_MAPPER_REPLACE_ROLE}`
+.15+| `${APPLICATION_NAME}-amq`
+|`AMQ_USER` | User name for standard broker user. It is required for connecting to the broker. If left empty, it will be generated. | `${AMQ_USERNAME}`
+|`AMQ_PASSWORD` | Password for standard broker user. It is required for connecting to the broker. If left empty, it will be generated. | `${AMQ_PASSWORD}`
+|`AMQ_ROLE` | User role for standard broker user. | `${AMQ_ROLE}`
+|`AMQ_NAME` | -- | `${APPLICATION_NAME}-broker`
+|`AMQ_TRANSPORTS` | Broker protocols to configure, separated by commas. Allowed values are: `openwire`, `amqp`, `stomp` and `mqtt`. Only `openwire` is supported by EAP. | `${AMQ_PROTOCOL}`
+|`AMQ_QUEUES` | Queue names, separated by commas. These queues will be automatically created when the broker starts. Also, they will be made accessible as JNDI resources in EAP. These are the default queues needed by KIE Server. If using custom Queues, use the same values here as in the KIE_SERVER_JMS_QUEUE_RESPONSE and KIE_SERVER_JMS_QUEUE_REQUEST parameters. | `${AMQ_QUEUES}`
+|`AMQ_GLOBAL_MAX_SIZE` | Specifies the maximum amount of memory that message data can consume. If no value is specified, half of the system's memory is allocated. | `${AMQ_GLOBAL_MAX_SIZE}`
+|`AMQ_REQUIRE_LOGIN` | -- | true
+|`AMQ_ANYCAST_PREFIX` | -- | --
+|`AMQ_MULTICAST_PREFIX` | -- | --
+|`AMQ_KEYSTORE_TRUSTSTORE_DIR` | -- | `/etc/amq-secret-volume`
+|`AMQ_TRUSTSTORE` | The name of the AMQ SSL Trust Store file. | `${AMQ_TRUSTSTORE}`
+|`AMQ_TRUSTSTORE_PASSWORD` | The password for the AMQ Trust Store. | `${AMQ_TRUSTSTORE_PASSWORD}`
+|`AMQ_KEYSTORE` | The name of the AMQ keystore file. | `${AMQ_KEYSTORE}`
+|`AMQ_KEYSTORE_PASSWORD` | The password for the AMQ keystore and certificate. | `${AMQ_KEYSTORE_PASSWORD}`
 |=======================================================================
 
 
@@ -308,6 +407,7 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |Deployment |Name  | mountPath | Purpose | readOnly
 
 |`${APPLICATION_NAME}-kieserver` | kieserver-keystore-volume | `/etc/kieserver-secret-volume` | ssl certs | True
+|`${APPLICATION_NAME}-amq` | broker-secret-volume | `/etc/amq-secret-volume` | ssl certs | True
 |=============
 
 
@@ -320,6 +420,7 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 This template requires the following secrets to be installed for the application to run.
 
 kieserver-app-secret
+broker-app-secret
 
 
 
