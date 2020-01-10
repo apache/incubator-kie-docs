@@ -5,6 +5,10 @@ The high-availability (HA) CEP server runs on the {OPENSHIFT} environment. It in
 
 You must prepare the source, build it, and then deploy it on {OPENSHIFT}. 
 
+.Prerequisites
+
+* You are logged into the project with administrator privilege using the `oc` command-line tool.
+
 .Procedure
 
 .  Download the `{PRODUCT_FILE}-reference-implementation.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal.
@@ -17,10 +21,15 @@ You must prepare the source, build it, and then deploy it on {OPENSHIFT}.
 mvn clean install -DskipTests
 ----
 +
-. Use the OpenShift operator infrastructure to install Red Hat AMQ Streams. For information about installing Red Hat AMQ Streams, see https://access.redhat.com/documentation/en-us/red_hat_amq/7.3/html/using_amq_streams_on_openshift_container_platform/index[_Using AMQ Streams on OpenShift Container Platform_].
-. Using the `KafkaTopic` resource on {OPENSHIFT}, create the topics from all the YAML files in the `kafka-topics` subdirectory. 
+. Enable the OpenShift operator for Red Hat AMQ Streams and then create an AMQ Streams (kafka) cluster in the project. For information about installing Red Hat AMQ Streams, see https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html/using_amq_streams_on_openshift/[_Using AMQ Streams on OpenShift_].
+. To create the kafka topics that are required for operation of the server, remain in the `openshift-drools-hacep-distribution/sources` directory and run the following commands:
 +
-For instructions about creating topics using the `KafkaTopic` resource, see https://access.redhat.com/documentation/en-us/red_hat_amq/7.4/html/using_amq_streams_on_openshift_container_platform/using-the-topic-operator-str[Using the topic operator] in the Red Hat AMQ documentation.
+----
+oc apply -f kafka-topics/control.yaml
+oc apply -f kafka-topics/events.yaml
+oc apply -f kafka-topics/kiesessioninfos.yaml
+oc apply -f kafka-topics/snapshot.yaml
+----
 +
 . In order to enable application access to the ConfigMap that is used in the leader election, you must configure role-based access control. Change to the `springboot` directory and enter the following commands:
 +
@@ -32,14 +41,31 @@ oc create -f kubernetes/role-binding.yaml
 +
 For more information about configuring role-based access control in {OPENSHIFT}, see https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html/authentication/using-rbac[Using RBAC to define and apply permissions] in the {OPENSHIFT} product documentation.
 +
-. In the `springboot` directory, enter the following commands to build the Docker image and push it into the Docker registry that is configured on your system. (Consider configuring a private registry before running these commands). This build imports the built `sample-hacep-project-kjar` code as a Maven dependency and includes it in the `BOOT-INF/lib` directory of the `openshift-kie-springboot.jar` file. The Docker build then uses the JAR file to create the image.
+. In the `springboot` directory, enter the following commands to create the image for deployment and push it into the repository configured for your OpenShift environment:
 +
 ----
-docker login --username=<user username>
-docker build -t <user_username>/openshift-kie-springboot:<tag> .  
-docker push <user_username>/openshift-kie-springboot:<tag>
+oc new-build --binary --strategy=docker --name openshift-kie-springboot
+oc start-build openshift-kie-springboot --from-dir=. --follow
 ----
 +
-Alternatively, to use Podman for the build process, replace `docker` with `podman` in the commands. 
+. Enter the following command to detect the name of the image that was built:
 +
-. In the OpenShift user interface, create a YAML source. Paste in the contents of the `kubernetes/deployment_registry.yaml` and change the Docker image name as necessary. Click *Deploy* to deploy the server.
+----
+oc get is/openshift-kie-springboot -o template --template='{{range .status.tags}}{{range .items}}{{.dockerImageReference}}{{end}}{{end}}'
+----
++
+. Open the `kubernetes/deployment.yaml` file in a text editor.
+. Replace the existing image URL with the result of the previous command.
+. Remove all characters at the end f the line starting with the `@` symbol, then add `:latest` to  the line. For example: 
++
+----
+image: image-registry.openshift-image-registry.svc:5000/hacep/openshift-kie-springboot:latest
+----
++
+. Save the file.
++
+. Enter the following command to deploy the image:
++
+----
+oc apply -f kubernetes/deployment.yaml
+----
