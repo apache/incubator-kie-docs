@@ -3,114 +3,122 @@
 
 This section highlights new features in {PRODUCT} {PRODUCT_VERSION}.
 
-== Installation
-
-//approved Tristan Radisson
-=== Image naming and tagging conventions
-
-The {PRODUCT} image naming and tagging conventions have changed. Starting with {PRODUCT} 7.5.0, the major and minor version is part of the tag itself, along with the micro version. Additionally, the suffix `-openshift` is replaced with `-rhel[version]` to signify the underlying operating system version. For example:
-
-* `registry.redhat.io/{PRODUCT_INIT}-7/{PRODUCT_INIT}-{CENTRAL_ONEWORD}-rhel8:7.5.0` is the {PRODUCT} {CENTRAL} 7.5.0 image.
-* `registry.redhat.io/{PRODUCT_INIT}-7/{PRODUCT_INIT}-{CENTRAL_ONEWORD}-rhel8:7.5.1` is the {PRODUCT} {CENTRAL} 7.5.1 image.
-
-=== Reference implementations
-
-Three reference implementations are available that you can use as starter applications. They are provided in the *{PRODUCT} {PRODUCT_VERSION_LONG} Reference Implementations* download, available on the {PRODUCT} Software Downloads page in the Red Hat Customer Portal.
-
-.Employee Rostering reference implementation
-The employee rostering reference implementation enables you to create an application that assigns employees to shifts on various positions in an organization. For example, you can use the application to distribute shifts in a hospital between nurses, guard duty shifts across a number of locations, or shifts on an assembly line between workers.
-
-.High available event-driven decisioning reference implementation
-A reference implementation for high available event-driven decisioning on {OPENSHIFT} is available. You can customize this reference implementation to deploy {PRODUCT_DROOLS} engine code that requires stateful processing, including rules developed with complex event processing, in an OpenShift environment. Doing this enables the {DECISION_ENGINE} to process complex event series with high availability.
-
-.Vehicle route planning reference implementation
-The vehicle route planning reference implementation enables you to create an application that solves a vehicle route planning problem with real-world maps, roads, and vehicles delivering goods to locations, each with a specific capacity. For more information, see the README file in the vehicle routing ZIP file, included in the reference implementation download.
-
 == {CENTRAL}
+
+ifdef::PAM[]
+=== {CENTRAL} UI updates
+
+The following list provides a summery of {CENTRAL} UI updates:
+
+* Ability to filter process instances by the parent process instance ID
+* Ability to rearrange the order of columns on the Task Inbox page
+endif::PAM[]
+
+=== Change requests
+
+You can now submit a change request from one branch to another branch of the same project.
+
+ifdef::PAM[]
+=== Removing a service task
+
+If you configured service tasks in the administration menu of {CENTRAL}, you can now remove any of these service tasks.
+endif::PAM[]
+
+=== Test Scenarios
+
+The test scenarios designer in {CENTRAL} is now available with the new features supported in {PRODUCT} {PRODUCT_VERSION}.
+
+* If the same data is shared by multiple test scenarios, you can use the *Background* tab to define them once for rules-based as well as DMN-based test scenarios. You can add and define the `GIVEN` data, which is common for the dedicated test scenario simulation, based on the available data objects.
+
+* In rule-based test scenarios, you can use the MVEL expression with the prefix *#* to call a java method to a property or instance header cell during test scenarios execution.  
+
+=== Generic error dialog improvement in {CENTRAL}
+
+A generic error dialog is a pop-up window that notifies users about different runtime errors that are produced in {CENTRAL}.
+The following list provides a summary of generic error dialog enhancements:
+
+* When an error is generated, the error is logged in the server logs. You can fetch and retrieve the generated errors if required.
+* You can see the stack trace of the generated error in the popup itself.
+* To suppress the error notifications temporarily, select the *Don't show this message again for* checkbox and select the time duration from the drop-down list. However, the error messages are still logged in the server logs.
+* It provides an error ID to fetch the error details if required.
 
 === Decision Model and Notation (DMN) designer improvements
 
 The Decision Model and Notation (DMN) designer in {CENTRAL} includes the following notable enhancements:
 
-* New *Documentation* tab that you can use to generate a report of your DMN model. You can print or download the report as an HTML file for offline use.
-* PMML support in DMN included models. You can now use the *Included Models* tab in the DMN designer to include Predictive Model Markup Language (PMML) models from your project in a specified DMN file. When you include a PMML model within a DMN file, you can invoke that PMML model as a boxed function expression for a DMN decision node or business knowledge model node.
-* Support for JPMML execution of PMML models included in DMN models. For PMML models that you include in DMN models, you can use either the `kie-pmml` compiler or the full PMML specification implementation with the Java Evaluator API for PMML (JPMML) for PMML execution.
-+
-IMPORTANT: Red Hat supports integration with the Java Evaluator API for PMML (JPMML) for PMML execution in {PRODUCT}. However, Red Hat does not support the JPMML libraries directly. If you include JPMML libraries in your {PRODUCT} distribution, see the https://openscoring.io/[Openscoring.io] licensing terms for JPMML.
+* Automatic layout and decision service enhancements. You can now select *Perform automatic layout* in the DMN designer toolbar if a DMN model that you import into {CENTRAL} is not automatically formatted during the import. When automatic layout is applied to an imported DMN model, the DMN designer retains the height and width of each DMN node instead of using the default size of 100x50 pixels. Also, the nodes inside of an imported decision service node are not reordered outside of the decision service node as they were in previous releases. If you delete a decision service node from a decision requirements diagram (DRD), the nodes inside of the decision service are not deleted as they were in previous releases.
+* Improved layout for data type rows in the *Data Types* tab. You can now drag data type elements between parent data types.
+* Support for {CENTRAL} data objects as DMN data types. You can now import existing data objects in {CENTRAL} as DMN data types in the DMN designer. To import existing data objects as DMN data types, go to *Data types* -> *Import data object* in the DMN designer.
 
 For more information about DMN support in {PRODUCT} {PRODUCT_VERSION}, see the following resources:
 
 * {URL_DMN_MODELS}[_{DMN_MODELS}_]
 * {URL_GETTING_STARTED_DECISION_SERVICE}[_{GETTING_STARTED_DECISION_SERVICE}_]
 
-=== Ability to convert a guided decision table to a spreadsheet decision table
+=== High-availability {CENTRAL}
 
-You can convert a guided decision table in {CENTRAL} to an XLS spreadsheet decision table file for offline reference and file sharing. The guided decision table must be an extended entry guided decision table in order to be converted. The conversion tool does not support limited entry guided decision tables. To convert a guided decision table, navigate to the guided decision table asset that you want to convert and in the upper-right toolbar of the guided decision tables designer, click *Convert to XLS*.
+High-availability (HA) deployment of {CENTRAL} is now supported on premises (using {EAP}) and on {OPENSHIFT} version 3.11.
 
-WARNING: Guided decision tables and spreadsheet decision tables are different decision table formats that support different features. Any supported features that differ between the two decision table formats are modified or lost when you convert one decision table format to the other.
+In {PRODUCT} version 7.6, HA deployment of {CENTRAL} is supported with certain limitations:
 
-ifdef::PAM[]
-=== Bulk reassignment supported for tasks in {CENTRAL}
+* If a {CENTRAL} instance fails while a user is using it, the user might receive an error message. In this case, the user is redirected to another pod. If {CENTRAL} is configured to use Red Hat Single Sign-on, logging on again is not required. 
 
-In the *Task Inbox* and *Tasks* pages in {CENTRAL}, you can now perform bulk reassignment over multiple tasks in a single operation. To reassign tasks in bulk, select two or more tasks, click the *Bulk Actions* menu in the upper-right corner of the window, and select *Bulk Reassign*.
+* If a {CENTRAL} instance fails during a user operation, data that was not committed (saved) might be lost. 
 
-In the *Tasks reassignment* window, enter the user identifier of the user to reassign the tasks to, and click *Delegate*. For each task selected, a notification is displayed showing the reassignment result.
+* If a {CENTRAL} instance fails while the instance is creating a project, an unusable project might be created. 
 
-=== Bulk actions supported for tasks in {CENTRAL}
+* If a {CENTRAL} instance fails while the instance is creating an asset, the asset might be created but not indexed so it cannot be used. To make the asset indexed, the user can open the asset in {CENTRAL} and save it again.
 
-In the  *Task Inbox* and *Tasks* pages in {CENTRAL}, you can now perform bulk actions over multiple tasks in a single operation. To update tasks in bulk, select two or more tasks, click the *Bulk Actions* menu in the upper-right corner of the window, and select one of the following bulk actions:
+== Process designer
 
-* *Bulk Claim*
-* *Bulk Release*
-* *Bulk Resume*
-* *Bulk Suspend*
-
-If a specified bulk action is not permitted based on the task status, a notification is displayed and the operation is not executed on that task.
-
-=== Process designer
+=== Process designer updates
 The following list provides a summary of process designer updates:
 
-* Support for feature parity when you migrate legacy business processes to the new process designer
-* Support for designer parser round-trip for unsupported elements, such as importing models exported by ARIS BPM diagrams, even if they contain elements that are not supported by {PRODUCT}
-* A new text annotation BPMN2 element that enables you to retain existing text annotations when you port external processes to the new process designer
-* Support for ISO8601 expressions for user task notifications
+* UI enhancements that guide first-time users on adding the first process nodes on the canvas
+* Performance improvements, including improvements in load time, node selection, and copy and paste
 
+ifdef::PAM[]
+== Support for case management capabilities
+Process designer in {CENTRAL} fully supports case management capabilities.
+
+For more information about case management support in process designer, see the following resources:
+
+* {URL_DESIGNING_CASES}[_{DESIGNING_CASES}_]
+* {URL_GETTING_STARTED_CASES}[_{GETTING_STARTED_CASES}_]
+* {URL_SHOWCASE_APPLICATION_CASE_MANAGEMENT}[_{SHOWCASE_APPLICATION_CASE_MANAGEMENT}_]
+
+== Process engine
+
+=== Assigning roles for operations
+You can now assign required security roles for specific types of operations, for example `execute` or `view`, on a process.
+
+=== API support for requesting all sub-cases that belong to a parent case
+
+In the process engine, when using case management, you can now use the API to request a list of all sub-cases immediately belonging to a parent case or a list of sub-cases belonging to a parent case and to all its sub-cases.
 endif::PAM[]
 
-=== Import and export Dashbuilder data in {CENTRAL}
+== {PLANNER}
 
-You can now import and export Dashbuilder data as ZIP files. To import and export Dashbuilder data, select the *Admin* icon in the upper-right corner of the {CENTRAL} window and select *Dashbuilder Data Transfer*.
+=== {PLANNER} updates
 
-=== Test scenarios
+The following list provides a summery of {PLANNER} updates:
 
-The test scenarios designer in {CENTRAL} is now available with the new features supported in {PRODUCT} {PRODUCT_VERSION}.
-
-*  View coverage reports for rule-based models. The test scenarios designer displays the test coverage statistics in the *Coverage Report* panel on the right side of the test scenarios designer.
-
-* Download coverage reports for rule-based and DMN-based models. You can now download the test scenario coverage reports in CSV format.
-
-* You can run test scenarios with stateless KIE sessions. To configure a stateless KIE session, expand the *Settings* panel of the test scenario and select or clear the *Stateless Session* check box to indicate whether or not the KIE session is stateless or not.
-
-NOTE: The test scenario `scesim` file format is not public. You can only edit the `scesim` file using the test scenario editor.
-
-
-== {KIE_SERVER}
-
-=== Ability to configure the queue size for the {PLANNING_ENGINE} in a {KIE_SERVER}
-
-You can now configure the queue size for the {PLANNING_ENGINE}
-in a {KIE_SERVER}. The queue size determines how many solver requests can be enqueued to wait for processing while the engine is working on other requests. If the queue is full, new requests are rejected. The default queue size is equal to the number of active CPU cores. To change the queue size, set the `org.optaplanner.server.ext.thread.pool.queue.size` system property for the {KIE_SERVER}.
+* A script that deploys OptaWeb Vechicle Route Planning (VRP) to {OPENSHIFT} from source.
+* Move selectors that understand entity sequences.
+* Support for ReactJs and SpringBoot with OptaWeb Employee Rostering.
+* Constraint Streams API full support for the the NQueens, Task assigning, and Flight Crew. 
+* Scheduling use cases. Note that other features of the API are still technology preview.
 
 == {OPENSHIFT}
 
-=== Automatic minor and patch version updates in operator deployments on {OPENSHIFT}
+=== Support for AMQ configuration in operator deployment
 
-When you deploy {PRODUCT} on {OPENSHIFT} using the Business Automation Operator, you can now enable automatic minor and patch version updates.
+When deploying {PRODUCT} on {OPENSHIFT} using the operator, you can now configure {KIE_SERVER} to support the JMS API using an external AMQ message broker.
 
-If you enable automatic patch updates, when a new version becomes available all components of your deployment are updated automatically. Normally, there is no interruption in service.
+ifdef::PAM[]
+== Smart Router
+=== Smart Router authentication
 
-=== Support for configuring aliases in {OPENSHIFT}
+Smart Router now provides authentication for {KIE_SERVER} instances by using a system property flag. To configure Smart Router authentication you must define and apply the credentials to Smart Router by using the `addUser` and `removeUser` commands. {KIE_SERVER} uses these credentials to authenticate against Smart Router. The parameters are `username` and `password`. The default `username` is the user's {KIE_SERVER} ID. The credentials are stored in hash format in a file and custom identity providers can be used.endif::PAM[]
+endif::PAM[]
 
-You can now configure container aliases for services running on immutable {KIE_SERVERS} on {OPENSHIFT}. If you use Smart Router, it automatically routes requests to {KIE_SERVERS} based on the alias name specified in the requests.
-
-//== {PLANNER}
