@@ -8,33 +8,9 @@ If you want to deploy a project from within your own Java application to a confi
 * {KIE_SERVER} is installed and `kie-server` user access is configured. For installation options, see {URL_PLANNING_INSTALL}[_{PLANNING_INSTALL}_].
 
 .Procedure
-. In your client application, add the following dependencies to the relevant classpath of your Java project to generate an executable rule model from your rule assets:
+. (Optional) If your project contains Decision Model and Notation (DMN) assets, add the following dependency to the relevant class path of your Java project to enable DMN executable models. DMN executable models enable DMN decision table logic in DMN projects to be evaluated more efficiently.
 +
 --
-* `drools-canonical-model`: Enables an executable canonical representation of a rule set model that is independent from {PRODUCT}
-* `drools-model-compiler`: Compiles the executable model into {PRODUCT} internal data structures so that it can be executed by the {DECISION_ENGINE}
-
-[source,xml,subs="attributes+"]
-----
-<dependency>
-  <groupId>org.drools</groupId>
-  <artifactId>drools-canonical-model</artifactId>
-  <version>${{PRODUCT_INIT}.version}</version>
-</dependency>
-
-<dependency>
-  <groupId>org.drools</groupId>
-  <artifactId>drools-model-compiler</artifactId>
-  <version>${{PRODUCT_INIT}.version}</version>
-</dependency>
-----
-
-Executable rule models are embeddable models that provide a Java-based representation of a rule set for execution at build time. The executable model is a more efficient alternative to the standard asset packaging in {PRODUCT} and enables KIE containers and KIE bases to be created more quickly, especially when you have large lists of DRL (Drools Rule Language) files and other {PRODUCT} assets.
-
-For more information about executable rule models, see {URL_DRL_RULES}#executable-model-con_drl-rules[_{DRL_RULES}_].
-
-To enable Decision Model and Notation (DMN) executable models for DMN assets in your project (if applicable), also add the `kie-dmn-core` dependency in the `pom.xml` file:
-
 [source,xml,subs="attributes+"]
 ----
 <dependency>
@@ -135,7 +111,7 @@ import org.kie.api.builder.KieFileSystem;
       .setResourceType(ResourceType.DRL));
 ----
 --
-. Use `KieBuilder` with `buildAll( ExecutableModelProject.class )` specified to build the content of `KieFileSystem` from an executable model, and create a KIE container to deploy it:
+. Use `KieBuilder` with the `buildAll()` method to build the content of `KieFileSystem`, and create a KIE container to deploy it:
 +
 --
 [source,java]
@@ -150,14 +126,48 @@ import org.kie.api.runtime.KieContainer;
   KieFileSystem kfs = ...
 
   KieBuilder kieBuilder = ks.newKieBuilder( kfs );
-  // Build from an executable model
-  kieBuilder.buildAll( ExecutableModelProject.class )
+  kieBuilder.buildAll()
   assertEquals(0, kieBuilder.getResults().getMessages(Message.Level.ERROR).size());
 
   KieContainer kieContainer = kieServices
     .newKieContainer(kieServices.getRepository().getDefaultReleaseId());
 ----
-After `KieFileSystem` is built from the executable model, the resulting `KieSession` uses constraints based on lambda expressions instead of less-efficient `mvel` expressions. To build the project in the standard method without an executable model, do not specify any argument in `buildAll()`.
 
 A build `ERROR` indicates that the project compilation failed, no `KieModule` was produced, and nothing was added to the `KieRepository` singleton. A `WARNING` or an `INFO` result indicates that the compilation of the project was successful, with information about the build process.
+
+[NOTE]
+====
+To build the rule assets in your Java application project from an executable rule model, verify that the following dependency is in the `pom.xml` file of your project:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-model-compiler</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+----
+
+This dependency is required for rule assets in {PRODUCT} to be built from executable rule models. This dependency is included as part of the {PRODUCT} core packaging, but depending on your {PRODUCT} upgrade history, you may need to manually add this dependency to enable the executable rule model behavior.
+
+After you verify the dependency, use the following modified `buildAll()` option to enable the executable model:
+
+[source,java]
+----
+kieBuilder.buildAll(ExecutableModelProject.class)
+----
+
+For more information about executable rule models, see
+ifdef::DM,PAM[]
+ifeval::["{context}" == "packaging-deploying"]
+xref:executable-model-con_packaging-deploying[].
+endif::[]
+ifeval::["{context}" != "packaging-deploying"]
+{URL_PACKAGING_DEPLOYING_PROJECT}#executable-model-con_packaging-deploying[_{PACKAGING_DEPLOYING_PROJECT}_].
+endif::[]
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:executable-model-con_packaging-deploying[].
+endif::[]
+====
 --

@@ -4,7 +4,7 @@
 If you want to deploy a Maven project outside of {CENTRAL} to a configured {KIE_SERVER}, you can edit the project `pom.xml` file to package your project as a KJAR file and add a `kmodule.xml` file with the KIE base and KIE session configurations for the assets in your project.
 
 .Prerequisites
-* You have a Mavenized project that contains {PRODUCT} business assets.
+* You have a Maven project that contains {PRODUCT} business assets.
 * {KIE_SERVER} is installed and `kie-server` user access is configured. For installation options, see {URL_PLANNING_INSTALL}[_{PLANNING_INSTALL}_].
 
 .Procedure
@@ -57,33 +57,10 @@ endif::[]
 ====
 endif::DM,PAM[]
 --
-. Add the following dependencies to the `pom.xml` file to generate an executable rule model from your rule assets:
+
+. (Optional) If your project contains Decision Model and Notation (DMN) assets, also add the following dependency in the `pom.xml` file to enable DMN executable models. DMN executable models enable DMN decision table logic in DMN projects to be evaluated more efficiently.
 +
 --
-* `drools-canonical-model`: Enables an executable canonical representation of a rule set model that is independent from {PRODUCT}
-* `drools-model-compiler`: Compiles the executable model into {PRODUCT} internal data structures so that it can be executed by the {DECISION_ENGINE}
-
-[source,xml,subs="attributes+"]
-----
-<dependency>
-  <groupId>org.drools</groupId>
-  <artifactId>drools-canonical-model</artifactId>
-  <version>${{PRODUCT_INIT}.version}</version>
-</dependency>
-
-<dependency>
-  <groupId>org.drools</groupId>
-  <artifactId>drools-model-compiler</artifactId>
-  <version>${{PRODUCT_INIT}.version}</version>
-</dependency>
-----
-
-Executable rule models are embeddable models that provide a Java-based representation of a rule set for execution at build time. The executable model is a more efficient alternative to the standard asset packaging in {PRODUCT} and enables KIE containers and KIE bases to be created more quickly, especially when you have large lists of DRL (Drools Rule Language) files and other {PRODUCT} assets.
-
-For more information about executable rule models, see {URL_DRL_RULES}#executable-model-con_drl-rules[_{DRL_RULES}_].
-
-To enable Decision Model and Notation (DMN) executable models for DMN assets in your project (if applicable), also add the `kie-dmn-core` dependency in the `pom.xml` file:
-
 [source,xml,subs="attributes+"]
 ----
 <dependency>
@@ -152,27 +129,12 @@ public void testApp() {
 }
 ----
 --
-. In a command terminal, navigate to your Maven project directory and run the following command to build the project from an executable model:
+. In a command terminal, navigate to your Maven project directory and run the following command to build the project:
 +
 --
 [source]
 ----
-mvn clean install -DgenerateModel=<VALUE>
-----
-
-The `-DgenerateModel=<VALUE>` property enables the project to be built as a model-based KJAR instead of a DRL-based KJAR, so that rule assets are built in an executable rule model.
-
-Replace `<VALUE>` with one of three values:
-
-* `YES`: Generates the executable model corresponding to the DRL files in the original project and excludes the DRL files from the generated KJAR.
-* `WITHDRL`: Generates the executable model corresponding to the DRL files in the original project and also adds the DRL files to the generated KJAR for documentation purposes (the KIE base is built from the executable model regardless).
-* `NO`: Does not generate the executable model.
-
-Example build command:
-
-[source]
-----
-mvn clean install -DgenerateModel=YES
+mvn clean install
 ----
 
 For DMN executable models, run the following command:
@@ -183,6 +145,35 @@ mvn clean install -DgenerateDMNModel=YES
 ----
 
 If the build fails, address any problems described in the command line error messages and try again to validate the files until the build is successful.
+
+[NOTE]
+====
+If the rule assets in your Maven project are not built from an executable rule model by default, verify that the following dependency is in the `pom.xml` file of your project and rebuild the project:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-model-compiler</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+----
+
+This dependency is required for rule assets in {PRODUCT} to be built from executable rule models by default. This dependency is included as part of the {PRODUCT} core packaging, but depending on your {PRODUCT} upgrade history, you may need to manually add this dependency to enable the executable rule model behavior.
+
+For more information about executable rule models, see
+ifdef::DM,PAM[]
+ifeval::["{context}" == "packaging-deploying"]
+xref:executable-model-con_packaging-deploying[].
+endif::[]
+ifeval::["{context}" != "packaging-deploying"]
+{URL_PACKAGING_DEPLOYING_PROJECT}#executable-model-con_packaging-deploying[_{PACKAGING_DEPLOYING_PROJECT}_].
+endif::[]
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:executable-model-con_packaging-deploying[].
+endif::[]
+====
 --
 . After you successfully build and test the project locally, deploy the project to the remote Maven repository:
 +

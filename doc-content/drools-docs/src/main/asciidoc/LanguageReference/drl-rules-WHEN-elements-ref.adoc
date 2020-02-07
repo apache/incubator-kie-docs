@@ -652,16 +652,33 @@ While this syntax is still supported for backward compatibility purposes, for th
 --
 
 `accumulate` with inline custom code::
+Another possible syntax for the `accumulate` is to define inline custom code, instead of using accumulate functions.
++
+--
 [WARNING]
 ====
 The use of accumulate with inline custom code is not a good practice for several reasons, including difficulties on maintaining and testing rules that use them, as well as the inability of reusing that code.
 Implementing your own accumulate functions is very simple and straightforward, they are easy to unit test and to use.
 This form of accumulate is supported for backward compatibility only.
+
+Only limited support for inline accumulate is provided while using the executable model.
+For example, you cannot use an external binding in the code while using the MVEL dialect:
+
+[source]
+----
+rule R
+dialect "mvel"
+when
+    String( $l : length )
+    $sum : Integer() from accumulate (
+                           Person( age > 18, $age : age ),
+                           init( int sum = 0 * $l; ),
+                           action( sum += $age; ),
+                           reverse( sum -= $age; ),
+                           result( sum )
+                     )
+----
 ====
-+
---
-Another possible syntax for the `accumulate` is to define inline custom code, instead of using accumulate functions.
-As noted on the previous warned, this is discouraged though for the stated reasons.
 
 The general syntax of the `accumulate` CE with inline custom code is:
 
@@ -684,7 +701,6 @@ The meaning of each of the elements is the following:
 * __<result expression>__: this is a semantic expression in the selected dialect that is executed after all source objects are iterated.
 * __<result pattern>__: this is a regular pattern that the {DECISION_ENGINE} tries to match against the object returned from the __<result expression>__. If it matches, the `accumulate` conditional element evaluates to _true_ and the {DECISION_ENGINE} proceeds with the evaluation of the next CE in the rule. If it does not matches, the `accumulate` CE evaluates to _false_ and the {DECISION_ENGINE} stops evaluating CEs for that rule.
 
-
 It is easier to understand if we look at an example:
 
 [source]
@@ -702,7 +718,6 @@ then
     // apply discount to $order
 end
 ----
-
 
 In the above example, for each `Order` in the Working Memory, the {DECISION_ENGINE} will execute the _init
           code_ initializing the total variable to zero.
