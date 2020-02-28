@@ -13,9 +13,6 @@
 :maven_single_server!:
 :mode_production_template!:
 :mode_template_word!:
-:params_attachable_central!:
-:params_attachable_kieserver!:
-
 
 ifeval::["{context}"=="freeform-monitor"]
 :params_central:
@@ -24,14 +21,11 @@ ifeval::["{context}"=="freeform-monitor"]
 :params_mandatory_maven:
 :mode_production_template: {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-managed.yaml
 :mode_template_word: template
-:params_attachable_central:
 endif::[]
 
 ifeval::["{context}"=="authoring"]
 :params_central:
-:params_central_startupstrategy:
 :params_kieserver:
-:params_attachable_central:
 endif::[]
 
 
@@ -39,7 +33,6 @@ ifeval::["{context}"=="monitoring"]
 :params_central:
 :params_central_startupstrategy:
 :params_mandatory_maven:
-:params_attachable_central:
 :params_smartrouter:
 endif::[]
 
@@ -51,7 +44,6 @@ ifeval::["{context}"=="freeform-server-managed"]
 :maven_single_server:
 :mode_production_template: {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-*.yaml
 :mode_template_word: templates
-:params_attachable_kieserver:
 endif::[]
 
 ifeval::["{context}"=="fixed"]
@@ -71,7 +63,6 @@ ifeval::["{context}"=="additional-server-managed"]
 :params_multideploy:
 :mode_production_template: {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver.yaml
 :mode_template_word: template
-:params_attachable_kieserver:
 endif::[]
 
 
@@ -80,7 +71,6 @@ ifeval::["{context}"=="server-immutable-s2i"]
 :params_kieserver:
 :params_kieserver_s2i:
 :params_multideploy:
-:params_attachable_kieserver:
 endif::[]
 
 ifeval::["{context}"=="server-immutable-kjar"]
@@ -91,7 +81,6 @@ ifeval::["{context}"=="server-immutable-kjar"]
 :maven_single_server:
 :mode_production_template: {PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-kieserver-*.yaml
 :mode_template_word: templates
-:params_attachable_kieserver:
 endif::[]
 
 
@@ -104,6 +93,7 @@ When configuring the template to deploy {what_deploying}, you must set the follo
 .Procedure
 
 . Set the following parameters:
+** *Credentials secret* (`CREDENTIALS_SECRET`): The name of the secret containing the administrative user credentials, as created in <<secret-adminuser-create-proc>>.
 ifdef::params_central[]
 ** *{LOCAL_CENTRAL} Server Keystore Secret Name* (`{CENTRAL_CAPITAL_UNDER}_HTTPS_SECRET`): The name of the secret for {CENTRAL}, as created in <<secrets-central-create-proc>>.
 endif::params_central[]
@@ -173,24 +163,6 @@ ifdef::mode_production_template[]
 ** *KIE Server Mode* (`KIE_SERVER_MODE`): In the `{mode_production_template}` {mode_template_word} the default value is `PRODUCTION`. In `PRODUCTION` mode, you cannot deploy `SNAPSHOT` versions of KJAR artifacts on the {KIE_SERVER} and cannot change versions of an artifact in an existing container. To deploy a new version with `PRODUCTION` mode, create a new container on the same {KIE_SERVER}. To deploy `SNAPSHOT` versions or to change versions of an artifact in an existing container, set this parameter to `DEVELOPMENT`.
 endif::mode_production_template[]
 ** *ImageStream Namespace* (`IMAGE_STREAM_NAMESPACE`): The namespace where the image streams are available. If the image streams were already available in your OpenShift environment (see <<imagestreams-file-install-proc>>), the namespace is `openshift`. If you have installed the image streams file, the namespace is the name of the OpenShift project.
-+
-ifdef::params_attachable_kieserver[]
-. You can set the following user name and password. By default, the deployment automatically generates the password.
-endif::params_attachable_kieserver[]
-ifndef::params_attachable_kieserver[]
-. You can set the following user names and passwords. By default, the deployment automatically generates the passwords.
-** *KIE Admin User* (`KIE_ADMIN_USER`) and *KIE Admin Password* (`KIE_ADMIN_PWD`): The user name and password for the administrative user.
-ifdef::params_attachable_central[]
-If you want to use the {LOCAL_CENTRAL} to control or monitor any {KIE_SERVERS}
-ifeval::["{context}"!="monitoring"]
-other than the {KIE_SERVER} deployed by the same template
-endif::[]
-, you must set and record the user name and password.
-endif::params_attachable_central[]
-endif::params_attachable_kieserver[]
-ifdef::params_kieserver[]
-** *KIE Server User* (`KIE_SERVER_USER`) and *KIE Server Password* (`KIE_SERVER_PWD`): The user name and password that a client application can use to connect to any of the {KIE_SERVERS}.
-endif::params_kieserver[]
 
 .Next steps
 
