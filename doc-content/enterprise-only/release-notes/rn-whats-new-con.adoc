@@ -138,3 +138,33 @@ Spring Boot applications now provide Spring bean support for the `notificationli
 
 Added Spring Boot starter feature. You can use the Spring Boot starter to avoid common issues with classloading and allows you to use application.properties to overwrite the solver configuration. The `solverConfig.xml` file is no longer required because the starter automatically detects `@PlanningSolution` and `@PlanningEntity` annotations.
 The constraint streams API is improved. You can now modify your streams using the `groupBy()` building block.
+
+== {PLANNER}
+
+=== SolverManager
+
+You can use SolverManager as wrapper for one or more Solver instances to simplify planning REST API and other enterprise services. The `solve(…​)` methods differ from the normal `Solver.solve(…​)` method. For example,
+
+* `SolverManager.solve(…​)` schedules a problem for asynchronous solving without blocking the calling thread. This avoids timeout issues of HTTP and other technologies. It returns immediately.
+* `SolverManager.solve(…​)` solves multiple planning problems of the same domain, in parallel.
+
+SolverManager supports batch solving and solving that displays the progress to the end-user. For example,
+----
+public class TimeTableService {
+    private SolverManager<TimeTable, Long> solverManager;
+
+    // Returns immediately, ok to expose as a REST service
+    public void solve(Long timeTableId) {
+        solverManager.solveAndListen(timeTableId,
+            // Called once, when solving starts
+            this::findById,
+            // Called multiple times, for every best solution change
+            this::save);
+    }
+    public TimeTable findById(Long timeTableId) {...}
+    public void save(TimeTable timeTable) {...}
+    public void stopSolving(Long timeTableId) {
+        solverManager.terminateEarly(timeTableId);
+    }
+}
+----
