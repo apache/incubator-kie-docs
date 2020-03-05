@@ -6,121 +6,135 @@ This section highlights new features in {PRODUCT} {PRODUCT_VERSION}.
 
 == {CENTRAL}
 
-ifdef::PAM[]
-=== {CENTRAL} UI updates
+=== Maven archetype support in {CENTRAL}
 
-The following list provides a summary of {CENTRAL} UI updates:
+Maven archetype support is now available in {CENTRAL}. To access this functionality, select the *Admin* icon in the top-right corner of the screen and select the *Archetypes* option on the {CENTRAL} *Settings* page. The following list provides a summary of Maven archetypes enhancements:
 
-* Ability to filter process instances by the parent process instance ID
-* Ability to rearrange the order of columns on the Task Inbox page
-
-endif::PAM[]
-
-=== Change requests
-
-You can now submit a change request from one branch to another branch of the same project.
-
-ifdef::PAM[]
-=== Removing a service task
-
-If you configured service tasks in the administration menu of {CENTRAL}, you can now remove any of these service tasks.
-endif::PAM[]
+* You can list, add, validate, set a default, and delete the archetypes.
+* You can use them as a template when creating a new project in {CENTRAL}.
+* To manage the all available archetypes in spaces, go to *Design* -> *<your_space>* -> *Settings* in {CENTRAL}.
 
 === Test Scenarios
 
 The test scenarios designer in {CENTRAL} is now available with the new features supported in {PRODUCT} {PRODUCT_VERSION}.
 
-* If the same data is shared by multiple test scenarios, you can use the *Background* tab to define them once for rules-based as well as DMN-based test scenarios. You can add and define the `GIVEN` data, which is common for the dedicated test scenario simulation, based on the available data objects.
+* In DMN-based as well as rule-based test scenarios, it is now possible to define the value of a collection like a list or a map by using an expression in both *GIVEN* and *EXPECT* columns. To add an expression,  you can now choose *Define list* from the collection editor.
+* You can now use the {KIE_SERVER} REST API to execute the test scenarios externally. It executes the test scenarios against the deployed project. This functionality is disabled by default, use `org.kie.scenariosimulation.server.ext.disabled` system property to enable it.
 
-* In rule-based test scenarios, you can use the MVEL expression with the prefix *#* to call a java method to a property or instance header cell during test scenarios execution.
+=== Ability to create a project from empty repositories
 
-=== Generic error dialog improvement in {CENTRAL}
+You can now create a new project in {CENTRAL} by importing an empty GitHub or GitLab external repository.
 
-A generic error dialog is a pop-up window that notifies users about different runtime errors that are produced in {CENTRAL}.
-The following list provides a summary of generic error dialog enhancements:
+=== Squash commit on change requests
 
-* When an error is generated, the error is logged in the server logs. You can fetch and retrieve the generated errors if required.
-* You can see the stack trace of the generated error in the popup itself.
-* To suppress the error notifications temporarily, select the *Don't show this message again for* checkbox and select the time duration from the drop-down list. However, the error messages are still logged in the server logs.
-* It provides an error ID to fetch the error details if required.
+You can now squash multiple commits into a single commit and add to a target branch for a change request.
+
+=== Navigation from subprocess instance to parent process instance using the process instance page in {CENTRAL}
+
+The process instance page in {CENTRAL} is now available with new navigation features for the parent and subprocess instance.
+
+* In the *Instance Details* tab, you can now click the *Parent Process Instance ID* field to navigate to the parent *Instance Details* tab.
+* In the *Diagram* tab, you can now see a new menu containing links of the parent process and subprocess to navigate between the subprocess and parent process *Diagram* tab.
+
+=== Code completion for FEEL expressions in Decision Model and Notation (DMN) designer
+
+When typing a FEEL expression in the boxed literal expression editor, you can now see FEEL functions appear as suggestions that you can apply to complete the expression if required.
+
+=== Project templates
+
+Starting with {PRODUCT} {ENTERPRISE_VERSION}, support for project template selection to establish common configurations for new projects is available in {CENTRAL}.
+
+=== Legacy Business process asset
+
+The legacy Business process asset is deprecated in {PRODUCT} {ENTERPRISE_VERSION}. Use the new Business process asset instead.
 
 === Decision Model and Notation (DMN) designer improvements
 
 The Decision Model and Notation (DMN) designer in {CENTRAL} includes the following notable enhancements:
 
-* Automatic layout and decision service enhancements. You can now select *Perform automatic layout* in the DMN designer toolbar if a DMN model that you import into {CENTRAL} is not automatically formatted during the import. When automatic layout is applied to an imported DMN model, the DMN designer retains the height and width of each DMN node instead of using the default size of 100x50 pixels. Also, the nodes inside of an imported decision service node are not reordered outside of the decision service node as they were in previous releases. If you delete a decision service node from a decision requirements diagram (DRD), the nodes inside of the decision service are not deleted as they were in previous releases.
-* Improved layout for data type rows in the *Data Types* tab. You can now drag data type elements between parent data types.
-* Support for {CENTRAL} data objects as DMN data types. You can now import existing data objects in {CENTRAL} as DMN data types in the DMN designer. To import existing data objects as DMN data types, go to *Data types* -> *Import data object* in the DMN designer.
+* New visual indication for the data type nesting levels in a project allowing users to quickly reference nesting details without leaving the editor.
+* Zero values are hidden in the *Data Type constraints* wizard to eliminate wasted screen space.
+* Improved visual and functional support for the search component placeholder.
+* Support for drag and drop to reorder data types.
 
-For more information about DMN support in {PRODUCT} {PRODUCT_VERSION}, see the following resources:
+=== New `CaseLogCleanupCommand` command
 
-* {URL_DMN_MODELS}[_{DMN_MODELS}_]
-* {URL_GETTING_STARTED_DECISION_SERVICE}[_{GETTING_STARTED_DECISION_SERVICE}_]
+Starting with {PRODUCT} {ENTERPRISE_VERSION}, support for the `CaseLogCleanupCommand` command to clean up cases based on different parameters.
 
-=== High-availability {CENTRAL}
+=== Support for branch management and performing Maven actions on branches using the REST API.
 
-High-availability (HA) deployment of {CENTRAL} is now supported on {OPENSHIFT} version 3.11.
+Users can now manage branches and perform Maven action on branches using the REST API. For example:
 
-In {PRODUCT} version 7.6, HA deployment of {CENTRAL} is supported with certain limitations:
+Return all branches in a specific project and space:
+----
+[GET] /spaces/{spaceName}/projects/{projectName}/branches::
+----
 
-* If a {CENTRAL} instance fails while a user is using it, the user might receive an error message. In this case, the user is redirected to another pod. If {CENTRAL} is configured to use Red Hat Single Sign-on, logging on again is not required.
+Add a specific branch to a specific project and space:
+----
+[POST] /spaces/{spaceName}/projects/{projectName}/branches::
+----
 
-* If a {CENTRAL} instance fails during a user operation, data that was not committed (saved) might be lost.
+Delete a specific branch from a specific project and space.
+----
+[DELETE] /spaces/{spaceName}/projects/{projectName}/branches/{branchName}::
+----
 
-* If a {CENTRAL} instance fails while the instance is creating a project, an unusable project might be created.
+Compile a specific branch in a specific project and space. If `branchName` is not specified, then the request defaults to using the master branch.
+----
+[POST] /spaces/{spaceName}/projects/{projectName}/branches/{branchName}/maven/compile::
+----
 
-* If a {CENTRAL} instance fails while the instance is creating an asset, the asset might be created but not indexed so it cannot be used. To make the asset indexed, the user can open the asset in {CENTRAL} and save it again.
+Install a specific branch in a specific project and space. If `branchName` is not specified, then the request defaults to using the master branch.
+----
+[POST] /spaces/{spaceName}/projects/{projectName}/branches/{branchName}/maven/install::
+----
 
+Test a specific branch in a specific project and space. If `branchName` is not specified, then the request defaults to using the master branch.
+----
+[POST] /spaces/{spaceName}/projects/{projectName}/branches/{branchName}/maven/test::
+----
 
-== Process designer
+Deploy a specific branch in a specific project and space. If `branchName` is not specified, then the request defaults to using the master branch.
+----
+[POST] /spaces/{spaceName}/projects/{projectName}/branches/{branchName}/maven/deploy::
+----
 
-=== Process designer updates
-The following list provides a summary of process designer updates:
+=== Support for DMN 1.3
 
-* UI enhancements that guide first-time users on adding the first process nodes on the canvas
-* Performance improvements, including improvements in load time, node selection, and copy and paste
+{PRODUCT} {PRODUCT_VERSION} now provides runtime support for DMN 1.3 models.
 
-ifdef::PAM[]
-== Support for case management capabilities
-Process designer in {CENTRAL} fully supports case management capabilities.
+== {DECISION_ENGINE_CAP}
 
-For more information about case management support in process designer, see the following resources:
+=== Default support for executable rule models in `kie-maven-plugin` plugin
 
-* {URL_DESIGNING_CASES}[_{DESIGNING_CASES}_]
-* {URL_GETTING_STARTED_CASES}[_{GETTING_STARTED_CASES}_]
-* {URL_SHOWCASE_APPLICATION_CASE_MANAGEMENT}[_{SHOWCASE_APPLICATION_CASE_MANAGEMENT}_]
+Rule assets in {PRODUCT} are built from executable rule models by default with the standard `kie-maven-plugin` plugin. Executable rule models are embedded models that provide a Java-based representation of a rule set for execution at build time. The executable model is a more efficient alternative to the standard asset packaging in previous versions of {PRODUCT} and enables KIE containers and KIE bases to be created more quickly, especially when you have large lists of DRL (Drools Rule Language) files and other {PRODUCT} assets.
 
-== Process engine
+If you are upgrading to {PRODUCT} {PRODUCT_VERSION} from a previous version of the product and you have not already enabled executable rule models, you must add the required dependency to your existing {PRODUCT} projects so that your rule assets are built from executable models in {PRODUCT} {PRODUCT_VERSION}.
 
-=== Assigning roles for operations
-You can now assign required security roles for specific types of operations, for example `execute` or `view`, on a process.
+For instructions on enabling executable rule models when upgrading to {PRODUCT} {PRODUCT_VERSION}, see
+ifdef::DM,PAM[]
+{URL_PATCHING_UPGRADING}#executable-model-upgrading-proc_patching-upgrading[_{PATCHING_UPGRADING}_].
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:executable-model-upgrading-proc_packaging-deploying[].
+endif::[]
 
-=== API support for requesting all sub-cases that belong to a parent case
+For more information about executable rule models, see
+ifdef::DM,PAM[]
+{URL_PACKAGING_DEPLOYING_PROJECT}#executable-model-con_packaging-deploying[_{PACKAGING_DEPLOYING_PROJECT}_].
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:executable-model-con_packaging-deploying[].
+endif::[]
 
-In the process engine, when using case management, you can now use the API to request a list of all sub-cases immediately belonging to a parent case or a list of sub-cases belonging to a parent case and to all its sub-cases.
-endif::PAM[]
+== Integration
 
-== {PLANNER}
+=== Spring Boot applications
 
-=== {PLANNER} updates
+Spring Boot applications now provide Spring bean support for the `notificationlistener` class.
 
-The following list provides a summary of {PLANNER} updates:
+=== Added Spring Boot starter
 
-* A script that deploys OptaWeb Vehicle Route Planning (VRP) to {OPENSHIFT} from source.
-* Move selectors that understand entity sequences.
-* Support for ReactJs and SpringBoot with Employee Rostering.
-* Constraint Streams API full support for the the NQueens, Task assigning, and Flight Crew scheduling use cases. Note that other features of the API are still technology preview.
-
-== {OPENSHIFT}
-
-=== Support for AMQ configuration in operator deployment
-
-When deploying {PRODUCT} on {OPENSHIFT} using the operator user interface, you can now configure {KIE_SERVER} to support the JMS API using an external AMQ message broker.
-
-ifdef::PAM[]
-== Smart Router
-=== Smart Router authentication
-
-Smart Router now provides authentication for {KIE_SERVER} instances by using a system property flag. To configure Smart Router authentication you must define and apply the credentials to Smart Router by using the `addUser` and `removeUser` commands. {KIE_SERVER} uses these credentials to authenticate against Smart Router. The parameters are `username` and `password`. The default `username` is the user's {KIE_SERVER} ID. The credentials are stored in hash format in a file and custom identity providers can be used.
-
-endif::PAM[]
+Added Spring Boot starter feature. You can use the Spring Boot starter to avoid common issues with classloading and allows you to use application.properties to overwrite the solver configuration. The `solverConfig.xml` file is no longer required because the starter automatically detects `@PlanningSolution` and `@PlanningEntity` annotations.
+The constraint streams API is improved. You can now modify your streams using the `groupBy()` building block.
