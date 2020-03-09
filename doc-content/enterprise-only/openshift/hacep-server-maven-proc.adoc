@@ -1,15 +1,14 @@
-[id='hacep-server-proc']
-= Implementing the HA CEP server
+[id='hacep-server-maven-proc']
+= Implementing the HA CEP server with a Maven repository for updating the KJAR service
 
-The high-availability (HA) CEP server runs on the {OPENSHIFT} environment. It includes all necessary {PRODUCT_DROOLS} rules and other code required to process events.
+You can implement the HA CEP server that retrieves the KJAR service and all dependencies from a Maven repository that you provide. In this case, you can update the KJAR service at any time by updating it in the Maven repository and then making a call from the client code.
 
-Prepare the source, build it, and then deploy it on {OPENSHIFT}. 
-
-Alternatively, use a different process to deploy the HA CEP server where you can update the KJAR service at any time. For instructions about this process, see <<hacep-server-maven-proc>>.
+Prepare the source, build it, and then deploy it on {OPENSHIFT}. Set certain environment variables in the `deployment.yaml` file before deploying the server. To use a Maven repository, you must set the `UPDATABLEKJAR` variable to `true`.
 
 .Prerequisites
 
 * You are logged into the project with administrator privilege using the `oc` command-line tool.
+* You configured a Maven repository that is accessible from your {OPENSHIFT} environment.
 
 .Procedure
 
@@ -22,6 +21,8 @@ Alternatively, use a different process to deploy the HA CEP server where you can
 ----
 mvn clean install -DskipTests
 ----
++
+Upload the resulting KJAR and any required dependencies to the Maven repository.
 +
 . Enable the OpenShift operator for Red Hat AMQ Streams and then create an AMQ Streams (kafka) cluster in the project. For information about installing Red Hat AMQ Streams, see https://access.redhat.com/documentation/en-us/red_hat_amq/7.5/html/using_amq_streams_on_openshift/[_Using AMQ Streams on OpenShift_].
 . To create the kafka topics that are required for operation of the server, remain in the `openshift-drools-hacep-distribution/sources` directory and run the following commands:
@@ -42,6 +43,41 @@ oc create -f kubernetes/role-binding.yaml
 ----
 +
 For more information about configuring role-based access control in {OPENSHIFT}, see https://access.redhat.com/documentation/en-us/openshift_container_platform/4.3/html/authentication/using-rbac[Using RBAC to define and apply permissions] in the {OPENSHIFT} product documentation.
++
+. Use the `oc` command to detect the valid values for the user ID and group ID that you must set in the Docker file. Enter the following command:
++
+----
+oc describe project <projectname>
+----
++
+In this command, replace `<projectname>` with the name of your project.
++
+In the output of the command, find lines that list `supplemental-groups` and `uid-range`, similar to the following example:
++
+----
+openshift.io/sa.scc.supplemental-groups=1000160000/10000
+openshift.io/sa.scc.uid-range=1000160000/10000
+----
++
+. In the `springboot` directory, edit the `pom.xml` file to remove the following dependency:
++
+----
+<dependency>
+      <groupId>org.kie</groupId>
+      <artifactId>sample-hacep-project-kjar</artifactId>
+</dependency>
+----
++
+. In the `springboot` directory, edit the `Dockerfile` file. Find the following line:
++
+----
+RUN groupadd -r app -g <id_group> && useradd -u <id_user> -r -g app -m -d /app -s /sbin/nologin -c "App user" app && chmod 755 /app----
+----
+In this line, replace `<id_group>` with a value in the `supplemental-groups` interval and `<id_user>` with a value in the `uid-range` interval:
++
+----
+RUN groupadd -r app -g 1000160001 && useradd -u 1000160001 -r -g app -m -d /app -s /sbin/nologin -c "App user" app && chmod 755 /app
+----
 +
 . In the `springboot` directory, enter the following commands to create the image for deployment and push it into the repository configured for your OpenShift environment:
 +
@@ -65,6 +101,26 @@ oc get is/openshift-kie-springboot -o template --template='{{range .status.tags}
 image: image-registry.openshift-image-registry.svc:5000/hacep/openshift-kie-springboot:latest
 ----
 +
+. Under the `containers:` line and the `env:` line, set environment variables as in the following example:
++
+----
+containers:
+  - env:
+    - name: UPDATABLEKJAR
+      value: "true"
+    - name: KJARGAV
+      value: <GroupID>:<ArtifactID>:<Version>
+    - name: MAVEN_LOCAL_REPO
+      value: /app/.m2/repository
+    - name: MAVEN_MIRROR_URL
+      value: http://<nexus_url>/repository/maven-releases/
+    - name: MAVEN_SETTINGS_XML
+      value: /app/.m2/settings.xml
+----
++
+In this example, replace the value of the `KJARGAV` variable with the group, artifact, and version (GAV) of your KJAR service and the value of the `MAVEN_MIRROR_URL` variable with the URL to the Maven repository that contains your KJAR service.
++
+Optionally, set other variables. For a list of supported environment variables, see <<hacep-server-environment-ref>>.
 . Save the file.
 +
 . Enter the following command to deploy the image:
@@ -72,3 +128,5 @@ image: image-registry.openshift-image-registry.svc:5000/hacep/openshift-kie-spri
 ----
 oc apply -f kubernetes/deployment.yaml
 ----
+
+For instructions about triggering a KJAR update from the client code, see <<hacep-client-proc>>.
