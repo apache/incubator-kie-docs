@@ -72,7 +72,22 @@ In this example:
 The RH-SSO server converts the user names to lower case. Therefore, after integration with RH-SSO, your user name will appear in lower case in {PRODUCT}. If you have user names in upper case hard coded in business processes, the application might not be able to identify the upper case user.
 ====
 +
-. Navigate to the `_EAP_HOME_/standalone/configuration` directory in your {EAP} installation.
+. The Elytron subsystem provides a built-in policy provider based on JACC specification. To enable the JACC manually in the `standalone.xml` or in the file where Elytron is installed, do any of the following tasks:
+
+* To create the policy provider, enter the following commands in the management command-line interface (CLI) of {EAP}:
++
+--
+[source]
+----
+/subsystem=elytron/policy=jacc:add(jacc-policy={})
+/subsystem=undertow/application-security-domain=other:remove
+/subsystem=undertow/application-security-domain=other:add(http-authentication-factory=keycloak-http-authentication,enable-jacc=true)
+----
+--
++
+For more information about management CLI of {EAP}, see the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.2/html-single/management_cli_guide/index[_Management CLI Guide_].
+
+* Navigate to the `_EAP_HOME_/standalone/configuration` directory in your {EAP} installation.
   Locate the Elytron and undertow subsystem configurations in the `standalone.xml` and `standalone-full.xml` files and enable JACC. For example:
 +
 --
@@ -80,7 +95,7 @@ The RH-SSO server converts the user names to lower case. Therefore, after integr
 ----
 <subsystem xmlns="urn:wildfly:elytron:4.0" ...>
 ......
- <policy><jacc-policy/></policy>
+ <policy name="jacc"><jacc-policy/></policy>
 </subsystem>
 ----
 
