@@ -1,0 +1,103 @@
+[id='proc_kogito-testing-app']
+
+= Testing a {PRODUCT} service
+
+After your {PRODUCT} service is running, you can test the service by sending API requests to the application according to how you set up the service.
+
+This example tests the `/persons` REST API endpoint that is automatically generated based on the `PersonProcess.bpmn2` business process, according to the decisions in the `PersonDecisions.dmn` file (or the rules in the `PersonRules.drl` file if you used a DRL rule unit).
+
+.Procedure
+In a command terminal window that is separate from your running application, navigate to the project with your {PRODUCT} service and use any of the following curl commands with JSON requests to interact with your running service:
+
+NOTE: On Spring Boot, you might need to modify how your application exposes API endpoints in order for these example requests to function. For more information, see the README file included in the example Spring Boot project that you created.
+
+* Add an adult person:
++
+--
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json' -d '{"person": {"name":"John Quark", "age": 20}}'
+----
+
+.Example response
+[source]
+----
+{"id":"b7d993ac-272d-43c7-8245-d4df96d9ab6c","person":{"name":"John Quark","age":20,"adult":true}}
+----
+--
+* Add an underage person:
++
+--
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json' -d '{"person": {"name":"Jenny Quark", "age": 15}}'
+----
+
+.Example response
+[source]
+----
+{"id":"d3d06fa6-3826-48ca-8bdf-6ff424ea55ab","person":{"name":"Jenny Quark","age":15,"adult":false}}
+----
+--
+* View active process instances:
++
+--
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response
+[source]
+----
+[{"id":"c2579bd4-a192-4cae-a6b8-f28151e9c992","person":{"name":"Jenny Quark","age":15,"adult":false}}]
+----
+--
+* View process instance details using the returned process UUID:
++
+--
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/persons/d3d06fa6-3826-48ca-8bdf-6ff424ea55ab/tasks -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response (JSON)
+[source]
+----
+{"59c48f97-4640-4147-9d65-3f889c79bc33":"ChildrenHandling"}
+----
+--
+* View task instance details using the returned process and task UUIDs:
++
+--
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/persons/d3d06fa6-3826-48ca-8bdf-6ff424ea55ab/ChildrenHandling/59c48f97-4640-4147-9d65-3f889c79bc33 -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response
+[source]
+----
+{"person":{"name":"Jenny Quark","age":15,"adult":false},"id":"59c48f97-4640-4147-9d65-3f889c79bc33","name":"ChildrenHandling"}
+----
+--
+* Complete the evaluation using the returned UUIDs:
++
+--
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/persons/d3d06fa6-3826-48ca-8bdf-6ff424ea55ab/ChildrenHandling/59c48f97-4640-4147-9d65-3f889c79bc33 -H 'content-type: application/json' -H 'accept: application/json' -d '{}'
+----
+
+.Example response
+[source]
+----
+{"id":"d3d06fa6-3826-48ca-8bdf-6ff424ea55ab","person":{"name":"Jenny Quark","age":15,"adult":false}}
+----
+--
