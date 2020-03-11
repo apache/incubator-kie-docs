@@ -1,0 +1,101 @@
+[id='proc_kogito-deploying-on-ocp-console']
+
+= Deploying {PRODUCT} services on {OPENSHIFT} using the OpenShift web console
+
+After you create your {PRODUCT} services as part of a business application, you can use the {OPENSHIFT} web console to deploy your services. As an aid to deploy your services, you can also use the {PRODUCT} Operator, which guides you through the deployment process. The {PRODUCT} Operator uses the https://github.com/operator-framework[Operator Framework] and automates many of the deployment steps for you. For example, you can provide the Operator a link to the Git repository that contains your application, and the operator can pull the project, build it (including native compilation, if applicable), and deploy the resulting services.
+
+.Prerequisites
+* The application with your {PRODUCT} services is in a Git repository.
+* You have access to the OpenShift web console with `cluster-admin` permissions.
+
+.Procedure
+. In the OpenShift web console, go to *Operators* -> *OperatorHub* in the left menu, search for and select *Kogito Operator*, and follow the on-screen instructions to install the latest operator version.
+////
++
+--
+On {OPENSHIFT} 3.11, the OperatorHub catalog is not available by default in the web console, so you must use the `oc` CLI to manually install the {PRODUCT} Operator for your defined project:
+
+.Manually installing {PRODUCT} Operator on OpenShift 3.11
+[source]
+----
+$ oc apply -f https://raw.githubusercontent.com/kiegroup/kogito-cloud/master/s2i/kogito-imagestream.yaml -n openshift
+$ oc new-project PROJECT_NAME
+$ ./hack/3.11deploy.sh
+----
+--
+////
+. After you install the {PRODUCT} Operator, in the OpenShift web console, go to *Operators* -> *Installed Operators* and select *Kogito Operator*.
+. In the operator page, select the *Kogito Service* tab and click *Create Kogito App* to create the {PRODUCT} service definition.
++
+.Create a {PRODUCT} service definition
+image::kogito/kogito-ocp-create-app.png[Image of Kogito service page in web console]
+. In the application window, drag and drop a YAML or JSON file that contains your service definition, or manually define the service data in the application window.
++
+--
+At a minimum, define the application configurations shown in the following example YAML file:
+
+.Example YAML definition for an application with {PRODUCT} services
+[source,yaml,subs="attributes+"]
+----
+apiVersion: app.kiegroup.org/v1alpha1 # {PRODUCT} API for this service
+kind: KogitoApp  # Application type
+metadata:
+  name: example-quarkus  # Application name
+  namespace: kogito  # OpenShift project namespace
+spec:
+  build:
+    gitSource:
+      uri: 'https://github.com/kiegroup/kogito-examples'  # Git repository containing application
+      contextDir: jbpm-quarkus-example  # Git folder location of application
+    imageVersion: 0.8.0-rc1  # {PRODUCT} Operator version
+----
+
+[NOTE]
+====
+If you have an internal Maven repository, you can use it as a Maven mirror service and specify the Maven mirror URL in your {PRODUCT} service definition to substantially shorten build time:
+
+[source,yaml]
+----
+mavenMirrorURL: http://nexus3-nexus.apps-crc.testing/repository/maven-public/
+----
+====
+--
+. After you define your application data, click *Create* to generate the {PRODUCT} service.
++
+--
+Your application is listed in the {PRODUCT} service page:
+
+.New {PRODUCT} service instance
+image::kogito/kogito-ocp-create-app-listed.png[Image of Kogito service listed in web console]
+
+You can select the application name to view or modify application settings and YAML details:
+
+.View {PRODUCT} service details
+image::kogito/kogito-ocp-app-details.png[Image of Kogito service details page in web console]
+--
+. In the left menu of the web console, go to *Builds* -> *Builds* to view the status of your application build.
++
+--
+You can select a specific build to view build details:
+
+.View {PRODUCT} service build details
+image::kogito/kogito-ocp-app-build-details.png[Image of Kogito service build details page in web console]
+--
+. After the application build is complete, go to *Workloads* -> *Deployment Configs* to view the application deployment configurations, pod status, and other details.
++
+--
+You can select the application name to increase or decrease the pod count or modify deployment settings:
+
+.View {PRODUCT} service deployment details
+image::kogito/kogito-ocp-app-deployment-details.png[Image of Kogito service deployment details page in web console]
+--
+. After your {PRODUCT} service is deployed, in the left menu of the web console, go to *Networking* -> *Routes* to view the access link to the deployed application.
++
+--
+You can select the application name to view or modify route settings:
+
+.View {PRODUCT} service route details
+image::kogito/kogito-ocp-app-route-details.png[Image of Kogito service route details page in web console]
+
+With the application route, you can integrate your {PRODUCT} services with your business automation solutions as needed.
+--
