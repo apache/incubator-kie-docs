@@ -1,0 +1,65 @@
+[id='proc_kogito-designing-app-rule-units']
+
+= Using DRL rule units as an alternative decision service
+
+As an alternative to using Decision Model and Notation (DMN) to define this example decision service, you can also use a Drools Rule Language (DRL) file implemented as a rule unit.
+
+Rule units are groups of data sources, global variables, and DRL rules that function together for a specific purpose. You can use rule units to partition a rule set into smaller units, bind different data sources to those units, and then execute the individual unit. Rule units are an enhanced alternative to rule-grouping DRL attributes such as rule flow groups, rule agenda groups, or activation groups for execution control. For more information about rule units, see
+ifdef::KOGITO[]
+https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/7.6/html-single/designing_a_decision_service_using_drl_rules/index#drl-rule-units-con_drl-rules[_{DRL_RULES}_].
+endif::[]
+ifdef::KOGITO-COMM[]
+the https://docs.jboss.org/drools/release/latestFinal/drools-docs/html_single/#drl-rule-units-con_decision-engine[Drools documentation].
+endif::[]
+
+.Procedure
+. In the `src/main/resources/org/acme/kogito` folder that you created for this example, instead of using a DMN file, add the following `PersonRules.drl` file:
++
+--
+.Example person DRL file
+[source]
+----
+package org.acme.kogito.model
+unit PersonRules;
+
+import org.acme.kogito.model.Person;
+
+rule isAdult
+	when
+		$person: /person[ age > 18 ]
+	then
+    modify($person) {
+    	setAdult(true)
+    };
+end
+----
+
+This example rule determines that any person who is older than 18 is classified as an adult. The rule file also declares that the rule belongs to the rule unit `PersonRules`. This is the rule unit that you define as part of the business rule task in the example BPMN process. When you build the project, the rule unit is generated and associated with the DRL file.
+
+The rule also defines the condition using OOPath notation. OOPath is an object-oriented syntax extension of XPath that is designed for browsing graphs of objects in DRL rule condition constraints. OOPath uses the compact notation from XPath for navigating through related elements while handling collections and filtering constraints, and is specifically useful for graphs of objects.
+
+You can also rewrite the same rule condition in a more explicit form using the traditional rule pattern syntax, as shown in the following example:
+
+.Example person DRL file using traditional notation
+[source]
+----
+package org.acme.kogito.model
+unit PersonRules;
+
+import org.acme.kogito.model.Person;
+
+rule isAdult
+	when
+		$person: Person(age > 18) from person
+	then
+    modify($person) {
+    	setAdult(true)
+    };
+end
+----
+--
+. In the `src/main/resources/org/acme/kogito` folder, use a BPMN 2.0 process modeler to open the `PersonProcess.bpmn2` process diagram that you created.
+. Select the `Evaluate person` business rule task and for the *Implementation/Execution* property, set the rule language to `DRL` (instead of `DMN`) and the rule flow group to `unit:org.acme.kogito.PersonRules`.
++
+This rule unit syntax in the *Rule Flow Group* field specifies that you are using the `org.acme.kogito.PersonRules` rule unit instead of a traditional rule flow group. This is the rule unit that you referenced in the example DRL file. When you build the project, the business process implicitly declares the rule unit as part of the business rule task to execute the DRL file.
+. Save the process file to update the model.
