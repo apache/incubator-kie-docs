@@ -1,0 +1,126 @@
+[id='ref_drl-rules-actions-methods_{context}']
+= Supported rule action methods in DRL
+
+DRL supports the following rule action methods that you can use in DRL rule actions. You can use these methods to modify the working memory of the {DECISION_ENGINE} without having to first reference a working memory instance. These methods act as shortcuts to the methods provided by the `KnowledgeHelper` class in your {PRODUCT} distribution.
+
+*<@Edoardo, KnowledgeHelper still accurate, and what should the new link below be?>*
+
+For all rule action methods,
+////
+ifdef::KOGITO[]
+download the *{PRODUCT} {PRODUCT_VERSION_LONG} Source Distribution* ZIP file from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/drools-$VERSION/drools-core/src/main/java/org/drools/core/spi/KnowledgeHelper.java`.
+endif::[]
+////
+//ifdef::KOGITO-COMM[]
+see the {PRODUCT} https://github.com/kiegroup/drools/blob/{COMMUNITY_VERSION_BRANCH}/drools-core/src/main/java/org/drools/core/spi/KnowledgeHelper.java[KnowledgeHelper.java] page in GitHub.
+//endif::[]
+
+`set`::
+Use this to set the value of a field.
++
+--
+[source,subs="+quotes"]
+----
+set__FIELD__ ( __VALUE__ )
+----
+
+.Example rule action to set the values of a loan application approval
+[source]
+----
+$application.setApproved ( false );
+$application.setExplanation( "has been bankrupt" );
+----
+--
+
+`modify`::
+Use this to specify fields to be modified for a fact and to notify the {DECISION_ENGINE} of the change. This method provides a structured approach to fact updates. It combines the `update` operation with setter calls to change object fields.
++
+--
+[source,subs="+quotes"]
+----
+modify ( __FACT_EXPRESSION__ ) {
+    __EXPRESSION__,
+    __EXPRESSION__,
+    ...
+}
+----
+
+.Example rule action to modify a loan application amount and approval
+[source]
+----
+modify( LoanApplication ) {
+        setAmount( 100 ),
+        setApproved ( true )
+}
+----
+--
+
+`update`::
+Use this to specify fields and the entire related fact to be updated and to notify the {DECISION_ENGINE} of the change. After a fact has changed, you must call `update` before changing another fact that might be affected by the updated values. To avoid this added step, use the `modify` method instead.
++
+--
+[source,subs="attributes+","+quotes"]
+----
+update ( __OBJECT__, __HANDLE__ )  // Informs the {DECISION_ENGINE} that an object has changed
+
+update ( __OBJECT__ )  // Causes the {DECISION_ENGINE} to search for a fact handle of the object
+----
+
+.Example rule action to update a loan application amount and approval
+[source]
+----
+LoanApplication.setAmount( 100 );
+update( LoanApplication );
+----
+
+NOTE: If you provide property-change listeners, you do not need to call this method when an object changes. For more information about property-change listeners, see xref:con_property-change-listeners_decision-engine[].
+
+--
+
+`insert`::
+Use this to insert a `new` fact into the working memory of the {DECISION_ENGINE} and to define resulting fields and values as needed for the fact.
++
+--
+[source,subs="attributes+","+quotes"]
+----
+insert( new __OBJECT__ );
+----
+
+.Example rule action to insert a new loan applicant object
+[source]
+----
+insert( new Applicant() );
+----
+--
+
+`insertLogical`::
+Use this to insert a `new` fact logically into the {DECISION_ENGINE}. The {DECISION_ENGINE} is responsible for logical decisions on insertions and retractions of facts. After regular or stated insertions, facts must be retracted explicitly. After logical insertions, the facts that were inserted are automatically retracted when the conditions in the rules that inserted the facts are no longer true.
++
+--
+[source,subs="+quotes"]
+----
+insertLogical( new __OBJECT__ );
+----
+
+.Example rule action to logically insert a new loan applicant object
+[source]
+----
+insertLogical( new Applicant() );
+----
+--
+
+`delete`::
+Use this to remove an object from the {DECISION_ENGINE}. The keyword `retract` is also supported in DRL and executes the same action, but `delete` is typically preferred in DRL code for consistency with the keyword `insert`.
++
+--
+[source,subs="+quotes"]
+----
+delete( __OBJECT__ );
+----
+
+.Example rule action to delete a loan applicant object
+[source]
+----
+delete( Applicant );
+----
+--
