@@ -40,32 +40,41 @@ After you include the decision table in your {PRODUCT} project, the rules are re
 rule "Basic_12"
 salience 10
   when
-    $order : Order( itemsCount > 0, itemsCount <= 3, deliverInDays == 1 )
+    $order : /orders[ itemsCount > 0, itemsCount <= 3, deliverInDays == 1 ]
   then
-    insert( new Charge( 35 ) );
+    charge.add( new Charge( 35 ) );
 end
 ----
 
-*<@Edoardo, what's the Kogito equivalent to the following note?>*
 
 [NOTE]
 .Enabling white space used in cell values
 ====
 By default, any white space before or after values in decision table cells is removed before the decision table is processed by the {DECISION_ENGINE}. To retain white space that you use intentionally before or after values in cells, set the `drools.trimCellsInDTable` system property to `false` in your {PRODUCT} distribution.
 
+//@comment we should verify this -- (evacchi, 2020-03-17)
+
 ifdef::KOGITO[]
-For example, if you use {PRODUCT} with {EAP}, add the following system property to your `$EAP_HOME/standalone/configuration/standalone-full.xml` file:
+For instance, you can add this property to your `application.conf`
 
 [source]
 ----
-<property name="drools.trimCellsInDTable" value="false"/>
+drools.trimCellsInDTable=false
 ----
 
-If you use the {DECISION_ENGINE} embedded in your Java application, add the system property with the following command:
+If you are starting {DECISION_ENGINE} from a command line you can add the system property using:
 
+.Example using Quarkus
 [source]
 ----
-java -jar yourApplication.jar -Ddrools.trimCellsInDTable=false
+mvn compile quarkus:dev -Ddrools.trimCellsInDTable=false
 ----
+
+.Example using SpringBoot
+[source]
+----
+mvn spring-boot:run -Ddrools.trimCellsInDTable=false
+----
+
 endif::[]
 ====

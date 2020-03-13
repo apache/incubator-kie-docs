@@ -101,9 +101,9 @@ rule "Using a function"
     System.out.println( hello( "James" ) );
 end
 ----
-*<@Edoardo, see `query` below>*
 +
-* `query`: (optional) Use this to search the {DECISION_ENGINE} for facts related to the rules in the DRL file. You add the query definitions in DRL files and then obtain the matching results in your application code. Queries search for a set of defined conditions and do not require `when` or `then` specifications. Query names are global to the KIE base and therefore must be unique among all other rule queries in the project. To return the results of a query, construct a traditional `QueryResults` definition using `ksession.getQueryResults("name")`, where `"name"` is the query name. This returns a list of query results, which enable you to retrieve the objects that matched the query. Define the query and query results parameters above the rules in the DRL file.
+* `query`: (optional) Use this to search the {DECISION_ENGINE} for facts related to the rules in the DRL file. You add the query definitions in DRL files and then obtain the matching results in your application code. Queries search for a set of defined conditions and do not require `when` or `then` specifications. Query names are global to the unit and therefore must be unique among all other rule queries in the project. 
+// To return the results of a query, construct a traditional `QueryResults` definition using `ksession.getQueryResults("name")`, where `"name"` is the query name. This returns a list of query results, which enable you to retrieve the objects that matched the query. Define the query and query results parameters above the rules in the DRL file.
 +
 --
 .Example query definition in a DRL file
@@ -114,12 +114,12 @@ query "people under the age of 21"
 end
 ----
 
-.Example application code to obtain query results
-[source,java]
-----
-QueryResults results = ksession.getQueryResults( "people under the age of 21" );
-System.out.println( "we have " + results.size() + " people under the age  of 21" );
-----
+// .Example application code to obtain query results
+// [source,java]
+// ----
+// QueryResults results = ksession.getQueryResults( "people under the age of 21" );
+// System.out.println( "we have " + results.size() + " people under the age  of 21" );
+// ----
 --
 * `declare`: (optional) Use this to declare a new fact type to be used by rules in the DRL file. The default fact type in the `java.lang` package of {PRODUCT} is `Object`, but you can declare other types in DRL files as needed. Declaring fact types in DRL files enables you to define a new fact model directly in the {DECISION_ENGINE}, without creating models in a lower-level language like Java.
 +
@@ -134,46 +134,46 @@ end
 
 rule "Using a declared type"
   when
-    $p : Person( name == "James" )
+    p : /persons[ name == "James" ]
   then   // Insert Mark, who is a customer of James.
     Person mark = new Person();
     mark.setName( "Mark" );
-    insert( mark );
+    persons.add( mark );
 end
 ----
-*<@Edoardo, see `global` below>*
-+
-* `global`: (optional) Use this to include a global variable to be used by rules in the DRL file. Global variables typically provide data or services for the rules, such as application services used in rule consequences, and return data from rules, such as logs or values added in rule consequences. Set the global value in the working memory of the {DECISION_ENGINE} through a KIE session configuration or REST operation, declare the global variable above the rules in the DRL file, and then use it in an action (`then`) part of the rule. For multiple global variables, use separate lines in the DRL file.
-+
---
-.Setting the global list configuration for the {DECISION_ENGINE}
-[source]
-----
-List<String> list = new ArrayList<>();
-KieSession kieSession = kiebase.newKieSession();
-kieSession.setGlobal( "myGlobalList", list );
-----
+// *<@Edoardo, see `global` below>*
+// +
+// * `global`: (optional) Use this to include a global variable to be used by rules in the DRL file. Global variables typically provide data or services for the rules, such as application services used in rule consequences, and return data from rules, such as logs or values added in rule consequences. Set the global value in the working memory of the {DECISION_ENGINE} through a KIE session configuration or REST operation, declare the global variable above the rules in the DRL file, and then use it in an action (`then`) part of the rule. For multiple global variables, use separate lines in the DRL file.
+// +
+// --
+// .Setting the global list configuration for the {DECISION_ENGINE}
+// [source]
+// ----
+// List<String> list = new ArrayList<>();
+// KieSession kieSession = kiebase.newKieSession();
+// kieSession.setGlobal( "myGlobalList", list );
+// ----
 
-.Defining the global list in a rule
-[source]
-----
-global java.util.List myGlobalList;
+// .Defining the global list in a rule
+// [source]
+// ----
+// global java.util.List myGlobalList;
 
-rule "Using a global"
-  when
-    // Empty
-  then
-    myGlobalList.add( "My global list" );
-end
-----
+// rule "Using a global"
+//   when
+//     // Empty
+//   then
+//     myGlobalList.add( "My global list" );
+// end
+// ----
 
-[WARNING]
-====
-Do not use global variables to establish conditions in rules unless a global variable has a constant immutable value. Global variables are not inserted into the working memory of the {DECISION_ENGINE}, so the {DECISION_ENGINE} cannot track value changes of variables.
+// [WARNING]
+// ====
+// Do not use global variables to establish conditions in rules unless a global variable has a constant immutable value. Global variables are not inserted into the working memory of the {DECISION_ENGINE}, so the {DECISION_ENGINE} cannot track value changes of variables.
 
-Do not use global variables to share data between rules. Rules always reason and react to the working memory state, so if you want to pass data from rule to rule, assert the data as facts into the working memory of the {DECISION_ENGINE}.
-====
---
+// Do not use global variables to share data between rules. Rules always reason and react to the working memory state, so if you want to pass data from rule to rule, assert the data as facts into the working memory of the {DECISION_ENGINE}.
+// ====
+// --
 * `rule`: Use this to define each rule in the DRL file. Rules consist of a rule name in the format `rule "name"`, followed by optional attributes that define rule behavior (such as `salience` or `no-loop`), followed by `when` and `then` definitions. Each rule must have a unique name within the rule package. The `when` part of the rule contains the conditions that must be met to execute an action. For example, if a bank requires loan applicants to have over 21 years of age, then the `when` condition for an `"Underage"` rule would be `Applicant( age < 21 )`. The `then` part of the rule contains the actions to be performed when the conditional part of the rule has been met. For example, when the loan applicant is under 21 years old, the `then` action would be `setApproved( false )`, declining the loan because the applicant is under age.
 +
 .Rule for loan application age limit
@@ -182,11 +182,11 @@ Do not use global variables to share data between rules. Rules always reason and
 rule "Underage"
   salience 15
   when
-    $application : LoanApplication()
-    Applicant( age < 21 )
+    application : /loanApplication
+    /applicant[ age < 21 ]
   then
-    $application.setApproved( false );
-    $application.setExplanation( "Underage" );
+    application.setApproved( false );
+    application.setExplanation( "Underage" );
 end
 ----
 +
@@ -206,23 +206,23 @@ import org.mortgages.Applicant;
 rule "Bankruptcy history"
 	salience 10
 	when
-		$a : LoanApplication()
-		exists (Bankruptcy( yearOfOccurrence > 1990 || amountOwed > 10000 ))
+		a : /loanApplication
+		exists (/bankruptcy[ yearOfOccurrence > 1990 || amountOwed > 10000 ])
 	then
-		$a.setApproved( false );
-		$a.setExplanation( "has been bankrupt" );
-		delete( $a );
+		a.setApproved( false );
+		a.setExplanation( "has been bankrupt" );
+		loanApplication.remove( a );
 end
 
 rule "Underage"
 	salience 15
 	when
-		$application : LoanApplication()
-		Applicant( age < 21 )
+		application : /loanApplication
+		/applicant[ age < 21 ]
 	then
 		$application.setApproved( false );
 		$application.setExplanation( "Underage" );
-		delete( $application );
+		loanApplication.remove( a );
 end
 ----
 --

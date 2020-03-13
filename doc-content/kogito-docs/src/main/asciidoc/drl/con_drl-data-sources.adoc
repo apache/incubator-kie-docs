@@ -1,0 +1,84 @@
+[id='con_drl-data-sources_{context}']
+
+= Data Sources
+
+Data sources are typed sources of data that can that can be _subscribed_ for updates. Subscribers are called _data processors_.
+
+Currently we support the following kind of data sources:
+
+DataStream::
+an append-only storage. It is the simplest kind of storage, thus it can be employed for a number of use cases, where values may have to be published or shared.
+
+It may be created using `DataSource.createStream()`, which returns a `DataStream<T>`.
+A data stream only provides the method `append(T)` to add more data.
+
+
+.Example DataStream
+[source,java]
+----
+DataStream<Temperature> temperature = DataSource.createStream();
+// append value and notify all subscribers
+temperature.append(new Temperature(100));
+----
+
+
+DataStore:: 
+a writable storage where it is possible to add and remove data, and notify all subscribers that mutable data may have been updated. Rules may pattern match against incoming values and update and remove values that are contained. People familiar with Drools may effectively think of this as of a typed version of an entry point. In fact, a `DataStore<Object>` is effectively equivalent to an old-style entry point. 
+
+
+.Example DataStore
+[source,java]
+----
+DataStore<Temperature> temperature = DataSource.createStore();
+Temperature temp = new Temperature(100);
+// add value t and notify all subscribers
+DataHandle t = temperature.add(temp);
+temp.setValue(50);
+// notify all subscribers that the value referenced by `t` has changed
+temperature.update(t, temp);
+// remove value referenced by t and notify all subscribers
+temperature.remove(t);
+----
+
+
+SingletonStore:: 
+a writable storage where it is possible to set and clear one single element, and notify the system that the element has been mutated. Rules may pattern match against the value and update and clear values that are contained. People familiar with Drools may effectively think of this as of a global. In fact, a `Singleton<Object>` is similar to an old-style global, except, when used in conjuction with rules, it is possible to pattern match against it. 
+
+.Example SingletonStore
+[source,java]
+----
+SingletonStore<Temperature> temperature = DataSource.createSingleton();
+Temperature temp = new Temperature(100);
+// add value temp and notify all subscribers
+temperature.set(temp);
+temp.setValue(50);
+// notify all subscribers that the value has changed
+temperature.update();
+
+Temperature temp2 = new Temperature(200);
+// overwrite contained value with temp2 and notify all subscribers
+temperature.set(temp2);
+temp2.setValue(150);
+// notify all subscribers that the value has changed
+temperature.update();
+
+// clear store and notify all subscribers
+temperature.clear();
+----
+
+
+== Data Processors
+
+Subscribers to a data source are called _data processors_. A data processor implements the `DataProcessor<T>` interface. This interface contains callbacks to all the events that a subscribed data source may trigger:
+
+.Example DataStream
+[source,java]
+----
+public interface DataProcessor<T> {
+    void insert(DataHandle handle, T object);
+    void update(DataHandle handle, T object);
+    void delete(DataHandle handle);
+}
+----
+
+A `DataHandle` is an internal reference to an object of a data source. Each callaback method may or may not be invoked, depending whether the corresponding data source implements the capability or not. For instance, a _data stream_, being append-only, will only invoke the `insert` callback. The singleton store invokes `insert` on `set`, `delete` on `clear` or before an overwriting `set`.
