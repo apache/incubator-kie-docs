@@ -1,0 +1,213 @@
+[id='proc_kogito-travel-agency-interacting']
+
+= Interacting with the deployed travel agency services
+
+After you deploy the example travel agency services on OpenShift, you can interact with the application interfaces to create a new travel plan.
+
+You can also use a REST client or curl utility to send a REST request, such as the following example request body:
+
+.Example REST request body to add a traveler and trip
+[source,json]
+----
+{
+  "traveller": {
+    "firstName": "Jan",
+    "lastName": "Kowalski",
+    "email": "jan@email.com",
+    "nationality": "Polish",
+    "address": {
+      "street": "Polna",
+      "city": "Krakow",
+      "zipCode": "32-000",
+      "country": "Poland"
+    }
+  },
+  "trip": {
+    "country": "US",
+    "city": "New York",
+    "begin": "2019-11-04T00:00:00.000+02:00",
+    "end": "2019-11-07T00:00:00.000+02:00"
+  }
+}
+----
+
+The travel agency application enables users to book a trip to a certain destination, including flight and hotel. A rule set determines whether a visa is required for the given destination. The visa approval logic is then implemented as needed by the visas application.
+
+For this tutorial, use the application interfaces for the travel agency and visas services to book a trip from one country to another and approve the required visa.
+
+.Procedure
+. In the OpenShift web console, use the left menu to navigate to *Networking* -> *Routes*, and select the *Location* URL for the `kogito-travel-agency` route to view the main page of the {PRODUCT} travel agency application:
++
+--
+.Routes for available services in web console
+image::kogito/openshift/kogito-ocp-app-routes-agency.png[Image of Routes page in web console]
+
+.Travel agency application interface
+image::kogito/openshift/kogito-ocp-travel-agency-app.png[Image of Travel Agency application main page]
+--
+. In the travel agency application interface, click *Plan new trip*, enter details for a trip from one country to another, and click *Book your trip* to finish.
++
+--
+Ensure that the *Nationality* is different from the destination country so that a visa is required.
+
+This example uses a traveler from Poland who is traveling to the United States:
+
+.Book a new trip
+image::kogito/openshift/kogito-travel-agency-plan-new-trip.png[Image of new trip details]
+
+The new trip is displayed in the main page of the application interface:
+
+.New trip listed in main page of application interface
+image::kogito/openshift/kogito-travel-agency-new-trip-created.png[Image of new trip in application main page]
+--
+. Next to the new trip, click *Tasks* to view the pending tasks for that trip.
++
+.Tasks for the new trip
+image::kogito/openshift/kogito-travel-agency-task-visaapplication.png[Image of new trip tasks]
+
+. Next to the *VisaApplication* task, click *Apply*, enter random passport details in the application window, and click *Submit application*.
++
+.Submit visa application
+image::kogito/openshift/kogito-travel-agency-task-visaapplication-form.png[Image of new trip tasks]
+. In the OpenShift web console, use the left menu to navigate to *Networking* -> *Routes*, and select the *Location* URL for the `kogito-visas` route to view the main page of the {PRODUCT} visas application.
++
+--
+The traveler visa application is displayed in the visas service interface
+
+.New visa application listed in visas service interface
+image::kogito/openshift/kogito-visas-application.png[Image of new visa application in visas service interface]
+--
+. Next to the listed visa application, click *Approval* -> *Approve* to approve the visa application.
++
+.Approve visa application
+image::kogito/openshift/kogito-visas-task-approval.png[Image of visa application approval]
+. Return to the travel agency application interface, and next to the approved trip, click *Tasks* and then click *Complete* for the pending *ConfirmTravel* task to complete the trip:
++
+--
+.Trip listed and visa approved
+image::kogito/openshift/kogito-travel-agency-visa-approved.png[Image of approved trip]
+
+.Complete trip confirmation task
+image::kogito/openshift/kogito-travel-agency-task-confirm-travel.png[Image of pending completion task]
+
+.Trip confirmed and complete
+image::kogito/openshift/kogito-travel-agency-travel-complete.png[Image of completed trip]
+
+Now that the application activity is complete, you can inspect the data that was created and stored by the {PRODUCT} Data Index Service that you configured for your application. In this case, you can search for data from booked trips and visa applications (`Travels` and `VisaApplications`) or for data from the underlying processes and tasks (`ProcessInstances` and `UserTaskInstances`).
+--
+. In the OpenShift web console, use the left menu to navigate to *Networking* -> *Routes*, and select the *Location* URL for the `kogito-data-index` route to view the {PRODUCT} Data Index Service GraphQL interface (GraphiQL):
++
+.GraphiQL interface for Data Index Service
+image::kogito/openshift/kogito-data-index-graphiql.png[Image of Data Index GraphiQL interface]
+. In the GraphiQL interface, enter any of the following GraphQL queries to retrieve stored application data:
+
+* Retrieve data from booked trips (`Travels`):
++
+--
+.Example query
+[source]
+----
+{ Travels {
+  id, traveller {
+    email
+    firstName
+    lastName
+    nationality
+  }, trip {
+    begin
+    city
+    country
+    end
+    visaRequired
+  }
+}
+----
+
+.Example response
+image::kogito/openshift/kogito-data-index-graphiql-travels.png[Image of GraphQL query and response for travels]
+--
+* Retrieve data from booked trips by traveler last name (`like: "Chop*"`):
++
+--
+.Example query
+[source]
+----
+{ Travels (where: {traveller: {lastName: {like: "Chop*"}}}) {
+  id, traveller {
+    email
+    firstName
+    lastName
+    nationality
+  }, trip {
+    begin
+    city
+    country
+    end
+    visaRequired
+  }
+} }
+----
+--
+* Retrieve data from visa applications (`VisaApplications`):
++
+--
+.Example query
+[source]
+----
+{ VisaApplications {
+  visaApplication {
+    approved
+    city
+    country
+    duration
+    firstName
+    lastName
+    nationality
+    passportNumber
+  }
+} }
+----
+
+.Example response
+image::kogito/openshift/kogito-data-index-graphiql-visaapplications.png[Image of GraphQL query and response for visa applications]
+--
+* Retrieve data from process instances (`ProcessInstances`):
++
+--
+.Example query
+[source]
+----
+{ ProcessInstances {
+  id,
+  processId,
+  processName,
+  state,
+  nodes {
+    name,
+    type,
+    enter,
+    exit
+  }
+} }
+----
+
+.Example response
+image::kogito/openshift/kogito-data-index-graphiql-process-instances.png[Image of GraphQL query and response for process instances]
+--
+* Retrieve data from user task instances (`UserTaskInstances`):
++
+--
+.Example query
+[source]
+----
+{ UserTaskInstances {
+  name,
+  priority,
+  processId,
+  processInstanceId
+} }
+----
+
+.Example response
+image::kogito/openshift/kogito-data-index-graphiql-usertask-instances.png[Image of GraphQL query and response for user task instances]
+--

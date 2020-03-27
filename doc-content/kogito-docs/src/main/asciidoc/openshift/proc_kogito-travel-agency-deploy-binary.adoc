@@ -24,24 +24,27 @@ $ cd 06-kogito-travel-agency
 $ mvn clean package
 ----
 
-This command builds the project in standard JDK mode to package the application as a runner JAR file and include any dependencies in a `libs` folder.
+This command builds the project in standard JDK mode to package the application as a runner JAR file and include any dependencies in a `lib` folder.
 
-Alternatively, you can also build the project in native mode (requires GraalVM and SubstrateVM) to build and compile the application into a native executable for your system.
+ifdef::KOGITO-COMM[]
+NOTE: Alternatively, you can also build the project in native mode (requires GraalVM and SubstrateVM) to build and compile the application into a native executable for your system.
+endif::[]
+
 --
-. Navigate to the generated `target` folder and verify the following resources:
+The following resources are generated in the `target` folder in preparation for deployment from binary build:
 
 * `kogito-travel-agency-1.0-SNAPSHOT.jar`: Standard JAR file with only the classes and resources of the project.
 * `kogito-travel-agency-1.0-SNAPSHOT-runner.jar`: Executable JAR file for the project. Note that this is not an uber-JAR file because the dependencies are copied into the `target/lib` directory.
 * `lib`: Directory with project dependencies.
-. In the generated `target` folder, enter the following command to deploy the travel agency application to OpenShift using a binary build:
+. From the same `06-kogito-travel-agency` directory location where you built the project, enter the following command to deploy the travel agency application to OpenShift using a binary build:
 +
 --
 .Deploying to OpenShift using binary build
 [source]
 ----
-$ oc start-build kogito-travel-agency --from-dir=target
-Output
-Uploading directory "/target" as binary input for the build ...
+$ oc start-build kogito-travel-agency-binary --from-dir=target/
+
+Uploading directory "target/" as binary input for the build ...
 ....
 Uploading finished
 build.build.openshift.io/kogito-travel-agency-1 started
@@ -52,7 +55,7 @@ You can use the following command to check the logs of the builder pod if needed
 .Checking logs of builder pod
 [source]
 ----
-$ oc logs -f build/kogito-travel-agency-1
+$ oc logs -f build/kogito-travel-agency-binary-1
 ----
 
 After the binary build is complete, the result is pushed to the `kogito-travel-agency` Image Stream that was created by the {PRODUCT} Operator and triggers a new deployment.
@@ -64,7 +67,7 @@ After the binary build is complete, the result is pushed to the `kogito-travel-a
 +
 .Travel agency deployment details
 image::kogito/openshift/kogito-ocp-app-deployment-details-agency.png[Image of travel agency service deployment details page in web console]
-* *Networking* -> *Routes*: Select the *Location* URL for the `kogito-travel-agency` route to view the main page of the {PRODUCT} travel agency application:
+* *Networking* -> *Routes*: Select the *Location* URL for the `kogito-travel-agency` route to view the main page of the {PRODUCT} travel agency application.
 +
 .Travel agency application interface
 image::kogito/openshift/kogito-ocp-travel-agency-app.png[Image of Travel Agency application main page]
@@ -81,15 +84,15 @@ $ cd 06-kogito-visas
 $ mvn clean package
 ----
 --
-. Navigate to the generated `target` folder and enter the following command to deploy the visas application to OpenShift using a binary build:
+. Deploy the visas application to OpenShift using a binary build:
 +
 --
 .Deploying to OpenShift using binary build
 [source]
 ----
-$ oc start-build kogito-visas --from-dir=target
-Output
-Uploading directory "target" as binary input for the build ...
+$ oc start-build kogito-visas-binary --from-dir=target/
+
+Uploading directory "target/" as binary input for the build ...
 ....
 Uploading finished
 build.build.openshift.io/kogito-visas-1 started
@@ -100,7 +103,7 @@ You can use the following command to check the logs of the builder pod if needed
 .Checking logs of builder pod
 [source]
 ----
-$ oc logs -f build/kogito-visas-1
+$ oc logs -f build/kogito-visas-binary-1
 ----
 
 After the binary build is complete, the result is pushed to the `kogito-visas` Image Stream that was created by the {PRODUCT} Operator and triggers a new deployment.
@@ -112,35 +115,9 @@ After the binary build is complete, the result is pushed to the `kogito-visas` I
 +
 .Visas deployment details
 image::kogito/openshift/kogito-ocp-app-deployment-details-visas.png[Image of visas service deployment details page in web console]
-* *Networking* -> *Routes*: Select the *Location* URL for the `kogito-visas` route to view the main page of the {PRODUCT} visas application:
+* *Networking* -> *Routes*: Select the *Location* URL for the `kogito-visas` route to view the main page of the {PRODUCT} visas application.
 +
 .Visas application interface
 image::kogito/openshift/kogito-ocp-visas-app.png[Image of Visas application main page]
 
-To test the deployed applications, interact with the application interfaces to create a new travel plan, or use a REST client or curl utility to send a REST request, such as the following example request body:
-
-.Example REST request body to add a traveler and trip
-[source,json]
-----
-{
-  "traveller": {
-    "firstName": "Jan",
-    "lastName": "Kowalski",
-    "email": "jan@email.com",
-    "nationality": "Polish",
-    "address": {
-      "street": "Polna",
-      "city": "Krakow",
-      "zipCode": "32-000",
-      "country": "Poland"
-    }
-  },
-  "trip": {
-    "country": "US",
-    "city": "New York",
-    "begin": "2019-11-04T00:00:00.000+02:00",
-    "end": "2019-11-07T00:00:00.000+02:00"
-  }
-}
-----
 --
