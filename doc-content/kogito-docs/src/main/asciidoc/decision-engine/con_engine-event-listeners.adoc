@@ -2,7 +2,10 @@
 
 = {DECISION_ENGINE_CAP} event listeners and debug logging
 
-*<@Edoardo, see this section.>*
+[WARNING]
+====
+The APIs for {DECISION_ENGINE} event listeners in {PRODUCT} are subject to change.
+====
 
 In {PRODUCT}, you can add or remove listeners for {DECISION_ENGINE} events, such as fact insertions and rule executions. With {DECISION_ENGINE} event listeners, you can be notified of {DECISION_ENGINE} activity and separate your logging and auditing work from the core of your application.
 
@@ -32,17 +35,24 @@ For each event listener, the {DECISION_ENGINE} also supports the following speci
 * `ProcessNodeTriggeredEvent`
 * `ProcessStartEvent`
 
-For example, the following code uses a `DefaultAgendaEventListener` listener attached to a KIE session and specifies the `AfterMatchFiredEvent` event to be monitored. The code prints pattern matches after the rules are executed (fired):
+For example, the following code uses a `DefaultAgendaEventListener` listener and specifies the `AfterMatchFiredEvent` event to be monitored. The code prints pattern matches after the rules are executed (fired):
 
 .Example code to monitor and print `AfterMatchFiredEvent` events in the agenda
 [source,java]
 ----
-ksession.addEventListener( new DefaultAgendaEventListener() {
-   public void afterMatchFired(AfterMatchFiredEvent event) {
-       super.afterMatchFired( event );
-       System.out.println( event );
-   }
-});
+public class MyListener extends DefaultAgendaEventListener {
+    public void afterMatchFired(AfterMatchFiredEvent event) {
+        super.afterMatchFired( event );
+        System.out.println( event );
+    }
+}
+
+@ApplicationScoped
+public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
+    public RuleEventListenerConfig() {
+        super(new MyListener());
+    }
+}
 ----
 
 The {DECISION_ENGINE} also supports the following agenda and working memory event listeners for debug logging:
@@ -57,5 +67,10 @@ For example, the following code uses the `DebugRuleRuntimeEventListener` event l
 .Example code to monitor and print all working memory events
 [source,java]
 ----
-ksession.addEventListener( new DebugRuleRuntimeEventListener() );
+@ApplicationScoped
+public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
+    public RuleEventListenerConfig() {
+        super(new DebugRuleRuntimeEventListener());
+    }
+}
 ----

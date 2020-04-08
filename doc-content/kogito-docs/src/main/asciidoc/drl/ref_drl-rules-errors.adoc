@@ -24,8 +24,8 @@ Indicates that the parser reached a decision point but could not identify an alt
 ----
 1: rule "simple rule"
 2:   when
-3:     exists Person()
-4:     exits Student()  // Must be `exists`
+3:     exists /person
+4:     exits /student  // Must be `exists`
 5:   then
 6: end
 ----
@@ -61,7 +61,7 @@ In this example, the parser encountered the keyword `when` but expected the rule
 ----
 1: rule "simple rule"
 2:   when
-3:     Student( name == "Andy )  // Must be `"Andy"`
+3:     /student[ name == "Andy ]  // Must be `"Andy"`
 4:   then
 5: end
 ----
@@ -69,7 +69,7 @@ In this example, the parser encountered the keyword `when` but expected the rule
 .Error message
 [source]
 ----
-[ERR 101] Line 0:-1 no viable alternative at input '<eof>' in rule "simple rule" in pattern Student
+[ERR 101] Line 0:-1 no viable alternative at input '<eof>' in rule "simple rule" in pattern student
 ----
 
 NOTE: A line and column value of `0:-1` means the parser reached the end of the source file (`<eof>`) but encountered incomplete constructs, usually due to missing quotation marks `"..."`, apostrophes `'...'`, or parentheses `(...)`.
@@ -83,16 +83,16 @@ Indicates that the parser expected a particular symbol that is missing at the cu
 .Example rule with an incomplete rule statement
 [source]
 ----
-1: rule simple_rule
+1: rule "simple rule"
 2:   when
-3:     $p : Person(
+3:     $p : /person[
         // Must be a complete rule statement
 ----
 
 .Error message
 [source]
 ----
-[ERR 102] Line 0:-1 mismatched input '<eof>' expecting ')' in rule "simple rule" in pattern Person
+[ERR 102] Line 0:-1 mismatched input '<eof>' expecting ']' in rule "simple rule" in pattern person
 ----
 
 NOTE: A line and column value of `0:-1` means the parser reached the end of the source file (`<eof>`) but encountered incomplete constructs, usually due to missing quotation marks `"..."`, apostrophes `'...'`, or parentheses `(...)`.
@@ -104,7 +104,7 @@ NOTE: A line and column value of `0:-1` means the parser reached the end of the 
 2:
 3: rule "Wrong syntax"
 4:   when
-5:     not( Car( ( type == "tesla", price == 10000 ) || ( type == "kia", price == 1000 ) ) from $carList )
+5:     not /car[ ( type == "tesla", price == 10000 ) || ( type == "kia", price == 1000 ) ]
        // Must use `&&` operators instead of commas `,`
 6:   then
 7:     System.out.println("OK");
@@ -114,9 +114,9 @@ NOTE: A line and column value of `0:-1` means the parser reached the end of the 
 .Error messages
 [source]
 ----
-[ERR 102] Line 5:36 mismatched input ',' expecting ')' in rule "Wrong syntax" in pattern Car
+[ERR 102] Line 5:36 mismatched input ',' expecting ')' in rule "Wrong syntax" in pattern car
 [ERR 101] Line 5:57 no viable alternative at input 'type' in rule "Wrong syntax"
-[ERR 102] Line 5:106 mismatched input ')' expecting 'then' in rule "Wrong syntax"
+[ERR 102] Line 5:106 mismatched input ']' expecting 'then' in rule "Wrong syntax"
 ----
 
 In this example, the syntactic problem results in multiple error messages related to each other. The single solution of replacing the commas `,` with `&&` operators resolves all errors. If you encounter multiple errors, resolve one at a time in case errors are consequences of previous errors.
@@ -138,7 +138,7 @@ Indicates that a validating semantic predicate evaluated to `false`. These seman
  7:
  8: rule "test something"
  9:   when
-10:     $p: Person( name=="Michael" )
+10:     $p: /person[ name=="Michael" ]
 11:   then
 12:     $p.name = "other";
 13:     System.out.println(p.name);

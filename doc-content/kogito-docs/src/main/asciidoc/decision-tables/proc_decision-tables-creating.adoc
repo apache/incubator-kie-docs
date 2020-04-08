@@ -10,6 +10,17 @@ Refer to the following sample spreadsheet as you define your decision table:
 .Sample spreadsheet decision table for shipping charges
 image::kogito/decision-tables/decision-table-example-02.png[Decision table example]
 
+.Prerequisites
+* You have added the following dependency to the `pom.xml` file of your {PRODUCT} project to enable decision tables for decision services:
++
+.Dependency to enable decision tables for decision services
+----
+<dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>drools-decisiontables</artifactId>
+</dependency>
+----
+
 .Procedure
 . In a new XLS or XLSX spreadsheet, go to the second or third column and label a cell `RuleSet` (row 1 in example). Reserve the column or columns to the left for descriptive metadata (optional).
 . In the next cell to the right, enter a name for the `RuleSet`. This named rule set will contain all `RuleTable` rules defined in the rule package.
@@ -40,32 +51,38 @@ After you include the decision table in your {PRODUCT} project, the rules are re
 rule "Basic_12"
 salience 10
   when
-    $order : Order( itemsCount > 0, itemsCount <= 3, deliverInDays == 1 )
+    $order : /orders[ itemsCount > 0, itemsCount <= 3, deliverInDays == 1 ]
   then
     insert( new Charge( 35 ) );
 end
 ----
-
-*<@Edoardo, what's the Kogito equivalent to the following note?>*
 
 [NOTE]
 .Enabling white space used in cell values
 ====
 By default, any white space before or after values in decision table cells is removed before the decision table is processed by the {DECISION_ENGINE}. To retain white space that you use intentionally before or after values in cells, set the `drools.trimCellsInDTable` system property to `false` in your {PRODUCT} distribution.
 
-ifdef::KOGITO[]
-For example, if you use {PRODUCT} with {EAP}, add the following system property to your `$EAP_HOME/standalone/configuration/standalone-full.xml` file:
+//@comment we should verify this -- (evacchi, 2020-03-17)
 
+You can set this property in the `application.properties` file of your {PRODUCT} distribution:
+
+.Enable white space in `application.properties`
 [source]
 ----
-<property name="drools.trimCellsInDTable" value="false"/>
+drools.trimCellsInDTable=false
 ----
 
-If you use the {DECISION_ENGINE} embedded in your Java application, add the system property with the following command:
+You can also set this property as a start-up option when you build your {PRODUCT} project:
 
+.On Quarkus
 [source]
 ----
-java -jar yourApplication.jar -Ddrools.trimCellsInDTable=false
+mvn compile quarkus:dev -Ddrools.trimCellsInDTable=false
 ----
-endif::[]
+
+.On Spring Boot
+[source]
+----
+mvn spring-boot:run -Ddrools.trimCellsInDTable=false
+----
 ====

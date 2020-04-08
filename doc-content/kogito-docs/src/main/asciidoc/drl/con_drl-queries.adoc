@@ -6,156 +6,64 @@ ifdef::KOGITO-COMM[]
 image::kogito/drl/query.png[align="center"]
 endif::[]
 
-*<@Edoardo, see this section.>*
+Queries in DRL files search the working memory of the {DECISION_ENGINE} for facts related to the rules in the DRL file. You add the query definitions in DRL files and then obtain the matching results in your application code. Queries search for a set of defined conditions and do not require `when` or `then` specifications. Query names are scoped to the rule unit, so each query name must be unique within the same rule unit. In {PRODUCT}, queries are automatically exposed as REST endpoints.
 
-Queries in DRL files search the working memory of the {DECISION_ENGINE} for facts related to the rules in the DRL file. You add the query definitions in DRL files and then obtain the matching results in your application code. Queries search for a set of defined conditions and do not require `when` or `then` specifications. Query names are global to the KIE base and therefore must be unique among all other rule queries in the project. To return the results of a query, you construct a `QueryResults` definition using `ksession.getQueryResults("name")`, where `"name"` is the query name. This returns a list of query results, which enable you to retrieve the objects that matched the query. You define the query and query results parameters above the rules in the DRL file.
-
-The following example is a query definition in a DRL file for underage applicants in a mortgage application decision service, with the accompanying application code:
+The following example is a query definition for an `Alert` object with a `severity` field set to `HIGH`:
 
 .Example query definition in a DRL file
 [source]
 ----
-query "people under the age of 21"
-    $person : Person( age < 21 )
+package com.acme;
+unit MonitoringService;
+
+query highSeverity
+    alerts : /alertData[ severity == "HIGH" ]
 end
 ----
 
-.Example application code to obtain query results
+{PRODUCT} automatically exposes this query through an endpoint `/high-severity`.
+
+For this example, assume that `MonitoringService` has the following form:
+
+.Example Java rule unit class
 [source,java]
 ----
-QueryResults results = ksession.getQueryResults( "people under the age of 21" );
-System.out.println( "we have " + results.size() + " people under the age  of 21" );
-----
+package com.acme;
 
-You can also iterate over the returned `QueryResults` using a standard `for` loop. Each element is a `QueryResultsRow` that you can use to access each of the columns in the tuple.
+import org.kie.kogito.rules.DataSource;
+import org.kie.kogito.rules.DataStream;
 
-.Example application code to obtain and iterate over query results
-[source,java]
-----
-QueryResults results = ksession.getQueryResults( "people under the age of 21" );
-System.out.println( "we have " + results.size() + " people under the age of 21" );
-
-System.out.println( "These people are under the age of 21:" );
-
-for ( QueryResultsRow row : results ) {
-    Person person = ( Person ) row.get( "person" );
-    System.out.println( person.getName() + "\n" );
+public class MonitoringService implements RuleUnitData {
+    private DataStream<Temperature> temperature = DataSource.createStream();
+    private DataStream<Alert> alertData = DataSource.createStream();
+    public DataStream<Temperature> getTemperature() { return temperature; }
+    public DataStream<Alert> getAlertData() { return alertData; }
 }
 ----
 
-ifdef::KOGITO-COMM[]
-Support for positional syntax has been added for more compact code.
-By default the declared type order in the type declaration matches the argument position.
-But it possible to override these using the `@position` annotation.
-This allows patterns to be used with positional arguments, instead of the more verbose named arguments.
+In this case, you can invoke the query using the following command:
 
+.Example POST request to the `/high-severity` endpoint
 [source]
 ----
-declare Cheese
-    name : String @position(1)
-    shop : String @position(2)
-    price : int @position(0)
-end
+$ curl -X POST \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: application/json' \
+        -d '{ "eventData": [ { "type": "temperature", "value" : 20 }, { "type": "temperature", "value" : 100 } ] }' \
+        http://localhost:8080/high-severity
 ----
 
-
-The `@position` annotation, in the `org.drools.definition.type` package, can be used to annotate original objects on the classpath.
-Currently only fields on classes can be annotated.
-Inheritance of classes is supported, but not interfaces or methods.
-The `isContainedIn` query below demonstrates the use of positional arguments in a pattern; `Location(x, y;)` instead of `Location( thing == x, location == y).`
-
-Queries can now call other queries, this combined with optional query arguments provides derivation query style backward chaining.
-Positional and named syntax is supported for arguments.
-It is also possible to mix both positional and named, but positional must come first, separated by a semi colon.
-Literal expressions can be passed as query arguments, but at this stage you cannot mix expressions with variables.
-Here is an example of a query that calls another query.
-Note that `z` here will always be an `out` variable.
-The `?` symbol means the query is pull only, once the results are returned you will not receive further results as the underlying data changes.
-
-[source]
+.Example response (JSON)
+[source,json]
 ----
-declare Location
-    thing : String
-    location : String
-end
-
-query isContainedIn( String x, String y )
-    Location(x, y;)
-    or
-    ( Location(z, y;) and ?isContainedIn(x, z;) )
-end
-----
-
-As previously mentioned you can use live "open" queries to reactively receive changes over time from the query results, as the underlying data it queries against changes.
-Notice the `"look"` rule calls the query without using `?`.
-
-[source]
-----
-query isContainedIn( String x, String y )
-    Location(x, y;)
-    or
-    ( Location(z, y;) and isContainedIn(x, z;) )
-end
-
-rule look when
-    Person( $l : likes )
-    isContainedIn( $l, 'office'; )
-then
-   insertLogical( $l 'is in the office' );
-end
-----
-
-
-{PRODUCT} supports unification for derivation queries, in short this means that arguments are optional.
-It is possible to call queries from Java leaving arguments unspecified using the static field `org.drools.core.runtime.rule.Variable.v` - note you must use `v` and not an alternative instance of Variable.
-These are referred to as `out` arguments.
-Note that the query itself does not declare at compile time whether an argument is in or an out, this can be defined purely at runtime on each use.
-The following example will return all objects contained in the office.
-
-[source]
-----
-results = ksession.getQueryResults( "isContainedIn", new Object[] {  Variable.v, "office" } );
-l = new ArrayList<List<String>>();
-for ( QueryResultsRow r : results ) {
-    l.add( Arrays.asList( new String[] { (String) r.get( "x" ), (String) r.get( "y" ) } ) );
+{
+    "alerts" : [
+        {
+            "severity" : "HIGH",
+            "message" : "Temperature exceeds threshold: 100"
+        }
+    ]
 }
 ----
 
-The algorithm uses stacks to handle recursion, so the method stack will not blow up.
-
-It is also possible to use as input argument for a query both the field of a fact as in:
-
-[source]
-----
-query contains(String $s, String $c)
-    $s := String( this.contains( $c ) )
-end
-
-rule PersonNamesWithA when
-    $p : Person()
-    contains( $p.name, "a"; )
-then
-end
-----
-
-and more in general any kind of valid expression like in:
-
-[source]
-----
-query checkLength(String $s, int $l)
-    $s := String( length == $l )
-end
-
-rule CheckPersonNameLength when
-    $i : Integer()
-    $p : Person()
-    checkLength( $p.name, 1 + $i + $p.age; )
-then
-end
-----
-
-The following is not yet supported:
-
-* List and Map unification
-* Expression unification - pred( X, X + 1, X * Y / 7 )
-endif::[]
+This example submits the data to the `eventData` data source and returns the result of the `highSeverity` query as a response.

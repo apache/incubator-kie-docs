@@ -1,9 +1,73 @@
 [id='proc_drl-rules-central-create_{context}']
 = Creating DRL rules for your {PRODUCT} project
 
-You can create and manage DRL rules for your {PRODUCT} project in your IDE (VSCode is recommended). In each DRL rule file, you define rule conditions, actions, and other components related to the rule, based on the data objects you create or import in the package.
+You can create and manage DRL rules for your {PRODUCT} project in your integrated development environment (IDE). For {PRODUCT} service, VSCode is the preferred IDE. In each DRL rule file, you define rule conditions, actions, and other components related to the rule, based on the data objects you create or import in the package.
 
-.Prerequisite
+In {PRODUCT}, you typically define DRL rules in rule units. A DRL rule unit is a module for rules and a unit of execution. A rule unit collects a set of rules with the declaration of the type of facts that the rules act on. A rule unit also serves as a unique namespace for each group of rules. A single rule base can contain multiple rule units. You typically store all the rules for a unit in the same file as the unit declaration so that the unit is self-contained.
+
+For this example procedure, you create the following DRL type declarations and DRL rule unit to define DRL rules in a decision service for a loan application:
+
+.Example DRL type declarations for a loan application
+[source]
+----
+package org.mortgages;
+
+declare Bankruptcy
+    name: String
+    yearOfOccurrence: int
+end
+
+declare Applicant
+    name: String
+    age: int
+end
+
+declare LoanApplication
+    applicant: String
+    approved: boolean
+    explanation: String
+end
+----
+
+.Example DRL rule unit file for a loan application
+[source]
+----
+package org.mortgages;
+unit MortgageRules
+
+import org.kie.kogito.rules.DataSource;
+import org.kie.kogito.rules.DataStream;
+
+declare MortgageRules extends RuleUnitData
+  bankruptcy: DataStore<Bankruptcy> = DataSource.createStore()
+  applicant: DataStore<Applicant> = DataSource.createStore()
+  application: DataStore<LoanApplication> = DataSource.createStore()
+end
+
+rule "Bankruptcy history"
+	salience 10
+	when
+    $a : /loanApplication[ applicantName: applicant ]
+    exists (/bankruptcy[ name == applicantName, yearOfOccurrence > 1990 || amountOwed > 100000 ])
+	then
+		$a.setApproved( false );
+		$a.setExplanation( "has been bankrupt" );
+		loanApplication.remove( $a );
+end
+
+rule "Underage"
+	salience 15
+	when
+    /applicant[ applicantName : name, age < 21 ]
+    $application : /loanApplication[ applicant == applicantName ]
+	then
+		$application.setApproved( false );
+		$application.setExplanation( "Underage" );
+		loanApplication.remove( $a );
+end
+----
+
+.Prerequisites
 * You have created a {PRODUCT} project and have included any Java data objects required for your {PRODUCT} service. For information about creating a project, see
 ifdef::KOGITO[]
 {URL_CREATING_RUNNING}[_{CREATING_RUNNING}_].
@@ -13,224 +77,123 @@ xref:chap_kogito-creating-running[].
 endif::[]
 
 .Procedure
-. In your VSCode IDE, create or import a DRL file in the relevant folder of your {PRODUCT} project, typically in `src/main/resources`.
-. Define the DRL file with any of the following components.
-+
-At a minimum, each DRL file must specify the `package`, `import`, and `rule` components. All other components are optional.
-+
-.Components in a DRL file
-[source,subs="attributes+"]
-----
-package
-unit  // Recommended
-
-import
-
-function  // Optional
-
-query  // Optional
-
-declare   // Optional
-
-global   // Optional
-
-rule "rule name"
-    // Attributes
-    when
-        // Conditions
-    then
-        // Actions
-end
-
-rule "rule2 name"
-
-...
-
-----
-+
-* `package`: Use this to specify the location of the Java data objects in your project, typically the sub-directory path in `src/main/java`.
-+
-.Specifying a package
-[source]
-----
-package org.mortgages
-----
-+
-* `unit`: Use this to associate this rule file with a rule unit. Rule units are groups of data sources, global variables, and DRL rules that function together for a specific purpose. Rule units are an enhanced alternative to rule-grouping DRL attributes such as rule flow groups, rule agenda groups, or activation groups for execution control. When you build the project, the rule unit is generated and associated with the DRL file.
-+
-.Declaring a rule unit
-[source]
-----
-unit MortgageRules
-----
-+
-* `import`: Use this to identify specific data objects from the package that you want to use in the DRL file. Specify the package and data object in the format `packageName.objectName`, with multiple imports on separate lines.
-+
-.Importing data objects
-[source]
-----
-import org.mortgages.LoanApplication;
-----
-+
-* `function`: (optional) Use this to include a function to be used by rules in the DRL file. Functions in DRL files put semantic code in your rule source file instead of in Java classes. Functions are especially useful if an action (`then`) part of a rule is used repeatedly and only the parameters differ for each rule. Above the rules in the DRL file, you can declare the function or import a static method from a helper class as a function, and then use the function by name in an action (`then`) part of the rule.
-+
-.Declaring and using a function with a rule (option 1)
-[source]
-----
-function String hello(String applicantName) {
-    return "Hello " + applicantName + "!";
-}
-
-rule "Using a function"
-  when
-    // Empty
-  then
-    System.out.println( hello( "James" ) );
-end
-----
-+
-.Importing and using the function with a rule (option 2)
-[source]
-----
-import function my.package.applicant.hello;
-
-rule "Using a function"
-  when
-    // Empty
-  then
-    System.out.println( hello( "James" ) );
-end
-----
-*<@Edoardo, see `query` below>*
-+
-* `query`: (optional) Use this to search the {DECISION_ENGINE} for facts related to the rules in the DRL file. You add the query definitions in DRL files and then obtain the matching results in your application code. Queries search for a set of defined conditions and do not require `when` or `then` specifications. Query names are global to the KIE base and therefore must be unique among all other rule queries in the project. To return the results of a query, construct a traditional `QueryResults` definition using `ksession.getQueryResults("name")`, where `"name"` is the query name. This returns a list of query results, which enable you to retrieve the objects that matched the query. Define the query and query results parameters above the rules in the DRL file.
+. In your VSCode IDE, open your {PRODUCT} project and create a `src/main/resources/org/mortgages` folder. This folder serves as the package for your DRL files in this example.
+. In your new `src/main/resources/org/mortgages` folder, add the following `ApplicationTypes.drl` file to define the fact types for the loan application service:
 +
 --
-.Example query definition in a DRL file
+.Example DRL type declarations for a loan application
 [source]
 ----
-query "people under the age of 21"
-    $person : Person( age < 21 )
+package org.mortgages;
+
+declare Bankruptcy
+    name: String
+    yearOfOccurrence: int
+end
+
+declare Applicant
+    name: String
+    age: int
+end
+
+declare LoanApplication
+    applicant: String
+    approved: boolean
+    explanation: String
 end
 ----
 
-.Example application code to obtain query results
-[source,java]
-----
-QueryResults results = ksession.getQueryResults( "people under the age of 21" );
-System.out.println( "we have " + results.size() + " people under the age  of 21" );
-----
+This DRL file defines the fact types that you can declare in any rule units in the same package for the decision service. Declarations in DRL files define new fact types or metadata for fact types to be used by rules in a DRL files. If you declare these types directly in the DRL rule unit file, you cannot declare them in any other rule units.
+
+This example defines the following fact types:
+
+* `Bankruptcy`: Provides data for bankruptcy status, if applicable
+* `Applicant`: Provides data about the loan applicant
+* `LoanApplication`: Provides data about loan approval status for a given applicant, with an explanation if needed
 --
-* `declare`: (optional) Use this to declare a new fact type to be used by rules in the DRL file. The default fact type in the `java.lang` package of {PRODUCT} is `Object`, but you can declare other types in DRL files as needed. Declaring fact types in DRL files enables you to define a new fact model directly in the {DECISION_ENGINE}, without creating models in a lower-level language like Java.
-+
-.Declaring and using a new fact type
-[source]
-----
-declare Person
-  name : String
-  dateOfBirth : java.util.Date
-  address : Address
-end
-
-rule "Using a declared type"
-  when
-    $p : Person( name == "James" )
-  then   // Insert Mark, who is a customer of James.
-    Person mark = new Person();
-    mark.setName( "Mark" );
-    insert( mark );
-end
-----
-*<@Edoardo, see `global` below>*
-+
-* `global`: (optional) Use this to include a global variable to be used by rules in the DRL file. Global variables typically provide data or services for the rules, such as application services used in rule consequences, and return data from rules, such as logs or values added in rule consequences. Set the global value in the working memory of the {DECISION_ENGINE} through a KIE session configuration or REST operation, declare the global variable above the rules in the DRL file, and then use it in an action (`then`) part of the rule. For multiple global variables, use separate lines in the DRL file.
+. In the same `src/main/resources/org/mortgages` folder of your {PRODUCT} project, create the following `LoanApplication.drl` file to declare the DRL rule unit and data sources:
 +
 --
-.Setting the global list configuration for the {DECISION_ENGINE}
-[source]
-----
-List<String> list = new ArrayList<>();
-KieSession kieSession = kiebase.newKieSession();
-kieSession.setGlobal( "myGlobalList", list );
-----
-
-.Defining the global list in a rule
-[source]
-----
-global java.util.List myGlobalList;
-
-rule "Using a global"
-  when
-    // Empty
-  then
-    myGlobalList.add( "My global list" );
-end
-----
-
-[WARNING]
-====
-Do not use global variables to establish conditions in rules unless a global variable has a constant immutable value. Global variables are not inserted into the working memory of the {DECISION_ENGINE}, so the {DECISION_ENGINE} cannot track value changes of variables.
-
-Do not use global variables to share data between rules. Rules always reason and react to the working memory state, so if you want to pass data from rule to rule, assert the data as facts into the working memory of the {DECISION_ENGINE}.
-====
---
-* `rule`: Use this to define each rule in the DRL file. Rules consist of a rule name in the format `rule "name"`, followed by optional attributes that define rule behavior (such as `salience` or `no-loop`), followed by `when` and `then` definitions. Each rule must have a unique name within the rule package. The `when` part of the rule contains the conditions that must be met to execute an action. For example, if a bank requires loan applicants to have over 21 years of age, then the `when` condition for an `"Underage"` rule would be `Applicant( age < 21 )`. The `then` part of the rule contains the actions to be performed when the conditional part of the rule has been met. For example, when the loan applicant is under 21 years old, the `then` action would be `setApproved( false )`, declining the loan because the applicant is under age.
-+
-.Rule for loan application age limit
-[source]
-----
-rule "Underage"
-  salience 15
-  when
-    $application : LoanApplication()
-    Applicant( age < 21 )
-  then
-    $application.setApproved( false );
-    $application.setExplanation( "Underage" );
-end
-----
-+
---
-The following example is a DRL file in a loan application decision service:
-
-.Example DRL file for a loan application
+.Example DRL file with rule unit and data sources
 [source]
 ----
 package org.mortgages;
 unit MortgageRules
 
-import org.mortgages.LoanApplication;
-import org.mortgages.Bankruptcy;
-import org.mortgages.Applicant;
+import org.kie.kogito.rules.DataSource;
+import org.kie.kogito.rules.DataStore;
+
+declare MortgageRules extends RuleUnitData
+  bankruptcy: DataStore<Bankruptcy> = DataSource.createStore()
+  applicant: DataStore<Applicant> = DataSource.createStore()
+  application: DataStore<LoanApplication> = DataSource.createStore()
+end
+...
+----
+
+In this example, the rule unit is named `MortgageRules` and the previously defined fact types are declared as `DataStore` data sources.
+
+Data sources are typed sources of data that rule units can subscribe to for updates. You interact with the rule unit through the data sources it exposes. A data source can be a `DataStream` source for append-only storage, a `DataStore` source for writable storage to add or remove data, or a `SingletonStore` source for writable storage to set and clear a single element.
+
+This example uses the `DataStore` data source to enable application data to be added or removed as part of the decision service.
+--
+. To complete the DRL rule unit file, add the following rules for `"Bankruptcy history"` and `"Underage"` logic:
++
+--
+.Example DRL rule unit file for a loan application
+[source]
+----
+package org.mortgages;
+unit MortgageRules
+
+import org.kie.kogito.rules.DataSource;
+import org.kie.kogito.rules.DataStream;
+
+declare MortgageRules extends RuleUnitData
+  bankruptcy: DataStore<Bankruptcy> = DataSource.createStore()
+  applicant: DataStore<Applicant> = DataSource.createStore()
+  application: DataStore<LoanApplication> = DataSource.createStore()
+end
 
 rule "Bankruptcy history"
 	salience 10
 	when
-		$a : LoanApplication()
-		exists (Bankruptcy( yearOfOccurrence > 1990 || amountOwed > 10000 ))
+    $a : /loanApplication[ applicantName: applicant ]
+    exists (/bankruptcy[ name == applicantName, yearOfOccurrence > 1990 || amountOwed > 100000 ])
 	then
 		$a.setApproved( false );
 		$a.setExplanation( "has been bankrupt" );
-		delete( $a );
+		loanApplication.remove( $a );
 end
 
 rule "Underage"
 	salience 15
 	when
-		$application : LoanApplication()
-		Applicant( age < 21 )
+    /applicant[ applicantName : name, age < 21 ]
+    $application : /loanApplication[ applicant == applicantName ]
 	then
 		$application.setApproved( false );
 		$application.setExplanation( "Underage" );
-		delete( $application );
+		loanApplication.remove( $a );
 end
 ----
+
+The example rules define the following rule components
+
+* `rule`: Use this segment to define each rule in the DRL file. Rules consist of a rule name in the format `rule "name"`, followed by optional attributes that define rule behavior, such as `salience` or `no-loop`, followed by `when` and `then` definitions. Each rule must have a unique name within the rule package.
++
+In this example, the `"Bankruptcy history"` rule has a defined salience of `10` and the `"Underage"` rule has a defined salience of `15`. These values ensure that the `"Bankruptcy history"` rule is executed first.
+* `when` and `then`: Use the `when` portion to define the condition patterns and constraints in OOPath syntax and use the `then` portion to define the actions to be executed when the conditions are met.
++
+In this example, the `"Bankruptcy history"` rule states that if an applicant has owed more than 100,000 USD of unresolved debt since 1990 (beginning 1991), then the applicant is considered to have been bankrupt and is not approved for a loan. The application is removed from memory.
++
+If the applicant passes the bankruptcy check, then the `"Underage"` rule states that if the applicant is younger than 21 years old, then the applicant is not approved for the loan. The application is removed from memory.
++
+If the applicant passes both checks, then the loan is approved.
 --
-. After you define all components of the rule, save the file in `.drl` format.
+. After you define all components of the data sources and rules, save all DRL files.
 
-////
-// Removing for now.
-* `template`: <From Michael Anstis:  Within Business Central use of the template keyword in a DRL file would be pretty much pointless, as you say it needs accompanying "data" that cannot be specified with a DRL file asset. However in the three standalone/embedded examples you give (using JBoss Rule Studio, CLI and Maven) the User could quite easily provide "data" and hence leverage the template keyword.
-
-// (Stetson, Jan 29, 2018)
-////
+.Additional resources
+* xref:con_drl-rule-units_drl-rules[]
+* xref:con_drl-rules-conditions_drl-rules[]
+* xref:con_drl-rules-actions_drl-rules[]

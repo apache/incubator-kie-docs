@@ -2,14 +2,12 @@
 
 = Execution control in the {DECISION_ENGINE}
 
-*<@Edoardo, see this section. I've removed agenda groups, but not sure how to address fireAllRules, etc.>*
-
 When new rule data enters the working memory of the {DECISION_ENGINE}, rules may become fully matched and eligible for execution. A single working memory action can result in multiple eligible rule executions. When a rule is fully matched, the {DECISION_ENGINE} creates an activation instance, referencing the rule and the matched facts, and adds the activation onto the {DECISION_ENGINE} agenda. The agenda controls the execution order of these rule activations using a conflict resolution strategy.
 
-After the first call of `fireAllRules()` in the Java application, the {DECISION_ENGINE} cycles repeatedly through two phases:
+When rules are executed, the {DECISION_ENGINE} cycles repeatedly through two phases:
 
 * *Agenda evaluation.* In this phase, the {DECISION_ENGINE} selects all rules that can be executed. If no executable rules exist, the execution cycle ends. If an executable rule is found, the {DECISION_ENGINE} registers the activation in the agenda and then moves on to the working memory actions phase to perform rule consequence actions.
-* *Working memory actions.* In this phase, the {DECISION_ENGINE} performs the rule consequence actions (the `then` portion of each rule) for all activated rules previously registered in the agenda. After all the consequence actions are complete or the main Java application process calls `fireAllRules()` again, the {DECISION_ENGINE} returns to the agenda evaluation phase to reassess rules.
+* *Working memory actions.* In this phase, the {DECISION_ENGINE} performs the rule consequence actions (the `then` portion of each rule) for all activated rules previously registered in the agenda. After all the consequence actions are complete or the rules are executed again, the {DECISION_ENGINE} returns to the agenda evaluation phase to reassess rules.
 
 .Two-phase execution process in the {DECISION_ENGINE}
 ifdef::KOGITO-COMM[]
@@ -32,7 +30,7 @@ For example, the following sample DRL rules are listed in the {DECISION_ENGINE} 
 rule "RuleA"
 salience 95
 when
-    $fact : MyFact( field1 == true )
+    $fact : /myFact[ field1 == true ]
 then
     System.out.println("Rule2 : " + $fact);
     update($fact);
@@ -41,7 +39,7 @@ end
 rule "RuleB"
 salience 100
 when
-   $fact : MyFact( field1 == false )
+   $fact : /myFact[ field1 == false ]
 then
    System.out.println("Rule1 : " + $fact);
    $fact.setField1(true);
