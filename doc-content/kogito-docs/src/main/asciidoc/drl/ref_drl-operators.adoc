@@ -1,36 +1,36 @@
 [id='ref_drl-operators_{context}']
 
-= Supported operators in DRL pattern constraints
+= Supported operators in DRL constraints
 
-DRL supports standard Java semantics for operators in pattern constraints, with some exceptions and with some additional operators that are unique in DRL. The following list summarizes the operators that are handled differently in DRL constraints than in standard Java semantics or that are unique in DRL constraints.
+DRL supports standard Java semantics for operators in constraints, with some exceptions and with some additional operators that are unique in DRL. The following list summarizes the operators that are handled differently in DRL constraints than in standard Java semantics or that are unique in DRL constraints.
 
-`.()`, `#`::
-Use the `.()` operator to group property accessors to nested objects, and use the `#` operator to cast to a subtype in nested objects. Casting to a subtype makes the getters from the parent type available to the subtype. You can use either the object name or fully qualified class name, and you can cast to one or multiple subtypes.
+`/`, `#`::
+Use the `/` operator to group property accessors to nested objects, and use the `#` operator to cast to a subtype in nested objects. Casting to a subtype makes the getters from the parent type available to the subtype. You can use either the object name or fully qualified class name, and you can cast to one or multiple subtypes.
 +
 --
-.Example patterns with nested objects
+.Example constraints with nested objects
 [source]
 ----
 // Ungrouped property accessors:
-Person( name == "mark", address.city == "london", address.country == "uk" )
+/person[ name == "mark", address.city == "london", address.country == "uk" ]
 
 // Grouped property accessors:
-Person( name == "mark", address.( city == "london", country == "uk") )
+/person[ name == "mark"]/address[ city == "london", country == "uk" ]
 ----
 
 NOTE: The period prefix `.` differentiates the nested object constraints from a method call.
 
-.Example patterns with inline casting to a subtype
+.Example constraints with inline casting to a subtype
 [source]
 ----
 // Inline casting with subtype name:
-Person( name == "mark", address#LongAddress.country == "uk" )
+/person[ name == "mark", address#LongAddress.country == "uk" ]
 
 // Inline casting with fully qualified class name:
-Person( name == "mark", address#org.domain.LongAddress.country == "uk" )
+/person[ name == "mark", address#org.domain.LongAddress.country == "uk" ]
 
 // Multiple inline casts:
-Person( name == "mark", address#LongAddress.country#DetailedCountry.population > 10000000 )
+/person[ name == "mark", address#LongAddress.country#DetailedCountry.population > 10000000 ]
 ----
 --
 
@@ -41,11 +41,11 @@ Use this operator to dereference a property in a null-safe way. The value to the
 .Example constraint with null-safe dereferencing
 [source]
 ----
-Person( $streetName : address!.street )
+/person[ $streetName : address!.street ]
 
 // This is internally rewritten in the following way:
 
-Person( address != null, $streetName : address.street )
+/person[ address != null, $streetName : address.street ]
 ----
 --
 
@@ -57,10 +57,10 @@ Use this operator to access a `List` value by index or a `Map` value by key.
 [source]
 ----
 // The following format is the same as `childList(0).getAge() == 18`:
-Person(childList[0].age == 18)
+/person[childList[0].age == 18]
 
 // The following format is the same as `credentialMap.get("jdoe").isValid()`:
-Person(credentialMap["jdoe"].valid)
+/person[credentialMap["jdoe"].valid]
 ----
 --
 
@@ -71,9 +71,9 @@ Use these operators on properties with natural ordering. For example, for `Date`
 .Example constraints with `before` operator
 [source]
 ----
-Person( birthDate < $otherBirthDate )
+/person[ birthDate < $otherBirthDate ]
 
-Person( firstName < $otherFirstName )
+/person[ firstName < $otherFirstName ]
 ----
 --
 
@@ -84,7 +84,7 @@ Use these operators as `equals()` and `!equals()` methods in constraints, instea
 .Example constraint with null-safe equality
 [source]
 ----
-Person( firstName == "John" )
+/person[ firstName == "John" ]
 
 // This is similar to the following formats:
 
@@ -95,7 +95,7 @@ java.util.Objects.equals(person.getFirstName(), "John")
 .Example constraint with null-safe not equality
 [source]
 ----
-Person( firstName != "John" )
+/person[ firstName != "John" ]
 
 // This is similar to the following format:
 
@@ -111,13 +111,13 @@ Use these operators to create an abbreviated combined relation condition that ad
 [source]
 ----
 // Simple abbreviated combined relation condition using a single `&&`:
-Person(age > 30 && < 40)
+/person[age > 30 && < 40]
 
 // Complex abbreviated combined relation using groupings:
-Person(age ((> 30 && < 40) || (> 20 && < 25)))
+/person[age ((> 30 && < 40) || (> 20 && < 25))]
 
 // Mixing abbreviated combined relation with constraint connectives:
-Person(age > 30 && < 40 || location == "london")
+/person[age > 30 && < 40 || location == "london"]
 ----
 
 ifdef::KOGITO-COMM[]
@@ -136,9 +136,9 @@ Use these operators to indicate that a field matches or does not match a specifi
 .Example constraint to match or not match a regular expression
 [source]
 ----
-Person( country matches "(USA)?\\S*UK" )
+/person[ country matches "(USA)?\\S*UK" ]
 
-Person( country not matches "(USA)?\\S*UK" )
+/person[ country not matches "(USA)?\\S*UK" ]
 ----
 --
 
@@ -150,30 +150,30 @@ Use these operators to verify whether a field that is an `Array` or a `Collectio
 [source]
 ----
 // Collection with a specified field:
-FamilyTree( countries contains "UK" )
+/familyTree[ countries contains "UK" ]
 
-FamilyTree( countries not contains "UK" )
+/familyTree[ countries not contains "UK" ]
 
 
 // Collection with a variable:
-FamilyTree( countries contains $var )
+/familyTree[ countries contains $var ]
 
-FamilyTree( countries not contains $var )
+/familyTree[ countries not contains $var ]
 ----
 
 .Example constraints with `contains` and `not contains` for a String literal
 [source]
 ----
 // Sting literal with a specified field:
-Person( fullName contains "Jr" )
+/person[ fullName contains "Jr" ]
 
-Person( fullName not contains "Jr" )
+/person[ fullName not contains "Jr" ]
 
 
 // String literal with a variable:
-Person( fullName contains $var )
+/person[ fullName contains $var ]
 
-Person( fullName not contains $var )
+/person[ fullName not contains $var ]
 ----
 
 NOTE: For backward compatibility, the `excludes` operator is a supported synonym for `not contains`.
@@ -187,9 +187,9 @@ Use these operators to verify whether a field is a member of or is not a member 
 .Example constraints with `memberOf` and `not memberOf` with a Collection
 [source]
 ----
-FamilyTree( person memberOf $europeanDescendants )
+/familyTree[ person memberOf $europeanDescendants ]
 
-FamilyTree( person not memberOf $europeanDescendants )
+/familyTree[ person not memberOf $europeanDescendants ]
 ----
 --
 
@@ -201,7 +201,7 @@ Use this operator to verify whether a word has almost the same sound, using Engl
 [source]
 ----
 // Match firstName "Jon" or "John":
-Person( firstName soundslike "John" )
+/person[ firstName soundslike "John" ]
 ----
 --
 
@@ -213,13 +213,13 @@ Use this operator to verify whether a field that is a `String` starts with or en
 [source]
 ----
 // Verify what the String starts with:
-Message( routingValue str[startsWith] "R1" )
+/message[ routingValue str[startsWith] "R1" ]
 
 // Verify what the String ends with:
-Message( routingValue str[endsWith] "R2" )
+/message[ routingValue str[endsWith] "R2" ]
 
 // Verify the length of the String:
-Message( routingValue str[length] 17 )
+/message[ routingValue str[length] 17 ]
 ----
 --
 
@@ -235,10 +235,10 @@ endif::[]
 .Example constraints with `in` and `notin`
 [source]
 ----
-Person( $color : favoriteColor )
-Color( type in ( "red", "blue", $color ) )
+/person[ $color : favoriteColor ]
+/color[ type in ( "red", "blue", $color ) ]
 
-Person( $color : favoriteColor )
-Color( type notin ( "red", "blue", $color ) )
+/person[ $color : favoriteColor ]
+/color[ type notin ( "red", "blue", $color ) ]
 ----
 --
