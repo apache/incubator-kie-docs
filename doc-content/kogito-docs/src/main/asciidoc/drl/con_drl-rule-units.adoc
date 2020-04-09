@@ -44,7 +44,7 @@ rule "Using a rule unit with a declared type"
 end
 ----
 
-To separate the fact types from the rule unit for use with other DRL rules, you can declare the types in a separate DRL file and then use the DRL rule file to declare the data sources using the `RuleUnitData` interface implementation:
+To separate the fact types from the rule unit for use with other DRL rules, you can declare the types in a separate DRL file and then use the DRL rule file to declare the data sources by using the `RuleUnitData` interface implementation:
 
 .Example DRL type declaration as a separate file
 [source]
@@ -89,7 +89,7 @@ You can add several rules to the same DRL file, or further break down the rule s
 
 == Rule unit use case
 
-As an additional rule unit use case, consider the following example decision service that evaluates incoming data from a heat sensor for temperature measurements and produces alerts when the temperature is above a given threshold.
+As an additional rule unit use case, consider the following example decision service that evaluates incoming data from a heat sensor for temperature measurements and produces alerts when the temperature is above a specified threshold.
 
 This example service uses the following `types.drl` file in the `src/main/resources/org/acme` folder of the {PRODUCT} project to declare the `Temperature` and the `Alert` fact types:
 
@@ -112,9 +112,9 @@ To define DRL rules that pattern-match against `Temperature` values, the example
 
 The `DataStream` data source is an append-only store for incoming data, similar to a queue. This type of data source is logical for both sources in this example because the temperature data is coming from an external source (the sensor) and the service publishes the alerts externally as they are produced.
 
-The example service uses the following `MonitoringService.drl` file in the same `src/main/resources/com/acme` folder of the {PRODUCT} project to declare the data sources for the fact types and defines the rule unit rules:
+The example service uses the following `MonitoringService.drl` file in the same `src/main/resources/com/acme` folder of the {PRODUCT} project to declare the data sources for the fact types and defines the rules for the rule unit:
 
-.Example DRL rule unit rule file
+.Example DRL rule unit file
 [source]
 ----
 package com.acme;
@@ -200,7 +200,7 @@ temperature.update();
 temperature.clear();
 ----
 
-Subscribers to a data source are known as _data processors_. A data processor implements the `DataProcessor<T>` interface. This interface contains callbacks to all the events that a subscribed data source can trigger:
+Subscribers to a data source are known as _data processors_. A data processor implements the `DataProcessor<T>` interface. This interface contains callbacks to all the events that a subscribed data source can trigger.
 
 .Example DataStream data processor
 [source,java]
@@ -265,18 +265,18 @@ public class MonitoringService implements RuleUnitData {
 }
 ----
 
-In this scenario, the DRL rules files then stand alone in the `src/main/resources` folder and consist of the `unit` and the rules, with no direct declarations, as shown in the following example:
+In this scenario, the DRL rule files then stand alone in the `src/main/resources` folder and consist of the `unit` and the rules, with no direct declarations, as shown in the following example:
 
-.Example rule unit declaration in a DRL file
+.Example DRL rule unit file without declarations
 [source]
 ----
 package com.acme;
 unit MonitoringService;
 
 rule "tooHot"
-when
+  when
     $temp : /temperature[value >= 80]
-then
+  then
     alertData.append(new Alert("HIGH", "Temperature exceeds threshold: " + temp.value));
 end
 ----
@@ -294,9 +294,9 @@ package com.acme;
 unit MonitoringService;
 
 rule "tooHot"
-when
+  when
     $temp : Temperature( value >= 80 ) from temperature
-then
+  then
     alertData.add(new Alert("HIGH", "Temperature exceeds threshold: " + temp.value));
 end
 ----
