@@ -8,9 +8,9 @@ This `master-kogito` branch of the `kie-docs` repository contains the source of 
 
 As a Kogito user, developer, or technical writer, you can contribute to Kogito documentation by forking and cloning this repository, updating or adding content, and submitting a pull request for review.
 
-**NOTE**: The other branches in the `kie-docs` repository contain the source of the Drools, jBPM, and OptaPlanner documentation, which are the basis for [Red Hat Decision Manager](https://access.redhat.com/documentation/en-us/red_hat_decision_manager/) and [Red Hat Process Automation Manager](https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/).
+>**NOTE**: The other branches in the `kie-docs` repository contain the source of the Drools, jBPM, and OptaPlanner documentation, which are the basis for [Red Hat Decision Manager](https://access.redhat.com/documentation/en-us/red_hat_decision_manager/) and [Red Hat Process Automation Manager](https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/).
 
-**IMPORTANT**: Kogito is currently available for Development Preview. Development Preview releases contain features and APIs that might not be fully tested and that might change in the final GA version. Users are discouraged from using Development Preview software in production or for business-critical workloads.  Because this is not production-ready software, users are not able to open support tickets. To learn more about Kogito, please contact your Red Hat representative or send an email to Kogito-earlyaccess@redhat.com. Red Hat will address reported issues at its own discretion.
+>**IMPORTANT**: Kogito is currently available for Development Preview. Development Preview releases contain features and APIs that might not be fully tested and that might change in the final GA version. Users are discouraged from using Development Preview software in production or for business-critical workloads.  Because this is not production-ready software, users are not able to open support tickets. To learn more about Kogito, please contact your Red Hat representative or send an email to Kogito-earlyaccess@redhat.com. Red Hat will address reported issues at its own discretion.
 
 Contents
 =================
