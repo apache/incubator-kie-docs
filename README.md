@@ -68,7 +68,7 @@ The files in the `master-kogito` branch of the `kie-docs` repository are organiz
 ├── _artifacts
 ├── _images
 ├── assemblies
-    ├── assembly_kogito-creating-running
+    ├── assembly-kogito-creating-running
         ├── kog
             ├── master-docinfo.xml
             └── master.adoc
