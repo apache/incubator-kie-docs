@@ -43,6 +43,32 @@ oc create -f kubernetes/role-binding.yaml
 +
 For more information about configuring role-based access control in {OPENSHIFT}, see https://access.redhat.com/documentation/en-us/openshift_container_platform/4.3/html/authentication/using-rbac[Using RBAC to define and apply permissions] in the {OPENSHIFT} product documentation.
 +
+. Use the `oc` command to detect the valid values for the user ID and group ID that you must set in the Docker file. Enter the following command:
++
+----
+oc describe project <projectname>
+----
++
+In this command, replace `<projectname>` with the name of your project.
++
+In the output of the command, find lines that list `supplemental-groups` and `uid-range`, similar to the following example:
++
+----
+openshift.io/sa.scc.supplemental-groups=1000160000/10000
+openshift.io/sa.scc.uid-range=1000160000/10000
+----
++
+. In the `springboot` directory, edit the `Dockerfile` file. Find the following line:
++
+----
+RUN groupadd -r app -g <id_group> && useradd -u <id_user> -r -g app -m -d /app -s /sbin/nologin -c "App user" app && chmod 755 /app----
+----
+In this line, replace `<id_group>` with a value in the `supplemental-groups` interval and `<id_user>` with a value in the `uid-range` interval:
++
+----
+RUN groupadd -r app -g 1000160001 && useradd -u 1000160001 -r -g app -m -d /app -s /sbin/nologin -c "App user" app && chmod 755 /app
+----
++
 . In the `springboot` directory, enter the following commands to create the image for deployment and push it into the repository configured for your OpenShift environment:
 +
 ----
