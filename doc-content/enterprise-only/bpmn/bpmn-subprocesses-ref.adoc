@@ -25,14 +25,32 @@ An embedded subprocess encapsulates a part of the process. It must contain a sta
 
 An ad hoc subprocess or process contains a number of embedded inner activities and is intended to be executed with a more flexible ordering compared to the typical routing of processes. Unlike regular processes, an ad hoc subprocess does not contain a complete, structured BPMN2 diagram description, for example, from start event to end event. Instead, the ad hoc subprocess contains only activities, sequence flows, gateways, and intermediate events. An ad hoc subprocess can also contain data objects and data associations. The activities within the ad hoc subprocesses are not required to have incoming and outgoing sequence flows. However, you can specify sequence flows between some of the contained activities. When used, sequence flows provide the same ordering constraints as in a regular process. To have any meaning, intermediate events must have outgoing sequence flows and they can be triggered multiple times while the ad hoc subprocess is active.
 
-
 .Reusable subprocess
-Reusable subprocesses appear collapsed within the containing process.
+Reusable subprocesses appear collapsed within the parent process. To configure a reusable subprocess, select the reusable subprocess, click image:getting-started/diagram_properties.png[], and expand *Implementation/Execution*. Set the following properties:
+
+* *Called Element*: The ID of the subprocess that the activity calls and instantiates.
+* *Independent*: If selected, the subprocess is started as an independent process. If not selected, the active subprocess is canceled when the parent process is terminated.
+* *Abort Parent*: If selected, non-independent reusable subprocesses can abort the parent process when there is an error during the execution of the called process instance. For example, when there's an error when trying to invoke the subprocess or when the subprocess instance is aborted. This property is visible only when the *Independent* property is not selected. The following rules apply:
+** If the reusable subprocess is independent, *Abort parent* is not available.
+** If the reusable subprocess is not independent, *Abort parent* is available.
+* *Wait for completion*: If selected, the specified *On Exit Action* is not performed until the called subprocess instance is terminated. The parent process execution continues when the *On Exit Action* completes. This property is selected (set to `true`) by default.
+* *Is Async*: Select if the task should be invoked asynchronously and cannot be executed instantly.
+* *Multiple Instance*: Select to execute the subprocess elements a specified number of times. If selected, the following options are available:
+** *MI Execution mode*: Indicates if the multiple instances execute in parallel or sequentially. If set to *Sequential*, new instances are not created until the previous instance completes.
+** *MI Collection input*: Select a variable that represents a collection of elements for which new instances are created. The subprocess is instantiated as many times as the size of the collection.
+** *MI Data Input*: Specifies the name of the variable containing the selected element in the collection. The variable is used to access elements in the collection.
+** *MI Collection output*: Optional variable that represents the collection of elements that will gather the output of the multi-instance node.
+** *MI Data Output*: Specifies the name of the variable that is added to the output collection that you selected in the *MI Collection output* property.
+** *MI Completion Condition (mvel)*: MVEL expression that is evaluated on each completed instance to check if the specified multiple instance node can complete. If it evaluates to `true`, all remaining instances are canceled.
+* *On Entry Action*: A Java or MVEL script that specifies an action at the start of the task.
+* *On Exit Action*: A Java or MVEL script that specifies an action at the end of the task.
+* *SLA Due Date*: The date that the service level agreement (SLA) expires.
+
+.Reusable subprocess properties
+image::BPMN2/subproc-props.png[A screenshot of Subprocess properties]
 
 [[_event_sub_process]]
 .Event subprocess
-
-
 An event subprocess becomes active when its start event is triggered. It can interrupt the parent process context or run in parallel with it.
 
 With no outgoing or incoming connections, only an event or a timer can trigger the subprocess. The subprocess is not part of the regular control flow.
