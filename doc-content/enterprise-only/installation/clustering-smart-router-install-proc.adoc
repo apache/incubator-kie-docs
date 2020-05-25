@@ -1,21 +1,9 @@
-[id='clustering-smartrouter-install-proc']
+[id='clustering-smart-router-install-proc']
 = Clustering {KIE_SERVERS} with Smart Router
 
-You can use Smart Router to aggregate multiple independent {KIE_SERVER} instances as though they are a single server. It performs the role of an intelligent load balancer because it can route requests to individual {KIE_SERVERS} and aggregate data from different {KIE_SERVERS}. Smart Router uses aliases to perform as a proxy. Smart Router performs the following tasks:
+You can use Smart Router to aggregate multiple independent {KIE_SERVER} instances as though they are a single server. It performs the role of an intelligent load balancer because it can route requests to individual {KIE_SERVER}s and aggregate data from different {KIE_SERVER}s. Smart Router uses aliases to perform as a proxy.
 
-* Collects information from various server instances in a single client request
-* Finds the correct server for a specific request
-* Aggregates responses from different servers
-* Provides efficient load balancing
-* Manages changing environments, for example adding and removing server instances
-* Manages registration with the {CONTROLLER}
-
-This section describes how to install Smart Router and configure it for a {PRODUCT} runtime environment.
-
-[NOTE]
-====
-Load balancing requests for Smart router cluster must be managed externally, using standard load balancing tools.
-====
+This section describes how to install Smart Router and configure it for a Red Hat {PRODUCT_SHORT} runtime environment.
 
 .Prerequisites
 * {KIE_SERVER} is installed on each node of a {EAP} {EAP_VERSION} cluster.
@@ -26,9 +14,9 @@ Load balancing requests for Smart router cluster must be managed externally, usi
 * *Version: {PRODUCT_VERSION}*
 . Download *{PRODUCT} {PRODUCT_VERSION_LONG} Add-Ons*.
 . Extract the downloaded `{PRODUCT_FILE}-add-ons.zip` file to a temporary directory. The `{PRODUCT_INIT}-{PRODUCT_VERSION}-smart-router.jar` file is in the extracted `{PRODUCT_FILE}-add-ons` directory.
-. Copy the `{PRODUCT_INIT}-{PRODUCT_VERSION}-smart-router.jar` file the location where you will run the file.
+. Copy the `{PRODUCT_INIT}-{PRODUCT_VERSION}-smart-router.jar` file to the location where you will run the file.
 
-. From the temporary directory, enter the following command to start Smart Router:
+. Enter the following command to start Smart Router:
 +
 [source]
 ----
@@ -40,7 +28,7 @@ java
 -Dorg.kie.server.controller.pwd=<CONTROLLER_PWD>
 -Dorg.kie.server.router.config.watcher.enabled=true
 -Dorg.kie.server.router.repo=<NFS_STORAGE>
--jar rhpam-7.6-smart-router.jar
+-jar rhpam-7.7-smart-router.jar
 ----
 +
 The properties in the preceding command have the following default values:
@@ -56,21 +44,6 @@ org.kie.server.router.repo= <CURRENT_WORKING_DIR>
 org.kie.server.router.config.watcher.enabled=false
 ----
 +
-[NOTE]
-====
-The router is capable of providing an aggregate sort, however the data returned when used through the management console is in raw format. Therefore, sorting is in whatever way  individual servers return.
-
-Paging is supported in its standard format.
-====
-. Optional: To start Smart Router from the client side, use the Smart Router URL instead of the {KIE_SERVER} URL, for example:
-+
-[source]
-----
-KieServicesConfiguration config = KieServicesFactory.newRestConfiguration("http://smartrouter.example.com:9000", "USERNAME", "PASSWORD");
-----
-+
-In this example, `smartrouter.example.com` is the Smart Router URL, and `USERNAME` and `PASSWORD` are the log in credentials for the Smart Router configuration.
-+
 `org.kie.server.controller` is the URL of the server controller, for example:
 +
 [source]
@@ -78,83 +51,13 @@ In this example, `smartrouter.example.com` is the Smart Router URL, and `USERNAM
 org.kie.server.controller=http://<HOST>:<PORT>/controller/rest/controller
 ----
 +
-`org.kie.server.router.config.watcher.enabled` is an optional setting to enable the watcher service system property.
+`org.kie.server.router.config.watcher.enabled` is an optional settings to enable the watcher service system property.
 
-. Optional: To start Smart Router with HTTPS enabled, use the TLS keystore properties, for example:
+. To access Smart Router from the client side, use the Smart Router URL instead of the {KIE_SERVER} URL, for example:
 +
+[source]
 ----
-org.kie.server.router.tls.keystore = <KEYSTORE_PATH>
-org.kie.server.router.tls.keystore.password = <KEYSTORE_PWD>
-org.kie.server.router.tls.keystore.keyalias = <KEYSTORE_ALIAS>
-org.kie.server.router.tls.port = <HTTPS_PORT>
--jar kie-server-router-proxy-7.10.0-SNAPSHOT.jar
+KieServicesConfiguration config = KieServicesFactory.newRestConfiguration("http://smartrouter.example.com:9000", "USERNAME", "PASSWORD");
 ----
 +
-`org.kie.server.router.tls.port` is a property used to configure the HTTPS port. The default HTTPS port value is `9443`.
-
-[NOTE]
-====
-You must create the container directly against the `kie-server`. For example:
-
-----
-$ curl -v -X POST -H 'Content-type: application/xml' -H 'X-KIE-Content-Type: xstream' -d @create-container.xml -u ${KIE_CRED} http://${KIE-SERVER-HOST}:${KIE-SERVER-PORT}/kie-server/services/rest/server/config/
-----
-
-----
-$ cat create-container.xml
-<script>
-  <create-container>
-    <container container-id="example:timer-test:1.1">
-      <release-id>
-        <group-id>example</group-id>
-        <artifact-id>timer-test</artifact-id>
-        <version>1.1</version>
-      </release-id>
-      <config-items>
-        <itemName>RuntimeStrategy</itemName>
-        <itemValue>PER_PROCESS_INSTANCE</itemValue>
-        <itemType></itemType>
-      </config-items>
-    </container>
-  </create-container>
-</script>
-----
-
-A message about the deployed container is displayed in the smart-router console. For example:
-
-----
-INFO: Added http://localhost:8180/kie-server/services/rest/server as server location for container example:timer-test:1.1
-----
-
-To display a list of containers, enter the following command:
-
-----
-$ curl http://localhost:9000/mgmt/list
-----
-
-The list of containers is displayed:
-
-----
-{
-  "containerInfo": [{
-    "alias": "timer-test",
-    "containerId": "example:timer-test:1.1",
-    "releaseId": "example:timer-test:1.1"
-  }],
-  "containers": [
-    {"example:timer-test:1.1": ["http://localhost:8180/kie-server/services/rest/server"]},
-    {"timer-test": ["http://localhost:8180/kie-server/services/rest/server"]}
-  ],
-  "servers": [
-    {"kieserver2": []},
-    {"kieserver1": ["http://localhost:8180/kie-server/services/rest/server"]}
-  ]
-}
-----
-
-To initiate a process using the Smart Router URL, enter the following command:
-
-----
-$ curl -s -X POST -H 'Content-type: application/json' -H 'X-KIE-Content-Type: json' -d '{"timerDuration":"9s"}' -u kieserver:kieserver1! http://localhost:9000/containers/example:timer-test:1.1/processes/timer-test.TimerProcess/instances
-----
-====
+In this example, `smartrouter.example.com` is the Smart Router URL, and `USERNAME` and `PASSWORD` are the log in credentials for the Smart Router configuration.
