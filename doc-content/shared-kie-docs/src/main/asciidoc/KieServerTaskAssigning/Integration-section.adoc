@@ -1,0 +1,139 @@
+= Integration alternatives
+
+System integrators usually consume the human tasks available in the <<Process Runtime kie-server, Process Runtime kie-server>> for different purposes.
+One example is the {CENTRAL} "Task Inbox" in this case, {CENTRAL} acts as an "integrator" which means that the human tasks are consumed from the <<Process Runtime kie-server, Process Runtime kie-server>> by using the kie-server queries APIs and applying different filtering criterias.
+Finally these tasks are listed in the "Task Inbox" UI, etc. In this way, {CENTRAL} is decoupled from the <<Process Runtime kie-server, Process Runtime kie-server>>, etc.
+
+The next topics present a set of queries similar to queries used by the {CENTRAL} "Task Inbox".
+These queries might facilitate integrations in cases where the task assigning integration is enabled.
+
+== Task Assigning Human Tasks Query
+
+This query facilitates the consumption of the available human tasks. The task can integrate additional information depending on the query variant.
+It is up to the "integrator" to select the query variant that best supports it’s needs.
+
+=== Filtering parameters
+
+The available filtering parameters are defined in the following kie-server-api enums:
+
+[source, java]
+----
+org.kie.server.api.model.definition.TaskField
+org.kie.server.api.model.taskassigning.PlanningTaskField
+----
+
+Both classes are found in the following maven artifact:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-api</artifactId>
+</dependency>
+----
+
+The following table shows the parameter name and the expected type.
+
+[cols="20%,10%,70%" frame="all", options="header"]
+|===
+|Parameter
+|Type
+|Description
+
+| ACTIVATIONTIME | Date | Time when this task was activated.
+| ACTUALOWNER | String | Actual owner assigned to this task - only set when task is claimed.
+| CREATEDBY | String | User who created this task.
+| CREATEDON | Date | Date when task was created.
+| DEPLOYMENTID | String | Deployment id this task is part of, typically the {KIE_SERVER} container.
+| DESCRIPTION | String | Description of the task if any.
+| DUEDATE | Date | Due date set on this task if any.
+| NAME | String | Name of the task.
+| PARENTID | Long | Parent task id if any.
+| PRIORITY | Integer | Priority of the task.
+| PROCESSID | String | Process definition id that this task belongs to.
+| PROCESSINSTANCEID | Long | Process instance id that this task is associated with.
+| PROCESSSESSIONID | Long | KieSession id used to create this task.
+| STATUS | String | Current status of the task.
+| TASKID | Long | Identifier of task.
+| WORKITEMID | Long | Identifier of work item assigned on process side to this task id.
+| PTTASKID | Long | Same value as TASKID.
+| ASSIGNEDUSER | String | Same value as the ACTUALOWNER for published tasks.
+| PUBLISHED | Integer | Indicates if the task is published.
+For example "published = 1" can be used as filtering criteria in cases of filtering by the task that are currently assigned by the task assigning integration.
+|===
+
+=== Querying the human tasks as TaskData instances
+
+This query execution variant enables getting the result values as instances of:
+
+[source, java]
+----
+org.kie.server.api.model.taskassigning.TaskData
+----
+
+The following example shows how to use this variant:
+
+Example 1)
+
+[source, java]
+----
+// Create the kie-server query services client.
+QueryServicesClient queryServices = createQueryServicesClient();
+
+// Set the filtering and ordering criteria and consider only the currently published tasks.
+QueryFilterSpec filter = new QueryFilterSpecBuilder()
+    .equalsTo(TaskField.STATUS.toString(), "Reserved", "InProgress", "Completed")
+    .equalsTo(PlanningTaskField.PUBLISHED.toString(), 1)
+    .oderBy(TaskField.TASKID.toString(), true)
+    .get();
+
+// Execute the query
+List<TaskData> result = queryServices.query(TaskAssigningQueries.JBPM_HUMAN_TASKS_QUERY,
+                                            TaskAssigningQueries.TASK_DATA_QUERY_MAPPER,
+                                            filter,
+                                            0,    // staring page
+                                            30,   // page size
+                                            TaskData.class);
+----
+
+In this case, only the tasks currently assigned by the task assigning integration will be considered.
+This is the usual scenario when task assigning integration is enabled, because it is expected that the tasks are consumed and executed accordingly with the generated planning.
+
+[NOTE]
+====
+The task inputs and potential owners are not loaded by this query.
+====
+
+
+Example 2)
+
+[source, java]
+----
+// Create the kie-server query services client.
+QueryServicesClient queryServices = createQueryServicesClient();
+
+// Set the filtering and ordering criteria and consider all of the tasks.
+QueryFilterSpec filter = new QueryFilterSpecBuilder()
+    .equalsTo(TaskField.STATUS.toString(), "Ready”, Reserved", "InProgress", "Completed")
+    .oderBy(TaskField.TASKID.toString(), true)
+    .get();
+
+// Execute the query
+List<TaskData> result = queryServices.query(TaskAssigningQueries.JBPM_HUMAN_TASKS_QUERY,
+                                            TaskAssigningQueries.TASK_DATA_QUERY_MAPPER,
+                                            filter,
+                                            0,    // staring page
+                                            30,   // page size
+                                            TaskData.class);
+----
+
+In this case all of the tasks will be considered but only the property assigned by the task assigning integration will have the TaskData.planningTask filled.
+It means that non assigned tasks or not yet managed by the task assigning integration might be included in the results.
+This alternative facilitates a more advanced processing of the "potential" tasks, however it is strongly encouraged to make available to the users only the tasks that are currently assigned by the task assigning integration . i.e. the ones with TaskData.planningTask != null otherwise the integration becomes senseless.
+
+[NOTE]
+====
+The task inputs and potential owners are not loaded by this query.
+====
+
+See {KIE_SERVER} API documentation for more information on how to create the {KIE_SERVER} clients and the query API general functioning.
