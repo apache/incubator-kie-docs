@@ -1,0 +1,156 @@
+[id='con-kogito-operator-architecture_{context}']
+= {PRODUCT} Operator architecture
+
+The {PRODUCT} Operator is written in https://golang.org/[Go] and is built with the https://sdk.operatorframework.io/[Operator SDK]. The {PRODUCT} Operator uses the https://kubernetes.io/docs/concepts/overview/kubernetes-api/[Kubernetes API] for most of the deployment tasks that the operator facilitates and for other internal operations.
+
+The {PRODUCT} Operator uses the following custom resources to deploy {PRODUCT} domain-specific services (the services that you develop), {PRODUCT} supporting services, and middleware infrastructure components:
+
+* `KogitoApp`: Defines the build and deployment configurations for {PRODUCT} domain-specific services deployed on OpenShift
+ifdef::KOGITO-COMM[]
+* `KogitoRuntime`: Defines the deployment configurations for {PRODUCT} domain-specific services deployed on Kubernetes or OpenShift from a container image in an image registry
+endif::[]
+* `KogitoDataIndex`, `KogitoJobsService`, and `KogitoMgmtConsole`: Define the deployment configurations for the {PRODUCT} Data Index Service, Jobs Service, and Management Console
+* `KogitoInfra`: Defines the relevant middleware infrastructure component or third-party operator for the {PRODUCT} service, such as Infinispan for persistence or Apache Kafka for messaging
+
+.Additional resources
+* https://github.com/kiegroup/kogito-cloud-operator[{PRODUCT} Operator source]
+* https://github.com/kiegroup/kogito-cloud-operator/tree/master/deploy/examples[{PRODUCT} Operator deployment examples]
+* https://sdk.operatorframework.io/docs/[Operator SDK documentation]
+* https://github.com/operator-framework/operator-sdk/tree/master/example[Operator SDK examples]
+
+== {PRODUCT} Operator dependencies on third-party operators
+
+The {PRODUCT} Operator uses the following third-party operators to deploy {PRODUCT} service infrastructure components:
+
+* *https://github.com/infinispan/infinispan-operator[Infinispan Operator]*: Used to deploy Infinispan Server instances for process data persistence in {PRODUCT} services
+* *https://github.com/strimzi/strimzi-kafka-operator[Strimzi Operator]*: Used to deploy Apache Kafka clusters with Zookeeper for messaging in {PRODUCT} services
+* *https://github.com/keycloak/keycloak-operator[Keycloak Operator]*: Used to deploy Keycloak server instances for security and single sign-on capabilities in {PRODUCT} services
+
+When you enable an infrastructure mechanism during {PRODUCT} service deployment or in the corresponding custom resource, such as in the `KogitoApp` resource, the {PRODUCT} Operator uses the relevant third-party operator to create the infrastructure.
+
+For example, the following `KogitoApp` custom resource uses the `spec.enablePersistence` and `spec.enableEvents` configurations to enable Infinispan persistence and Kafka messaging for the {PRODUCT} service:
+
+.Example {PRODUCT} service resource with persistence and messaging enabled
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoApp
+metadata:
+  name: kogito-travel-agency
+spec:
+  enableEvents: true
+  enablePersistence: true
+  build:
+    gitSource:
+      contextDir: kogito-travel-agency
+      uri: "https://github.com/kiegroup/kogito-examples/"
+----
+
+In this example, the {PRODUCT} Operator uses the Infinispan Operator to deploy the Infinispan Server instance for persistence and uses the Strimzi Operator to deploy the Kafka cluster for event messaging.
+
+When you install the {PRODUCT} Operator, these third-party operators are also installed automatically by the Operator Lifecycle Manager (OLM) and defined in the {PRODUCT} Operator `ClusterServiceVersion` (CSV) manifest file:
+
+.Example CSV manifest file for the {PRODUCT} Operator
+[source,yaml]
+----
+required:
+    - description: Represents an Infinispan cluster
+      displayName: Infinispan Cluster
+      kind: Infinispan
+      name: infinispans.infinispan.org
+      version: v1
+    - description: Represents a Kafka cluster
+      displayName: Kafka
+      kind: Kafka
+      name: kafkas.kafka.strimzi.io
+      version: v1beta1
+    - description: Represents a topic inside a Kafka cluster
+      displayName: Kafka Topic
+      kind: KafkaTopic
+      name: kafkatopics.kafka.strimzi.io
+      version: v1beta1
+    - description: Represents a Keycloak server to provide SSO
+      displayName: Keycloak
+      kind: Keycloak
+      name: keycloaks.keycloak.org
+      version: v1alpha1
+----
+
+If the required third-party operators are not available to the {PRODUCT} Operator during {PRODUCT} service runtime, then the {PRODUCT} Operator cannot generate the infrastructure components and a user must install the infrastructure components manually.
+
+The {PRODUCT} Data Index Service similarly depends on Infinispan and Kafka infrastructure components. Without Infinispan persistence and Kafka messaging, the Data Index Service cannot function properly. However, you can specify whether the Data Index Service uses the general infrastructure components that the {PRODUCT} Operator generates or a custom alternative for that component.
+
+For example, by default, the `KogitoDataIndex` resource specifies the `useKogitoInfra` configuration for both Infinispan and Kafka in order to use the corresponding infrastructure components generated by the {PRODUCT} Operator:
+
+.Default `KogitoDataIndex` resource configuration with persistence and messaging
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoDataIndex
+metadata:
+  name: data-index
+spec:
+  replicas: 1
+  kafka:
+    useKogitoInfra: true
+  infinispan:
+    useKogitoInfra: true
+----
+
+In this case, the Data Index Service is deployed after the {PRODUCT} Operator deploys the infrastructure components to support Infinispan and Kafka for the service.
+
+To use a custom infrastructure configuration instead of the default {PRODUCT} Operator infrastructures, you can modify the resource definition as needed.
+
+For example, the following `KogitoDataIndex` resource uses custom configurations for an Infinispan infrastructure:
+
+.Modified `KogitoDataIndex` resource with custom Infinispan configurations
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoDataIndex
+metadata:
+  name: data-index
+spec:
+  replicas: 1
+  kafka:
+    useKogitoInfra: true
+  infinispan:
+    useAuth: true
+    credentials:
+      secretName: infinispan-credentials
+      usernameKey: admin
+      passwordKey: 1ei59dj3!
+    uri: my-infinispan-server:11222
+    saslMechanism: DIGEST-MD5
+    useKogitoInfra: false
+----
+
+In this case, the {PRODUCT} Operator does not deploy an Infinispan Server instance, but connects to the `my-infinispan-server` server with the specified credentials.
+
+== {PRODUCT} Operator core package structure
+
+The {PRODUCT} Operator uses the following core packages. Your understanding of the {PRODUCT} Operator package structure can help you use the operator more effectively or contribute to the development of the operator.
+
+.{PRODUCT} Operator core package structure
+image::kogito/openshift/kogito-operator-packages.png[Image of Kogito Operator package layout]
+
+The following list describes the function and interaction of these core packages:
+
+* `cmd`: Contains the operator entry point and CLI implementation
+** `manager`: Serves as the entry point for the {PRODUCT} Operator image
+** `kogito`: Provides the implementation for the {PRODUCT} CLI
+* `test`: Contains the implementation for Behavior Driven Development (BDD) tests based on https://github.com/cucumber/godog[Godog] (by Cucumber for Go)
+** `config`: Provides the configuration for BDD tests
+** `features`: Defines the features for BDD tests
+** `framework`: Provides the support API framework to interact with other operator components
+** `steps`: Defines BDD test steps
+* `pkg`: Contains the implementation for the {PRODUCT} Operator
+** `apis`: Defines the custom resource definition types for the resources that are managed by the {PRODUCT} Operator
+** `client`: Serves as a wrapper for the Kubernetes and OpenShift clients
+** `controller`: Defines the business logic for how the {PRODUCT} Operator responds to changes to the resources that are managed by the operator
+** `framework`: Provides the common code related to any Kubernetes operator for all controllers
+** `infrastructure`: Provides the common code related to the {PRODUCT} Operator infrastructure for all controllers, such as external endpoints among the services that are managed by the operator
+** `logger`: Provides the implementation for the common logger for all other packages, based on https://github.com/uber-go/zap[Zap] (by Uber Go)
+** `util`: Provides the common https://golang.org/[Go] utilities used across the project
+
+To explore {PRODUCT} Operator packages or contribute to the operator development, see the https://github.com/kiegroup/kogito-cloud-operator[{PRODUCT} Operator source] repository in GitHub.
