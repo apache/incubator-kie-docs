@@ -18,11 +18,7 @@ Optionally, you can set custom configuration for {KIE_SERVERS}. In this case, de
 . In the *Deployments* field, enter the number of similar {KIE_SERVERS} that are to be deployed. The installer can deploy several {KIE_SERVERS} with the same configuration. The identifiers and names of the {KIE_SERVERS} are modified automatically and remain unique.
 . If you created the secret for {KIE_SERVER} according to the instructions in <<secrets-kie-create-proc>>, enter the name of the secret in the *Keystore secret* field.
 . Optionally, enter the number of replicas for the {KIE_SERVER} in the *Replicas* field.
-. If you want to use a custom image for the {KIE_SERVER}, 
-//ifdef::PAM[]
-//for example, if you created an image with an external database driver according to instructions in <<externaldb-build-proc>>, 
-//endif::PAM[]
-complete the following additional steps:
+. If you want to use a custom image for the {KIE_SERVER}, complete the following additional steps:
 .. Click *Set KIE Server image*.
 .. If you want to use a Docker image name and not an OpenShift image stream tag, change the *Kind* value to `DockerImage`.
 .. Enter the name of the image stream in the *Name* field. 
@@ -60,7 +56,7 @@ ifdef::PAM[]
 ** `h2`: A built-in `h2` database engine that does not require a separate pod. Do not scale the {KIE_SERVER} pod if you use this setting.
 ** `external`: An external database server. 
 . If you selected any database except `external`, a Persistent Volume Claim will be created to store the database. Optionally, in the *Size* field, enter the size of the persistence volume to create.
-. If you selected the `external` database and you want to use any database server except PostgreSQL or MySQL, you must provide a {KIE_SERVER} extension image with the database server driver according to instructions in <<externaldb-build-proc>>. To configure the {KIE_SERVER} to use this extension image, make the following changes:
+. Optionally, if you selected the `external` database, configure the {KIE_SERVER} extension image. If you want to use any database server except PostgreSQL, MySQL, or MariaDB, you must provide a {KIE_SERVER} extension image with the database server driver according to instructions in <<externaldb-build-proc>>. To configure the {KIE_SERVER} to use this extension image, make the following changes:
 .. Select the *Enable extension image stream* box.
 .. In the *Extension image stream tag* field, enter the ImageStreamTag definition for the image that you created, for example, `jboss-kie-db2-extension-openshift-image:11.1.4.4`
 .. Optionally, in the *Extension image stream namespace* field, enter the namespace into which you pushed the image. If you do not enter any value in this field, the operator expects the image to be in the `openshift` namespace.
@@ -76,14 +72,17 @@ ifdef::PAM[]
 *** `oracle`
 *** `sybase`
 +
-.. *Dialect*: Enter the Hibernate dialect for the server, depending on the server type:
+.. *Dialect*: Enter the Hibernate dialect for the server, depending on the server type. The common settings are:
 +
-*** `org.hibernate.dialect.MySQL5InnoDBDialect` (used for MySQL and MariaDB)
-*** `org.hibernate.dialect.PostgreSQL82Dialect`
+*** `org.hibernate.dialect.MySQL5InnoDBDialect` (used for MySQL version 5.7 and for MariaDB)
+*** `org.hibernate.dialect.MySQL8Dialect` (used for MySQL version 8)
+*** `org.hibernate.dialect.PostgreSQL94Dialect`
 *** `org.hibernate.dialect.SQLServer2012Dialect` (used for MS SQL)
 *** `org.hibernate.dialect.DB2Dialect`
 *** `org.hibernate.dialect.Oracle10gDialect`
-*** `org.hibernate.dialect.SybaseASE157Dialect`
+*** `org.hibernate.dialect.SybaseASE15Dialect`
++
+For a complete list of supported dialects, see Table A.7 in https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/7.3/html-single/developing_hibernate_applications/index?lb_target=stage#hibernate_properties[Hibernate properties] in the {EAP} documentation.
 +
 .. *Host*: Enter the host name of the external database server.
 .. *Port*: Enter the port number of the external database server.
@@ -93,6 +92,11 @@ ifdef::PAM[]
 .. *User name* and *Password*: Enter the user name and password for the external database server.
 .. *Background validation*: Optionally, select this box to enable background SQL validation and enter the background validation interval.
 .. Optionally, set the minimum and maximum connection pool sizes, valid connection checker class, and exception sorter class for the database server.
+. If you are using a MySQL version 8 external database server, enable the `mysql_native_password` plugin and use it for authentication. For instructions about this pluding, see https://dev.mysql.com/doc/refman/8.0/en/native-pluggable-authentication.html[Native Pluggable Authentication] in the _MySQL 8.0 Reference Manual_. 
++
+If you are using a MySQL version 8 image provided by Red Hat on {OPENSHIFT}, to enable the plugin, set the `MYSQL_DEFAULT_AUTHENTICATION_PLUGIN` environment variable to `mysql_native_password`.
++
+If you created users on the MySQL version 8 server before enabling the `mysql_native_password` plugin, you must update the `mysql-user` table after you enable the plugin.
 endif::PAM[]
 . Optionally, depending on your needs, set environment variables. To set an environment variable, click *Add new Environment variable*, then enter the name and value for the variable in the *Name* and *Value* fields.
 ** If you want to configure your {KIE_SERVER} deployment to use Prometheus to collect and store metrics, set the `PROMETHEUS_SERVER_EXT_DISABLED` environment variable to `false`. For instructions about configuring Prometheus metrics collection, see {URL_MANAGING_KIE_SERVER}#prometheus-monitoring-ocp-proc_execution-server[_{MANAGING_KIE_SERVER}_].
