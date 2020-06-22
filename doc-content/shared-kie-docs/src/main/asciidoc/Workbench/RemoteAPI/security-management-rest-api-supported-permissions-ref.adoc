@@ -1,0 +1,110 @@
+[id='security-management-rest-api-supported-permissions-ref_{context}']
+= Supported permissions in {CENTRAL}
+
+The following are available permissions in {PRODUCT}. Administrators use these permissions to allow specific actions to a group, role, or user in {CENTRAL}.
+
+Priority::
+Priority is an integer that defines the precedence of users who are assigned multiple roles or groups. The default value of priority for a new group is `-100`. In {CENTRAL}, you can set an integer value as a priority, which is resolved using the following rules:
++
+--
+.Priority value table
+[cols="50%,50%", frame="all", options="header"]
+|===
+|Integer value
+|Priority
+
+|Less than -5
+|VERY LOW
+
+|Between -5 and 0
+|LOW
+
+|Equal to 0
+|NORMAL
+
+|Between 0 and 5
+|HIGH
+
+|Greater than 5
+|VERY HIGH
+|===
+--
+
+Home Page::
+Home Page indicates the default landing page for users.
+
+Workbench::
+Workbench consists of the following defined permissions:
++
+--
+[source,json]
+----
+{
+  "editDataObject": true,
+  "plannerAvailable": true,
+  "editGlobalPreferences": true,
+  "editProfilePreferences": true,
+  "accessDataTransfer": true,
+  "jarDownload": true,
+  "editGuidedDecisionTableColumns": true
+}
+----
+--
+
+Pages, Editor, Spaces, and Projects::
+The following are possible values for the permissions based on the resource type:
++
+--
+* `PAGES: read,create,update,delete`
+* `EDITOR: read`
+* `SPACES: read,create,update,delete`
+* `PROJECT: read,create,update,delete,build`
+
+You can use following code to add exceptions to *Pages*, *Editor*, *Spaces*, and *Projects* permissions:
+
+[source,json]
+----
+{
+  "pages": {
+    "read": false,
+    "exceptions": [
+      {
+        "resourceName": "ProcessInstances",
+        "permissions": {
+          "read": false
+        }
+      },
+      {
+        "resourceName": "ProcessDefinitions",
+        "permissions": {
+          "read": false
+        }
+      }
+    ]
+  }
+}
+----
+The `name` attribute is an identifier of a resource that you add as an exception. Use the following REST API endpoints to get the list of possible identifiers. The REST API base URL is `\http://SERVER:PORT/{URL_COMPONENT_CENTRAL}/rest/`.
+
+* `[GET] /perspectives`: Returns perspective names of all pages in {CENTRAL}
+* `[GET] /editors`: Returns all editors in {CENTRAL}
+* `[GET] /spaces`: Returns all spaces in {CENTRAL}
+* `[GET] /spaces/{spaceName}/projects`: Returns projects in a specified space
+
+.Example server response for pages (JSON)
+[source,json]
+----
+"pages": {
+	"create": true,
+	"read": false,
+	"exceptions": [
+    {
+		"name": "HomePerspective",
+		"permissions": {
+			"read": true
+		}
+	}
+]
+}
+----
+--
