@@ -5,9 +5,44 @@ The following sections describe some of the new features or enhancements in {PRO
 
 == {PRODUCT} runtimes
 
-=== Improved/new bla bla
+=== Cloud events support for Milestone
 
-Description
+From this release, information about Milestones are also included in the cloud events payload. This includes the following attributes: 
+`id`, `name` and `status`. Below is a sample payload structure:
+```
+{
+  "data": {
+    "endDate": "2019-08-20T19:26:02.092Z[UTC]",
+    "id": "c2fa5c5e-3002-44c7-aef7-bce82297e3fe",
+    "parentInstanceId": "f8868a2e-1bbb-47eb-93cf-fa46ff9dbfee",
+    "processId": "hotelBooking",
+    "processName": "HotelBooking",
+    "rootInstanceId": "f8868a2e-1bbb-47eb-93cf-fa46ff9dbfee",
+    "rootProcessId": "travels",
+    "startDate": "2019-08-20T19:26:02.091Z[UTC]",
+    "state": 2,
+    "milestones" : [
+      {
+        "id": "_18950AC4-664B-465E-B99E-766D38D362BF",
+        "name": "AutoStartMilestone",
+        "status": "AVAILABLE"
+      }
+    ]
+  },
+  "id": "b50a3dd4-a955-49c4-a055-f30a4d768f87",
+  "kogitoParentProcessinstanceId": "f8868a2e-1bbb-47eb-93cf-fa46ff9dbfee",
+  "kogitoProcessId": "hotelBooking",
+  "kogitoProcessinstanceId": "c2fa5c5e-3002-44c7-aef7-bce82297e3fe",
+  "kogitoProcessinstanceState": "2",
+  "kogitoRootProcessId": "travels",
+  "kogitoRootProcessinstanceId": "f8868a2e-1bbb-47eb-93cf-fa46ff9dbfee",
+  "kogitoAddons": "jobs-management,prometheus-monitoring,process-management",
+  "specversion": "0.3",
+  "time": "2019-08-20T21:26:02.110668+02:00[Europe/Warsaw]",
+  "type": "ProcessInstanceEvent",
+  "source": "/hotelBooking"
+}
+```
 
 == {PRODUCT} Operator and CLI
 
@@ -17,7 +52,39 @@ Description
 
 == {PRODUCT} supporting services
 
-=== Improved/new bla bla
+=== Data Index Service support for Milestone
+
+From this release, the Data Index Service, allows that Milestone information to be retrieved via the `ProcessInstance` object in GraphQL.
+The GraphQL query below demonstrates how to retrieve all Milestone data related to a particular process instance.
+```
+{ProcessInstances{
+  milestones {
+    id
+    name
+    status
+  }
+}}
+```
+
+Apart from retrieving Milestone information, the GraphQL API from Data Index Service also allows to filter by Milestone  `id`, `name` and `status`.
+
+Querying by process instances by milestone name:
+```
+{
+  ProcessInstances(where: {milestones: {name: {equal: "AMilestoneName"}}}) {
+    id
+  }
+}
+```
+
+Querying by process instances by milestone status:
+```
+{
+  ProcessInstances(where: {milestones: {status: {in: [AVAILABLE, ACTIVE] }}}) {
+    id
+  }
+}
+```
 
 Description
 
