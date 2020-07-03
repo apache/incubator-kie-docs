@@ -29,5 +29,91 @@ endif::[]
 . In the upper-right corner, click the *Diagram properties* image:processes/diagram_properties.png[] icon and add your business process property information, such as process data and variables:
 .. Scroll down and expand *Process Data*.
 .. Click image:processes/btn_plus.png[] next to *Process Variables* and define the process variables that you want to use in your business process.
+
++
+--
+.General process properties
+[cols="30%,70%", options="header"]
+|===
+|Label
+|Description
+
+| *Name*
+| Enter the name of the process.
+
+| *Documentation*
+| Describes the process. The text in this field is included in the process documentation, if applicable.
+
+| *ID*
+| Enter an identifier for this process, such as `orderItems`.
+
+| *Package*
+| Enter the package location for this process in your {PRODUCT} project, such as `org.acme`.
+
+| *ProcessType*
+| Specify whether the process is public or private (or null, if not applicable).
+
+| *Version*
+| Enter the artifact version for the process.
+
+| *Ad hoc*
+| Select this option if this process is an ad hoc subprocess.
+
+| *Process Instance Description*
+| Enter a description of the purpose of the process.
+
+| *Imports*
+| Click to open the *Imports* window and add any data object classes required for your process.
+
+| *Executable*
+| Select this option to make the process executable part of your {PRODUCT} project.
+
+| *SLA Due Date*
+| Enter the service level agreement (SLA) expiration date.
+
+| *Process Variables*
+a| Add any process variables for the process. Process variables are visible within the specific process instance. Process variables are initialized at process creation and destroyed on process completion. Variable *Tags* provide greater control over variable behavior, for example whether the variable is `required` or `readonly`. For more information about variable tags, see xref:variables-con_{context}[].
+
+| *Metadata Attributes*
+| Add any custom metadata attribute name and value that you want to use for custom event listeners, such as a listener to implement some action when a metadata attribute is present.
+
+| *Global Variables*
+|  Add any global variables for the process. Global variables are visible to all process instances and assets in a project. Global variables are typically used by business rules and constraints, and are created dynamically by the rules or constraints.
+|===
+
+The *Metadata Attributes* entries are similar to *Process Variables* tags in that they enable new `metaData` extensions to BPMN diagrams. However, process variable tags modify the behavior of specific process variables, such as whether a certain variable is `required` or `readonly`, whereas metadata attributes are key-value definitions that modify the behavior of the overall process.
+
+For example, the following custom metadata attribute `riskLevel` and value `low` in a BPMN process correspond to a custom event listener for starting the process:
+
+.Example metadata attribute and value in the BPMN modeler
+image::BPMN2/bpmn-metadata-attributes-custom.png[Image of custom metadata attribute and value]
+
+.Example metadata attribute and value in the BPMN file
+[source,xml]
+----
+<bpmn2:process id="approvals" name="approvals" isExecutable="true" processType="Public">
+  <bpmn2:extensionElements>
+    <tns:metaData name="riskLevel">
+      <tns:metaValue><![CDATA[low]]></tns:metaValue>
+    </tns:metaData>
+  </bpmn2:extensionElements>
+----
+
+.Example event listener with metadata value
+[source,java]
+----
+public class MyListener implements ProcessEventListener {
+    ...
+    @Override
+    public void beforeProcessStarted(ProcessStartedEvent event) {
+        Map < String, Object > metadata = event.getProcessInstance().getProcess().getMetaData();
+        if (metadata.containsKey("low")) {
+            // Implement some action for that metadata attribute
+        }
+    }
+}
+----
+--
+
 . In the process designer canvas, use the left toolbar to drag and drop BPMN components to define your business process logic, connections, events, tasks, or other elements.
 . After you add and define all components of the business process, click *Save* to save the completed business process.
