@@ -7,21 +7,21 @@ The typical use of Git hooks is interaction with an upstream repository. To enab
 
 .Procedure
 
-. If pushing commits to an upstream repository is required, complete the following steps to enable access to the repository:
-.. Create a pair of a secret key named `id_rsa` and public key named `id_rsa.pub`. Use an email address that can access the upstream repository. Set an empty passphrase. For instructions, see https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#generating-a-new-ssh-key[Generating a new SSH key]. 
-.. Upload the public key to the upstream repository.
-.. Create an OpenShift secret named `{PRODUCT_INIT}-centr-gitkey` from the secret key:
+. If interaction with an upstream repository using SSH authentication is required, complete the following steps to prepare and mount a secret with the necessary files:
+.. Prepare the `id_rsa` file with a private key that matches a public key stored in the repository.
+.. Prepare the `known_hosts` file with the correct name, address, and public key for the repository.
+.. Create a secret with the two files using the `oc` command, for example:
 +
 [subs="attributes,verbatim,macros"]
 ----
-oc create secret generic --from-file=id_rsa=id_rsa {PRODUCT_INIT}-centr-gitkey
+oc create secret git-hooks-secret --from-file=id_rsa=id_rsa --from-file=known_hosts=known_hosts
 ----
 +
-.. Mount the secret in the ssh key path of the {CENTRAL} deployment:
+.. Mount the secret in the SSH key path of the {CENTRAL} deployment, for example:
 +
 [subs="attributes,verbatim,macros"]
 ----
-oc set volume dc/<myapp>-{PRODUCT_INIT}centr --add --type secret --secret-name {PRODUCT_INIT}-centr-gitkey --mount-path=/home/jboss/.ssh --name=ssh-key
+oc set volume dc/<myapp>-{PRODUCT_INIT}centr --add --type secret --secret-name git-hooks-secret --mount-path=/home/jboss/.ssh --name=ssh-key
 ----
 +
 Where `<myapp>` is the application name that was set when configuring the template. 
