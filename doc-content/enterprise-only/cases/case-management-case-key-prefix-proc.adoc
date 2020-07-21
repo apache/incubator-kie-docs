@@ -21,18 +21,20 @@ In addition to specifying a prefix, you can customize the expression for generat
 
 * *LPAD* - Left padding
 * *RPAD* - Right padding
-* *TRUNCATE* - Truncate to the left
+* *TRUNCATE* - Truncate
 * *UPPER* - Upper case
 
 The following examples show how to implement the available functions:
 
 [source]
 ----
-<tns:metaValue>@{TRUNCATE(type,9)}</tns:metaValue>
-
 <tns:metaValue>@{LPAD(type,8,0)}</tns:metaValue>
 
 <tns:metaValue>@{RPAD(type,6,' ')}</tns:metaValue>
+
+<tns:metaValue>@{TRUNCATE(type,9)}</tns:metaValue>
+
+<tns:metaValue>@{UPPER(type)}</tns:metaValue>
 ----
 
 The MVEL templates also include implicit variables that can be used to generate business identifiers. For example:
@@ -64,31 +66,21 @@ For example, if `type` is set to `type1`, as shown in the following example, it 
 }
 ----
 
-*<MH>Kris and Gonzalo, this last section is a bit confusing, we mention "the `CaseIdPrefixIsSequence` case metadata", but the examples below do not show it being used. Can you tell me how to tie this together clearly? You both seem to disagree on using the following BPMN file content as mentioned in the pull request by Gonzalo:*
-*<extensionElements>*
-  *<tns:metaData name="customCaseIdPrefix">*
-    *<tns:metaValue>@{CORRELATION_KEY}</tns:metaValue>*
-  *</tns:metaData>*
-  *<tns:metaData name="customCaseIdPrefixIsSequence">*
-    *<tns:metaValue>false</tns:metaValue>*
-  *</tns:metaData>*
-*</extensionElements> </MH>*
-
-If the `CaseIdPrefixIsSequence` case metadata is set to `false` (default value is `true`) it will not create any sequence and the `caseIdPrefix` expression evaluation is the caseId.
+If the `CaseIdPrefixIsSequence` case metadata is set to `false` (default value is `true`) as shown in the following example, it will not create any sequence and the `caseIdPrefix` expression evaluation is the caseId.
 
 [source]
 ----
 {
-case var => CORRELATION_KEY=my correlation key
-case var => IS_PREFIX_SEQUENCE=false
-prefix = @{CORRELATION_KEY}
+  case var => CORRELATION_KEY=my correlation key
+  case var => IS_PREFIX_SEQUENCE=false
+  prefix = @{CORRELATION_KEY}
 }
 ----
 
-.`IS_PREFIX_SEQUENCE` case variable set to `false`
+If the `IS_PREFIX_SEQUENCE` case variable set to `false`, sequence generation is disabled. The resulting case ids will be identical, for example, if using the default `CORRELATION_KEY` variable as shown in the following example:
 [source]
 ----
 {
-caseId = my correlation key
+  caseId = my correlation key
 }
 ----
