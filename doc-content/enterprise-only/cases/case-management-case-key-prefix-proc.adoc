@@ -1,0 +1,94 @@
+[id='case-management-case-key-prefix-proc-{context}']
+= Configuring case ID prefixes
+
+The `caseId` parameter is a string value that is the identifier of the case instance. You can configure the `Case ID prefix` to distinguish different types of cases. The prefix is followed by a generated ID in the format `ID-XXXXXXXXXX`, where `XXXXXXXXXX` is a generated number that provides a unique ID for the case instance. If a prefix is not provided, the default prefix is `CASE` with the following identifiers:
+
+`CASE-0000000001`
+
+`CASE-0000000002`
+
+`CASE-0000000003`
+
+You can specify any prefix. For example, if you specify the prefix `IT`, the following identifiers are generated:
+
+`IT-0000000001`
+
+`IT-0000000002`
+
+`IT-0000000003`
+
+In addition to specifying a prefix, you can customize the expression for generating the `caseId` using MVEL templates, which include the following functions:
+
+* *LPAD* - Left padding
+* *RPAD* - Right padding
+* *TRUNCATE* - Truncate to the left
+* *UPPER* - Upper case
+
+The following examples show how to implement the available functions:
+
+[source]
+----
+<tns:metaValue>@{TRUNCATE(type,9)}</tns:metaValue>
+
+<tns:metaValue>@{LPAD(type,8,0)}</tns:metaValue>
+
+<tns:metaValue>@{RPAD(type,6,' ')}</tns:metaValue>
+----
+
+The MVEL templates also include implicit variables that can be used to generate business identifiers. For example:
+
+* *CASE_PREFIX_ID*
+* *DEPLOYMENT_ID*
+* *CASE_DEFINITION_ID*
+
+If the caseFile contains the case variable `type` with the value set to `type1`, and the case definition contains the following metadata, it will generate the identifiers based on the variable `type` value.
+
+[source]
+----
+{
+<extensionElements>
+  <tns:metaData name="customCaseIdPrefix">
+    <tns:metaValue>HR-@{UPPER(type)}</tns:metaValue>
+  </tns:metaData>
+</extensionElements>
+}
+----
+
+For example, if `type` is set to `type1`, as shown in the following example, it will generate the identifiers: `HR-TYPE1-0000000001`, `HR-TYPE1-0000000002`, and `HR-TYPE1-0000000003`.
+
+[source]
+----
+{
+  case variable =>  type = "type1"
+  prefix = "HR-@{UPPER(type})"
+}
+----
+
+*<MH>Kris and Gonzalo, this last section is a bit confusing, we mention "the `CaseIdPrefixIsSequence` case metadata", but the examples below do not show it being used. Can you tell me how to tie this together clearly? You both seem to disagree on using the following BPMN file content as mentioned in the pull request by Gonzalo:*
+*<extensionElements>*
+  *<tns:metaData name="customCaseIdPrefix">*
+    *<tns:metaValue>@{CORRELATION_KEY}</tns:metaValue>*
+  *</tns:metaData>*
+  *<tns:metaData name="customCaseIdPrefixIsSequence">*
+    *<tns:metaValue>false</tns:metaValue>*
+  *</tns:metaData>*
+*</extensionElements> </MH>*
+
+If the `CaseIdPrefixIsSequence` case metadata is set to `false` (default value is `true`) it will not create any sequence and the `caseIdPrefix` expression evaluation is the caseId.
+
+[source]
+----
+{
+case var => CORRELATION_KEY=my correlation key
+case var => IS_PREFIX_SEQUENCE=false
+prefix = @{CORRELATION_KEY}
+}
+----
+
+.`IS_PREFIX_SEQUENCE` case variable set to `false`
+[source]
+----
+{
+caseId = my correlation key
+}
+----
