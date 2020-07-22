@@ -1,7 +1,20 @@
 [id='case-management-case-key-prefix-proc-{context}']
 = Configuring case ID prefixes
 
-The `caseId` parameter is a string value that is the identifier of the case instance. You can configure the `Case ID prefix` to distinguish different types of cases. The prefix is followed by a generated ID in the format `ID-XXXXXXXXXX`, where `XXXXXXXXXX` is a generated number that provides a unique ID for the case instance. If a prefix is not provided, the default prefix is `CASE` with the following identifiers:
+The `caseId` parameter is a string value that is the identifier of the case instance. You can configure the `Case ID prefix` in {PRODUCT} designer to distinguish different types of cases.
+
+The following procedures uses the *IT_Orders* sample project to demonstrate how to create unique case Id prefixes for specific business needs.
+
+.Prerequisites
+* The *IT_Orders* sample project is open in {CENTRAL}.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects*. If there are existing projects, you can access the samples by clicking the *MySpace* default space and selecting *Try Samples* from the *Add Project* pull-down menu. If there are no existing projects, click *Try samples*.
+. Select *IT_Orders* and click *Ok*.
+. In the *Assets* window, click the *orderhardware* business process to open the designer.
+. Click on an empty space on the canvas and in the upper-right corner, click the *Properties* image:getting-started/diagram_properties.png[] icon.
+. Scroll down and expand *Case Management*.
+. Input the *Case ID Prefix* in the format `ID-XXXXXXXXXX`, where `XXXXXXXXXX` to create a generated number that provides a unique ID for the case instance. If a prefix is not provided, the default prefix is `CASE` with the following identifiers:
 
 `CASE-0000000001`
 
@@ -17,70 +30,6 @@ You can specify any prefix. For example, if you specify the prefix `IT`, the fol
 
 `IT-0000000003`
 
-In addition to specifying a prefix, you can customize the expression for generating the `caseId` using MVEL templates, which include the following functions:
 
-* *LPAD* - Left padding
-* *RPAD* - Right padding
-* *TRUNCATE* - Truncate
-* *UPPER* - Upper case
-
-The following examples show how to implement the available functions:
-
-[source]
-----
-<tns:metaValue>@{LPAD(type,8,0)}</tns:metaValue>
-
-<tns:metaValue>@{RPAD(type,6,' ')}</tns:metaValue>
-
-<tns:metaValue>@{TRUNCATE(type,9)}</tns:metaValue>
-
-<tns:metaValue>@{UPPER(type)}</tns:metaValue>
-----
-
-The MVEL templates also include implicit variables that can be used to generate business identifiers. For example:
-
-* *CASE_PREFIX_ID*
-* *DEPLOYMENT_ID*
-* *CASE_DEFINITION_ID*
-
-If the caseFile code contains the case variable `type` with the value set to `type1`, and the case definition contains the following metadata, the case instance generates the identifiers based on the variable `type` value:
-
-[source]
-----
-{
-<extensionElements>
-  <tns:metaData name="customCaseIdPrefix">
-    <tns:metaValue>HR-@{UPPER(type)}</tns:metaValue>
-  </tns:metaData>
-</extensionElements>
-}
-----
-
-For example, if `type` is set to `type1` as shown in the following example, the case instance generates the identifiers: `HR-TYPE1-0000000001`, `HR-TYPE1-0000000002`, and `HR-TYPE1-0000000003`.
-
-[source]
-----
-{
-  case variable =>  type = "type1"
-  prefix = "HR-@{UPPER(type})"
-}
-----
-
-If the `CaseIdPrefixIsSequence` case metadata is set to `false` (default value is `true`) as shown in the following example, the case instance will not create any sequence and the `caseIdPrefix` expression evaluation is the case Id.
-
-[source]
-----
-{
-  case var => CORRELATION_KEY=my correlation key
-  case var => IS_PREFIX_SEQUENCE=false
-  prefix = @{CORRELATION_KEY}
-}
-----
-
-If the `IS_PREFIX_SEQUENCE` case variable set to `false`, sequence generation is disabled. In the resulting case instances, the case IDs are identical. The following example uses the default case ID value, `my correlation key`. Because the value of the `IS_PREFIX_SEQUENCE` variable is `false`, the case instances created all have the `my correlation key` case ID.
-[source]
-----
-{
-  caseId = my correlation key
-}
-----
+.Case ID Prefix field
+image::cases/case-prefix.png[]
