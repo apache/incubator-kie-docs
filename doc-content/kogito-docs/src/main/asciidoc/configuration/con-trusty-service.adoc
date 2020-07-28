@@ -1,0 +1,30 @@
+[id='con-trusty-service_{context}']
+= {PRODUCT} Trusty Service
+
+{PRODUCT} provides a Trusty Service that stores all {PRODUCT} tracing events related to decisions that have been taken by {PRODUCT} services. The Trusty Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then process the tracing event and stores the data in the Infinispan persistence store. The Trusty Service is at the core of the TrustyAI initiative.
+
+.Data Trusty architecture in an example {PRODUCT} service
+image::kogito/configuration/trusty-architecture_enterprise.png[Diagram of an example Kogito service using Trusty Service]
+
+The {PRODUCT} Trusty Service has the following key attributes:
+
+* Focus on decisions
+* Flexible data structure
+* Distributable and cloud-ready format
+* Infinispan-based persistence support
+* Message-based communication with {PRODUCT} runtime (Apache Kafka, cloud events )
+* Integration with the Explainability service to retrieve advanced analysis on the decisions.
+
+NOTE: The {PRODUCT} Trusty Service aims to be a permanent storage for audit log purposes.
+
+== Trusty Service workflow in {PRODUCT}
+
+The {PRODUCT} Trusty Service is a Quarkus application, based on https://vertx.io/[Vert.x] with https://smallrye.io/smallrye-reactive-messaging/[Reactive Messaging].
+
+Tracing data from the Trusty Service is parsed and pushed into the following Infinispan caches:
+
+* *Decisions*: Cache for each decision that has been taken by a {PRODUCT} service. Each record contains all the information about all the inputs, all the outputs and errors if any. 
+
+The Trusty Service storage is provided by https://infinispan.org/[Infinispan]. Communication between the Trusty Service and Infinispan is handled through a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers.
+
+After the tracing event is analyzed and stored, the Trusty Service exposes the data with dedicated api.
