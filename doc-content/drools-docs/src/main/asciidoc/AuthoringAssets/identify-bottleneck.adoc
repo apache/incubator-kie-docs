@@ -1,0 +1,64 @@
+[id='identify-bottleneck_{context}']
+
+= Identifying a bottleneck in your rules
+
+Sometimes it's difficult to identify slow rules especially when you have lots of rules. `drools-metric` can assist your performance analysis.
+
+.Procedure
+Firstly, `drools-metric` is not for production environment use. Do the analysis in your test environment.
+
+* Add `drools-metric` to your project dependency:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-metric</artifactId>
+</dependency>
+----
+
+* Enable trace logging for `org.drools.metric.util.MetricLogUtils`:
+
+.Example logback.xml configuration file
+[source,xml]
+----
+<configuration>
+  <logger name="org.drools.metric.util.MetricLogUtils" level="trace"/>
+  ...
+<configuration>
+----
+
+* Enable MetricLogUtils by setting the system property `drools.metric.logger.enabled` to `true`.
+
+* Optionally, change microseconds threshold of metric logging by setting the `drools.metric.logger.threshold` system property. Only node executions exceeding the threshold will be logged. Default value is `500`.
+
+Once you configured, rule execution will produce logs like this:
+
+.Example rule execution output
+[source]
+----
+TRACE [JoinNode(6) - [ClassObjectType class=com.sample.Order]], evalCount:1000, elapsedMicro:5962
+TRACE [JoinNode(7) - [ClassObjectType class=com.sample.Order]], evalCount:100000, elapsedMicro:95553
+TRACE [ AccumulateNode(8) ], evalCount:4999500, elapsedMicro:2172836
+TRACE [EvalConditionNode(9)]: cond=com.sample.Rule_Collect_expensive_orders_combination930932360Eval1Invoker@ee2a6922], evalCount:49500, elapsedMicro:18787
+----
+
+* `evalCount`: The number of constraint evaluations against inserted facts during the node execution
+* `elapsedMicro`: Elapsed time of the node execution in microseconds
+
+If you find an outstanding evalCount or elapsedMicro log, correlate the node name with ReteDumper.dumpAssociatedRulesRete() output so you can identify which rule is associated to the node:
+
+.Example ReteDumper usage
+[source,java]
+----
+ReteDumper.dumpAssociatedRulesRete(kbase);
+----
+
+.Example ReteDumper output
+[source]
+----
+[ AccumulateNode(8) ] : [Collect expensive orders combination]
+...
+----
+
+This logging may not directly give you suggestions how to fix the rule but practices in the section xref:performance-tuning-drl-ref_drl-rules[] would help.
