@@ -5,22 +5,19 @@ The following sections describe some of the new features or enhancements in {PRO
 
 == {PRODUCT} runtimes
 
-=== New Process Instance Read Mode in {PRODUCT} runtimes
+=== New process instance read modes in {PRODUCT}
 
-You can now use define the process instance read mode when interacting with processes via `ProcessInstances` interface.
-There are two supported modes now: `ProcessInstanceReadMode.MUTABLE` and `ProcessInstanceReadMode.READ_ONLY`.
-In practice, we're only adding the read only variant, as mutable is the original behaviour.
-When loading instances via read only mode, this will hint the engine to by pass all the initialization needed for ensuring that the process
-instance can execute any action that will affect its state. The read only mode becomes then more optimized for checking the current state of a process, including its variables.
+You can now specify one of the following read modes in the {PRODUCT} `ProcessInstances` interface:
 
-Default behaviour in `ProcessInstances`, aka loading instances from the different persistence mechanisms.
+* `ProcessInstanceReadMode.MUTABLE`: (Default) Use this mode to perform operations on a process instance, such as aborting the process or updating process variables.
+* `ProcessInstanceReadMode.READ_ONLY`: Use this mode to review the state and variables of a process instance without performing operations on it.
 
-- `findById`: Loads a specific process instance in `MUTABLE` mode.
-- `values`: Loads all process instance in `READ_ONLY` mode.
+Depending on the read mode that you select, you can use one of the following parameters to load the process instances accordingly:
 
-Furthermore, these two methods are overloaded to allow uses to specify the read mode, to teak based on specific needs.
+* `findById`: Loads a specific process instance in `MUTABLE` mode
+* `values`: Loads all process instances in `READ_ONLY` mode
 
-.Process Instances read mode
+.Read modes in `ProcessInstances` interface
 [source, java]
 ----
 public interface ProcessInstances<T> {
@@ -40,13 +37,7 @@ public interface ProcessInstances<T> {
 }
 ----
 
-Which `ProcessInstanceReadMode` should I use?
-
-In general, this is hidden by the {PRODUCT} runtime API, but in case you have a specific need to access this directly,
-we recommend using `READ_ONLY` for any scenario where you're just interested in checking the current state of a process instance.
-That will allow the {PRODUCT} runtime to retrieve it in a more resource efficiently manner.
-Note that if you try to execute operations in process instance loaded in `READ_ONLY` mode, that will cause the {PRODUCT} runtime to behave unexpectedly.
-In case you need to perform operations to a process instance, such as aborting, updating variables, etc, you should use `MUTABLE` mode.
+When you load instances in `READ_ONLY` mode, the {PRODUCT} process engine bypasses all the initialization that is typically required when you are modifying a process instance state so that you can review process instance data more efficiently. If you attempt to perform operations on process instances that are loaded in `READ_ONLY` mode, the {PRODUCT} runtime behaves unexpectedly. To perform operations on a process instance, ensure that you use `MUTABLE` mode.
 
 == {PRODUCT} Operator and CLI
 
