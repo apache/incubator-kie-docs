@@ -1,0 +1,58 @@
+[id='patches-migrating-eap-proc']
+
+= Migrating {EAP_LONG} 7.2 to 7.3
+
+{PRODUCT} 7.8 only supports {EAP_LONG} 7.3. If you want to upgrade {PRODUCT} 7.7 instances to 7.8 you must first migrate {EAP} from 7.2 to 7.3.
+
+.Prerequisites
+* Your {PRODUCT} and {KIE_SERVER} instances are not running. Do not apply updates while you are running an instance of {PRODUCT} or {KIE_SERVER}.
+* {EAP_LONG} 7.2 is installed.
+
+.Procedure
+. Download {EAP} 7.3 to each {EAP} instance:
+.. Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required) and select the product and version from the drop-down options:
+* *Product: {EAP}*
+* *Version: 7.3*
+.. Click *Download* next to *{EAP_LONG} 7.3*. (`jboss-eap-7.3.0.zip`).
+. Extract the `jboss-eap-7.3.0.zip` file to the same base directory of {EAP} 7.2.
++
+[NOTE]
+====
+The base directory of the {EAP} installation is referred to as `__EAP_HOME__`.
+====
+. Run the `jboss-server-migration.sh` script to migrate configurations and deployments from {EAP} 7.2 to {EAP} 7.3:
++
+----
+$ ./bin/jboss-server-migration.sh -s ../jboss-eap-7.2/
+----
++
+Answer `yes` to all questions except the following question. Answer `no` to this question:
++
+----
+This tool is not able to assert if the non-persistent deployments found are compatible with the target server, skip scanner's deployments migration?
+----
+
+. Copy the `.niogit` directory from {EAP} 7.2 directory to the new `.niogit` directory. For example:
++
+----
+$ cp -r ../jboss-eap-7.2/.niogit .niogit
+----
+
+. Change the `MaxMetaspaceSize` memory setting value to `1024m` in the `bin/standalone.conf` file. For example:
++
+----
+-XX:MaxMetaspaceSize=1024m
+----
+
+. Optional: To migrate unmanaged {KIE_SERVER} instance configurations to {EAP}, perform the following tasks:
++
+[IMPORTANT]
+====
+Proceed with this section only if there are unmanaged {KIE_SERVER} instances configured in the migrated {EAP} server instance that need to be migrated.
+====
+.. Locate the {KIE_SERVER} state XML files for the unmanaged instances. The XML files should be located in the directory from where the {EAP} server is launched. These are usually named after the {KIE_SERVER} instance identifier, for example `example-kieserver.xml`. You can use `grep` to search for `kie-server-state`, for example:
++
+----
+$ grep -FR "<kie-server-state>"
+----
+.. Copy the server's state files to the directory where you will launch the new {EAP} 7.3 instance.
