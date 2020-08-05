@@ -15,7 +15,7 @@ The {PRODUCT} Operator relies on the https://strimzi.io/docs/latest/[Strimzi Ope
 
 == Apache Kafka messaging in {PRODUCT} services
 
-After you install the Apache Kafka infrastructure, to enable Kafka messaging for a {PRODUCT} service using the {PRODUCT} Operator, use the `--enable-events` flag during deployment in the {PRODUCT} CLI or edit the `spec.enableEvents` configuration in the `KogitoApp` custom resource:
+After you install the Apache Kafka infrastructure, to enable Kafka messaging for a {PRODUCT} service using the {PRODUCT} Operator, use the `--enable-events` flag during deployment in the {PRODUCT} CLI or edit the `spec.kafka` configuration in the `KogitoRuntime` custom resource:
 
 * `true`: Kafka is installed and deploys a Kafka cluster in the namespace if no Kafka cluster owned by the {PRODUCT} Operator exists.
 * `false`: Kafka is not installed. Use this option only if you do not need messaging or if you intend to deploy your own messaging mechanism and you know how to configure your service to access it.
@@ -30,18 +30,25 @@ $ {PRODUCT_INIT} deploy-service travels --enable-events
 [source,yaml]
 ----
 apiVersion: app.kiegroup.org/v1alpha1
-kind: KogitoApp
+kind: KogitoBuild
 metadata:
   name: travels
 spec:
-  enableEvents: true
-  build:
-    envs:
+  type: RemoteSource
+  gitSource:
+    uri: "https://github.com/kiegroup/kogito-examples/"
+    contextDir: kogito-travel-agency/extended/travels
+  envs:
     - name: MAVEN_ARGS_APPEND
       value: -Pevents
-    gitSource:
-      uri: https://github.com/kiegroup/kogito-examples/kogito-travel-agency
-      contextDir: travels
+---
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoRuntime
+metadata:
+  name: travels
+spec:
+  kafka:
+    useKogitoInfra: true
 ----
 
 When you enable Kafka messaging, a variable named `KAFKA_BOOTSTRAP_SERVERS` is injected into the service container. On Quarkus, this is the default behavior when you use https://quarkus.io/guides/kafka-streams#topic-configuration[Kafka Client] 1.x or later. On Spring Boot, you might need to use a property substitution in the `application.properties` file, such as the following example:
