@@ -5,7 +5,7 @@ The {PRODUCT} Operator is written in https://golang.org/[Go] and is built with t
 
 The {PRODUCT} Operator uses the following custom resources to deploy {PRODUCT} domain-specific services (the services that you develop), {PRODUCT} supporting services, and middleware infrastructure components:
 
-* `KogitoApp`: Defines the build and deployment configurations for {PRODUCT} domain-specific services deployed on OpenShift
+* `KogitoBuild`: Defines the build configurations for {PRODUCT} domain-specific services deployed on OpenShift
 ifdef::KOGITO-COMM[]
 * `KogitoRuntime`: Defines the deployment configurations for {PRODUCT} domain-specific services deployed on Kubernetes or OpenShift from a container image in an image registry
 endif::[]
@@ -26,24 +26,23 @@ The {PRODUCT} Operator uses the following third-party operators to deploy {PRODU
 * *https://github.com/strimzi/strimzi-kafka-operator[Strimzi Operator]*: Used to deploy Apache Kafka clusters with Zookeeper for messaging in {PRODUCT} services
 * *https://github.com/keycloak/keycloak-operator[Keycloak Operator]*: Used to deploy Keycloak server instances for security and single sign-on capabilities in {PRODUCT} services
 
-When you enable an infrastructure mechanism during {PRODUCT} service deployment or in the corresponding custom resource, such as in the `KogitoApp` resource, the {PRODUCT} Operator uses the relevant third-party operator to create the infrastructure.
+When you enable an infrastructure mechanism during {PRODUCT} service deployment or in the corresponding custom resource, such as in the `KogitoRuntime` resource, the {PRODUCT} Operator uses the relevant third-party operator to create the infrastructure.
 
-For example, the following `KogitoApp` custom resource uses the `spec.enablePersistence` and `spec.enableEvents` configurations to enable Infinispan persistence and Kafka messaging for the {PRODUCT} service:
+For example, the following `KogitoRuntime` custom resource uses the `spec.infinispan` and `spec.kafka` configurations to enable Infinispan persistence and Kafka messaging for the {PRODUCT} service:
 
 .Example {PRODUCT} service resource with persistence and messaging enabled
 [source,yaml]
 ----
 apiVersion: app.kiegroup.org/v1alpha1
-kind: KogitoApp
+kind: KogitoRuntime
 metadata:
   name: kogito-travel-agency
 spec:
-  enableEvents: true
-  enablePersistence: true
-  build:
-    gitSource:
-      contextDir: kogito-travel-agency
-      uri: "https://github.com/kiegroup/kogito-examples/"
+  image: <domain>/<namespace>/kogito-travel-agency:latest
+  infinispan:
+    useKogitoInfra: true
+  kafka:
+    useKogitoInfra: true
 ----
 
 In this example, the {PRODUCT} Operator uses the Infinispan Operator to deploy the Infinispan Server instance for persistence and uses the Strimzi Operator to deploy the Kafka cluster for event messaging.

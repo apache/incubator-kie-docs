@@ -10,10 +10,61 @@ After you create your {PRODUCT} services as part of a business application, you 
 .Procedure
 . In the OpenShift web console, go to *Operators* -> *OperatorHub* in the left menu, search for and select *Kogito*, and follow the on-screen instructions to install the latest operator version.
 . After you install the {PRODUCT} Operator, in the OpenShift web console, go to *Operators* -> *Installed Operators* and select *Kogito*.
-. In the operator page, select the *Kogito Service* tab and click *Create Kogito App* to create the {PRODUCT} service definition.
+. In the operator page, select the *Kogito Build* tab and click *Create KogitoBuilds* to create the {PRODUCT} build definition.
++
+.Create a {PRODUCT} build definition
+image::kogito/openshift/kogito-ocp-create-build.png[Image of Kogito build page in web console]
+. In the application window, drag and drop a YAML or JSON file that contains your build definition, or manually define the build data in the application window.
++
+--
+At a minimum, define the application configurations shown in the following example YAML file:
+
+.Example YAML definition for an application with {PRODUCT} build
+[source,yaml,subs="attributes+"]
+----
+apiVersion: app.kiegroup.org/v1alpha1 # {PRODUCT} API for this service
+kind: KogitoBuild  # Application type
+metadata:
+  name: example-quarkus  # Application name
+  namespace: kogito  # OpenShift project namespace
+spec:
+  type: RemoteSource
+  gitSource:
+    uri: 'https://github.com/kiegroup/kogito-examples'  # Git repository containing application (uses default branch)
+    contextDir: process-quarkus-example  # Git folder location of application
+----
+
+[NOTE]
+====
+If you have configured an internal Maven repository, you can use it as a Maven mirror service and specify the Maven mirror URL in your {PRODUCT} build definition to substantially shorten build time:
+
+[source,yaml]
+----
+spec:
+  mavenMirrorURL: http://nexus3-nexus.apps-crc.testing/repository/maven-public/
+----
+
+For more information about internal Maven repositories, see the https://maven.apache.org/guides/introduction/introduction-to-repositories.html[Apache Maven] documentation.
+====
+--
+. After you define your application data, click *Create* to generate the {PRODUCT} build.
++
+--
+Your application is listed in the {PRODUCT} Build page:
+
+.New {PRODUCT} build instance
+image::kogito/openshift/kogito-ocp-create-build-listed.png[Image of Kogito build listed in web console]
+
+You can select the application name to view or modify application settings and YAML details:
+
+.View {PRODUCT} build details
+image::kogito/openshift/kogito-ocp-build-details.png[Image of Kogito service details page in web console]
+
+--
+. In the operator page, select the *Kogito Service* tab and click *Create KogitoRuntime* to create the {PRODUCT} service definition.
 +
 .Create a {PRODUCT} service definition
-image::kogito/openshift/kogito-ocp-create-app.png[Image of Kogito service page in web console]
+image::kogito/openshift/kogito-ocp-create-runtime.png[Image of Kogito service page in web console]
 . In the application window, drag and drop a YAML or JSON file that contains your service definition, or manually define the service data in the application window.
 +
 --
@@ -23,30 +74,12 @@ At a minimum, define the application configurations shown in the following examp
 [source,yaml,subs="attributes+"]
 ----
 apiVersion: app.kiegroup.org/v1alpha1 # {PRODUCT} API for this service
-kind: KogitoApp  # Application type
+kind: KogitoRuntime  # Application type
 metadata:
   name: example-quarkus  # Application name
   namespace: kogito  # OpenShift project namespace
-spec:
-  build:
-    gitSource:
-      uri: 'https://github.com/kiegroup/kogito-examples'  # Git repository containing application (uses default branch)
-      contextDir: process-quarkus-example  # Git folder location of application
 ----
 
-[NOTE]
-====
-If you have configured an internal Maven repository, you can use it as a Maven mirror service and specify the Maven mirror URL in your {PRODUCT} service definition to substantially shorten build time:
-
-[source,yaml]
-----
-spec:
-  build:
-    mavenMirrorURL: http://nexus3-nexus.apps-crc.testing/repository/maven-public/
-----
-
-For more information about internal Maven repositories, see the https://maven.apache.org/guides/introduction/introduction-to-repositories.html[Apache Maven] documentation.
-====
 --
 . After you define your application data, click *Create* to generate the {PRODUCT} service.
 +
@@ -54,14 +87,12 @@ For more information about internal Maven repositories, see the https://maven.ap
 Your application is listed in the {PRODUCT} service page:
 
 .New {PRODUCT} service instance
-image::kogito/openshift/kogito-ocp-create-app-listed.png[Image of Kogito service listed in web console]
+image::kogito/openshift/kogito-ocp-create-runtime-listed.png[Image of Kogito service listed in web console]
 
 You can select the application name to view or modify application settings and YAML details:
 
 .View {PRODUCT} service details
-image::kogito/openshift/kogito-ocp-app-details.png[Image of Kogito service details page in web console]
-
-NOTE: The application details page displays available deployments only after the application is built and deployed successfully, as shown in this example.
+image::kogito/openshift/kogito-ocp-runtime-details.png[Image of Kogito service details page in web console]
 
 --
 . In the left menu of the web console, go to *Builds* -> *Builds* to view the status of your application build.
@@ -78,13 +109,13 @@ For every {PRODUCT} service that you create for OpenShift deployment, two builds
 ====
 
 --
-. After the application build is complete, go to *Workloads* -> *Deployment Configs* to view the application deployment configurations, pod status, and other details.
+. After the application build is complete, go to *Workloads* -> *Deployments* to view the application deployments, pod status, and other details.
 +
 --
 You can select the application name to increase or decrease the pod count or modify deployment settings:
 
 .View {PRODUCT} service deployment details
-image::kogito/openshift/kogito-ocp-app-deployment-details.png[Image of Kogito service deployment details page in web console]
+image::kogito/openshift/kogito-ocp-service-deployment-details.png[Image of Kogito service deployment details page in web console]
 --
 . After your {PRODUCT} service is deployed, in the left menu of the web console, go to *Networking* -> *Routes* to view the access link to the deployed application.
 +
@@ -92,7 +123,7 @@ image::kogito/openshift/kogito-ocp-app-deployment-details.png[Image of Kogito se
 You can select the application name to view or modify route settings:
 
 .View {PRODUCT} service route details
-image::kogito/openshift/kogito-ocp-app-route-details.png[Image of Kogito service route details page in web console]
+image::kogito/openshift/kogito-ocp-service-route-details.png[Image of Kogito service route details page in web console]
 
 With the application route, you can integrate your {PRODUCT} services with your business automation solutions as needed.
 --
