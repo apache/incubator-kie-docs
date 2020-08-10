@@ -81,4 +81,68 @@ xref:engine-event-listeners-con_decision-engine[].
 endif::[]
 --
 
-include::identify-bottleneck.adoc[leveloffset=+1]
+Use `drools-metric` to identify the obstruction in your rules::
+You can use `drools-metric` to identify slow rules especially when you have many rules processing. `drools-metric` can also assist in analyzing the {DECISION_ENGINE} performance. Note that `drools-metric` is not for a production environment use. However, you can perform the analysis in your test environment.
+
++
+To analyze the {DECISION_ENGINE} performance using `drools-metric`, add `drools-metric` to your project dependency and enable trace logging for `org.drools.metric.util.MetricLogUtils` as follows:
+
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-metric</artifactId>
+</dependency>
+----
+
++
+.Example logback.xml configuration file
+[source,xml]
+----
+<configuration>
+  <logger name="org.drools.metric.util.MetricLogUtils" level="trace"/>
+  ...
+<configuration>
+----
+
++
+Also, enable `MetricLogUtils` by setting the system property `drools.metric.logger.enabled` to `true`. Optionally, you can change the microseconds threshold of metric logging by setting the `drools.metric.logger.threshold` system property.
+
++
+NOTE: Only node executions exceeding the threshold are logged. The default value is `500`.
+
++
+Once the configuration is completed, rule execution produces logs as follows:
+
++
+.Example rule execution output
+[source]
+----
+TRACE [JoinNode(6) - [ClassObjectType class=com.sample.Order]], evalCount:1000, elapsedMicro:5962
+TRACE [JoinNode(7) - [ClassObjectType class=com.sample.Order]], evalCount:100000, elapsedMicro:95553
+TRACE [ AccumulateNode(8) ], evalCount:4999500, elapsedMicro:2172836
+TRACE [EvalConditionNode(9)]: cond=com.sample.Rule_Collect_expensive_orders_combination930932360Eval1Invoker@ee2a6922], evalCount:49500, elapsedMicro:18787
+----
+
++
+* `evalCount` is the number of constraint evaluations against inserted facts during the node execution.
+* `elapsedMicro` is the elapsed time of the node execution in microseconds.
+
++
+If you find an outstanding `evalCount` or `elapsedMicro` log, correlate the node name with `ReteDumper.dumpAssociatedRulesRete()` output to identify the rule associated with the node.
+
++
+.Example ReteDumper usage
+[source,java]
+----
+ReteDumper.dumpAssociatedRulesRete(kbase);
+----
+
++
+.Example ReteDumper output
+[source]
+----
+[ AccumulateNode(8) ] : [Collect expensive orders combination]
+...
+----
