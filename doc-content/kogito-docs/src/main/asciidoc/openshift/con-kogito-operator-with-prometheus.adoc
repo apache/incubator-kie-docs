@@ -1,51 +1,7 @@
 [id='con-kogito-operator-with-prometheus_{context}']
 = {PRODUCT} Operator interaction with Prometheus
 
-If your {PRODUCT} project uses the `monitoring-prometheus-addon` add-on to enable Prometheus metrics monitoring, the {PRODUCT} Operator adds Prometheus annotations to the pod and service of the deployed application, as shown in the following example:
-
-.Example {PRODUCT} service definition with Prometheus annotations
-[source,yaml]
-----
-apiVersion: v1
-kind: KogitoRuntime
-metadata:
-  annotations:
-    org.kie.kogito/managed-by: Kogito Operator
-    org.kie.kogito/operator-crd: KogitoRuntime
-    prometheus.io/path: /metrics
-    prometheus.io/port: "8080"
-    prometheus.io/scheme: http
-    prometheus.io/scrape: "true"
-  labels:
-    app: onboarding-service
-    onboarding: process
-  name: onboarding-service
-  namespace: kogito
-  ownerReferences:
-  - apiVersion: app.kiegroup.org/v1alpha1
-    blockOwnerDeletion: true
-    controller: true
-    kind: KogitoRuntime
-    name: onboarding-service
-spec:
-  clusterIP: 172.30.173.165
-  ports:
-  - name: http
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    app: onboarding-service
-    onboarding: process
-  sessionAffinity: None
-  type: ClusterIP
-status:
-  loadBalancer: {}
-----
-
-// @comment: Restore the following for 0.13 when https://issues.redhat.com/browse/KOGITO-731 is resolved. (Stetson, June 10 2020)
-////
-The https://github.com/coreos/prometheus-operator[Prometheus Operator] does not support the Prometheus annotations that the {PRODUCT} Operator adds to your {PRODUCT} services. Therefore, when you deploy a {PRODUCT} service with Prometheus metrics monitoring enabled, the {PRODUCT} Operator creates a `ServiceMonitor` custom resource to expose the metrics for Prometheus to scrape:
+When you deploy a {PRODUCT} service uses the `monitoring-prometheus-addon` add-on to enable Prometheus metrics monitoring and https://github.com/coreos/prometheus-operator[Prometheus Operator] already installed, the {PRODUCT} Operator creates a `ServiceMonitor` custom resource to expose the metrics for Prometheus to scrape:
 
 .Example `ServiceMonitor` resource for Prometheus
 [source,yaml]
@@ -85,47 +41,6 @@ spec:
     matchLabels:
       app: onboarding-service
 ----
-////
-
-The https://github.com/coreos/prometheus-operator[Prometheus Operator] does not support the Prometheus annotations that the {PRODUCT} Operator adds to your {PRODUCT} services. Therefore, when you deploy a {PRODUCT} service with Prometheus metrics monitoring enabled, you must create a `ServiceMonitor` custom resource to expose the metrics for Prometheus to scrape and then configure your `Prometheus` custom resource that is managed by the Prometheus Operator to select the `ServiceMonitor` resource:
-
-.Example `ServiceMonitor` resource for Prometheus
-[source,yaml]
-----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  labels:
-    app: onboarding-service
-  name: onboarding-service
-  namespace: kogito
-spec:
-  endpoints:
-  - path: /metrics
-    targetPort: 8080
-    scheme: http
-  namespaceSelector:
-    matchNames:
-    - kogito
-  selector:
-    matchLabels:
-      app: onboarding-service
-----
-
-.Example `Prometheus` resource
-[source,yaml]
-----
-apiVersion: monitoring.coreos.com/v1
-kind: Prometheus
-metadata:
-  name: prometheus
-spec:
-  serviceAccountName: prometheus
-  serviceMonitorSelector:
-    matchLabels:
-      app: onboarding-service
-----
-// @comment: Replace the above segment with the bit before it once that issue is resolved. (Stetson)
 
 After you configure your Prometheus resource with the `ServiceMonitor` resource, you can see the endpoint being scraped by Prometheus in the **Targets** page of the Prometheus web console:
 
