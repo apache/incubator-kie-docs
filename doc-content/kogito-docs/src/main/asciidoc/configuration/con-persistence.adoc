@@ -1,7 +1,7 @@
 [id='con-persistence_{context}']
 = Persistence in {PRODUCT} services
 
-{PRODUCT} supports runtime persistence for preserving process data in your services across application restarts. {PRODUCT} persistence is based on https://infinispan.org/[Infinispan] and enables you to configure key-value storage definitions to persist data, such as active process nodes and process instance variables.
+{PRODUCT} supports runtime persistence for preserving process data in your services, such as active process nodes and process instance variables, across application restarts. For {PRODUCT} persistence, you can use https://infinispan.org/[Infinispan] and configure key-value storage definitions to persist data, or you can use https://www.mongodb.com/[MongoDB] to persist data in a document-based format.
 
 Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
 
@@ -11,7 +11,7 @@ Node instances that are currently active or in wait states are persisted. When a
 
 In {PRODUCT}, a process instance is persisted when the process reaches a wait state, where the process does not execute anymore but has not reached the end state (completed or aborted).
 
-For example, when a process reaches a user task or a catching signal event, the process instances pauses and the {PRODUCT} {PROCESS_ENGINE} takes a complete snapshot of the process, including the following data:
+For example, when a process reaches a user task or a catching signal event, the process instance pauses and the {PRODUCT} {PROCESS_ENGINE} takes a complete snapshot of the process, including the following data:
 
 * Process instance metadata, such as process instance ID, process definition ID, state, description, and start date
 * Process instance variables
@@ -23,11 +23,11 @@ Process instance and node instance variables are persisted based on the generate
 
 For straight-through process instances that do not trigger any activity, persistence is not invoked and no data is stored.
 
-Each process definition has its own cache for storing runtime information. The cache is based on the process definition ID and is named in the Infinispan Server. If no process cache exists, cache is automatically created in Infinispan. This setup facilitates maintenance of process instance data and reduces concurrency on the cache instances.
+Each process definition has its own cache for storing runtime information. The cache is based on the process definition ID and is named in the Infinispan Server or in the MongoDB Server. If no process cache exists, cache is automatically created in Infinispan or in MongoDB. This setup facilitates maintenance of process instance data and reduces concurrency on the cache instances.
 
 == Persisted process instance variables and data types
 
-Persisted process variables, local variables, and other process data are stored with the process instance. The stored data is marshalled into bytes format so it can be transferred and persisted into the key-value storage definition. The marshalling and unmarshalling is implemented based on protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) and requires a schema and marshallers for handling a specified type of data.
+Persisted process variables, local variables, and other process data are stored with the process instance. The stored data is marshalled into bytes format so it can be transferred and persisted into the key-value storage definition for Infinispan or into document-based format for MongoDB. The marshalling and unmarshalling is implemented based on protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) and requires a schema and marshallers for handling a specified type of data.
 
 {PRODUCT} generates both the protobuf schema (as PROTO files) and marshallers for persisting variables. The {PRODUCT} marshallers are based on the https://github.com/infinispan/protostream[ProtoStream] subproject of Infinispan.
 
