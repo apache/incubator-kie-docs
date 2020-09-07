@@ -1,0 +1,82 @@
+[id='truststore-template-proc_{context}']
+= (Optional) Providing a truststore for accessing HTTPS servers with self-signed certificates
+:truststore_bc!:
+ifeval::["{context}"=="openshift-authoring"]
+:truststore_bc: {CENTRAL}
+endif::[]
+ifeval::["{context}"=="openshift-authoring-managed"]
+:truststore_bc: {CENTRAL}
+endif::[]
+ifdef::PAM[]
+ifeval::["{context}"=="openshift-managed"]
+:truststore_bc: {CENTRAL} Monitoring
+endif::[]
+ifeval::["{context}"=="openshift-freeform"]
+:truststore_bc: {CENTRAL} Monitoring
+endif::[]
+ifeval::["{context}"=="openshift-immutable"]
+:truststore_bc: {CENTRAL} Monitoring
+endif::[]
+endif::PAM[]
+
+Components of your {PRODUCT} infrastructure might need to use HTTPS access to servers that have a self-signed HTTPS certificate. For example,
+ifdef::truststore_bc[]
+{truststore_bc} and
+endif::truststore_bc[]
+{KIE_SERVER} might need to interact with an internal Nexus repository that uses a self-signed HTTPS server certificate.
+
+In this case, to ensure that HTTPS connections complete successfully, you must provide client certificates for these services using a truststore.
+
+Skip this procedure if you do not need {PRODUCT} components to communicate with servers that use self-signed HTTPS server certificates.
+
+.Procedure
+
+. Prepare a truststore with the certificates. Use the following command to create a truststore or to add a certificate to an existing truststore. Add all the necessary certificates to one truststore.
++
+[subs="attributes,verbatim,macros,quotes"]
+----
+keytool -importcert -file _certificate-file_ -alias _alias_ -keyalg _algorithm_ -keysize _size_ -trustcacerts -noprompt -storetype JKS -keypass _truststore-password_ -storepass _truststore-password_ -keystore _keystore-file_
+----
++
+Replace the following values:
++
+** `_certificate-file_`: The pathname of the certificate that you want to add to the truststore.
+** `_alias_`: The alias for the certificate in the truststore. If you are adding more than one certificate to the truststore, every certificate must have a unique alias.
+** `_algorithm_`: The encryption algorithm used for the certificate, typically `RSA`.
+** `_size_`: The size of the certificate key in bytes, for example, `2048`.
+** `_truststore-password_`: The password for the truststore.
+** `_keystore-file_`: The pathname of the truststore file. If the file does not exist, the command creates a new truststore.
++
+The following example command adds a certificate from the `/var/certs/nexus.cer` file to a truststore in the `/var/keystores/custom-trustore.jks` file. The truststore password is `mykeystorepass`.
++
+[subs="attributes,verbatim,macros,quotes"]
+----
+keytool -importcert -file /var/certs/nexus.cer -alias nexus-cert -keyalg RSA -keysize 2048 -trustcacerts -noprompt -storetype JKS -keypass mykeystorepass -storepass mykeystorepass -keystore /var/keystores/custom-trustore.jks
+----
++
+. Create a secret with the truststore file using the `oc` command, for example:
++
+[subs="attributes,verbatim,macros,quotes"]
+----
+oc create secret generic truststore-secret --from-file=/var/keystores/custom-trustore.jks
+----
++
+. In the deployment for the necessary components of your infrastructure, mount the secret and then set the `JAVA_OPTS_APPEND` option to enable the Java application infrastructure to use the trast store, for example:
+ifdef::truststore_bc[]
++
+[subs="attributes,verbatim,macros,quotes"]
+----
+oc set volume dc/_myapp_-{PRODUCT_INIT}centr --add --overwrite --name=custom-trustore-volume --mount-path /etc/custom-secret-volume --secret-name=custom-secret 
+
+oc set env dc/_myapp_-{PRODUCT_INIT}centr JAVA_OPTS_APPEND='-Djavax.net.ssl.trustStore=/etc/custom-secret-volume/custom-trustore.jks -Djavax.net.ssl.trustStoreType=jks -Djavax.net.ssl.trustStorePassword=mykeystorepass'
+----
+endif::truststore_bc[]
++
+[subs="attributes,verbatim,macros,quotes"]
+----
+oc set volume dc/_myapp_-kieserver --add --overwrite --name=custom-trustore-volume --mount-path /etc/custom-secret-volume --secret-name=custom-secret 
+
+oc set env dc/_myapp_-kieserver JAVA_OPTS_APPEND='-Djavax.net.ssl.trustStore=/etc/custom-secret-volume/custom-trustore.jks -Djavax.net.ssl.trustStoreType=jks -Djavax.net.ssl.trustStorePassword=mykeystorepass'
+----
++
+Replace `_myapp_` with the application name that you set when configuring the template.
