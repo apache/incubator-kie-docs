@@ -111,6 +111,88 @@ Workaround: Set the Adhoc property to `true`. To reflect the changes, save your 
 
 endif::[]
 
+== Installer
+
+ifdef::PAM[]
+
+.On {EAP}, the {PRODUCT} installer adds an additional `$` sign in the vaulted password of database user [https://issues.redhat.com/browse/RHPAM-3148[RHPAM-3148]]
+
+Issue: When you use graphical user interface, installer adds an additional `$` sign in the vaulted password for {KIE_SERVER} data source and connection to the database fails.
+
+Steps to reproduce:
+
+. Install {KIE_SERVER} on {EAP} using graphical user interface.
+. Configure data source properties for {KIE_SERVER}.
+. Complete the installation and run the container.
++
+You receive an error regarding incorrect login credentials on start up in logs.
+
+Expected result: No additional `$` sign in the vaulted password and {KIE_SERVER} is connecting to the database.
+
+Actual result: There is an additional `$` sign in the vaulted password and {KIE_SERVER} is not connecting properly to the database.
+
+Workaround:
+
+. Open the `standalone-full.xml` file in your {EAP} directory.
+. Search the following element in your data source definition:
++
+[source]
+----
+<subsystem xmlns="urn:jboss:domain:datasources:5.0">
+----
+. Search for `<security>` element.
++
+[source]
+----
+<password> $${VAULT::datasource.NAME::password::1}</password>
+----
+
+. Remove an additional `$` sign in the vaulted password and the datasource element in the `standalone-full.xml` file should look similar to the following:
++
+[source]
+----
+<password> ${VAULT::datasource.NAME::password::1}</password>
+----
+
+endif::[]
+
+.When you are auto installing {PRODUCT} on {EAP}, {PRODUCT} installer tries to configure properties for {JWS} [https://issues.redhat.com/browse/RHPAM-3150[RHPAM-3150]]
+
+Issue: {PRODUCT} installer tries to configure properties for {JWS} when you are auto installing on {EAP}. Automated installer is not checking the conditions and executing {JWS} related steps even though the users are using installation script with {EAP}.
+
+Steps to reproduce:
+
+. Run {PRODUCT} installer with the default options.
+. Use {EAP} as an installation container.
+. Complete the installation, generate an installation script, and name it as `auto.xml`.
+. Clean the used {EAP} container and run the installation again using the generated installation script:
+
+ifdef::PAM[]
++
+[source]
+----
+java -jar rhpam-installer-7.8.x.jar auto.xml -variables rhpam.username=rhbaUser,rhpam.password=bpmsAdmin123$
+----
+
+endif::[]
+
+ifdef::DM[]
++
+[source]
+----
+java -jar rhdm-installer-7.8.x.jar auto.xml -variables rhdm.username=rhbaUser,rhdm.password=bpmsAdmin123$
+----
+
+endif::[]
+
+. Run the installed {PRODUCT}.
+
+Expected result: {PRODUCT} installer is not trying setup any {JWS} related properties and installation on {EAP} using automated script succeeds.
+
+Actual result: {PRODUCT} installer tries to setup {JWS} related properties and installation on {EAP} using automated script fails.
+
+Workaround: Install manually. Do not use the generated script for {EAP}.
+
 == Form modeler
 
 .Document upload feature does not work on Windows [https://issues.redhat.com/browse/RHPAM-3117[RHPAM-3117]]
@@ -126,5 +208,13 @@ Steps to reproduce:
 Expected result: Document upload feature is working on Windows.
 
 Actual result: Document upload feature is not working on Windows.
+
+Workaround: None.
+
+== {OPENSHIFT}
+
+.S2I build ignores Java virtual machine (JVM) properties [https://issues.redhat.com/browse/RHDM-1419[RHDM-1419]]
+
+Issue: S2I build fails because the KJAR files and its dependencies are uploaded in Nexus which are accessible via HTTPS and they are signed by a self-signed certificate.
 
 Workaround: None.
