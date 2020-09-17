@@ -1,0 +1,53 @@
+[id='bus-app-security-con_{context}']
+
+= Spring Security with {PRODUCT}
+Spring Security is provided by a collection of servlet filters that make up the https://spring.io/projects/spring-security[Spring Security library]. These filters provide authentication through user names and passwords and authorization through roles. The default Spring Security implementation generated in a {PRODUCT} Spring Boot application provides authorization without authentication. This means that anyone with a user name and password valid for the application can access the application without requiring a role.
+
+The servlet filters protect your Spring Boot application against common exploits such as cross-site request forgery (CSRF) and cross-origin resource sharing (CORS). Spring Web relies on the https://docs.spring.io/spring/docs/current/spring-framework-reference/web.html#mvc-servlet[`DispatcherServlet`] to redirect incoming HTTP requests to your underlying java REST resources annotated with the `@Controller` annotation. The `DispatchServlet` is agnostic of elements such as security. It is good practice and more efficient to handle implementation details such a security outside of the business application logic. Therefore, Spring uses filters to intercept HTTP requests before routing them to the `DispatchServlet`.
+
+You cannot create a single security filter to perform all of your required authentication and authorization logic. A typical Spring Security implementation consists of the following steps:
+
+. Extract and decode or decrypt user credentials from the HTTP request.
+. Complete authentication by validating the credentials against the corporate identity provider, for example a database, a web service, or Red Hat Single Sign-On.
+. Complete authorization by determining whether the authorized user has access rights to perform the request.
+. If the user is authenticated and authorized, propagate the request to the `DispatchServlet`.
+
+Spring breaks these steps down into individual filters and chains them together in a FilterChain. This chaining method provides the flexibility required to work with almost any identity provider and security framework. With Spring Security, you can define a FilterChain for your application programmatically. The following example is from the `business-application-service/src/main/java/com/company/service/DefaultWebSecurityConfig.java` file generated as part of a business application created on the `https://start.jbpm.org` web site.
+
+[source,java]
+----
+@Configuration("kieServerSecurity")
+@EnableWebSecurity
+public class DefaultWebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override  // (1)
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .cors().and()
+                .csrf().disable()       2
+                .authorizeRequests()    3
+                .antMatchers("/rest/*").authenticated().and()
+                .httpBasic().and()      4
+                .headers().frameOptions().disable();    5
+    }
+----
+
+* *(1)* Overrides the default 'configure(HttpSecurity  http)' method and defines a custom FilterChain using the Spring HttpClient fluent API/DSL
+* *(2)* Disables common exploit filters for CORS and CSRF tokens for local testing
+* *(3)* Requires authentication for any requests made to the pattern 'rest/*' but no roles are defined
+* *(4)* Allows basic authentication through the authorization header, for example header 'Authorization: Basic dGVzdF91c2VyOnBhc3N3b3Jk'
+* *(5)* Removes the 'X-Frame-Options' header from request/response
+
+This configuration allows any authenticated user to execute the KIE API.
+
+Because the default implementation is not integrated into any external identity provider, users are defined in memory, in the same `DefaultWebSecurityConfg` class. The following example shows the users that are provided when you create a {PRODUCT} Spring Boot business application:
+
+[source,java]
+----
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication().withUser("user").password("user").roles("kie-server");
+        auth.inMemoryAuthentication().withUser("wbadmin").password("wbadmin").roles("admin");
+        auth.inMemoryAuthentication().withUser("kieserver").password("kieserver1!").roles("kie-server");
+    }
+----
