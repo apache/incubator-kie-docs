@@ -1,0 +1,142 @@
+
+[[_sect_bam_dashbuilder_runtime]]
+= Dashbuilder Runtime
+Dashbuilder Runtime is a standalone dashbuilder distribution that can run dashboards built in {CENTRAL}. By default dashboards live inside {CENTRAL}, meaning that users must access it to interact with dashboards. Dashbuilder Runtime aims to focus on dashboards execution, users can author dashboards in {CENTRAL}, export and import on Dashbuilder Runtime to execute it.
+
+== Installation
+
+Dashbuilder Runtime is a small Web Application distributed in WAR format that can be downloaded from https://repo1.maven.org/maven2/org/dashbuilder/dashbuilder-runtime/[Maven repository]. Search for the war artifact for the jBPM version you are using.
+
+Dashbuilder Runtime WAR can be installed in the latest Widlfly release, just copy the WAR in `standalone/deployments` and start Widlfly.
+
+To login create a user with `admin` role and access context root for the Widlfly location (e.g. http://localhost:8080). By default Dashbuilder Runtime is installed on root context, this can be modified by changing `dashbuilder-runtime.war/WEB-INF/jboss-web.xml`.
+
+After login, users may upload dashboard files exported from {CENTRAL}
+
+image::BAM/DashbuilderRuntimeWelcomePage.png[]
+
+== Exporting Dashbuilder data
+You can export the dashbuilder related data such as datasets, pages, and navigation from {CENTRAL} as a ZIP file.
+
+.Procedure
+. In {CENTRAL}, select the *Admin* icon in the top-right corner of the screen and select *Dashbuilder Data Transfer*.
+. If you want to export all dashbuilder data as a ZIP file, click *Export all* on the *Dashbuilder Data Transfer* page.
+. If you want to select the data to be exported, click *Custom Export* on the *Dashbuilder Data Transfer* page.
+
+image::BAM/GradualExport.png[]
+
+
+== Execution modes
+Dashbuilder Runtime has execution modes, which are:
+
+* *SINGLE*: This is the default mode. When a dashboard is uploaded then it will be used in Runtime. It is also possible to refer on dashboards under the directory configured using the system property `dashbuilder.import.base.dir`, default value is `/tmp/dashbuilder/models`. 
+If a file is in the `models` directory, then it is possible to load it using `RUNTIME_URL?import=FILE_NAME` in the URL. For example, the file `sales_dashboard.zip`, placed in the `models` directory, can be loaded using `RUNTIME_URL?import=sales_dashboard`(notice that the file extension is not necessary).
+* *STATIC*: In this mode Dashbuilder Runtime will not prompt users for upload and use the model file configured using system property `dashbuilder.runtime.import`. 
+* *MULTI*:  Finally in multi mode users can upload multiple dashboards in the same Dashbuilder Runtime installation. To enable it the system property `dashbuilder.runtime.multi` must be set as true.
+
+image::BAM/DashbuilderRuntimeMultiMode.png[]
+
+== Embedding dashboards
+
+Dashboards running in Dashbuilder Runtime can be embedded in third-party applications using an `iframe`. To embed dashboards, the query parameter *standalone* should be added to the URL along with the dashboard page name using the query param *perspective*: 
+
+`RUNTIME_URL?standalone&perspective=PAGE_NAME`
+
+In multi it is also required to specify the import id:
+
+`RUNTIME_URL?standalone&perspective=PAGE_NAME&import=IMPORT_NAME`
+
+== REST API
+
+Third-party applications can interact with Dashbuilder Runtime using its REST API. All endpoints use Basic authentication:
+
+
+* `GET /api`: Provides server information: Runtime Mode and list of available models. Example:
+....
+curl -u 'admin:admin' http://localhost:8080/rest/api
+"mode":"SINGLE_IMPORT","availableModels":[],"acceptingNewImports":true}
+....
+
+
+* `POST /api/dashboard/``: Received a POST ZIP with dashboards and register it for use (upload), returns the dashboard id. Example:
+....
+curl -u 'admin:admin' -F 'selectedFile=@/path/to/your/dashboard.zip' http://localhost:8080/rest/api/dashboard
+1592937606409
+....
+
+* `GET /api/dashboard/{id}``: Retrieves information about the dashboard {id}
+
+....
+curl --cookie auth http://localhost:8080/rest/api/dashboard/{id returned from upload}
+{"runtimeModelId":"1592937606409","pages":["covid19_cases_share","covid19_confirmed_share","covid19_deaths_share","covid19_evolution_summary","covid19_recovered_share","covid19_selected_cases_evolution","covid19_selected_deaths_evolution","covid19_selected_recovers_evolution","life_expectancy","world_population"]}
+....
+
+== Kie Server Integration
+
+In {CENTRAL} dashboards that uses Kie Server datasets will reuse the remote server mechanism to build Kie Server clients. Such mechanism is not available in Dashbuilder Runtime, which means that you need to configure Kie Server credentials in Dashbuilder Runtime as well.
+
+The configuration can be done for server template. In the exported dataset we have a reference to the server template, to configure credentials and server location for this template one should use the following properties:
+....
+dashbuilder.kieserver.serverTemplate.{SERVER_TEMPLATE_NAME}.location={LOCATION}
+dashbuilder.kieserver.serverTemplate.{SERVER_TEMPLATE_NAME}.user={USER}
+dashbuilder.kieserver.serverTemplate.{SERVER_TEMPLATE_NAME}.password={PASSWORD}
+dashbuilder.kieserver.serverTemplate.{SERVER_TEMPLATE_NAME}.token={TOKEN} * not used if user provides credentials
+....
+If you are using dashboards on a new Kie Server instance where queries were not created, the `replace_query` option will automatically create queries:
+....
+org.dashbuilder.kieserver.serverTemplate.{SERVER_TEMPLATE_NAME}.replace_query=true
+....
+The server template is a generic way to configure Kie Server for multiple datasets that uses the same template. It is also possible to make the same setting by dataset:
+....
+dashbuilder.kieserver.dataset.{DATA_SET_NAME}.location={LOCATION}
+dashbuilder.kieserver.dataset.{DATA_SET_NAME}.user={USER}
+dashbuilder.kieserver.dataset.{DATA_SET_NAME}.password={PASSWORD}
+dashbuilder.kieserver.dataset.{DATA_SET_NAME}.token={TOKEN}  * not used if user provides credentials
+....
+The configuration should be either by dataset or template name. If both are set, then the configuration by dataset name is used.
+
+
+== Configuration and bootstrap switches
+
+There are multiple configuration for Dashbuilder Runtime which can be done using system properties
+
+[cols="1,1,1", options="header"]
+|===
+| System Property
+| Description
+| Values
+
+|*dashbuilder.import.base.dir*
+|Sets the directory where ZIP models should be placed. 
+Default is `/tmp/dashbuilder/models`
+|a path in your system to a directory
+
+|*dashbuilder.runtime.import*
+|Path to a dashboard export that will be statically used in Dashbuilder Runtime. Also makes Dashbuilder Runtime in static mode.
+|a path in your system to a exported zip file
+
+|*dashbuilder.runtime.upload.size*
+|Max dashboard size used in upload in kb. Default value is 10 * 1024 * 1024 bytes.
+|number: bytes upload limit in kb
+
+|*dashbuilder.runtime.allowExternal*
+|If true uploads from other servers can be downloaded when using import. Example: `RUNTIME_ULR?import=http://host/myfile.zip`
+Default is false
+| true / false
+
+|*dashbuilder.runtime.multi*
+|Enables/disables multi mode. 
+Default is false.
+| true / false
+
+|*dashbuilder.dataset.partition*
+|Enables/disables datasets partition by import in Multi mode.
+Default is true.
+| true / false
+
+|*dashbuilder.components.partition*
+|Enables/disables components partition by import in Multi mode.
+Default is true.
+| true / false
+
+|===
