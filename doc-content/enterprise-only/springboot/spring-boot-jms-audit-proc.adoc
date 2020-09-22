@@ -1,19 +1,18 @@
 [id='spring-boot-jms-audit-proc_{context}']
-= Replicating JMS audit data
+= Replicating audit data in a JMS message broker
 
-You can replicate {KIE_SERVER} audit data in an external database so that you can improve the performance of your Spring Boot application by deleting the audit data from your application schema. This process uses a JMS message broker, for example ActivMQ or Artemis.
+You can replicate {KIE_SERVER} audit data to a Java Message Service (JMS) message broker, for example ActivMQ or Artemis, and then dump the data in an external database schema so that you can improve the performance of your Spring Boot application by deleting the audit data from your application schema.
 
-When an event occurs in {KIE_SERVER}, the record of that event is stored in the {KIE_SERVER} database schema and it is sent to the message broker, which contains an exact replica of the {KIE_SERVER} database schema. The database in the broker is appended with new transactions when they occur.
+If you configure your application to replicate data in a message broker, when an event occurs in {KIE_SERVER} the record of that event is stored in the {KIE_SERVER} database schema and it is sent to the message broker. You can then configure an external service to consume the message broker data into an exact replica of the application's database schema. The data is appended in the message broker and the external database every time an event is produce by {KIE_SERVER}.
 
 NOTE: Only audit data is stored in the message broker. No other data is replicated.
 
-.Prerequistes
+.Prerequisites
+* You have a {PRODUCT} Spring Boot application.
 
 .Procedure
 . Open the Spring Boot application's `pom.xml` file in a text editor.
-. Add the following dependencies to the `pom.xml` file:
-+
-* {KIE_SERVER} Spring Boot audit dependency
+. Add the {KIE_SERVER} Spring Boot audit dependency to the `pom.xml` file:
 +
 [source, xml]
 ----
@@ -23,7 +22,7 @@ NOTE: Only audit data is stored in the message broker. No other data is replicat
   <version>${version.org.kie}</version>
 </dependency>
 ----
-* Advanced Message Queuing Protocal (AMQP) dependency:
+. Add the dependency for your JMS client. The following example adds the Advanced Message Queuing Protocal (AMQP) dependency:
 +
 [source, xml]
 ----
@@ -33,7 +32,7 @@ NOTE: Only audit data is stored in the message broker. No other data is replicat
 			<version>2.2.6</version>
 		</dependency>
 ----
-* JMS pool dependency:
+. Add the JMS pool dependency:
 +
 [source, xml]
 ----
@@ -44,43 +43,44 @@ NOTE: Only audit data is stored in the message broker. No other data is replicat
 ----
 . To configure {KIE_SERVER} audit replication to use queues, complete the following tasks:
 +
-.. Add the following lines to your Spring Boot application's `application.properties` file where `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD` are the login credentials for the message broker:
+.. Add the following lines to your Spring Boot application's `application.properties` file where `<JMS_BROKER>` is the JMS broker that you want to connect to, `<PORT>` is the port that the broker listens on, and  `<USERNAME>` and `<PASSWORD` are the login credentials for the broker:
 +
 [source]
 ----
 kieserver.audit-replication.producer=true
 kieserver.audit-replication.queue=audit-queue
-amqphub.amqp10jms.remote-url=amqp://localhost:<PORT>
-amqphub.amqp10jms.username=<USERNAME>
-amqphub.amqp10jms.password=<PASSWORD>
-amqphub.amqp10jms.pool.enabled=true
+<JMS_BROKER>.remote-url=amqp://localhost:<PORT>
+<JMS_BROKER>.username=<USERNAME>
+<JMS_BROKER>.password=<PASSWORD>
+<JMS_BROKER>.pool.enabled=true
 ----
-.. Add the following lines to the `application.properties` file of the service that will consume the message broker data, where `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD>` are the login credentials for the message broker:
+
+.. Add the following lines to the `application.properties` file of the service that will consume the message broker data, where `<JMS_BROKER>` is the JMS broker that your consumer will connect to, `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD>` are the login credentials for the message broker:
 +
 [source]
 ----
 kieserver.audit-replication.consumer=true
 kieserver.audit-replication.queue=audit-queue
-amqphub.amqp10jms.remote-url=amqp://localhost:<PORT>
-amqphub.amqp10jms.username=<USERNAME>
-amqphub.amqp10jms.password=<PASSWORD>
-amqphub.amqp10jms.pool.enabled=true
+<JMS_BROKER>.remote-url=amqp://localhost:<PORT>
+<JMS_BROKER>.username=<USERNAME>
+<JMS_BROKER>.password=<PASSWORD>
+<JMS_BROKER>.pool.enabled=true
 ----
 . To configure {KIE_SERVER} audit replication to use topics, complete the following tasks:
 +
-.. Add the following lines to your Spring Boot application's `application.properties` file where `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD` are the login credentials for the message broker:
+.. Add the following lines to your Spring Boot application's `application.properties` file where `<JMS_BROKER>` is the JMS broker that you want to connect to, `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD` are the login credentials for the message broker:
 +
 [source]
 ----
 kieserver.audit-replication.producer=true
 kieserver.audit-replication.topic=audit-topic
 spring.jms.pub-sub-domain=true
-amqphub.amqp10jms.remote-url=amqp://localhost:<PORT>
-amqphub.amqp10jms.username=<USERNAME>
-amqphub.amqp10jms.password=<PASSWORD>
-amqphub.amqp10jms.pool.enabled=true
+<JMS_BROKER>.remote-url=amqp://localhost:<PORT>
+<JMS_BROKER>.username=<USERNAME>
+<JMS_BROKER>.password=<PASSWORD>
+<JMS_BROKER>.pool.enabled=true
 ----
-.. Add the following lines to the `application.properties` file of the service that will consume the message broker data, where `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD>` are the login credentials for the message broker:
+.. Add the following lines to the `application.properties` file of the service that will consume the message broker data, where `<JMS_BROKER>` is the JMS broker that your consumer will connect to, `<PORT>` is the port that your message broker listens on and  `<USERNAME>` and `<PASSWORD>` are the login credentials for the message broker:
 +
 [source]
 ----
@@ -88,11 +88,11 @@ kieserver.audit-replication.consumer=true
 kieserver.audit-replication.topic=audit-topic::jbpm
 kieserver.audit-replication.topic.subscriber=jbpm
 spring.jms.pub-sub-domain=true
-amqphub.amqp10jms.remote-url=amqp://localhost:<PORT>
-amqphub.amqp10jms.username=<USERNAME>
-amqphub.amqp10jms.password=<PASSWORD>
-amqphub.amqp10jms.pool.enabled=true
-amqphub.amqp10jms.clientId=jbpm
+<JMS_BROKER>.remote-url=amqp://localhost:<PORT>
+<JMS_BROKER>.username=<USERNAME>
+<JMS_BROKER>.password=<PASSWORD>
+<JMS_BROKER>.pool.enabled=true
+<JMS_BROKER>.clientId=jbpm
 ----
 . To configure your application to be read-only so that users can query the replicated audit data but not change anything, add the following line to the `application.properties` file:
 +
