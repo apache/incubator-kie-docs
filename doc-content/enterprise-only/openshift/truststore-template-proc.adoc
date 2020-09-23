@@ -1,33 +1,23 @@
 [id='truststore-template-proc_{context}']
 = (Optional) Providing a truststore for accessing HTTPS servers with self-signed certificates
-:truststore_bc!:
-ifeval::["{context}"=="openshift-authoring"]
-:truststore_bc: {CENTRAL}
-endif::[]
-ifeval::["{context}"=="openshift-authoring-managed"]
-:truststore_bc: {CENTRAL}
-endif::[]
-ifdef::PAM[]
-ifeval::["{context}"=="openshift-managed"]
-:truststore_bc: {CENTRAL} Monitoring
-endif::[]
-ifeval::["{context}"=="openshift-freeform"]
-:truststore_bc: {CENTRAL} Monitoring
-endif::[]
-ifeval::["{context}"=="openshift-immutable"]
-:truststore_bc: {CENTRAL} Monitoring
-endif::[]
-endif::PAM[]
 
 Components of your {PRODUCT} infrastructure might need to use HTTPS access to servers that have a self-signed HTTPS certificate. For example,
-ifdef::truststore_bc[]
-{truststore_bc} and
-endif::truststore_bc[]
-{KIE_SERVER} might need to interact with an internal Nexus repository that uses a self-signed HTTPS server certificate.
+ifdef::PAM[]
+{CENTRAL}, {CENTRAL} Monitoring,
+endif::PAM[]
+ifdef::DM[]
+{CENTRAL}
+endif::DM[]
+and {KIE_SERVER} might need to interact with an internal Nexus repository that uses a self-signed HTTPS server certificate.
 
 In this case, to ensure that HTTPS connections complete successfully, you must provide client certificates for these services using a truststore.
 
 Skip this procedure if you do not need {PRODUCT} components to communicate with servers that use self-signed HTTPS server certificates.
+
+.Prerequisites
+
+* You deployed a {PRODUCT} environment using templates
+* You have the client certificates that you want to add to the deployment 
 
 .Procedure
 
@@ -62,7 +52,6 @@ oc create secret generic truststore-secret --from-file=/var/keystores/custom-tru
 ----
 +
 . In the deployment for the necessary components of your infrastructure, mount the secret and then set the `JAVA_OPTS_APPEND` option to enable the Java application infrastructure to use the trast store, for example:
-ifdef::truststore_bc[]
 +
 [subs="attributes,verbatim,macros,quotes"]
 ----
@@ -70,7 +59,6 @@ oc set volume dc/_myapp_-{PRODUCT_INIT}centr --add --overwrite --name=custom-tru
 
 oc set env dc/_myapp_-{PRODUCT_INIT}centr JAVA_OPTS_APPEND='-Djavax.net.ssl.trustStore=/etc/custom-secret-volume/custom-trustore.jks -Djavax.net.ssl.trustStoreType=jks -Djavax.net.ssl.trustStorePassword=mykeystorepass'
 ----
-endif::truststore_bc[]
 +
 [subs="attributes,verbatim,macros,quotes"]
 ----
