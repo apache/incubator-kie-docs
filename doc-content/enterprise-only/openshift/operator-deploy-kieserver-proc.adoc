@@ -28,14 +28,20 @@ For instructions about creating custom images, see xref:customimage-con_{context
 +
 . If you want to configure an immutable {KIE_SERVER}, complete the following additional steps:
 .. Click *Set Immutable server configuration*.
-.. In the *KIE Server container deployment* field, enter the identifying information of the decision services (KJAR files) that the deployment must pull from the Maven repository. The format is `<containerId>=<groupId>:<artifactId>:<version>` or, if you want to specify an alias name for the container, `<containerId>(<aliasId>)=<groupId>:<artifactId>:<version>`. You can provide two or more KJAR files using the `|` separator, as illustrated in the following example: `containerId=groupId:artifactId:version|c2(alias2)=g2:a2:v2`.
+.. In the *KIE Server container deployment* field, enter the identifying information of the services (KJAR files) that the deployment must pull from the Maven repository or from the result of a Source to Image (S2I) build. The format is `<containerId>=<groupId>:<artifactId>:<version>` or, if you want to specify an alias name for the container, `<containerId>(<aliasId>)=<groupId>:<artifactId>:<version>`. You can provide two or more KJAR files using the `|` separator, as illustrated in the following example: `containerId=groupId:artifactId:version|c2(alias2)=g2:a2:v2`.
 .. If your OpenShift environment does not have a connection to the public Internet, enter the URL of the Maven mirror that you set up according to <<offline-repo-proc_{context}>> in the *Maven mirror URL* field.
-.. In the *Artifact directory* field, enter the path within the project that contains the required binary files (KJAR files and any other necessary files) after a successful Maven build. Normally this directory is the target directory of the build. However, you can provide prebuilt binaries in this directory in the Git repository.
+.. If you want to use an S2I build, the *Artifact directory* field, enter the path within the project that contains the required binary files (KJAR files and any other necessary files) after a successful Maven build. Normally this directory is the target directory of the build. However, you can provide prebuilt binaries in this directory in the Git repository.
 .. If you want to use a custom base {KIE_SERVER} image for the S2I build, click *Set Base build image* and then enter the name of the image stream in the *Name* field. If the image stream is not in the `openshift` namespace, enter the namespace in the *Namespace* field. If you want to use a Docker image name and not an OpenShift image stream tag, change the *Kind* value to `DockerImage`.
 .. If you want to create the immutable server from source in a Git repository using the Source to Image (S2I) process, click the *Set Git source* button and enter information in the following fields:
 *** *S2I Git URI*:The URI for the Git repository that contains the source for your services.
 *** *Reference*: The branch in the Git repository.
 *** *Context directory*: (Optional) The path to the source within the project downloaded from the Git repository. By default, the root directory of the downloaded project is the source directory.
++
+[NOTE]
+====
+If you do not configure a Git source, the immutable {KIE_SERVER} does not use an S2I build. Instead, it pulls the artifacts that you define in the *KIE Server container deployment* field from the configured Maven repository.
+====
++
 .. If you are using S2I and want to set a Git Webhook so that changes in the Git repository cause an automatic rebuild of the {KIE_SERVER}, click *Add new Webhook*. Then select the type of the Webhook in the *Type* field and enter the secret string for the Webhook in the *Secret* field.
 . Optionally, enter requested and maximum CPU and memory limits in the fields under *Resource quotas*. If you are configuring several {KIE_SERVERS}, the limits apply to each server separately.
 . If you selected RH-SSO authentication, configure RH-SSO for the {KIE_SERVER}:
@@ -120,14 +126,14 @@ If you configure an external Maven repository (`MAVEN_REPO_URL`), change `MAVEN_
 +
 If your authoring environment uses a built-in {CENTRAL} Maven repository, change `MAVEN_MIRROR_OF` to exclude the artifacts in this repository from the mirror: `external:*,!repo-{PRODUCT_INIT}centr`.
 +
-** In some authoring environments, you might need to ensure that several users can deploy services on the same {KIE_SERVER} at the same time. By default, after deploying a service onto a {KIE_SERVER} using {CENTRAL}, the user needs to wait for some seconds before more services can be deployed. To remove this limitation, you can configure the environment to use the _controller strategy_. Do not make this change unless a specific need for it exists; if you decide to enable controller strategy, make this change on {CENTRAL} and on all {KIE_SERVERS} in the same environment.
+** In some authoring environments, you might need to ensure that several users can deploy services on the same {KIE_SERVER} at the same time. By default, after deploying a service onto a {KIE_SERVER} using {CENTRAL}, the user needs to wait for some seconds before more services can be deployed. The `OpenShiftStartupStrategy` setting is enabled by default and causes this limitation. To remove the limitation, you can configure an `{PRODUCT_INIT}-authoring` environment to use the _controller strategy_. Do not make this change unless a specific need for it exists; if you decide to enable controller strategy, make this change on {CENTRAL} and on all {KIE_SERVERS} in the same environment.
 +
 [NOTE]
 ====
 Do not enable the controller strategy in an environment with a high-availability {CENTRAL}. In such environments the controller strategy does not function correctly.
 ====
 +
-To enable controller strategy on a {KIE_SERVER}, set the  `KIE_SERVER_STARTUP_STRATEGY` environment variable to `ControllerBasedStartupStrategy`.
+To enable controller strategy on a {KIE_SERVER}, set the  `KIE_SERVER_STARTUP_STRATEGY` environment variable to `ControllerBasedStartupStrategy` and the `KIE_SERVER_CONTROLLER_OPENSHIFT_ENABLED` environment variable to `false`.
 
 .Next steps
 To configure additional {KIE_SERVERS}, click *Add new KIE Server* again and repeat the procedure for the new server configuration.
