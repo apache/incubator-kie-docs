@@ -1,3 +1,8 @@
+![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
+![Quality sync checks master-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
+
+If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
+
 # Important update: August 31, 2018
 
 On August 31, 2018, this `kie-docs` repository that contains KIE community and Red Hat Business Automation documentation was updated to enable shared content between KIE community and Red Hat Business Automation enterprise documentation, to remove obsolete content, and to prepare for an improved content building tool coming soon (Aura).
