@@ -1,3 +1,8 @@
+![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
+![Quality sync checks master-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
+
+If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
+
 # Kogito documentation
 
 <p align="center"><img width=55% height=55% src="_images/logos/kogitoLogo.png"_></p>
