@@ -1,5 +1,5 @@
-![Quality sync checks](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
-![Quality sync checks](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
+![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
+![Quality sync checks master-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
 
 If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
 
