@@ -1,48 +1,47 @@
 [id='drools-modularization']
 
-= Modularization of drools core engine
+== Modularization of drools core engine
 
 In order to make the core engine of drools lighter and more maintainable there is an ongoing refactoring process to isolate
 and descope optional features that don't belong to internal algorithm of the engine itself. This process started with version
 7.40 with the descoping of traits and continued in this release with a similar approach to isolate in separated modules both the
 features of the engine requiring mvel/asm and the ones involving protobuf based serialization.
 
-== Descoping of MVEL/ASM based features
+=== Descope of MVEL and ASM based features
 
-Historically Drools leverages MVEL for a lot of internal usages like drl parsing, constraints evaluation, and templates generation.
+Historically {PRODUCT} leverages MVEL for a lot of internal usages like drl parsing, constraints evaluation, and templates generation.
 Similarly ASM has been used for bytecode generation of declared types, traits and compiled contraints. The introduction of the
 executable model provided an alternative (and under many points of view better) way to cover all these needs and then these 2
 tools are no longer strictly required.
 
-For this reason all Drools usages of MVEL and ASM have been isolated in a new `drools-mvel` module. Having this new module on the
+For this reason all {PRODUCT} usages of MVEL and ASM have been isolated in a new `drools-mvel` module. Having this new module on the
 classpath is strictly required for all usages not involving the executable model. Note that this is unrelated with the dialect in use:
 going through "traditional" drl compilation, both java and mvel dialects heavily relies on MVEL for parsing and on ASM for bytecode
 generation and in both cases it is needed to have `drools-mvel` in your classpath.
 
-== Descoping of protobuf based serialization features
+=== Descope of protobuf based serialization features
 
-Drools implements `KieSessions` serialization with protobuf in order to guarantee a better backward compatibility than the one
+{PRODUCT} implements `KieSessions` serialization with protobuf in order to guarantee a better backward compatibility than the one
 provided by the native Java serialization mechanism. However in the vast majority of use cases `KieSessions` serialization is
 not required and it was not correct that this features was mixed with the core internal algorithms of the engine. This is why
 this serialization feature is now isolated in the new `drools-serialization-protobuf` module. This name has been chosed also
-to reflect the fact that in future Drools could provide different implementations for `KieSessions` serialization, eventually
+to reflect the fact that in future {PRODUCT} could provide different implementations for `KieSessions` serialization, eventually
 based on different technologies.
 
-== New wrapper modules
+=== New wrapper modules
 
-The introduction of these new modules will very likely break the biggest part of existing projects using Drools. The trivial fix
+The introduction of these new modules will very likely break the biggest part of existing projects using {PRODUCT}. The trivial fix
 for these situations will be adding to the project's classpath `drools-mvel` and/or `drools-serialization-protobuf` according to
-the project's needs.
+the project's requirements.
 
 This issue is mainly caused by the fact that users have among their dependencies modules like `drools-core` and `drools-compiler`
 that in reality are no more than "internal implementation details". To avoid similar problems in future, in the very likely case
 that other modules will be introduced to split engine in finer grained submodules and descope optional features, the following 2
 new wrapper modules have been created to cover the 2 different main usage scenarios:
 
-. *drools-engine* aggregating `drools-core`, `drools-compiler` and `drools-model-compiler`
-. *drools-engine-classic* aggregating `drools-core`, `drools-compiler` and `drools-mvel`
+* *drools-engine* aggregating `drools-core`, `drools-compiler` and `drools-model-compiler`
+* *drools-engine-classic* aggregating `drools-core`, `drools-compiler` and `drools-mvel`
 
-With the introduction of these 2 modules, to use Drools with the executable model it will be enough to add `drools-engine` to a
-project's dependencies while for traditional use of Drools without the model it will be necessary to just import `drools-engine-classic`.
-These names reflect the intention of the Drools team to promote the use of the executable model and make it the default choice
-at least for new users.
+With the introduction of these 2 modules, to use {PRODUCT} with the executable model it will be enough to add `drools-engine` to a
+project's dependencies while for traditional use of {PRODUCT} without the model it will be necessary to just import `drools-engine-classic`.
+These names reflect the intention of the Drools team to promote the use of the executable model and make it the default choice.
