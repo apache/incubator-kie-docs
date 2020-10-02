@@ -1,0 +1,52 @@
+[id='immutable-image-proc_{context}']
+= Creating a {PRODUCT} Spring Boot application immutable image
+//What are the prerequisites
+
+You can create an immutable Spring Boot container image that contains multiple versions of the same KJAR file, including modules. The KJAR files are separated from the `BOOT-INF/lib` JAR files to avoid class loader collisions. Each class path container KJAR file is isolated for other KJAR files and does not rely on the Spring Boot class loader.
+
+.Procedure
+. To automatically scan for {KIE_SERVER} deployments in the {PRODUCT} Spring Boot application, add the following lines to the `application.properties` file:
+//What automatically scans?
++
+[source]
+----
+kieserver.classPathContainer=true
+kieserver.autoScanDeployments=true
+----
+This will deploy automatically those with a container id <artifactId>-<version>
+
+. Add the following Maven plugin in the service (including kjar multiple version). This will resolve the necesary artifacts to run the kjar.
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.kie</groupId>
+        <artifactId>kie-maven-plugin</artifactId>
+        <version>${version.org.kie}</version>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>package-dependencies-kjar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>com.myspace</groupId>
+              <artifactId>Evaluation</artifactId>
+              <version>1.0.0-SNAPSHOT</version>
+            </artifactItem>
+            <artifactItem>
+              <groupId>com.myspace</groupId>
+              <artifactId>Evaluation</artifactId>
+              <version>2.0.0-SNAPSHOT</version>
+            </artifactItem>
+          </artifactItems>
+        </configuration>
+      </plugin>
+    <plugins>
+  <build>
+// What is the next step? Maven --install to build? What is the result, the artifact? What do I do with it?
