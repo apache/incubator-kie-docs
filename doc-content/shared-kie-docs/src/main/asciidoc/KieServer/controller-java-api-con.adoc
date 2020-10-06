@@ -21,11 +21,28 @@ The {CONTROLLER} Java client API requires HTTP Basic authentication for the foll
 
 To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
 
-To add a user with the `kie-server` role or the `rest-all` role or both, navigate to `~/$SERVER_HOME/bin` and run the following command with the role or roles specified:
+To add a user with the `kie-server` role or the `rest-all` role or both (assuming a Keystore is already set), navigate to `~/$SERVER_HOME/bin` and run the following command with the role or roles specified:
 
 [source,bash]
 ----
 $ ./add-user.sh -a --user <USERNAME> --password <PASSWORD> --role kie-server,rest-all
+----
+
+In case the Keystore is not set, then execute the following command to create a Keystore:
+[source,bash]
+----
+$ keytool -importpassword -keystore $SERVER_HOME/standalone/configuration/kie_keystore.jceks -keypass <SECRETKEYPASSWORD> -alias kieserver -storepass <SECRETSTOREPASSWORD> -storetype JCEKS
+----
+
+Also, add the following properties to `~/$SERVER_HOME/standalone/configuration/standalone-full.xml`:
+[source,xml,subs="attributes+"]
+----
+    <property name="kie.keystore.keyStoreURL" value="file:///data/jboss/rhpam780/standalone/configuration/kie_keystore.jceks"/>
+    <property name="kie.keystore.keyStorePwd" value="<SECRETSTOREPASSWORD>"/>
+    <property name="kie.keystore.key.server.alias" value="kieserver"/>
+    <property name="kie.keystore.key.server.pwd" value="<SECRETKEYPASSWORD>"/>
+    <property name="kie.keystore.key.ctrl.alias" value="kieserver"/>
+    <property name="kie.keystore.key.ctrl.pwd" value="<SECRETKEYPASSWORD>"/>
 ----
 
 To configure the `kie-server` or `rest-all` user with {CONTROLLER} access, navigate to `~/$SERVER_HOME/standalone/configuration/standalone-full.xml`, uncomment the `org.kie.server` properties (if applicable), and add the controller user login credentials and controller location (if needed):
@@ -34,8 +51,7 @@ To configure the `kie-server` or `rest-all` user with {CONTROLLER} access, navig
 ----
 <property name="org.kie.server.location" value="http://localhost:8080/kie-server/services/rest/server"/>
 <property name="org.kie.server.controller" value="http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller"/>
-<property name="org.kie.server.controller.user" value="baAdmin"/>
-<property name="org.kie.server.controller.pwd" value="password@1"/>
+<property name="org.kie.server.controller.user" value="<USERNAME>"/>
 <property name="org.kie.server.id" value="default-kieserver"/>
 ----
 
