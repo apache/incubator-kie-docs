@@ -1,0 +1,46 @@
+[id='drools-modularization']
+
+== Modularization of drools core engine
+
+In order to make the core engine of drools lighter and more maintainable there is an ongoing refactoring process to isolate
+and descope optional features that are not related to the internal algorithm of the engine. This process started with version
+7.40 with the descoping of traits and continued in this release with a similar approach to isolate in separated modules both the
+features of the engine requiring mvel/asm and the ones involving protobuf based serialization.
+
+=== Descope of MVEL and ASM based features
+
+Historically {DECISION_ENGINE} leverages MVEL for a lot of internal usages like drl parsing, constraints evaluation, and templates generation.
+Similarly ASM has been used for bytecode generation of declared types, traits and compiled contraints. The introduction of the
+executable model provided an alternative (and under many points of view better) way to cover all these needs and then these 2
+tools are no longer strictly required.
+
+Therefore, {DECISION_ENGINE} usages of MVEL and ASM are isolated in a new `drools-mvel` module. This new module is strictly required on the
+classpath for all usages that do not involve the executable model. Note that this is not related to the dialect in use. In the usual DRL
+compilation, both Java and MVEL dialects rely on MVEL for parsing and on ASM for bytecode generation. In both cases, it is a must to
+have `drools-mvel` in your classpath.
+
+=== Descope of protobuf based serialization features
+
+{DECISION_ENGINE} implements `KieSessions` serialization with protobuf to ensure better backward compatibility compared to the
+serialization mechanism natively offered by Java. However, in the majority of use cases `KieSessions` serialization is not required
+and it is not correct that this serialization feature is mixed with the core internal algorithms of the engine. Therefore, the
+serialization feature is isolated in the new `drools-serialization-protobuf` module. `drools-serialization-protobuf`reflects
+the fact that {DECISION_ENGINE} can provide a different implementation for `KieSessions` serialization that is based on different technologies.
+
+=== New wrapper modules
+
+The introduction of these new modules will very likely break the biggest part of existing projects using {DECISION_ENGINE}. The trivial fix
+for these situations will be adding to the project's classpath `drools-mvel` and/or `drools-serialization-protobuf` according to
+the project's requirements.
+
+This issue is mainly caused by the fact that users have among their dependencies modules like `drools-core` and `drools-compiler`
+that in reality are no more than "internal implementation details". To avoid similar problems in future, in the very likely case
+that other modules will be introduced to split engine in finer grained submodules and descope optional features, the following 2
+new wrapper modules have been created to cover the 2 different main usage scenarios:
+
+* *drools-engine* aggregating `drools-core`, `drools-compiler` and `drools-model-compiler`
+* *drools-engine-classic* aggregating `drools-core`, `drools-compiler` and `drools-mvel`
+
+With the introduction of these 2 modules, to use {DECISION_ENGINE} with the executable model it will be enough to add `drools-engine` to a
+project's dependencies while for traditional use of {DECISION_ENGINE} without the model it will be necessary to just import `drools-engine-classic`.
+These names reflect the intention of the Drools team to promote the use of the executable model and make it the default choice.
