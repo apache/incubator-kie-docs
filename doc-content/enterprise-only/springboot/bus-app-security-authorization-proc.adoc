@@ -1,0 +1,54 @@
+[id='bus-app-security-authorization-proc_{context}']
+
+= Using Spring Security to authenticate with authorization
+By default, anyone with a user name and password valid for the {PRODUCT} Spring Boot application can access the application without requiring a role. Spring Security authentication and authorization are derived from the `HTTPSecurity` filter chain configuration. To protect the REST API from users that do not have a specific role mapping, use the Spring Security  `.authorizeRequests()` method to match the URLs that you want to authorize.
+
+.Prerequisites
+* You have a {PRODUCT} Spring Boot application.
+
+.Procedure
+. In the directory that contains your {PRODUCT} Spring Boot application, open the `business-application-service/src/main/java/com/company/service/DefaultWebSecurityConfig.java` file in a text editor or IDE.
+. To authorize requests for access by an authenticated user only if they have a specific role, edit the `.antMatchers("/rest/*").authenticated().and()` line in one of the following ways:
++
+* To authorize for a single role, edit the `antMatchers` method as shown in the following example, where `<role>` is the role that that the user must have for access:
++
+[source,java]
+----
+@Configuration("kieServerSecurity")
+@EnableWebSecurity
+public class DefaultWebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .cors().and().csrf().disable()
+            .authorizeRequests()
+                .antMatchers("/**").hasRole("<role>")
+                .anyRequest().authenticated()
+            .and().httpBasic()
+            .and().headers().frameOptions().disable();
+    }
+    ...
+----
+* To authorize a user that has one of a range of roles, edit the `antMatchers` method as shown in the following example, where `<role>` and `<role1>` are each roles the user can have for access:
++
+[source,java]
+----
+@Configuration("kieServerSecurity")
+@EnableWebSecurity
+public class DefaultWebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .cors().and().csrf().disable()
+            .authorizeRequests()
+                .antMatchers("/**").hasAnyRole("<role>", "<role1")
+                .anyRequest().authenticated()
+            .and().httpBasic()
+            .and().headers().frameOptions().disable();
+    }
+    ...
+----
+
+The `authorizeRequests` method requires authorization of requests for a specific expression. All requests must be successfully authenticated. Authentication is performed using HTTP basic authentication. If an authenticated user tries to access a resource that is protected for a role that they do not have, the user receives an `HTTP 403 (Forbidden)` error.
