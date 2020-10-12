@@ -1,0 +1,101 @@
+[id='creating-self-contained-image-proc_{context}']
+= Creating a self-contained {PRODUCT} Spring Boot JAR file
+
+You can create a self-contained {PRODUCT} Spring Boot JAR file that contains multiple versions of the same KJAR file, including modules. These are files that have the same `artifactID` and `groupID` attribute values, but have different `version` values. The KJAR files are separated from the `BOOT-INF/lib` JAR files to avoid class loader collisions. Each KJAR classpath container file is isolated from other KJAR classpath container files and does not rely on the Spring Boot class loader.
+
+.Prerequisites
+* You have a {PRODUCT} Spring Boot project.
+
+.Procedure
+. Add the following properties to your Spring Boot application  `application.properties` file:
++
+[source, xml]
+----
+kieserver.classPathContainer=true
+kieserver.autoScanDeployments=true
+----
++
+* `kieserver.classPathContainer`: When the value of this property is set to `true`, {KIE_SERVER} uses the class loader used by the container to load KJAR files and their dependencies.
+* `kieserver.autoScanDeployments`: When the value of this property is  set to `true`, {KIE_SERVER} scans and deploys all KJAR files available in the Spring Boot application, whether they are declared programmatically or through the Maven plug-in.
++
+When both of these properties are set to `true`, the Spring Boot {KIE_SERVER} automatically scans for deployable artifacts that are packaged within the Spring Boot application using the `package-dependencies-kjar` Maven goal of the `kie-maven-plugin` plug-in.
++
+. Add the following Maven plug-in in the Spring Boot `service/pom.xml` file where `<GROUP_ID>`, `<ARTIFACT_ID>`, and `<VERSION>` are the group, artifact, and version (GAV) of an artifact that your project uses. These artifacts are located in the Spring Boot project  `kjar/pom.xml` file.
++
+NOTE: You can add more than one version of an artifact.
++
+[source, xml]
+----
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.kie</groupId>
+        <artifactId>kie-maven-plugin</artifactId>
+        <version>${version.org.kie}</version>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>package-dependencies-kjar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId><GROUP_ID></groupId>
+              <artifactId><ARTIFACT_ID>/artifactId>
+              <version><VERSION></version>
+            </artifactItem>
+          </artifactItems>
+        </configuration>
+      </plugin>
+    <plugins>
+  <build>
+----
+The artifacts required to run the KJAR will be resolved at build time.
++
+The following example adds two version of the `Evaluation` artifact:
++
+[source, xml]
+----
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.kie</groupId>
+        <artifactId>kie-maven-plugin</artifactId>
+        <version>${version.org.kie}</version>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>package-dependencies-kjar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <artifactItems>
+            <artifactItem>
+              <groupId>com.myspace</groupId>
+              <artifactId>Evaluation</artifactId>
+              <version>1.0.0-SNAPSHOT</version>
+            </artifactItem>
+            <artifactItem>
+              <groupId>com.myspace</groupId>
+              <artifactId>Evaluation</artifactId>
+              <version>2.0.0-SNAPSHOT</version>
+            </artifactItem>
+          </artifactItems>
+        </configuration>
+      </plugin>
+    <plugins>
+  <build>
+----
+. To build the self-contained Spring Boot image, enter the following command in the `service` directory:
++
+[source]
+----
+maven install
+----
