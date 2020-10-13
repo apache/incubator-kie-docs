@@ -1,0 +1,49 @@
+[id='service-advanceruntimedata-con_{context}']
+= Advanced query service
+
+The advanced query service provides capabilities to search for processes and tasks, based on process and task attributes, process variables, and internal variables of user tasks. The search automatically covers all existing  processes in the {PROCESS_ENGINE}.
+
+The names and required values of attributes and variables are defined in `QueryParam` objects.
+
+Process attributes include process instance ID, correlation key, process definition ID, and deployment ID. Task attributes include task name, owner, and status.
+
+The following search methods are available:
+
+* `queryProcessByVariables`: Search for process instances based on a list of process attributes and process variable values. To be included in the result, a process instance must have the listed attributes and the listed values in its process variables.
+
+* `queryProcessByVariablesAndTask`: Search for process instances based on a list of process attributes, process variable values, and task variable values. To be included in the result, a process instance must have the listed attributes and the listed values in its process variables. It also must include a task with the listed values in its task variables.
+
+* `queryUserTasksByVariables`: Search for user tasks based on a list of task attributes, task variable values, and process variable values. To be included in the result, a task must have the listed attributes and listed values in its task variables. It also must be includes in a process with the listed values in its process variables.
+
+The service is provided by the `AdvanceRuntimeDataService` class. The interface for this class also defines predefined task and process attribute names.
+
+.Definition of the `AdvanceRuntimeDataService` interface
+[source,java]
+----
+public interface AdvanceRuntimeDataService {
+
+    String TASK_ATTR_NAME = "TASK_NAME";
+    String TASK_ATTR_OWNER = "TASK_OWNER";
+    String TASK_ATTR_STATUS = "TASK_STATUS";
+    String PROCESS_ATTR_INSTANCE_ID = "PROCESS_INSTANCE_ID";
+    String PROCESS_ATTR_CORRELATION_KEY = "PROCESS_CORRELATION_KEY";
+    String PROCESS_ATTR_DEFINITION_ID = "PROCESS_DEFINITION_ID";
+    String PROCESS_ATTR_DEPLOYMENT_ID = "PROCESS_DEPLOYMENT_ID";
+
+    List<ProcessInstanceWithVarsDesc> queryProcessByVariables(List<QueryParam> attributes,
+                                                              List<QueryParam> processVariables,
+                                                              QueryContext queryContext);
+
+    List<ProcessInstanceWithVarsDesc> queryProcessByVariablesAndTask(List<QueryParam> attributes,
+                                                                     List<QueryParam> processVariables,
+                                                                     List<QueryParam> taskVariables,
+                                                                     List<String> potentialOwners,
+                                                                     QueryContext queryContext);
+
+    List<UserTaskInstanceWithPotOwnerDesc> queryUserTasksByVariables(List<QueryParam> attributes,
+                                                                     List<QueryParam> taskVariables,
+                                                                     List<QueryParam> processVariables,
+                                                                     List<String> potentialOwners,
+                                                                     QueryContext queryContext);
+}
+----
