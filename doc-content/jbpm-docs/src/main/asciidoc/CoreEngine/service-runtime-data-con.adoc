@@ -1,0 +1,129 @@
+[id='service-runtime-data-con_{context}']
+
+== Runtime Data Service
+
+You can use the runtime data service to retrieve all runtime information about processes, such as started process instances and executed node instances.
+
+For example, you can build a list-based UI to show process definitions, process instances, tasks for a given user, and other data, based on information provided by the runtime data service.
+
+This service is optimised to be as efficient as possible while providing all required information.
+
+The following examples show various usage of this service.
+
+.Retrieving all process definitions
+[source,java]
+----
+Collection definitions = runtimeDataService.getProcesses(new QueryContext());
+----
+
+.Retrieving active process instances
+[source,java]
+----
+Collection<processinstancedesc> instances = runtimeDataService.getProcessInstances(new QueryContext());
+----
+
+.Retrieving active nodes for a particular process instance
+[source,java]
+----
+Collection<nodeinstancedesc> instances = runtimeDataService.getProcessInstanceHistoryActive(processInstanceId, new QueryContext());
+----
+
+.Retrieving tasks assigned to the user `john`
+[source,java]
+----
+List<tasksummary> taskSummaries = runtimeDataService.getTasksAssignedAsPotentialOwner("john", new QueryFilter(0, 10));
+----
+
+The runtime data service methods support two important parameters, `QueryContext` and `QueryFilter`. `QueryFilter` is an extension of `QueryContext`. You can use these parameters to manage the result set, providing pagination, sorting, and ordering. You can also use them to apply additional filtering when searching for user tasks. 
+
+The following definition shows the complete `RuntimeDataService` interface:
+
+.Definition of the `RuntimeDataService` interface
+[source,java]
+----
+public interface RuntimeDataService {
+
+    // Process instance information
+
+    Collection<ProcessInstanceDesc> getProcessInstances(QueryContext queryContext);
+
+    Collection<ProcessInstanceDesc> getProcessInstances(List<Integer> states, String initiator, QueryContext queryContext);
+
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessId(List<Integer> states, String processId, String initiator, QueryContext queryContext);
+
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessName(List<Integer> states, String processName, String initiator, QueryContext queryContext);
+
+    Collection<ProcessInstanceDesc> getProcessInstancesByDeploymentId(String deploymentId, List<Integer> states, QueryContext queryContext);
+
+    ProcessInstanceDesc getProcessInstanceById(long processInstanceId);
+
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessDefinition(String processDefId, QueryContext queryContext);
+
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessDefinition(String processDefId, List<Integer> states, QueryContext queryContext);
+
+
+    // Node and Variable instance information
+
+    NodeInstanceDesc getNodeInstanceForWorkItem(Long workItemId);
+
+    Collection<NodeInstanceDesc> getProcessInstanceHistoryActive(long processInstanceId, QueryContext queryContext);
+
+    Collection<NodeInstanceDesc> getProcessInstanceHistoryCompleted(long processInstanceId, QueryContext queryContext);
+
+    Collection<NodeInstanceDesc> getProcessInstanceFullHistory(long processInstanceId, QueryContext queryContext);
+
+    Collection<NodeInstanceDesc> getProcessInstanceFullHistoryByType(long processInstanceId, EntryType type, QueryContext queryContext);
+
+    Collection<VariableDesc> getVariablesCurrentState(long processInstanceId);
+
+    Collection<VariableDesc> getVariableHistory(long processInstanceId, String variableId, QueryContext queryContext);
+
+
+    // Process information
+
+    Collection<ProcessDefinition> getProcessesByDeploymentId(String deploymentId, QueryContext queryContext);
+
+    Collection<ProcessDefinition> getProcessesByFilter(String filter, QueryContext queryContext);
+
+    Collection<ProcessDefinition> getProcesses(QueryContext queryContext);
+
+    Collection<String> getProcessIds(String deploymentId, QueryContext queryContext);
+
+    ProcessDefinition getProcessById(String processId);
+
+    ProcessDefinition getProcessesByDeploymentIdProcessId(String deploymentId, String processId);
+
+	// user task query operations
+
+    UserTaskInstanceDesc getTaskByWorkItemId(Long workItemId);
+
+    UserTaskInstanceDesc getTaskById(Long taskId);
+
+    List<TaskSummary> getTasksAssignedAsBusinessAdministrator(String userId, QueryFilter filter);
+
+    List<TaskSummary> getTasksAssignedAsBusinessAdministratorByStatus(String userId, List<Status> statuses, QueryFilter filter);
+
+    List<TaskSummary> getTasksAssignedAsPotentialOwner(String userId, QueryFilter filter);
+
+    List<TaskSummary> getTasksAssignedAsPotentialOwner(String userId, List<String> groupIds, QueryFilter filter);
+
+    List<TaskSummary> getTasksAssignedAsPotentialOwnerByStatus(String userId, List<Status> status, QueryFilter filter);
+
+    List<TaskSummary> getTasksAssignedAsPotentialOwner(String userId, List<String> groupIds, List<Status> status, QueryFilter filter);
+
+    List<TaskSummary> getTasksAssignedAsPotentialOwnerByExpirationDateOptional(String userId, List<Status> status, Date from, QueryFilter filter);
+
+    List<TaskSummary> getTasksOwnedByExpirationDateOptional(String userId, List<Status> strStatuses, Date from, QueryFilter filter);
+
+    List<TaskSummary> getTasksOwned(String userId, QueryFilter filter);
+
+    List<TaskSummary> getTasksOwnedByStatus(String userId, List<Status> status, QueryFilter filter);
+
+    List<Long> getTasksByProcessInstanceId(Long processInstanceId);
+
+    List<TaskSummary> getTasksByStatusByProcessInstanceId(Long processInstanceId, List<Status> status, QueryFilter filter);
+
+    List<AuditTask> getAllAuditTask(String userId, QueryFilter filter);
+
+}
+----
