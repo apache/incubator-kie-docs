@@ -8,14 +8,28 @@ You can use the following {PRODUCT} command-line interface (CLI) operation to in
 .Enable Trusty Service
 [source,subs="attributes+,+quotes"]
 ----
-$ {PRODUCT_INIT} install trusty -p __PROJECT_NAME__
+$ {PRODUCT_INIT} install trusty --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__ -p __PROJECT_NAME__
 ----
 
 To export tracing events from your {PRODUCT} project, you must additionally add the `tracing-addon` add-on as a dependency to your project.
 
 When you enable the Trusty Service for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoTrusty` custom resource to handle the Trusty Service deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
 
-The {PRODUCT} Operator depends on the https://github.com/infinispan/infinispan-operator[Infinispan Operator] for persistence infrastructure and on the https://strimzi.io/docs/latest/[Strimzi Operator] for Kafka messaging infrastructure. The {PRODUCT} Operator uses the Infinispan Operator to deploy new Infinispan Server instances when needed, and uses the Strimzi Operator to deploy a Kafka cluster with Zookeeper to support sending and receiving messages within a process. Due to these dependencies, these operators must be installed in the same namespace as the {PRODUCT} project. For information about Infinispan Operator installation, see the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan Operator Guide]. For information about Strimzi Operator installation, see the https://strimzi.io/docs/operators/master/quickstart.html[Strimzi Quick Start guide].
+The {PRODUCT} Operator uses the https://github.com/infinispan/infinispan-operator[Infinispan Operator] for persistence infrastructure and the https://strimzi.io/docs/latest/[Strimzi Operator] for Kafka messaging infrastructure.
+
+If an Infinispan Server instance and an Apache Kafka cluster are not installed in the OpenShift namespace, you must configure these infrastructure components before installing the Trusty Service:
+
+.Enable Infinispan persistence
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 -p __PROJECT_NAME__
+----
+
+.Enable Kafka messaging
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 -p __PROJECT_NAME__
+----
 
 If the {PRODUCT} Explainability Service is enabled, then the Trusty Service also stores the explainability results for all the tracing events.
 
