@@ -1,0 +1,55 @@
+[id='log-to-database-con_{context}']
+= Configuration for storing the process events log in a database
+
+To log process history information in a database with a default data model, you must register the logger on your session.
+
+.Registering the logger on your KIE session
+[source,java]
+----
+KieSession ksession = ...;
+ksession.addProcessEventListener(AuditLoggerFactory.newInstance(Type.JPA, ksession, null));
+
+// invoke methods for your session here
+----
+
+To specify the database for storing the information, you must modify the `persistence.xml` file to include the audit log classes: `ProcessInstanceLog`, `NodeInstanceLog`, and `VariableInstanceLog`.
+
+.Modified `persistence.xml` file that includes the audit log classes
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<persistence
+  version="2.0"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd
+  http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd"
+  xmlns="http://java.sun.com/xml/ns/persistence"
+  xmlns:orm="http://java.sun.com/xml/ns/persistence/orm"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+  <persistence-unit name="org.jbpm.persistence.jpa" transaction-type="JTA">
+    <provider>org.hibernate.ejb.HibernatePersistence</provider>
+    <jta-data-source>jdbc/jbpm-ds</jta-data-source>
+    <mapping-file>META-INF/JBPMorm.xml</mapping-file>
+    <class>org.drools.persistence.info.SessionInfo</class>
+    <class>org.jbpm.persistence.processinstance.ProcessInstanceInfo</class>
+    <class>org.drools.persistence.info.WorkItemInfo</class>
+    <class>org.jbpm.persistence.correlation.CorrelationKeyInfo</class>
+    <class>org.jbpm.persistence.correlation.CorrelationPropertyInfo</class>
+    <class>org.jbpm.runtime.manager.impl.jpa.ContextMappingInfo</class>
+
+    <class>org.jbpm.process.audit.ProcessInstanceLog</class>
+    <class>org.jbpm.process.audit.NodeInstanceLog</class>
+    <class>org.jbpm.process.audit.VariableInstanceLog</class>
+
+    <properties>
+      <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+      <property name="hibernate.max_fetch_depth" value="3"/>
+      <property name="hibernate.hbm2ddl.auto" value="update"/>
+      <property name="hibernate.show_sql" value="true"/>
+      <property name="hibernate.connection.release_mode" value="after_transaction"/>
+      <property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.JBossStandAloneJtaPlatform"/>
+    </properties>
+  </persistence-unit>
+</persistence>
+----
