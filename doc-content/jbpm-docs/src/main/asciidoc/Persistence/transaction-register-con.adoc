@@ -1,0 +1,86 @@
+[id='transaction-register-con_{context}']
+= Registration of a transaction manager
+
+You must register a transaction manager at the environment to use user-defined transactions.
+
+The following sample code registers the transaction manager. Then it uses JTA calls to specify transaction boundaries.
+
+.Registering a transaction manager and using transactions
+[source,java]
+----
+// create the entity manager factory
+EntityManagerFactory emf = EntityManagerFactoryManager.get().getOrCreate("org.jbpm.persistence.jpa");
+TransactionManager tm = TransactionManagerServices.getTransactionManager();
+
+// set up the runtime environment
+RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
+.newDefaultBuilder()
+.addAsset(ResourceFactory.newClassPathResource("MyProcessDefinition.bpmn2"), ResourceType.BPMN2)
+    .addEnvironmentEntry(EnvironmentName.TRANSACTION_MANAGER, tm)
+    .get();
+
+// get the KIE session
+RuntimeManager manager = RuntimeManagerFactory.Factory.get().newPerRequestRuntimeManager(environment);
+RuntimeEngine runtime = manager.getRuntimeEngine(ProcessInstanceIdContext.get());
+KieSession ksession = runtime.getKieSession();
+
+// start the transaction
+UserTransaction ut = InitialContext.doLookup("java:comp/UserTransaction");
+ut.begin();
+
+// perform multiple commands inside one transaction
+ksession.insert( new Person( "John Doe" ) );
+ksession.startProcess("MyProcess");
+
+// commit the transaction
+ut.commit();
+----
+
+You must provide a `jndi.properties` file in you root class path to create a JNDI `InitialContextFactory` object, because transaction-related objects like `UserTransaction`, `TransactionManager`, and `TransactionSynchronizationRegistry` are registered in JNDI.
+
+If your project includes the `jbpm-test` module, this file is already included by default.
+
+Otherwise, you must create the `jndi.properties` file with the following content:
+
+.Content of the `jndi.properties` file 
+[source,properties]
+----
+java.naming.factory.initial=org.jbpm.test.util.CloseSafeMemoryContextFactory
+org.osjava.sj.root=target/test-classes/config
+org.osjava.jndi.delimiter=/
+org.osjava.sj.jndi.shared=true
+----
+
+This configuration assumes that the `simple-jndi:simple-jndi` artifact is present in the class path of your project. You can also use a different JNDI implementation.
+
+// the older version refered also to EAP 5.x, but that is EOL for several years now
+By default, the Narayana JTA transaction manager is used. If you want to use a different JTA transaction manager, you can change the `persistence.xml` file to use the required transaction manager. For example, if your application runs on {EAP} version 7 or later, you can use the JBoss transaction manager. In this case, change the transaction manager property in the `persistence.xml` file:
+
+.Transaction manager property in the `persistence.xml` file for the JBoss transaction manager
+[source,properties]
+----
+<property name="hibernate.transaction.jta.platform" value="org.hibernate.transaction.JBossTransactionManagerLookup" />
+----
+
+[WARNING]
+====
+Using the Singleton strategy of the `RuntimeManager` class with JTA transactions  (``UserTransaction`` or CMT) creates a race condition. This race condition can result in an `IllegalStateException` exception with a  message similar to `Process instance XXX is disconnected`.
+
+To avoid this race condition, explicitly synchronize around the  `KieSession` instance when invoking the transaction in the user application code.
+
+[source,java]
+----
+synchronized (ksession) {
+    try {
+        tx.begin();
+
+        // use ksession
+        // application logic
+
+        tx.commit();
+    } catch (Exception e) {
+        //...
+    }
+}
+----
+====

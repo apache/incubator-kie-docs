@@ -1,0 +1,451 @@
+[id='auditlog-datamodel-ref_{context}']
+= The {PROCESS_ENGINE} audit log data model
+
+You can query {PROCESS_ENGINE} audit log information to use it in different scenarios, for example, creating a history log for one specific process instance or analyzing the performance of all instances of a specific process.
+
+The audit log data model is a default implementation. Depending on your use cases, you might also define your own data model for storing the information you require. You can use process event listeners to extract the information.
+
+The data model contains three entities: one for process instance information, one for node instance information, and one for process variable instance information.
+
+The `ProcessInstanceLog` table contains the basic log information about a process instance.
+
+.ProcessInstanceLog
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key and ID of the log entity
+|NOT NULL
+
+|``correlationKey``
+|The correlation of this process instance
+|
+
+|``duration``
+|Actual duration of this process instance since its start date
+|
+
+|``end_date``
+|When applicable, the end date of the process instance
+|
+
+|``externalId``
+|Optional external identifier used to correlate to some elements, for example, a deployment ID
+|
+
+|``user_identity``
+|Optional identifier of the user who started the process instance
+|
+
+|``outcome``
+|The outcome of the process instance. This field contains the error code if the process instance was finished with an error event.
+|
+
+|``parentProcessInstanceId``
+|The process instance ID of the parent process instance, if applicable
+|
+
+|``processid``
+|The ID of the process
+|
+
+|``processinstanceid``
+|The process instance ID
+|NOT NULL
+
+|``processname``
+|The name of the process
+|
+
+|``processtype``
+|The type of the instance (process or case)
+|
+
+|``processversion``
+|The version of the process
+|
+
+|``sla_due_date``
+|The due date of the process according to the service level agreement (SLA)
+|
+
+|``slaCompliance``
+|The level of compliance with the SLA
+|
+
+|``start_date``
+|The start date of the process instance
+|
+
+|``status``
+|The status of the process instance that maps to the process instance state
+|
+|===
+
+
+The `NodeInstanceLog` table contains more information about which nodes were executed inside each process instance.
+Whenever a node instance is entered from one of its incoming connections or is exited through one of its outgoing connections, information about the event is stored in this table.
+
+.NodeInstanceLog
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key and ID of the log entity
+|NOT NULL
+
+|``connection``
+|Actual identifier of the sequence flow that led to this node instance
+|
+
+|``log_date``
+|The date of the event
+|
+
+|``externalId``
+|Optional external identifier used to correlate to some elements, for example, a deployment ID
+|
+
+|``nodeid``
+|The node ID of the corresponding node in the process definition
+|
+
+|``nodeinstanceid``
+|The node instance ID
+|
+
+|``nodename``
+|The name of the node
+|
+
+|``nodetype``
+|The type of the node
+|
+
+|``processid``
+|The ID of the process that the process instance is executing
+|
+
+|``processinstanceid``
+|The process instance ID
+|NOT NULL
+
+|``sla_due_date``
+|The due date of the node according to the service level agreement (SLA)
+|
+
+|``slaCompliance``
+|The level of compliance with the SLA
+|
+
+|``type``
+|The type of the event (0 = enter, 1 = exit)
+|NOT NULL
+
+|``workItemId``
+|Optional, only for certain node types: The identifier of the work item
+|
+
+|``nodeContainerId``
+|The identifier of the container, if the node is inside an embedded sub-process node 
+|
+
+|``referenceId``
+|The reference identifier
+|
+
+|===
+
+
+The `VariableInstanceLog` table contains information about changes in variable instances. By default, the {PROCESS_ENGINE} generates generate log entries after a variable changes its value. It is also possible to log entries before the changes.
+
+.VariableInstanceLog
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key and ID of the log entity
+|NOT NULL
+
+|``externalId``
+|Optional external identifier used to correlate to some elements, for example, a deployment ID
+|
+
+|``log_date``
+|The date of the event
+|
+
+|``processid``
+|The ID of the process that the process instance is executing
+|
+
+|``processinstanceid``
+|The process instance ID
+|NOT NULL
+
+|``oldvalue``
+|The previous value of the variable at the time that the log is made
+|
+
+|``value``
+|The value of the variable at the time that the log is made
+|
+
+|``variableid``
+|The variable ID in the process definition
+|
+
+|``variableinstanceid``
+|The ID of the variable instance
+|
+|===
+
+
+The `AuditTaskImpl` table contains information about user tasks.
+
+.AuditTaskImpl
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key and ID of the task log entity
+|
+
+|``activationTime``
+|Time when this task was activated
+|
+
+|``actualOwner``
+|Actual owner assigned to this task, This value is set set only when the owner claims the task.
+|
+
+|``createdBy``
+|User who created this task
+|
+
+|``createdOn``
+|Date when the task was created
+|
+
+|``deploymentId``
+|Deployment ID this task is part of
+|
+
+|``description``
+|Description of the task
+|
+
+|``dueDate``
+|Due date set on this task
+|
+
+|``name``
+|Name of the task
+|
+
+|``parentId``
+|Parent task id
+|
+
+|``priority``
+|Priority of the task
+|
+
+|``processId``
+|Process definition ID to which this task belongs
+|
+
+|``processInstanceId``
+|Process instance ID with which this task is associated
+|
+
+|``processSessionId``
+|KieSession ID used to create this task
+|
+
+|``status``
+|Current status of the task
+|
+
+|``taskId``
+|Identifier of the task
+|
+
+|``workItemId``
+|Identifier of the work item assigned on the process side to this task ID
+|
+
+|``lastModificationDate``
+|The date and time when the process instance state was last recorded in the persistence database
+|
+
+|===
+
+
+The `BAMTaskSummary` table collects information about tasks that is used by the BAM engine to build charts and dashboards.
+
+.BAMTaskSummary
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``pk``
+|The primary key and ID of the log entity
+|NOT NULL
+
+|``createdDate``
+|Date when the task was created
+|
+
+|``duration``
+|Duration since the task was created
+|
+
+|``endDate``
+|Date when the task reached an end state (complete, exit, fail, skip)
+|
+
+|``processinstanceid``
+|The process instance ID
+|
+
+|``startDate``
+|Date when the task was started
+|
+
+|``status``
+|Current status of the task
+|
+
+|``taskId``
+|Identifier of the task
+|
+
+|``taskName``
+|Name of the task
+|
+
+|``userId``
+|User ID assigned to the task
+|
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+
+|===
+
+
+The `TaskVariableImpl` table contains information about task variable instances.
+
+.TaskVariableImpl
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key and ID of the log entity
+|NOT NULL
+
+|``modificationDate``
+|Date when the variable was modified most recently
+|
+
+|``name``
+|Name of the task
+|
+
+|``processid``
+|The ID of the process that the process instance is executing
+|
+
+|``processinstanceid``
+|The process instance ID
+|
+
+|``taskId``
+|Identifier of the task
+|
+
+|``type``
+|Type of the variable: either input or output of the task
+|
+
+|``value``
+|Variable value
+|
+|===
+
+
+The `TaskEvent` table contains information about changes in task instances.
+Operations such as `claim`, `start`, and `stop` are stored in this table to provide a timeline view of events that happened to the given task.
+
+.TaskEvent
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key and ID of the log entity
+|NOT NULL
+
+|``logTime``
+|Date when this event was saved
+|
+
+|``message``
+|Log event message
+|
+
+|``processinstanceid``
+|The process instance ID
+|
+
+|``taskId``
+|Identifier of the task
+|
+
+|``type``
+|Type of the event. Types correspond to life cycle phases of the task
+|
+
+|``userId``
+|User ID assigned to the task
+|
+
+|``workItemId``
+|Identifier of the work item to which the task is assigned
+|
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+
+|``correlationKey``
+|Correlation key of the process instance
+|
+
+|``processType``
+|Type of the process instance (process or case)
+|
+
+|===
+
