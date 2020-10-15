@@ -1,0 +1,51 @@
+[id='transaction-cmt-proc_{context}']
+= Configuring container-managed transactions
+
+If you embed the {PROCESS_ENGINE} in an application that executes in Container-managed transaction (CMT) mode, for example, EJB beans, you must complete additional configuration. This configuration is especially important if the application runs on an application server that does not allow a CMT application to access a `UserTransaction` instance from JNDI, for example, 
+WebSphere Application Server.
+
+The default transaction manager implementation in the {PROCESS_ENGINE} relies on `UserTransaction` to query transaction status and then uses the status to determine whether to start a transaction. In environments that prevent access to a `UserTransaction` instance, this implementation fails.
+
+To enable proper execution in CMT environments, the {PROCESS_ENGINE} provides a dedicated transaction manager implementation: 
+`org.jbpm.persistence.jta.ContainerManagedTransactionManager`. This transaction manager expects that the transaction is active and always returns `ACTIVE` when the `getStatus()` method is invoked. Operations such as `begin`, `commit`, and `rollback` are no-op methods, because the transaction manager can not affect these operations in container-managed transaction mode. 
+
+[NOTE]
+====
+During process execution your code must popagate any exceptions thrown by the engine to the container to ensure that the container rolls transactions back when necessary.
+====
+
+To configure this transaction manager, complete the steps in this procedure.
+
+.Procedure
+
+. In your code, insert the transaction manager and persistence context manager into the environment before creating or loading a session: 
++
+.Inserting the transaction manager and persistence context manager into the environment 
+[source,java]
+----
+Environment env = EnvironmentFactory.newEnvironment();
+env.set(EnvironmentName.ENTITY_MANAGER_FACTORY, emf);
+env.set(EnvironmentName.TRANSACTION_MANAGER, new ContainerManagedTransactionManager());
+env.set(EnvironmentName.PERSISTENCE_CONTEXT_MANAGER, new JpaProcessPersistenceContextManager(env));
+env.set(EnvironmentName.TASK_PERSISTENCE_CONTEXT_MANAGER, new JPATaskPersistenceContextManager(env));
+----
++
+. In the `persistence.xml` file, configure the JPA provider. The following example uses `hibernate` and  WebSphere Application Server. 
++
+.Configuring the JPA provider in the `persistence.xml` file
+[source,java]
+----
+
+<property name="hibernate.transaction.factory_class" value="org.hibernate.transaction.CMTTransactionFactory"/>
+<property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.WebSphereJtaPlatform"/>
+----
++
+. To dispose a KIE session, do not dispose it directly. Instead, execute the `org.jbpm.persistence.jta.ContainerManagedTransactionDisposeCommand` command. This commands ensures that the session is disposed at the completion of the current transaction. In the following example, `ksession` is the `KieSession` object that you want to dispose. 
++
+.Disposing a KIE session using the `ContainerManagedTransactionDisposeCommand` command
+[source,java]
+----
+ksession.execute(new ContainerManagedTransactionDisposeCommand());
+----
++
+Directly disposing the session causes an exception at the completion of the transaction, beacuse the {PROCESS_ENGINE} registers transaction synchronization to clean up the session state.

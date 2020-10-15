@@ -1,0 +1,243 @@
+[id='persistence-datamodel-ref_{context}']
+= Binary runtime persistence data model
+
+The runtime persistence data is internal. As a general rule, do not access the database tables directly and, most importantly, do not modify it. Changing the runtime state information for process instances without using the {PROCESS_ENGINE} might have unexpected consequences. Use a history log to analyze information about the current or past states of process instances.
+
+In rare cases it might be useful to query internal database tables directly if you have a specific need to do so.
+
+The {PROCESS_ENGINE} uses a binary persistence mechanism, otherwise known as marshalling, which converts the state of the process instance into a binary dataset. The same mechanism is also applied to the session state and any work item states.
+
+When the process instance state is persisted, the {PROCESS_ENGINE} completes two steps:
+
+* First, it transforms the process instance information into a binary blob. For performance reasons, the {PROCESS_ENGINE} uses a custom serialization mechanism and not standard Java serialization.
+* Next, it stores the blob alongside metadata about this process instance. This metadata includes the process instance ID, process ID, and process start date, as well as other data.
+
+Apart from process instance states, the {PROCESS_ENGINE} stores some state information for the session, including the state of timer jobs and the session data for evaluating business rules. The {PROCESS_ENGINE} stores the session state as a separate binary blob, along with metadata that includes the ID of the session. 
+
+To restore the state of a session, reload the session with a particular ID using the `ksession.getId()` method.
+
+Binary datasets that represent process instance states are usually relatively small, because they contain only the minimal execution state of the process instance. For a simple process instance, the state usually includes the nodes that are currently executing and any existing variable values.
+
+.Data model for {PROCESS_ENGINE} persistence
+image::Persistence/jbpm_schema_doc.png[]
+
+The `sessioninfo` entity contains the state of the knowledge session in which the process instance is running.
+
+.SessionInfo
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``id``
+|The primary key
+|NOT NULL
+
+|``lastmodificationdate``
+|The last time that the entity was saved to the database
+|
+
+|``rulesbytearray``
+|The binary dataset containing the state of the session
+|NOT NULL
+
+|``startdate``
+|The start time of the session
+|
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+|===
+
+
+The `processinstanceinfo` entity contains the state of the process instance.
+
+.ProcessInstanceInfo
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``instanceid``
+|The primary key
+|NOT NULL
+
+|``lastmodificationdate``
+|The last time that the entity was saved to the database
+|
+
+|``lastreaddate``
+|The last time that the entity was retrieved (read) from the database
+|
+
+|``processid``
+|The name (ID) of the process
+|
+
+|``processinstancebytearray``
+|The binary dataset containing the state of the process instance
+|NOT NULL
+
+|``startdate``
+|The start time of the process
+|
+
+|``state``
+|An integer representing the state of the process instance
+|NOT NULL
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+|===
+
+
+The `eventtypes` entity contains information about events that a process instance will undergo or has undergone.
+
+.EventTypes
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``instanceid``
+|This column references the `processinstanceinfo` primary key. There is a foreign key constraint on this column.
+|NOT NULL
+
+|``element``
+|A text field related to an event that the process has undergone
+|
+|===
+
+
+The `workiteminfo` entity contains the state of a work item.
+
+.WorkItemInfo
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``workitemid``
+|The primary key
+|NOT NULL
+
+|``creationDate``
+|The creation date of the work item
+|
+
+|``name``
+|The name of the work item
+|
+
+|``processinstanceid``
+|The (primary key) ID of the process. There is no foreign key constraint on this field.
+|NOT NULL
+
+|``state``
+|An integer representing the state of the work item
+|NOT NULL
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+
+|``workitembytearay``
+|The binary dataset containing the state of the work item
+|NOT NULL
+|===
+
+
+The `CorrelationKeyInfo` entity contains information about correlation keys assigned to the given process instance. The relationship is loose, because this table is optional, used only when correlation capabilities are required.
+
+.CorrelationKeyInfo
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``keyid``
+|The primary key
+|NOT NULL
+
+|``name``
+|The assigned name of the correlation key
+|
+
+|``processinstanceid``
+|The ID of the process instance which is assigned to this correlation key
+|NOT NULL
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+|===
+
+
+The `CorrelationPropertyInfo` entity contains information about correlation properties for the given correlation key that is assigned to the given process instance.
+
+.CorrelationPropertyInfo
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``propertyid``
+|The primary key
+|NOT NULL
+
+|``name``
+|The name of the property
+|
+
+|``value``
+|The value of the property
+|NOT NULL
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+
+|``correlationKey-keyid``
+|Foreign key to map to the correlation key
+|NOT NULL
+|===
+
+
+The `ContextMappingInfo` entity contains information about contextual information mapped to a ksession.
+This entity is an internal part of the `RuntimeManager` class and can be considered optional when `RuntimeManager` is not used.
+
+.ContextMappingInfo
+[cols="1,1,1", options="header"]
+|===
+| Field
+| Description
+| Nullable
+
+|``mappingid``
+|The primary key
+|NOT NULL
+
+|``context_id``
+|Identifier of the context
+|NOT NULL
+
+|``ksession_id``
+|Identifier of the ksession mapped to this context
+|NOT NULL
+
+|``owner_id``
+|Identifier of the runtime manager
+|NOT NULL
+
+|``optlock``
+|The version field that serves as its optimistic lock value
+|
+|===

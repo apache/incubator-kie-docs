@@ -1,0 +1,37 @@
+[id='persistence-datasources-con_{context}']
+= Configuration of data sources for {PROCESS_ENGINE} persistence
+
+To configure JPA persistence in the {PROCESS_ENGINE}, you must provide a data source, which represents a database backend.
+
+If you run your application in an application server, such as {EAP}, you can use the application server to set up data sources, for example, by adding a data source configuration file in the `deploy` directory. For instructions about creating data sources, see the documentaion for the application server.
+
+If you deploy your application to {EAP}, you can create a data source by creating a configuration file in the `deploy` directory,  for example:
+
+.Example data source configuration file for {EAP}
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<datasources>
+  <local-tx-datasource>
+    <jndi-name>jdbc/jbpm-ds</jndi-name>
+    <connection-url>jdbc:h2:tcp://localhost/~/test</connection-url>
+    <driver-class>org.h2.jdbcx.JdbcDataSource</driver-class>
+    <user-name>sa</user-name>
+    <password></password>
+  </local-tx-datasource>
+</datasources>
+----
+
+If your application runs in a plain Java environment, you can use Narayana and Tomcat DBCP by using the `DataSourceFactory` class from the `kie-test-util` module supplied by {PRODUCT}. See the following code fragment. This example uses the H2 in-memory database in combination with Narayana and Tomcat DBCP.
+
+.Example code configuring an H2 in-memory database data source
+[source,java]
+----
+Properties driverProperties = new Properties();
+driverProperties.put("user", "sa");
+driverProperties.put("password", "sa");
+driverProperties.put("url", "jdbc:h2:mem:jbpm-db;MVCC=true");
+driverProperties.put("driverClassName", "org.h2.Driver");
+driverProperties.put("className", "org.h2.jdbcx.JdbcDataSource");
+PoolingDataSourceWrapper pdsw = DataSourceFactory.setupPoolingDataSource("jdbc/jbpm-ds", driverProperties);
+----
