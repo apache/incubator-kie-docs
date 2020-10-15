@@ -1,15 +1,28 @@
 [id='con-kogito-operator-with-kafka_{context}']
 = {PRODUCT} Operator interaction with Apache Kafka
 
-You can use the following {PRODUCT} command-line interface (CLI) operation to install the Apache Kafka infrastructure for messaging in {PRODUCT} services:
+You can install the Apache Kafka infrastructure for messaging in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
 
-.Enable Kafka messaging
+.Enable Kafka messaging using the {PRODUCT} CLI
 [source,subs="attributes+,+quotes"]
 ----
-$ {PRODUCT_INIT} install kafka -p __PROJECT_NAME__
+$ {PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 -p __PROJECT_NAME__
 ----
 
-When you install the Kafka infrastructure for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle the Kafka cluster deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
+.Enable Kafka messaging using a custom resource definition
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoInfra
+metadata:
+  name: KAFKA_INFRA_NAME
+spec:
+  resource:
+    apiVersion: kafka.strimzi.io/v1beta1
+    kind: Kafka
+----
+
+When you install the Kafka infrastructure for your {PRODUCT} project using the {PRODUCT} CLI, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle the Kafka cluster deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
 
 The {PRODUCT} Operator uses the https://strimzi.io/docs/latest/[Strimzi Operator] to deploy a Kafka cluster with Zookeeper to support sending and receiving messages within a process. Due to this dependency, the Strimzi Operator must be installed in the Kafka cluster. For information about Strimzi Operator installation, see the https://strimzi.io/docs/operators/master/quickstart.html[Strimzi Quick Start guide].
 
@@ -17,40 +30,24 @@ After the Strimzi Operator deploys Kafka instances, you can edit the instances t
 
 == Apache Kafka messaging in {PRODUCT} services
 
-After you install the Apache Kafka infrastructure, to enable Kafka messaging for a {PRODUCT} service using the {PRODUCT} Operator, use the `--enable-events` flag during deployment in the {PRODUCT} CLI or edit the `spec.kafka` configuration in the `KogitoRuntime` custom resource:
+After you install the `KogitoInfra` custom resource to connect with the Apache Kafka infrastructure, to enable Kafka messaging for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __KAFKA_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
 
-* `true`: Kafka is installed and deploys a Kafka cluster in the namespace if no Kafka cluster owned by the {PRODUCT} Operator exists.
-* `false`: Kafka is not installed. Use this option only if you do not need messaging or if you intend to deploy your own messaging mechanism and you know how to configure your service to access it.
-
-.Example {PRODUCT} service deployment from local source with Kafka messaging enabled
+.Example {PRODUCT} service deployment with Kafka messaging enabled using the {PRODUCT} CLI
 [source,subs="attributes+,+quotes"]
 ----
-$ {PRODUCT_INIT} deploy-service travels --enable-events
+$ {PRODUCT_INIT} deploy-service travels --infra __KAFKA_INFRA_NAME__
 ----
 
 .Example {PRODUCT} service custom resource with Kafka messaging enabled
 [source,yaml]
 ----
 apiVersion: app.kiegroup.org/v1alpha1
-kind: KogitoBuild
-metadata:
-  name: travels
-spec:
-  type: RemoteSource
-  gitSource:
-    uri: "https://github.com/kiegroup/kogito-examples/"
-    contextDir: kogito-travel-agency/extended/travels
-  envs:
-    - name: MAVEN_ARGS_APPEND
-      value: -Pevents
----
-apiVersion: app.kiegroup.org/v1alpha1
 kind: KogitoRuntime
 metadata:
   name: travels
 spec:
-  kafka:
-    useKogitoInfra: true
+  infra:
+    - KAFKA_INFRA_NAME
 ----
 
 When you enable Kafka messaging, a variable named `KAFKA_BOOTSTRAP_SERVERS` is injected into the service container. On Quarkus, this is the default behavior when you use https://quarkus.io/guides/kafka-streams#topic-configuration[Kafka Client] 1.x or later. On Spring Boot, you might need to use a property substitution in the `application.properties` file, such as the following example:
@@ -68,17 +65,29 @@ For example, when you deploy the following {PRODUCT} service, the variables `MP_
 .Example {PRODUCT} service deployment with injected Kafka variable values
 [source]
 ----
-$ kogito deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --enable-events \
+$ kogito deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --infra kogito-kafka-infra \
 --build-env MAVEN_ARGS_APPEND="-Pevents" \
 -e MP_MESSAGING_INCOMING_TRAVELLERS_BOOTSTRAP_SERVERS
 -e MP_MESSAGING_OUTGOING_PROCESSEDTRAVELLERS_BOOTSTRAP_SERVERS
 ----
 
-[NOTE]
-.Kafka messaging with the {PRODUCT} Data Index Service
-====
-For the {PRODUCT} Data Index Service, if you do not provide a service URL to connect to Kafka or the name of a Kafka instance that was deployed by Strimzi, a new Kafka instance is deployed automatically in the `KogitoInfra` custom resource. You do not need to do anything for both services to work together.
-====
+If you set up a custom Kafka cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variable and application property:
+
+.Required environment variable for a custom Kafka cluster
+[source]
+----
+ENABLE_EVENTS=true
+----
+
+.Required application property for a custom Kafka cluster
+[source]
+----
+# On Quarkus
+kafka.bootstrap.servers=
+
+# On Spring Boot
+spring.kafka.bootstrap-servers=
+----
 
 .Additional resources
 ifdef::KOGITO[]

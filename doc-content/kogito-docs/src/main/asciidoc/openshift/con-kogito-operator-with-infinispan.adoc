@@ -1,15 +1,28 @@
 [id='con-kogito-operator-with-infinispan_{context}']
 = {PRODUCT} Operator interaction with Infinispan
 
-You can use the following {PRODUCT} command-line interface (CLI) operation to install the Infinispan infrastructure for process data persistence in {PRODUCT} services:
+You can install the Infinispan infrastructure for process data persistence in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
 
-.Enable Infinispan persistence
+.Enable Infinispan persistence using the {PRODUCT} CLI
 [source,subs="attributes+,+quotes"]
 ----
-$ {PRODUCT_INIT} install infinispan -p __PROJECT_NAME__
+$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 -p __PROJECT_NAME__
 ----
 
-When you install the Infinispan infrastructure for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle Infinispan deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
+.Enable Infinispan persistence using a custom resource definition
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoInfra
+metadata:
+  name: INFINISPAN_INFRA_NAME
+spec:
+  resource:
+    apiVersion: infinispan.org/v1
+    kind: Infinispan
+----
+
+When you install the Infinispan infrastructure for your {PRODUCT} project using the {PRODUCT} CLI, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle Infinispan deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
 
 The `KogitoInfra` resource uses the https://github.com/infinispan/infinispan-operator[Infinispan Operator] to deploy new Infinispan Server instances when needed. Due to this dependency, the Infinispan Operator must be installed in the same namespace where you deployed the custom {PRODUCT} service. For information about Infinispan Operator installation, see the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan Operator Guide].
 
@@ -42,95 +55,57 @@ W3BqoCywi1WWvVIe
 
 == Infinispan persistence in {PRODUCT} services
 
-After you install the Infinispan infrastructure, to enable Infinispan persistence for a {PRODUCT} service using the {PRODUCT} Operator, use the `--enable-persistence` flag during deployment in the {PRODUCT} CLI or edit the `spec.infinispan` configuration in the `KogitoRuntime` custom resource:
+After you install the `KogitoInfra` custom resource to connect with the Infinispan infrastructure, to enable Infinispan persistence for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
 
-* `true`: Infinispan is installed in the namespace and the connection property environment variables are injected into the service.
-* `false`: Infinispan is not installed. Use this option only if you do not need persistence or if you intend to deploy your own persistence mechanism and you know how to configure your service to access it.
-
-.Example {PRODUCT} service deployment from local source with Infinispan persistence enabled
+.Example {PRODUCT} service deployment with Infinispan persistence enabled using the {PRODUCT} CLI
 [source,subs="attributes+,+quotes"]
 ----
-$ {PRODUCT_INIT} deploy-service travels --enable-persistence
+$ {PRODUCT_INIT} deploy-service travels --infra __INFINISPAN_INFRA_NAME__
 ----
 
 .Example {PRODUCT} service custom resource with Infinispan persistence enabled
 [source,yaml]
 ----
 apiVersion: app.kiegroup.org/v1alpha1
-kind: KogitoBuild
-metadata:
-  name: travels
-spec:
-  type: RemoteSource
-  gitSource:
-    uri: "https://github.com/kiegroup/kogito-examples/"
-    contextDir: kogito-travel-agency/extended/travels
-  envs:
-    - name: MAVEN_ARGS_APPEND
-      value: -Ppersistence
----
-apiVersion: app.kiegroup.org/v1alpha1
 kind: KogitoRuntime
 metadata:
   name: travels
 spec:
-  infinispan:
-    useKogitoInfra: true
+  infra:
+    - INFINISPAN_INFRA_NAME
 ----
 
-If your {PRODUCT} project uses the `infinispan-persistence-addon` add-on to enable Infinispan persistence explicitly, the {PRODUCT} Operator installs Infinispan and injects the connection properties as environment variables into the service, depending on the runtime.
+If you set up a custom Infinispan cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
 
-The following table lists the injected environment variables for Quarkus and Spring Boot:
-
-.Infinispan environment variables injected by the {PRODUCT} Operator
-[cols="30%,30%,20%,25%" options="header"]
-|===
-|Quarkus environment variable
-|Spring Boot environment variable
-|Description
-|Example value
-
-|`QUARKUS_INFINISPAN_CLIENT_SERVER_LIST`
-|`INFINISPAN_REMOTE_SERVER_LIST`
-|Service URI from the deployed Infinispan instance
-|`kogito-infinispan:11222`
-
-|`QUARKUS_INFINISPAN_CLIENT_AUTH_USERNAME`
-|`INFINISPAN_REMOTE_AUTH_USER_NAME`
-|Default user name generated by the Infinispan Operator
-|`developer`
-
-|`QUARKUS_INFINISPAN_CLIENT_AUTH_PASSWORD`
-|`INFINISPAN_REMOTE_AUTH_PASSWORD`
-|Random password generated by the Infinispan Operator
-|`Z1Nz34JpuVdzMQKi`
-
-|`QUARKUS_INFINISPAN_CLIENT_SASL_MECHANISM`
-|`INFINISPAN_REMOTE_SASL_MECHANISM`
-|Defaults to `PLAIN`
-|`PLAIN`
-|===
-
-Ensure that your {PRODUCT} service can read these properties in runtime. These variable names are the same as the names used by Infinispan clients from Quarkus and Spring Boot.
-
-On Quarkus 1.1.0 ({PRODUCT} 0.6.0) or earlier, ensure that your `application.properties` contains the following properties:
-
-.Required Infinispan properties on Quarkus 1.1.0 ({PRODUCT} 0.6.0) or earlier
+.Required environment variables for a custom Infinispan cluster
 [source]
 ----
-quarkus.infinispan-client.server-list=
-quarkus.infinispan-client.auth-username=
-quarkus.infinispan-client.auth-password=
-quarkus.infinispan-client.sasl-mechanism=
+ENABLE_PERSISTENCE=true
+
+# On Quarkus
+QUARKUS_INFINISPAN_CLIENT_AUTH_USERNAME
+QUARKUS_INFINISPAN_CLIENT_AUTH_PASSWORD
+
+# On Spring Boot
+INFINISPAN_REMOTE_AUTH_USERNAME
+INFINISPAN_REMOTE_AUTH_PASSWORD
 ----
 
-These properties are replaced with the environment variables by the {PRODUCT} Operator at runtime.
+.Required application properties for a custom Infinispan cluster
+[source]
+----
+# On Quarkus
+quarkus.infinispan-client.server-list=
+quarkus.infinispan-client.use-auth=
+quarkus.infinispan-client.sasl-mechanism=
+quarkus.infinispan-client.auth-realm=
 
-[NOTE]
-.Infinispan persistence with the {PRODUCT} Data Index Service
-====
-For the {PRODUCT} Data Index Service, if you do not provide a service URL to connect to Infinispan, a new server is deployed automatically in the `KogitoInfra` custom resource. A random password for the `developer` user is created and injected into the Data Index Service automatically. You do not need to do anything for both services to work together.
-====
+# On Spring Boot
+infinispan.remote.server-list=
+infinispan.remote.use-auth=
+infinispan.remote.sasl-mechanism=
+infinispan.remote.auth-realm=
+----
 
 .Additional resources
 ifdef::KOGITO[]

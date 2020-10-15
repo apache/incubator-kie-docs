@@ -25,15 +25,13 @@ endif::[]
 
 == Infinispan persistence with the {PRODUCT} Jobs Service
 
-To enable Infinispan persistence for the {PRODUCT} Jobs Service, you can use the `--enable-persistence` flag during deployment in the {PRODUCT} CLI or edit the `spec.infinispan.useKogitoInfra` configuration in the `KogitoJobsService` custom resource:
-
-* `true`: Infinispan is installed in the same namespace as the Jobs Service.
-* `false`: Infinispan is not installed. Job data is persisted with the Jobs Service in-memory storage during the Jobs Service runtime. If the Jobs Service is restarted, all job information is lost.
+To enable Infinispan persistence for the {PRODUCT} Jobs Service, you install the Infinispan infrastructure and then you can use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoJobsService` custom resource:
 
 .Example Jobs Service deployment with Infinispan persistence enabled
 [source,subs="attributes+,+quotes"]
 ----
-$ {PRODUCT_INIT} install jobs-service --enable-persistence
+$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 -p __PROJECT_NAME__
+$ {PRODUCT_INIT} install jobs-service --infra __INFINISPAN_INFRA_NAME__
 ----
 
 .Example `KogitoJobsService` resource with Infinispan persistence enabled
@@ -44,15 +42,15 @@ kind: KogitoJobsService
 metadata:
   name: jobs-service
 spec:
-  enablePersistence: true
+  infra:
+    - kogito-infinispan-infra
   build:
     envs:
     - name: MAVEN_ARGS_APPEND
       value: -Ppersistence
 ----
 
-You can refine the Infinispan integration by setting the properties `spec.infinispan.credentials`,
-`spec.infinispan.uri`, and `spec.infinispan.useKogitoInfra` to `false` in the `KogitoJobsService` custom resource. With these properties set, the Infinispan Server is not deployed and the Jobs Service does not connect to the given URI. However, ensure that your cluster has access to this URI.
+You can refine the Infinispan integration by setting the `spec.infra` property in the `KogitoJobsService` custom resource. With this property set, the {PRODUCT} Operator ensures that the Jobs Service has access to the persistence infrastructure configurations.
 
 == {PRODUCT} Jobs Service properties configuration
 
