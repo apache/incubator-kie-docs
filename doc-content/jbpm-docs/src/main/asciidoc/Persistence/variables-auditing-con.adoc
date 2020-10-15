@@ -1,0 +1,156 @@
+[id='variables-auditing-con_{context}']
+= Auditing of variables
+
+By default, values of process and task variables are stored in audit tables as string representations. To create string representations of non-string variable types, the {PROCESS_ENGINE} calls the `variable.toString()` method. If you use a custom class for a variable, you can implement this method for the class. In many cases this representation is sufficient.
+
+However, sometimes a string representation in the logs might not be sufficient, especially when there is a need for efficient queries by process or task variables. For example, a `Person` object, used as a value for a variable, might have the following structure:
+
+.Example `Person` object, used as a process or task variable value
+[source,java]
+----
+public class Person implements Serializable {
+
+    private static final long serialVersionUID = -5172443495317321032L;
+    private String name;
+    private int age;   
+    
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public int getAge() {
+        return age;
+    }
+    
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Person [name=" + name + ", age=" + age + "]";
+    }        
+}
+----
+
+The `toString()` method provides a human-readable format. However, it might not be sufficient for a search. A sample string value is `Person [name="john", age="34"]`. Searching through a large number of such strings to find people of age 34 would make a database query inefficient.
+
+To enable more efficient searching, you can audit variables using `VariableIndexer` objects, which extract relevant parts of the variable for storage in the audit log. 
+
+.Definition of the `VariableIndexer` interface
+[source,java]
+----
+
+/**
+ * Variable indexer that to transform a variable instance into another representation (usually string)
+ * for use in log queries.
+ *
+ * @param <V> type of the object that will represent indexed variable
+ */
+public interface VariableIndexer<V> {
+
+    /**
+     * Tests if a given variable can be indexed by this indexer
+     * 
+     * NOTE: only one indexer can be used for a given variable
+     * 
+     * @param variable variable to be indexed
+     * @return true if the variable should be indexed with this indexer
+     */
+    boolean accept(Object variable);
+    
+    /**
+     * Performs an index/transform operation of the variable. The result of this operation can be
+     * either a single value or a list of values, to support complex type separation.
+     * For example, when the variable is of the type Person that has name, address, and phone fields,
+     * the indexer could build three entries out of it to represent individual fields:
+     * person = person.name
+     * address = person.address.street
+     * phone = person.phone
+     * this configureation allows advanced queries for finding relevant entries.
+     * @param name name of the variable
+     * @param variable actual variable value 
+     * @return
+     */
+    List<V> index(String name, Object variable);
+}
+----
+
+The default indexer uses the `toString()` method to produce a single audit entry for a single variable. Other indexers can returns a list of objects from indexing a single variable.
+
+To enable efficient queries for the `Person` type, you can build a custom indexer that indexes a `Person` instance into separate audit entries, one representing name and another representing age. 
+
+.Sample indexer for the `Person` type
+[source,java]
+----
+public class PersonTaskVariablesIndexer implements TaskVariableIndexer {
+
+    @Override
+    public boolean accept(Object variable) {
+        if (variable instanceof Person) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public List<TaskVariable> index(String name, Object variable) {
+        
+        Person person = (Person) variable;
+        List<TaskVariable> indexed = new ArrayList<TaskVariable>();
+        
+        TaskVariableImpl personNameVar = new TaskVariableImpl();
+        personNameVar.setName("person.name");
+        personNameVar.setValue(person.getName());
+        
+        indexed.add(personNameVar);
+        
+        TaskVariableImpl personAgeVar = new TaskVariableImpl();
+        personAgeVar.setName("person.age");
+        personAgeVar.setValue(person.getAge()+"");
+        
+        indexed.add(personAgeVar);
+        
+        return indexed;
+    }
+
+}
+----
+
+The {PROCESS_ENGINE} can use this indexer to index values when they are of the `Person` type, while all other variables are indexed with the default `toString()` method. Now, to query for process instances or tasks that refer to a person with age 34, you can use the following query:
+
+* variable name: person.age
+* variable value: 34
+
+As a `LIKE` type query is not used, the database server can optimize the query and make it efficient on a big set of data. 
+
+[float]
+== Custom indexers
+
+The {PROCESS_ENGINE} supports indexers for both process and task variables. However, it uses different interfaces for the indexers, because they must produce different types of objects that represent an audit view of the variable.
+
+You must implement the following interfaces  to build custom indexers:
+
+* For process variables: `org.kie.internal.process.ProcessVariableIndexer`
+* For task variables: `org.kie.internal.task.api.TaskVariableIndexer`
+
+You must implement two methods for either of the interfaces:
+
+* `accept`: Indicates whether a type is handled by this indexer. The {PROCESS_ENGINE} expects that only one indexer can index a given variable value, so it uses the first indexer that accepts the type.
+* `index`: Indexes a value, producing a object or listy of objects (usually strings) for inclusion in the audit log.
+
+After implementing the interface, you must package this implementation as a JAR file and list the implementation in one of the following files:
+
+* For process variables, the `META-INF/services/org.kie.internal.process.ProcessVariableIndexer` file, which lists fully qualified class names of process variable indexers (single class name per line)
+* For task variables, the `META-INF/services/org.kie.internal.task.api.TaskVariableIndexer` file, which lists fully qualified class names of task variable indexers (single class name per line)
+
+The `ServiceLoader` mechanism discovers the indexers using these files. When indexing a process or task variable, the {PROCESS_ENGINE} examines the registered indexers to find any indexer that accepts the value of the variable. If no other indexer accepts the value, the {PROCESS_ENGINE} applies the default indexer that uses the `toString()` method.

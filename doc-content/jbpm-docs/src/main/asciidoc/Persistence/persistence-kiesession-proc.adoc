@@ -1,0 +1,36 @@
+[id='persistence-kiesession-proc_{context}']
+= Creating a KIE session with persistence
+
+If your code creates KIE sessions directly, you can use the `JPAKnowledgeService` class to create your KIE session. This approach provides full access to the underlying configuration.
+
+.Procedure
+
+. Create a new KIE session using the `JPAKnowledgeService` class, based on a KIE base, a KIE session configuration (if necessary), and an environment. The environment must contain a reference to the Entity Manager Factory that you use for persistence.
+
+.Creating a KIE session with persistence
+[source,java]
+----
+
+// create the entity manager factory and register it in the environment
+EntityManagerFactory emf =
+    Persistence.createEntityManagerFactory( "org.jbpm.persistence.jpa" );
+Environment env = KnowledgeBaseFactory.newEnvironment();
+env.set( EnvironmentName.ENTITY_MANAGER_FACTORY, emf );
+
+// create a new KIE session that uses JPA to store the runtime state
+StatefulKnowledgeSession ksession = JPAKnowledgeService.newStatefulKnowledgeSession( kbase, null, env );
+int sessionId = ksession.getId();
+
+// invoke methods on your method here
+ksession.startProcess( "MyProcess" );
+ksession.dispose();
+----
+
+. To re-create a session from the database based on a specific session ID, use the `JPAKnowledgeService.loadStatefulKnowledgeSession()` method:
+
+.Re-creating a KIE session from the persistence database
+[source,java]
+----
+// re-create the session from database using the sessionId
+ksession = JPAKnowledgeService.loadStatefulKnowledgeSession(sessionId, kbase, null, env );
+----

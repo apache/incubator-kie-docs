@@ -1,0 +1,70 @@
+[id='persistence-runtimemanager-con_{context}']
+= Persistence in the runtime manager
+
+If your code uses the `RuntimeManager` class, use the `RuntimeEnvironmentBuilder` class to configure the environment for persistence. By default, the runtime manager searches for the `jdbc/jbpm-ds` data source for persistence.
+
+The following example creates a `KieSession` with an empty context.
+
+.Creating a KIE session with an empty context using the runtime manager
+[source,java]
+----
+RuntimeEnvironmentBuilder builder = RuntimeEnvironmentBuilder.Factory.get()
+        .newDefaultBuilder()
+        .knowledgeBase(kbase);
+RuntimeManager manager = RuntimeManagerFactory.Factory.get()
+        .newSingletonRuntimeManager(builder.get(), "com.sample:example:1.0");
+RuntimeEngine engine = manager.getRuntimeEngine(EmptyContext.get());
+KieSession ksession = engine.getKieSession();
+----
+
+The prevous example requires a KIE base as the `kbase` parameter. You can use a `kmodule.xml` KJAR descriptor on the class path to buld the KIE base. 
+
+.Building a KIE base from a `kmodule.xml` KJAR descriptor
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieContainer kContainer = ks.getKieClasspathContainer();
+KieBase kbase = kContainer.getKieBase("kbase");
+----
+
+A `kmodule.xml` descriptor file can include an attribute for resource packages to scan to find and deploy {PROCESS_ENGINE} workflows.
+
+.Sample `kmodule.xml` descriptor file
+[source,xml]
+----
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+  <kbase name="kbase" packages="com.sample"/>
+</kmodule>
+----
+
+To control the persistence, you can use the `RuntimeEnvironmentBuilder::entityManagerFactory` methods.
+
+.Controlling configuration of persistence in the runtime manager
+[source,java]
+----
+EntityManagerFactory emf = Persistence.createEntityManagerFactory("org.jbpm.persistence.jpa");                            
+
+RuntimeEnvironment runtimeEnv = RuntimeEnvironmentBuilder.Factory
+        .get()
+        .newDefaultBuilder()
+        .entityManagerFactory(emf)
+        .knowledgeBase(kbase)
+        .get();
+
+StatefulKnowledgeSession ksession = (StatefulKnowledgeSession) RuntimeManagerFactory.Factory.get()
+        .newSingletonRuntimeManager(runtimeEnv)
+        .getRuntimeEngine(EmptyContext.get())
+        .getKieSession();
+----
+
+After creating the `ksession` KIE session in this example, you can call methods in `ksession`, for example, `StartProcess()`. The {PROCESS_ENGINE} persists all runtime state in the configured data source. 
+
+You can restore a process instance from persistent storage by using the process instance ID. The runtime manager automatically re-created the required session.
+
+.Re-creating a KIE session from the persistence database using a process instance ID
+[source,java]
+----
+RuntimeEngine runtime = manager.getRuntimeEngine(ProcessInstanceIdContext.get(processInstanceId));
+
+KieSession session = runtime.getKieSession();
+----
