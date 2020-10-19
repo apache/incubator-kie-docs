@@ -1,0 +1,201 @@
+[id='proc-test-bus-process_{context}']
+
+= Testing a business process
+
+A business process can be updated dynamically, which can cause errors, therefore testing a process business is also a part of the business process life cycle similar to any other development artifact.
+
+The unit test for a business process ensures that the process behaves as expected in a specific use case. For example, you can test an output based on a particular input. To simplify unit testing, {PRODUCT} includes the `org.jbpm.test.JbpmJUnitBaseTestCase` class.
+
+The `JbpmJUnitBaseTestCase` performs as a base test case class, which is used for {PRODUCT} related tests. The `JbpmJUnitBaseTestCase` provides the following usage areas:
+
+* JUnit life cycle methods
++
+--
+.JUnit life cycle methods
+[cols="30%,70%", options="header"]
+|===
+|Method
+|Description
+
+|`setUp`
+|This method is annotated as `@Before`. It configures a data source and `EntityManagerFactory` and deletes the session ID of a singleton.
+
+|`tearDown`
+|This method is annotated as `@After`. It removes history, closes `EntityManagerFactory` and a data source, and disposes `RuntimeManager` and `RuntimeEngines`.
+
+|===
+--
+
+* Knowledge base and knowledge session management methods: To create a session, create `RuntimeManager` and `RuntimeEngine`. Use the following methods to create and dispose `RuntimeManager`:
++
+--
+.`RuntimeManager` and `RuntimeEngine` management methods
+[cols="30%,70%", options="header"]
+|===
+|Method
+|Description
+
+|`createRuntimeManager`
+|Creates `RuntimeManager` for a given set of assets and selected strategy.
+
+|`disposeRuntimeManager`
+|Disposes `RuntimeManager` that is active in the scope of the test.
+
+|`getRuntimeEngine`
+|Creates new `RuntimeEngine` for the given context.
+
+|===
+--
+
+* Assertions: To test the state of assets, use the following methods:
++
+--
+.`RuntimeManager` and `RuntimeEngine` Management Methods
+[cols="30%,70%", options="header"]
+|===
+|Assertion
+|Description
+
+|`assertProcessInstanceActive(long processInstanceId, KieSession ksession)`
+|Verifies whether a process instance with the given `processInstanceId` is active.
+
+|`assertProcessInstanceCompleted(long processInstanceId)`
+|Verifies whether a process instance with the given `processInstanceId` is completed. You can use this method if session persistence is enabled, otherwise use `assertProcessInstanceNotActive(long processInstanceId, KieSession ksession)`.
+
+|`assertProcessInstanceAborted(long processInstanceId)`
+|Verifies whether a process instance with the given `processInstanceId` is aborted. You can use this method if session persistence is enabled, otherwise use `assertProcessInstanceNotActive(long processInstanceId, KieSession ksession)`.
+
+|`assertNodeExists(ProcessInstance process, String... nodeNames)`
+|Verifies whether the specified process contains the given nodes.
+
+|`assertNodeActive(long processInstanceId, KieSession ksession, String... name)`
+|Verifies whether a process instance with the given `processInstanceId` contains at least one active node with the specified node names.
+
+|`assertNodeTriggered(long processInstanceId, String... nodeNames)`
+|Verifies whether a node instance is triggered for each given node during the execution of the specified process instance.
+
+|`assertProcessVarExists(ProcessInstance process, String... processVarNames)`
+|Verifies whether the given process contains the specified process variables.
+
+|`assertProcessNameEquals(ProcessInstance process, String name)`
+|Verifies whether the given name matches the specified process name.
+
+|`assertVersionEquals(ProcessInstance process, String version)`
+|Verifies whether the given process version matches the specified process version.
+
+|===
+--
+
+* Helper methods: Use following methods to create a new `RuntimeManager` and `RuntimeEngine` for a given set of processes with or without using persistence. For more information about persistence, see {URL_DEVELOPING_PROCESS_SERVICES}#assembly-process-engine[_{PROCESS_ENGINE_DOC}_].
++
+--
+.`RuntimeManager` and `RuntimeEngine` Management Methods
+[cols="30%,70%", options="header"]
+|===
+|Method
+|Description
+
+|`setupPoolingDataSource`
+|Configures a data source.
+
+|`getDs`
+|Returns the configured data source.
+
+|`getEmf`
+|Returns the configured `EntityManagerFactory`.
+
+|`getTestWorkItemHandler`
+|Returns a test work item handler that can be registered in addition to the default work item handler.
+
+|`clearHistory`
+|Clears the history log.
+
+|===
+--
+
+The following example contains a start event, a script task, and an end event. The example JUnit test creates a new session, starts the `hello.bpmn` process, and verifies whether the process instance is completed and the `StartProcess`, `Hello`, and `EndProcess` nodes are executed.
+
+.Example JUnit Test of `hello.bpmn` Process
+image::BPMN2/bpmn-example-junit-test-process.png[Example JUnit Test Process]
+
+[source,java]
+----
+public class ProcessPersistenceTest extends JbpmJUnitBaseTestCase {
+
+    public ProcessPersistenceTest() {
+        super(true, true);
+    }
+
+    @Test
+    public void testProcess() {
+
+        createRuntimeManager("hello.bpmn");
+
+        RuntimeEngine runtimeEngine = getRuntimeEngine();
+
+        KieSession ksession = runtimeEngine.getKieSession();
+
+        ProcessInstance processInstance = ksession.startProcess("com.sample.bpmn.hello");
+
+        assertProcessInstanceNotActive(processInstance.getId(), ksession);
+
+        assertNodeTriggered(processInstance.getId(), "StartProcess", "Hello", "EndProcess");
+    }
+}
+----
+
+`JbpmJUnitBaseTestCase` supports all predefined `RuntimeManager` strategies as part of the unit testing. Therefore, it is enough to specify the strategy that is used when you create a `RuntimeManager` as part of a single test.
+The following example shows the use of the PerProcessInstance strategy in a task service to manage user tasks:
+
+[source,java]
+----
+public class ProcessHumanTaskTest extends JbpmJUnitBaseTestCase {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProcessHumanTaskTest.class);
+
+    public ProcessHumanTaskTest() {
+        super(true, false);
+    }
+
+    @Test
+    public void testProcessProcessInstanceStrategy() {
+        RuntimeManager manager = createRuntimeManager(Strategy.PROCESS_INSTANCE, "manager", "humantask.bpmn");
+        RuntimeEngine runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get());
+        KieSession ksession = runtimeEngine.getKieSession();
+        TaskService taskService = runtimeEngine.getTaskService();
+
+        int ksessionID = ksession.getId();
+        ProcessInstance processInstance = ksession.startProcess("com.sample.bpmn.hello");
+
+        assertProcessInstanceActive(processInstance.getId(), ksession);
+        assertNodeTriggered(processInstance.getId(), "Start", "Task 1");
+
+        manager.disposeRuntimeEngine(runtimeEngine);
+        runtimeEngine = getRuntimeEngine(ProcessInstanceIdContext.get(processInstance.getId()));
+
+        ksession = runtimeEngine.getKieSession();
+        taskService = runtimeEngine.getTaskService();
+
+        assertEquals(ksessionID, ksession.getId());
+
+        // let John execute Task 1
+        List<TaskSummary> list = taskService.getTasksAssignedAsPotentialOwner("john", "en-UK");
+        TaskSummary task = list.get(0);
+        logger.info("John is executing task {}", task.getName());
+        taskService.start(task.getId(), "john");
+        taskService.complete(task.getId(), "john", null);
+
+        assertNodeTriggered(processInstance.getId(), "Task 2");
+
+        // let Mary execute Task 2
+        list = taskService.getTasksAssignedAsPotentialOwner("mary", "en-UK");
+        task = list.get(0);
+        logger.info("Mary is executing task {}", task.getName());
+        taskService.start(task.getId(), "mary");
+        taskService.complete(task.getId(), "mary", null);
+
+        assertNodeTriggered(processInstance.getId(), "End");
+        assertProcessInstanceNotActive(processInstance.getId(), ksession);
+    }
+}
+----
