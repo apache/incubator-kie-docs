@@ -1,13 +1,15 @@
 [id='con-kogito-operator-with-knative-eventing_{context}']
 = {PRODUCT} Operator interaction with Knative Eventing
 
-NOTE: Knative Eventing is currently supported for {PRODUCT} services on Quarkus only. Cretion of Knative objects requires Knative version 0.17.x or later due to its CRD versions used by {PRODUCT} operator.
+{PRODUCT} provides a `knative-eventing-addon` add-on that enables Knative Eventing integration for {PRODUCT} services. The {PRODUCT} Operator uses the  https://knative.dev/docs/eventing/[Knative Eventing] platform to implement an event-driven architecture based on https://github.com/cloudevents/spec/blob/v1.0/spec.md[CloudEvents] with {PRODUCT} services. Due to this dependency, the Knative Eventing platform must be installed in the same cluster as your {PRODUCT} project.
 
-{PRODUCT} provides a {URL_CONFIGURING_KOGITO}#proc-knative-eventing-process-services[`knative-eventing-addon`] add-on that enables Knative Eventing integration for {PRODUCT} services. The {PRODUCT} Operator uses the  https://knative.dev/docs/eventing/[Knative Eventing] platform to implement an event-driven architecture based on https://github.com/cloudevents/spec/blob/v1.0/spec.md[CloudEvents] with {PRODUCT} services. Due to this dependency, the Knative Eventing platform **must** be installed in the same cluster as your {PRODUCT} project.
+NOTE: Knative Eventing is currently supported for {PRODUCT} services on Quarkus only. The {PRODUCT} Operator supports Knative Eventing 0.17 or later.
 
-When you deploy a {PRODUCT} service that uses the `knative-eventing-addon` add-on you must also deploy a https://knative.dev/docs/eventing/broker/[Knative Eventing Broker] in the same namespace. This broker will be used by the {PRODUCT} service to publish and/or listen to CloudEvents messages. The Broker's implementation won't matter for the {PRODUCT} service: can be used any one being Kafka, InMemory and so on. Here's an example of a default InMemory Broker:
+When you deploy a {PRODUCT} service that uses the `knative-eventing-addon` add-on, you must also deploy a Knative Eventing https://knative.dev/docs/eventing/broker/[Broker] in the same namespace. The {PRODUCT} service uses this Broker to publish or listen to CloudEvents messages. You can use any Broker channel for the {PRODUCT} service, such as InMemoryChannel, KafkaChannel, or NatssChannel.
 
-.Example `Broker` resource for Knative Eventing
+By default, the InMemoryChannel channel is used when no channel is specified, as shown in the following `Broker` custom resource example:
+
+.Example `Broker` custom resource for Knative Eventing with default InMemoryChannel
 [source,yaml]
 ----
 apiVersion: eventing.knative.dev/v1
@@ -16,9 +18,13 @@ metadata:
   name: default
 ----
 
-To bind this Knative Eventing Broker instance with the {PRODUCT} service being deployed, you must create a `KogitoInfra` instance, as shown in the example:
+NOTE: InMemoryChannel channels are for development use only. Do not use this channel in a production deployment.
 
-.Example `KogitoInfra` resource for {PRODUCT} service
+For more information about available Broker channels and how to install them, see https://knative.dev/docs/eventing/channels/channels-crds/[Available Channels] in the Knative documentation.
+
+To bind this Knative Eventing Broker instance to the {PRODUCT} service being deployed, you must create a `KogitoInfra` instance, as shown in the following example:
+
+.Example `KogitoInfra` custom resource for a {PRODUCT} service with `Broker` binding
 [source,yaml]
 ----
 apiVersion: app.kiegroup.org/v1alpha1
@@ -26,20 +32,17 @@ kind: KogitoInfra
 metadata:
   name: kogito-knative-infra
 spec:
-  # bind Knative Broker with our own service
+  # Bind Knative Broker to the service
   resource:
     apiVersion: eventing.knative.dev/v1
     kind: Broker
     name: default
 ----
 
-Notice the `spec.resource` field where we bind the deployed Knative Eventing Broker with the `KogitoInfra` resource.
+The `KogitoRuntime` resource used to deploy the {PRODUCT} service using the {PRODUCT} Operator must have this `KogitoInfra` instance linked to it, as shown in the following example:
 
-The `KogitoRuntime` resource used to deploy the {PRODUCT} service using the {PRODUCT} operator must have this `KogitoInfra` instance linked to it, for example:
-
-
-.Example `KogitoRuntime` resource for {PRODUCT} service with `KogitoInfra` bound to it
-[source,yaml]
+.Example `KogitoRuntime` custom resource for a {PRODUCT} service with `KogitoInfra` bound to it
+[source,yaml,subs="+quotes"]
 ----
 apiVersion: app.kiegroup.org/v1alpha1
 kind: KogitoRuntime
@@ -47,46 +50,65 @@ metadata:
   name: process-knative-quickstart-quarkus
 spec:
   replicas: 1
-  image: quay.io/<yournamespace>/process-knative-quickstart-quarkus:latest
-  # we bind our application with Knative env
+  image: quay.io/__NAME_SPACE__/process-knative-quickstart-quarkus:latest
+  # Reference to the KogitoInfra resource with the Knative Broker binding
   infra:
   - kogito-knative-infra
 ----
 
-When applying those resources to Kubernetes namespace, the {PRODUCT} Operator will automatically create the required Knative https://knative.dev/docs/eventing/triggers/[`Triggers`] and https://knative.dev/docs/eventing/samples/sinkbinding/[`SinkBindings`] to the linked Broker if the BPMN or Serverless Workflow files in your project have an event to be consumed (mapped to a `Trigger`) or produced (mapped to the `SinkBinding`).
+After you apply these resources to a Kubernetes namespace, if any BPMN or Serverless Workflow files in the {PRODUCT} project contain events to be consumed or produced, the {PRODUCT} Operator automatically creates the required Knative Eventing https://knative.dev/docs/eventing/triggers/[Triggers] for the events to be consumed and the https://knative.dev/docs/eventing/samples/sinkbinding/[`SinkBinding`] resource for the events to be produced.
 
-To consume the events published by your application, just create a new Trigger targeting the just deployed Broker, for example:
+To consume events published by your application or to produce events for the Broker, you must create the required `Trigger` and `SinkBinding` resources as shown in the following examples:
 
-.Example `Trigger` resource to consume {PRODUCT} service events
+.Example `Trigger` custom resource for consuming events
 [source,yaml]
 ----
 apiVersion: eventing.knative.dev/v1
 kind: Trigger
 metadata:
-  name: event-display-trigger
+  name: travelers-trigger
 spec:
-  # the default broker has been enabled in the namespace
+  # The default Broker is enabled in the cluster because the namespace is labeled with `knative-eventing-injection=enabled`.
   broker: default
   filter:
-    # we only listen to events of type success emitted by our ce-processing service
     attributes:
-      # the exact same type being generated by our Kogito custom service
-      type: process.<your process id>.<your message event id>
-  # the subscriber is the deployed displayer service, any event that match the filter above in the broker will be sent to us
+      # Name of the message node in the process.
+      type: travelers
+  # The subscriber is the deployed service. Any event that matches the filter in the Broker is sent here.
   subscriber:
     ref:
-      apiVersion: serving.knative.dev/v1
+      apiVersion: v1
       kind: Service
-      name: event-display
+      name: process-knative-quickstart-quarkus
 ----
 
-Notice the format of the `spec.filter.attributes.type`. This CloudEvent type is generated by the {PRODUCT} runtime and can be used to filter the messages generated by the deployed {PRODUCT} service.
+.Example `SinkBinding` custom resource for producing events
+[source,yaml]
+----
+apiVersion: sources.knative.dev/v1alpha1
+kind: SinkBinding
+metadata:
+  name: process-knative-quickstart-quarkus-sink
+spec:
+  subject:
+    apiVersion: apps/v1
+    kind: Deployment
+    selector:
+      matchLabels:
+        app: process-knative-quickstart-quarkus
+  # Any cloud event produced by the application is delivered to the Broker.
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: default
+----
 
 .Additional resources
 ifdef::KOGITO[]
-* {URL_CONFIGURING_KOGITO}#proc-knative-eventing-process-services[Enabling Knative Eventing for {PRODUCT} services]
+* {URL_PROCESS_SERVICES}#proc-knative-eventing-process-services_kogito-developing-process-services[Enabling Knative Eventing for {PRODUCT} services]
 endif::[]
 ifdef::KOGITO-COMM[]
-* xref:proc-knative-eventing-process-services[]
+* xref:proc-knative-eventing-process-services_kogito-developing-process-services[]
 endif::[]
 * https://knative.dev/docs/eventing/[Knative Eventing]
