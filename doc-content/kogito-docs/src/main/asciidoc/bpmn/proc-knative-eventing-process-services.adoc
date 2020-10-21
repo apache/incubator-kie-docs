@@ -3,54 +3,36 @@
 
 You can enable https://knative.dev/docs/eventing/[Knative Eventing] support for {PRODUCT} services that consume or publish messages within a Business Process Model and Notation (BPMN) process model. When you enable Knative Eventing for a {PRODUCT} project, event consumers and producers are generated from message start and end nodes in BPMN processes at build time. You can use these event consumers and producers as part of your {PRODUCT} service deployment in a Knative Eventing environment on Kubernetes or OpenShift clusters.
 
-NOTE: Knative Eventing is currently supported for {PRODUCT} services on Quarkus only.
+NOTE: Knative Eventing is currently supported for {PRODUCT} services on Quarkus only. The {PRODUCT} Operator supports Knative Eventing 0.17 or later.
 
 .Prerequisites
-* You have installed and deployed Knative Eventing on a Kubernetes or an OpenShift cluster. For information about Knative Eventing on OpenShift, see https://docs.openshift.com/container-platform/4.5/serverless/installing_serverless/installing-knative-eventing.html[Installing Knative Eventing] in the OpenShift documentation.
+* You have installed and deployed Knative Eventing 0.17 or later on a Kubernetes or an OpenShift cluster. For information about Knative Eventing on OpenShift, see https://docs.openshift.com/container-platform/4.5/serverless/installing_serverless/installing-knative-eventing.html[Installing Knative Eventing] in the OpenShift documentation.
 * You have created a BPMN model in your {PRODUCT} project with message start or end events that you want to integrate with Knative Eventing. For information about creating BPMN models, see xref:proc-bpmn-model-creating_kogito-developing-process-services[].
 
 .Procedure
-. Add the following properties and dependencies to the `pom.xml` file of your {PRODUCT} project:
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
 +
 --
+.Knative Eventing dependencies
 [source,xml,subs="attributes+,+quotes"]
 ----
-<properties>
-    <version.cloudevents>2.0.0-milestone1</version.cloudevents>
-    <kogito.version>{PRODUCT_VERSION_LONG}</kogito.version>
-</properties>
-
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.kie.kogito</groupId>
-            <artifactId>kogito-quarkus-bom</artifactId>
-            <version>${kogito.version}</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cloudevents</groupId>
-            <artifactId>cloudevents-api</artifactId>
-            <version>${version.cloudevents}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.kie.kogito</groupId>
-            <artifactId>knative-eventing-addon</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.smallrye.reactive</groupId>
-            <artifactId>smallrye-reactive-messaging-http</artifactId>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
+<dependencies>
+  <dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>knative-eventing-addon</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.smallrye.reactive</groupId>
+    <artifactId>smallrye-reactive-messaging-http</artifactId>
+  </dependency>
+</dependencies>
 ----
 
-These properties ensure that your project contains all required {PRODUCT}, Quarkus, and CloudEvents dependencies, and enable Knative Eventing add-on and messaging requirements. When a {PRODUCT} service has the Knative Eventing add-on enabled, {PRODUCT} generates code based on http://www.smallrye.io/smallrye-reactive-messaging/[Smallrye Reactive Messaging] to publish messages.
+These dependencies enable Knative Eventing add-on and messaging requirements. When a {PRODUCT} service has the Knative Eventing add-on enabled, {PRODUCT} generates code based on http://www.smallrye.io/smallrye-reactive-messaging/[Smallrye Reactive Messaging] to publish messages.
 --
 . In your {PRODUCT} project, open the BPMN file that you want to use for consuming or producing messages in the Knative Eventing environment. BPMN files are typically in `src/main/resources`.
 +
@@ -91,11 +73,65 @@ The `smallrye-http` property defines the HTTP endpoint for the published message
 
 +
 If any of these items are missing, ensure that you have configured all required dependencies, applications properties, and message event name. After all checks are complete, rebuild the project.
-. After you configure and test your {PRODUCT} project locally, in your Kubernetes or OpenShift environment, add the following custom resources for consuming and producing events in Knative Eventing:
-
-* To consume events, create a Knative Eventing https://knative.dev/docs/eventing/triggers/[`Trigger`] resource as shown in the following example:
+. After you configure and test your {PRODUCT} project locally, in your Kubernetes or OpenShift environment, add the following custom resources to prepare your {PRODUCT} project for deployment. These resources enable the {PRODUCT} Operator to generate the required resources for consuming or producing events in a Knative Eventing environment.
 +
-.Custom resource for Knative Eventing Trigger (consuming)
+--
+* `Broker`: When you deploy a {PRODUCT} service that uses the `knative-eventing-addon` add-on, you must also deploy a Knative Eventing https://knative.dev/docs/eventing/broker/[Broker] in the same namespace. The {PRODUCT} service uses this Broker to publish or listen to CloudEvents messages. You can use any Broker channel for the {PRODUCT} service, such as InMemoryChannel, KafkaChannel, or NatssChannel.
++
+By default, the InMemoryChannel channel is used when no channel is specified, as shown in the following `Broker` custom resource example:
++
+.Example `Broker` custom resource for Knative Eventing with default InMemoryChannel
+[source,yaml]
+----
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: default
+----
++
+NOTE: InMemoryChannel channels are for development use only. Do not use this channel in a production deployment.
+
++
+For more information about available Broker channels and how to install them, see https://knative.dev/docs/eventing/channels/channels-crds/[Available Channels] in the Knative documentation.
+
+* `KogitoInfra`: To bind the Knative Eventing Broker instance to the {PRODUCT} service being deployed, you must create a `KogitoInfra` instance, as shown in the following example:
++
+.Example `KogitoInfra` custom resource for a {PRODUCT} service with `Broker` binding
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoInfra
+metadata:
+  name: kogito-knative-infra
+spec:
+  # Bind Knative Broker to the service
+  resource:
+    apiVersion: eventing.knative.dev/v1
+    kind: Broker
+    name: default
+----
+* `KogitoRuntime`: The `KogitoRuntime` resource used to deploy the {PRODUCT} service using the {PRODUCT} Operator must have this `KogitoInfra` instance linked to it, as shown in the following example:
++
+.Example `KogitoRuntime` custom resource for a {PRODUCT} service with `KogitoInfra` bound to it
+[source,yaml,subs="+quotes"]
+----
+apiVersion: app.kiegroup.org/v1alpha1
+kind: KogitoRuntime
+metadata:
+  name: process-knative-quickstart-quarkus
+spec:
+  replicas: 1
+  image: quay.io/__NAME_SPACE__/process-knative-quickstart-quarkus:latest
+  # Reference to the KogitoInfra resource with the Knative Broker binding
+  infra:
+  - kogito-knative-infra
+----
+
+After you apply these resources to the Kubernetes or OpenShift namespace, if any BPMN or Serverless Workflow files in the {PRODUCT} project contain events to be consumed or produced, the {PRODUCT} Operator automatically creates the required Knative Eventing https://knative.dev/docs/eventing/triggers/[`Trigger`] resource for consuming events and the https://knative.dev/docs/eventing/samples/sinkbinding/[`SinkBinding`] resource for producing events.
+
+The following is an example `Trigger` resource generated by the {PRODUCT} Operator:
+
+.Example `Trigger` custom resource generated by the operator (consuming)
 [source,yaml]
 ----
 apiVersion: eventing.knative.dev/v1
@@ -116,12 +152,12 @@ spec:
       kind: Service
       name: process-knative-quickstart-quarkus
 ----
-+
+
 This Knative Eventing Trigger resource filters all messages delivered to the default Broker and sends them to the default service deployed by the {PRODUCT} Operator.
 
-* To produce events for the Knative Eventing https://knative.dev/docs/eventing/broker/[Broker], create a https://knative.dev/docs/eventing/samples/sinkbinding/[`SinkBinding`] resource as shown in the following example:
-+
-.Custom resource for Knative Eventing `SinkBinding` (producing)
+The following is an example `SinkBinding` resource generated by the {PRODUCT} Operator:
+
+.Example `SinkBinding` custom resource generated by the operator (producing)
 [source,yaml]
 ----
 apiVersion: sources.knative.dev/v1alpha1
@@ -142,11 +178,13 @@ spec:
       kind: Broker
       name: default
 ----
-+
+
 This Knative Eventing `SinkBinding` resource injects the `${K_SINK}` environment variable to the `Deployment` resource created by the {PRODUCT} Operator. Every message produced by the {PRODUCT} service is redirected to the default Knative Broker.
-+
+
+NOTE: If you deploy your {PRODUCT} services without the {PRODUCT} Operator, you must create these `Trigger` and `SinkBinding` resources manually.
+
 If any other components need to consume the messages produced by the {PRODUCT} service, you must create an additional Knative Eventing `Trigger` resource as shown in the following example:
-+
+
 .Custom resource for other consuming components
 [source,yaml]
 ----
@@ -169,8 +207,9 @@ spec:
       kind: Service
       name: event-display
 ----
-+
+
 The `spec.filter.attributes.type` value defined in the `Trigger` resource is the same as the value generated by the {PRODUCT} service.
+--
 
 For an example {PRODUCT} service with Knative Eventing enabled, see the https://github.com/kiegroup/kogito-examples/tree/stable/process-knative-quickstart-quarkus[`process-knative-quickstart-quarkus`] example application.
 
