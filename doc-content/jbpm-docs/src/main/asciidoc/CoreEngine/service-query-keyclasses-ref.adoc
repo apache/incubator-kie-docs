@@ -1,0 +1,106 @@
+[id='service-query-keyclasses-ref_{context}']
+= Key classes of the query service
+
+The query service relies on the following key classes:
+
+* `QueryDefinition`: Represents the definition of a data set. The definition consists of a unique name, an SQL expression (the query) and the _source_, the JNDI name of the data source to use when performing queries.
+* `QueryParam`: The basic structure that represents an individual query parameter or condition. This structure consists of the column name, operator, and expected values.
+* `QueryResultMapper`: The class that maps raw dataset data (rows and columns) to an object representation.
+* `QueryParamBuilder`: The class that builds query filters that are applied to the query definition to invoke the query.
+
+.QueryResultMapper
+
+`QueryResultMapper` maps data taken from a database (dataset) to an object representation. It is similar to ORM providers such as `hibernate`, which map tables to entities.
+
+Many object types can be used for representing dataset results. Therefore, existing mappers might not always suit your needs. Mappers in `QueryResultMapper` are pluggable and you can provide your own mapper when necessary, in order to transform dataset data into any type you need.
+
+The {PROCESS_ENGINE} supplies the following mappers:
+
+* `org.jbpm.kie.services.impl.query.mapper.ProcessInstanceQueryMapper`, registered with the name `ProcessInstances`
+* `org.jbpm.kie.services.impl.query.mapper.ProcessInstanceWithVarsQueryMapper`, registered with the name `ProcessInstancesWithVariables`
+* `org.jbpm.kie.services.impl.query.mapper.ProcessInstanceWithCustomVarsQueryMapper`, registered with the name  `ProcessInstancesWithCustomVariables`
+* `org.jbpm.kie.services.impl.query.mapper.UserTaskInstanceQueryMapper`, registered with the name `UserTasks`
+* `org.jbpm.kie.services.impl.query.mapper.UserTaskInstanceWithVarsQueryMapper`, registered with the name `UserTasksWithVariables`
+* `org.jbpm.kie.services.impl.query.mapper.UserTaskInstanceWithCustomVarsQueryMapper`, registered with name `UserTasksWithCustomVariables`
+* `org.jbpm.kie.services.impl.query.mapper.TaskSummaryQueryMapper`, registered with the name `TaskSummaries`
+* `org.jbpm.kie.services.impl.query.mapper.RawListQueryMapper`, registered with the name `RawList`
+
+Each `QueryResultMapper` is registered with a unique string name. You can look up mappers by this name instead of referencing the full class name. This feature is especially important when using EJB remote invocation of services, because it avoids relying on a particular implementation on the client side.
+
+To reference a `QueryResultMapper` by the string name, use `NamedQueryMapper`, which is a part of the `jbpm-services-api` module. This class acts as a delegate (lazy delegate) and looks up the actual mapper when the query is performed.
+
+.Using `NamedQueryMapper`
+[source,java]
+----
+queryService.query("my query def", new NamedQueryMapper<Collection<ProcessInstanceDesc>>("ProcessInstances"), new QueryContext());
+----
+
+.QueryParamBuilder
+
+`QueryParamBuilder` provides an advanced way of building filters for data sets.
+
+By default, when you use a query method of `QueryService` that accepts zero or more `QueryParam` instances, all of these parameters are joined with an `AND` operator, so a data entry must match all of them.
+
+However, sometimes more complicated relationships between parameters are required. You can use `QueryParamBuilder` to build custom builders that provide filters at the time the query is issued.
+
+One existing implementation of `QueryParamBuilder` is available in the {PROCESS_ENGINE}. It covers default `QueryParams` that are based on the _core functions_.
+
+These core functions are SQL-based conditions, including the following conditions:
+
+* `IS_NULL`
+* `NOT_NULL`
+* `EQUALS_TO`
+* `NOT_EQUALS_TO`
+* `LIKE_TO`
+* `GREATER_THAN`
+* `GREATER_OR_EQUALS_TO`
+* `LOWER_THAN`
+* `LOWER_OR_EQUALS_TO`
+* `BETWEEN`
+* `IN`
+* `NOT_IN`
+
+Before invoking a query, the {PROCESS_ENGINE} invokes the build method of the `QueryParamBuilder` interface as many times as necessary while the method returns a non-null value. Because of this approach, you can build up complex filter options that could not be expressed by a simple list of `QueryParams`.
+
+The following example shows a basic implementation of `QueryParamBuilder`. It relies on the DashBuilder Dataset API.
+
+.Basic implementation of `QueryParamBuilder`
+[source,java]
+----
+public class TestQueryParamBuilder implements QueryParamBuilder<ColumnFilter> {
+
+    private Map<String, Object> parameters;
+    private boolean built = false;
+    public TestQueryParamBuilder(Map<String, Object> parameters) {
+        this.parameters = parameters;
+    }
+
+    @Override
+    public ColumnFilter build() {
+        // return null if it was already invoked
+        if (built) {
+            return null;
+        }
+
+        String columnName = "processInstanceId";
+
+        ColumnFilter filter = FilterFactory.OR(
+                FilterFactory.greaterOrEqualsTo((Long)parameters.get("min")),
+                FilterFactory.lowerOrEqualsTo((Long)parameters.get("max")));
+        filter.setColumnId(columnName);
+
+        built = true;
+        return filter;
+    }
+
+}
+----
+
+After implementing the builder, you can use an instance of this class when performing a query with the `QueryService` service, as shown in the following example:
+
+.Running a query with the `QueryService` service
+[source,java]
+----
+queryService.query("my query def", ProcessInstanceQueryMapper.get(), new QueryContext(), paramBuilder);
+----
+

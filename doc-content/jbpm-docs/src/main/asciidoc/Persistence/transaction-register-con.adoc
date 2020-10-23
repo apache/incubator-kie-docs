@@ -1,38 +1,38 @@
 [id='transaction-register-con_{context}']
 = Registration of a transaction manager
 
-You must register a transaction manager at the environment to use user-defined transactions.
+You must register a transaction manager in the environment to use user-defined transactions.
 
-The following sample code registers the transaction manager. Then it uses JTA calls to specify transaction boundaries.
+The following sample code registers the transaction manager and uses JTA calls to specify transaction boundaries.
 
 .Registering a transaction manager and using transactions
 [source,java]
 ----
-// create the entity manager factory
+// Create the entity manager factory
 EntityManagerFactory emf = EntityManagerFactoryManager.get().getOrCreate("org.jbpm.persistence.jpa");
 TransactionManager tm = TransactionManagerServices.getTransactionManager();
 
-// set up the runtime environment
+// Set up the runtime environment
 RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
 .newDefaultBuilder()
 .addAsset(ResourceFactory.newClassPathResource("MyProcessDefinition.bpmn2"), ResourceType.BPMN2)
     .addEnvironmentEntry(EnvironmentName.TRANSACTION_MANAGER, tm)
     .get();
 
-// get the KIE session
+// Get the KIE session
 RuntimeManager manager = RuntimeManagerFactory.Factory.get().newPerRequestRuntimeManager(environment);
 RuntimeEngine runtime = manager.getRuntimeEngine(ProcessInstanceIdContext.get());
 KieSession ksession = runtime.getKieSession();
 
-// start the transaction
+// Start the transaction
 UserTransaction ut = InitialContext.doLookup("java:comp/UserTransaction");
 ut.begin();
 
-// perform multiple commands inside one transaction
+// Perform multiple commands inside one transaction
 ksession.insert( new Person( "John Doe" ) );
 ksession.startProcess("MyProcess");
 
-// commit the transaction
+// Commit the transaction
 ut.commit();
 ----
 
@@ -59,7 +59,7 @@ By default, the Narayana JTA transaction manager is used. If you want to use a d
 .Transaction manager property in the `persistence.xml` file for the JBoss transaction manager
 [source,properties]
 ----
-<property name="hibernate.transaction.jta.platform" value="org.hibernate.transaction.JBossTransactionManagerLookup" />
+<property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.JBossAppServerJtaPlatform" />
 ----
 
 [WARNING]
