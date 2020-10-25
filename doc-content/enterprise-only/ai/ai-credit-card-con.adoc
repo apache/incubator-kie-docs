@@ -13,7 +13,7 @@ Fortress Bank uses {PRODUCT} on {OPENSHIFT} to develop and run the Fortress Bank
 == Credit card dispute digital decisioning with {PRODUCT}
 Joe is a Fortress Bank customer. Each month, he logs in to the Fortress Bank web site to review all of the charges on his bill before he pays it. This month, Joe sees a transaction that he recognizes but the amount is incorrect. The vendor has charged him $44.50 instead of $4.50. Joe selects the row that contains the incorrect item and clicks *Dispute*.
 
-image:ai/transactions-history.png[]
+image:ai/transaction-history.png[]
 
 This action initiates a series of questions about the dispute:
 
@@ -33,7 +33,7 @@ image:ai/casefile.png[]
 .Process variables
 When Joe reported the dispute, an instance of the *fraudDispute* process was created with case ID `FR-00000004`.  The *Process Variables* tab contains several variables and values specific to Joe's account, including `CaseID`, `caseFile_cardholderRIskRating` (the creditcard holder risk rating), and `caseFile_disputeRiskRating` (the risk rating of this dispute):
 
-image:ai/process-variables.png[]
+image:ai/process-variables-3.png[]
 
 The table also has the `casefile_automated` variable with the value `true`. This indicates that the dispute met the criteria to be automatically processed.
 
@@ -43,7 +43,7 @@ The *Diagram* tab contains the BPMN diagram that shows the decision paths that t
 
 image:ai/bpmn.png[]
 
-The *Decision Task* task contains the rules that determine whether the dispute will be automatically charged back to Joe's account (*Milestone 1*) or whether more investigation is required (*Milestone 2*) based on the values of the `caseFile_cardholderRiskRating` and the `caseFile_disputeRiskRating` variables. If Joe's dispute matches the criteria for automatic approval, Milestone 1 is followed and the disputed amount is charged back to his account. This sub-process is very lean and efficient. If Joe's dispute requires manual evaluation, the process in Milestone 2 is started, which will require some human actor involvement and will take more resources to process.
+The *Decision Task* task contains the rules that determine whether the dispute will be automatically charged back to Joe's account (*Milestone 1*) or whether more investigation is required (*Milestone 2*) based on the values of the `caseFile_cardholderRiskRating` and the `caseFile_disputeRiskRating` variables. If Joe's dispute matches the criteria for automatic approval, Milestone 1 is followed and the disputed amount is charged back to his account. This sub-process is very lean and efficient. If Joe's dispute requires manual evaluation, the sub-process in Milestone 2 is started, which will require some human actor involvement and will take more resources to process.
 //COMMENT: Need image that shows all of milestone 2.
 //image:ai/automatic.png[]
 //image:ai/milestone2.png[]
@@ -55,7 +55,7 @@ The *Decision Task* task contains the rules that determine whether the dispute w
 The following simplified DMN model shows the decision process that is part of the *fraudDispute* *Decision Task* task:
 //<IMAGE> 5:13>
 
-image:ai/dmn.png[]
+image:ai/simple-dmn.png[]
 
 The input variables are *Age* (cardholder age), *Incident Count* (the number of previous disputes for this cardholder), *Cardholder Status*, and *Fraud Amount*.
 
@@ -83,25 +83,19 @@ Because Fortress Bank has historical data about its customers, including previou
 
 Fortress Bank has two sets of PMML files that contain models which more accurately assess risk predictions. One set is based on the linear regression algorithm and the other is based on the random forests algorithm.
 
-image:ai/PMML-models.png[]
+image:ai/pmml-models.png[]
 
 Linear regression is one of the most widely used algorithms in both statistics and machine learning. It uses a linear equation that combines a set of numeric input and output values. Random forests use many decision trees as inputs to create prediction models.
 
 .Adding PMML files
-Michelle imports the *dispute_risk_linear_regression* PMML file into her project. She adds the *Cardholder Risk Model* business model knowledge node to the DMN model and associates the *dispute_risk_linear_regression* PMML file with the node. {PRODUCT} analyzes the PMML file and add input parameters to the node.
-
-image:ai/function.png[]
-
-Michelle associates the *Cardholder Risk Model* node with the *Dispute Risk Rating*.
-
-image:ai/arrow.png[]
+Michelle imports the *dispute_risk_linear_regression* PMML file into her project. She adds the *Cardholder Risk Model* business model knowledge node to the DMN model and associates the *dispute_risk_linear_regression* PMML file with the node. {PRODUCT} analyzes the PMML file and add input parameters to the node. Michelle associates the *Cardholder Risk Model* node with the *Dispute Risk Rating*.
 
 Michelle then adds the *credit_card_holder_risk_linear_regression* PMML model to the projects, creates the *Dispute Risk Model* mode DMN file, creates, and associates the *credit_card_holder_risk_linear_regression* PMML file with the node. {PRODUCT} analyzes the PMML file and add input parameters to the node.
 
 The following image is Michelle's completed DMN model, which replaces analytical decision tables with the predictive models from the PMML files:
 //<image 7:56> <9:26>
 
-image:ai/DMN-PMML.png[]
+image:ai/DMN-PMML-2.png[]
 
 Michelle now returns to the *fraudDispute* BPMN model and updates the model with the PMML files that she added. She then redeploys the project.
 
@@ -109,7 +103,7 @@ Michelle now returns to the *fraudDispute* BPMN model and updates the model with
 In this new scenario where Michelle has redeployed the Fortress Bank project with PMML models, we can see what happens when Joe logs in to his Fortress Bank account and reports the same transaction as incorrect. In {CENTRAL}, Michelle navigates to the *Process Instances* window and she sees Joe's new dispute instance, `FR-00000005`.
 In the *Process Variables* tab, Michelle reviews the values of *cardHolderRiskRating* and the *disputeRiskRating*. They have changed because the model is now using the PMML files. This give a much more precise prediction of risk by making use of machine learning models based on historical data. At the same time, the policy of the bank is still enforced by the DMN decision model: the risk predictor is below a specified threshold which allows for this dispute to be processed automatically.
 
-image:ai/updated-process-instance.png[]
+image:ai/process-variables-pmml.png[]
 
 .Monitoring
 Finally, Fortress Bank uses Prometheus to gather metrics about credit card disputes and Grafana to visualize those metrics in real time. The upper section of the monitor shows the business metrics key performance indicators (KPIs) and the lower section shows the operational metrics KPIs.
