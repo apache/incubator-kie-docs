@@ -1,9 +1,7 @@
 [id='ai-gsg_{context}']
 
-= Using a PMML file with DMN
-
-Use case: Card transaction dispute
-End user can dispute a card transaction and the system has to decide if the dispute can be automatically processed (aka accept the dispute and refund the user) or if it requires to have manual verification
+= Using a PMML model with a DMN model in {PRODUCT}
+This example shows you how to use {PRODUCT} to create a DMN model that uses a PMML model to resolve credit card transaction disputes. When a customer disputes a credit card transaction, the system decides whether or not to process the transaction automatically.
 
 .Prerequisites:
 
@@ -22,12 +20,12 @@ These files are required to enable JPMML evaluation in {KIE_SERVER} and {CENTRAL
 
 
 .Procedure
-. Download the `dtree_risk_predictor.pmml` file from COMMENT: need location.
+. Create the `dtree_risk_predictor.pmml` file with the contents of the XML example in xref:ai-pmml-ref_{context}[].
 . In {CENTRAL}, create the *Credit Card Dispute* project:
 .. Navigate to *Menu -> Design -> Projects*.
 .. Click *Add Project*.
 .. In the *Name* box, enter `Credit Card Dispute` and click *Add*.
-. In the Assets window of the *Credit Card Dispute* project, import the `dtree_risk_predictor.pmml` file into the `com` package.
+. In the *Assets* window of the *Credit Card Dispute* project, import the `dtree_risk_predictor.pmml` file into the `com` package:
 +
 image:ai/import-pmml.png[]
 
@@ -35,8 +33,8 @@ image:ai/import-pmml.png[]
 .. Click *Import Asset*.
 .. In the *Create new Import Asset* dialog, enter `dtree_risk_predictor` in the *Name* box, select *com* from the *Package* menu, select the `dtree_risk_predictor.pmml` file, and click *OK*.
 +
-The content of the `dtree_risk_predictor.pmml` file appears in the Overview window.
-. Create the *Dispute Transaction Check* DMN model in com package.
+The content of the `dtree_risk_predictor.pmml` file appears in the *Overview* window.
+. Create the *Dispute Transaction Check* DMN model in *com* package:
 +
 image:ai/dmn-asset.png[]
 
@@ -47,7 +45,7 @@ image:ai/dmn-asset.png[]
 .. In the *Create new DMN* dialog, enter enter `Dispute Transaction Check` in the *Name* box, select *com* from the *Package* menu, and click *OK*.
 +
 The DMN editor opens with the *Dispute Transaction Check* DMN model.
-. Create the *tTransaction* custom data type.
+. Create the *tTransaction* custom data type:
 +
 image:ai/ttransactions.png[]
 
@@ -57,11 +55,11 @@ image:ai/ttransactions.png[]
 .. Select *Structure* from the *Type* menu.
 .. To create the data type, click the check mark.
 +
-The *tTransaction* custom data type appears with
-.. In the *Name* field, enter `transaction_amount`, select *Number* from the *Type* menu, and then click the check mark.
-.. To add a new row, click the plus symbol on the `transaction_amount` line. A new row appears.
+The *tTransaction* custom data type appears with one variable row.
+.. In the *Name* field of the variable row, enter `transaction_amount`, select *Number* from the *Type* menu, and then click the check mark.
+.. To add a new variable row, click the plus symbol on the `transaction_amount` row. A new row appears.
 .. In the *Name* field, enter `cardholder_identifier`, select *Number* from the *Type* menu, and then click the check mark.
-. Add the *Risk Predictor* `dtree_risk_predictor.pmml` model.
+. Add the *Risk Predictor* `dtree_risk_predictor.pmml` model:
 +
 image:ai/include-model.png[]
 +
@@ -69,11 +67,11 @@ image:ai/include-model.png[]
 .. In the *Include Model* dialog, select `dtree_risk_predictor.pmml` from the *Models* menu.
 .. Enter `Risk Predictor` in the *Provide a unique name* box and click *OK*.
 
-. Create the *Risk Predictor* Business Knowledge Model (BKM) node with the *Risk Predictor*  and *DecisionTreeClassifier* model.
+. Create the *Risk Predictor* Business Knowledge Model (BKM) node with the *Risk Predictor* and *DecisionTreeClassifier* model:
 +
 image:ai/risk-predictor-function.png[]
 
-.. In the *Model* window of the DMN editor, drag a BKM node to the palette.
+.. In the *Model* window of the DMN editor, drag a BKM node to the DMN editor palette.
 +
 image:ai/bkm.png[]
 .. Rename the node *Risk Predictor*.
@@ -85,11 +83,11 @@ image:ai/risk-predictor-node.png[]
 .. Double-click the *Second select PMML model* box and select *DecisionTreeClassifier*.
 .. To return to the DMN editor palette,  click *Back to Dispute Transaction Check*.
 
-. Create the *Transaction* input data node with the data type *tTransaction*.
+. Create the *Transaction* input data node with the data type *tTransaction*:
 +
 image:ai/risk-transaction.png[]
 
-.. In the *Model* window of the DMN editor, drag an input data node to the palette.
+.. In the *Model* window of the DMN editor, drag an input data node to the DMN editor palette.
 +
 image:ai/input-node.png[]
 
@@ -97,8 +95,11 @@ image:ai/input-node.png[]
 .. Select the node then click the properties pencil icon in the upper right corner of the window.
 .. In the *Properties* panel, select *Information Item -> Data type -> tTransaction* then close the panel.
 
-. Create the *Transaction Dispute risk* decision node and add the *Transaction* node for data input and the *Risk Predictor* node for the function.
-.. In the *Model* window of the DMN editor, drag a decision data node to the palette.
+. Create the *Transaction Dispute Risk* decision node and add the *Transaction* node for data input and the *Risk Predictor* node for the function:
++
+image:ai/model3.png[]
+
+.. In the *Model* window of the DMN editor, drag a decision data node to the DMN editor palette.
 +
 image:ai/decision-node.png[]
 
@@ -106,7 +107,7 @@ image:ai/decision-node.png[]
 .. Select the *Risk Predictor* node and drag the arrow from the top right of the node to the *Transaction Dispute Risk* node.
 .. Select the *Transaction* node and drag the arrow from the top right of the node to the *Transaction Dispute Risk* node.
 
-. In the *Transaction Dispute Risk* node, create the *Risk predictor* invocation function.
+. In the *Transaction Dispute Risk* node, create the *Risk predictor* invocation function:
 +
 image:ai/transaction-dispute-risk.png[]
 
@@ -122,15 +123,11 @@ image:ai/transaction-dispute-risk.png[]
 .. Click *Select expression* on row *2* and select *Literal expression* from the menu.
 .. Enter `Transaction.cardholder_identifier` in the box next to *amount*.
 
+. Create the *Risk Treshold* input data node with the data type *number*:
++
+image:ai/model4.png[]
 
-
-
-
-. Create the *Risk Treshold* input data node with the data type *number*.
-//+
-//image:ai/rin.png[]
-
-.. In the *Model* window of the DMN editor, drag an input data node to the palette.
+.. In the *Model* window of the DMN editor, drag an input data node to the DMN editor palette.
 
 .. Rename the node *Risk Threshold*.
 .. Select the node then click the properties pencil icon in the upper right corner of the window.
@@ -138,41 +135,62 @@ image:ai/transaction-dispute-risk.png[]
 
 
 
-. Create the *Can be automatically processed?* decision node that takes as inputs the *Transaction Dispute Risk* and the *Risk threshold* node.
+. Create the *Can be automatically processed?* decision node that takes as inputs the *Transaction Dispute Risk* and the *Risk threshold* node:
++
+image:ai/model5.png[]
 
-.. Drag a decision node to the palette and rename it *Can be automatically processed?*.
+.. Drag a decision node to the DMN editor palette and rename it *Can be automatically processed?*.
 .. Select the node, then click the edit icon on the upper left side of the node.
 .. Click *Select expression* and then select *Literal expression* from the menu.
 .. Enter `Transaction Dispute Risk.predicted_dispute_risk < Risk threshold` in the box.
 .. Select the *Transaction Dispute Risk* node and drag the arrow in the top left of the node to the *Can be automatically processed?* node.
 .. Select the *Risk Threshold* node and drag the arrow in the top left of the node to the *Can be automatically processed?* node.
-. Save the model and build the project.
+. Save the model and build the project:
 .. In the DMN editor, click *Save*.
 .. If necessary, correct any errors that appear.
 .. To return to the project window, click *Credit Card Dispute* in the breadcrumb trail.
 .. Click *Build*. The project should successfully build.
 
-. Add and run a test scenario
-.. Click *Add Assett*.
+. Add and run a test scenario:
+image:ai/test-scenarios-3.png[]
+.. Click *Add Asset*.
 .. Select *Test Scenario*.
 .. In the *Create new Test Scenario* dialog, enter the name `Test Dispute Transaction Check`, select *com* from the *Package* menu, and select *DMN*.
 .. Select *Dispute Transaction Check.dmn* from the *Choose a DMN asset* menu and click *OK*. The test template builds.
 .. Enter the following values and click *Save*.
 +
 .Test scenario parameters
-[cols="40%,60%", options="header"]
+[cols="20%,13%,24%,24%,19%", options="header"]
 |===
-|Variables
-|Value
-
-| *Scenario description*
-| `Test with amount > 100 and threshold = 3`
-
-| *value*
-| 3
-
+| *Description*
+| *Risk Threshold*
+| *cardholder_identifier*
 | *transaction_amount*
-| 120
+| *Can be automatically processed?*
+
+| Risk threshold 5, automatically processed
+| 5
+| 1234
+| 1000
+| true
+
+| Risk threshold 4, amount = 1000, not processed
+| 4
+| 1234
+| 1000
+| false
+
+| Risk threshold 4, amount = 180, automatically processed
+| 4
+| 1234
+| 180
+| true
+
+| Risk threshold 1, amount = 1, not processed
+| 1
+| 1234
+| 1
+| false
 
 |===
 .. To run the test, click *Validate*.
