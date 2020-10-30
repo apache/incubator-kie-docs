@@ -12,7 +12,7 @@ These steps describe a basic cluster configuration. For more complex configurati
 * {DATAGRID} {DATAGRID_VERSION} is installed as described in <<clustering-datagrid-proc_clustering-dev>>.
 * AMQ Broker is installed and configured, as described in <<JMS-broker-configure_{context}>>.
 * {EAP} and {PRODUCT} are installed on each node of the cluster as described in <<clustering-download-eap-bc-proc_clustering-dev>>.
-* An NFS server with a mounted partition is available as described in xref:nfs-server-configure-proc_clustering-dev[].
+* An NFS server with a shared folder is available as described in xref:nfs-server-configure-proc_clustering-dev[].
 
 .Procedure
 . Mount the directory shared over NFS as `/data`. Enter the following commands as the root user:
@@ -25,11 +25,22 @@ mount <NFS_SERVER_IP>:<DATA_SHARE> /data
 +
 Replace _<NFS_SERVER_IP>_ with the IP address or hostname of the NFS server machine. Replace _<DATA_SHARE>_ with the share name that you configured (for example, `/opt/kie/data`).
 +
+. Create a `kie-wb-playground` directory in the `/data` NFS directory:
++
+[subs="attributes,verbatim,macros"]
+----
+mkdir /kie-wb-playground
+----
+. Create a `kie-wb-playground` directory in the `_EAP_HOME_/bin` directory and mount the directory:
++
+----
+mount -o rw,sync,actimeo=1 <NFS_SERVER_IP>:<DATA_SHARE>/kie-wb-playground kie-wb-playground
+----
 . Open the `_EAP_HOME_/standalone/configuration/standalone-full.xml` file in a text editor.
 . Edit or add the properties under the `<system-properties>` element and replace the following placeholders:
 * `<AMQ_USER>` and `<AMQ_PASSWORD>` are the credentials that you defined when creating the AMQ Broker.
 * `<AMQ_BROKER_IP_ADDRESS>` is the IP address of the AMQ Broker.
-* `<INFINISPAN_NODE_IP>` is the IP address where {DATAGRID} is installed.
+* `<DATA_GRID_NODE_IP>` is the IP address where {DATAGRID} is installed.
 +
 [source,xml]
 ----
@@ -42,7 +53,7 @@ Replace _<NFS_SERVER_IP>_ with the IP address or hostname of the NFS server mach
   <property name="org.appformer.ext.metadata.infinispan.port"
      value="11222"/>
   <property name="org.appformer.ext.metadata.infinispan.host"
-     value="<INFINISPAN_NODE_IP>"/>
+     value="<DATA_GRID_NODE_IP>"/>
   <property name="org.appformer.ext.metadata.infinispan.realm"
      value="ApplicationRealm"/>
   <property name="org.appformer.ext.metadata.infinispan.cluster"
@@ -72,16 +83,11 @@ Replace _<NFS_SERVER_IP>_ with the IP address or hostname of the NFS server mach
    value=""/>
 ----
 . Save the `standalone-full.xml` file.
-. To start the cluster, navigate to `__EAP_HOME__/bin` and enter one of the following commands:
-** On Linux or UNIX-based systems:
+. To start the cluster, navigate to `__EAP_HOME__/bin` and enter the following command:
 +
-[source,bash]
+[source]
 ----
-$ ./standalone.sh -c standalone-full.xml
+$ ./standalone.sh -c standalone-full.xml -b <HOST>
 ----
-** On Windows:
 +
-[source,bash]
-----
-standalone.bat -c standalone-full.xml
-----
+Replace `<HOST>` with the IP address or host name of the server where you installed {PRODUCT}.
