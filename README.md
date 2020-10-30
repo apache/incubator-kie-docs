@@ -72,29 +72,21 @@ The files in the `master-kogito` branch of the `kie-docs` repository are organiz
 ```
 ├── _artifacts
 ├── _images
-├── assemblies
-    ├── assembly-kogito-creating-running
-        ├── kog
-            ├── master-docinfo.xml
-            └── master.adoc
-        └── main.adoc
-    ├── ...
 ├── doc-content
     ├── kogito-docs
         └── src
             └── main
                 └── asciidoc
                     ├── bpmn
-                        ├──con-bpmn-elements.adoc
+                        ├──chap-kogito-developing-process-services.adoc
                         ├── ...
-                    ├── dmn
-                        ├── con-dmn-elements.adoc
+                    ├── configuration
+                        ├── chap-kogito-configuring.adoc
                         ├── ...
-                    ├── ...
-                    ├── chap-kogito-configuring.adoc
                     ├── ...
                     └── index.adoc
         └── pom.xml
+├── titles-enterprise  // For Red Hat enterprise documentation testing only
 ├── ...
 ├── pom.xml    
 └── README.md
@@ -104,16 +96,12 @@ The file structure contains the following core folders:
 
 * `_artifacts`: Directory with document attributes that render according to target output (community or enterprise).
 * `_images`: Directory with all images used in the documentation, divided into sub-directories by subject matter.
-* `assemblies`: (For Red Hat enterprise publications only) List of assembly folders used by the Red Hat Business Automation documentation team to build content for the Red Hat Customer Portal.
 * `doc-content`: Directory with all ADOC content files, specifically in `doc-content/kogito-docs/src/main/asciidoc`. This directory contains the following types of ADOC files:
 
-  * **Module files**: Topic files that are classified as concepts (prefix `con-`), references (prefix `ref-`), or procedures (prefix `proc-`), typically with a single heading per file. For example, the procedure `= Creating and editing DMN models in the Kogito DMN modeler` is written as a single ADOC file with an anchor ID `[id='proc-creating-dmn-models_{context}']` and file name `proc-creating-dmn-models.adoc`. The `_{context}` variable in the anchor ID enables the module file to be reused in multiple chapter files.
-
-    For module file examples, explore the sub-directories in [`doc-content/../asciidoc`](https://github.com/kiegroup/kie-docs/tree/master-kogito/doc-content/kogito-docs/src/main/asciidoc). For more information about modular documentation conventions, see the Red Hat [`modular-docs`](https://github.com/redhat-documentation/modular-docs) repository in GitHub.
-
-    If these specifics for module files are unclear to you, use an existing module file as a starting template and write what makes sense to you. The `kie-docs` documentation team can work with the content that you contribute.
-  * **Chapter files**: Chapter files (prefix `chap-`) that list module files with `include` statements and contain any additional introductory content for that chapter.
+  * **Chapter files**: Chapter files (prefix `chap-`) formatted to accommodate a modular documentation structure that is generated separately from this source repository for Red Hat enterprise documentation. For more information about modular documentation conventions, see the Red Hat [`modular-docs`](https://github.com/redhat-documentation/modular-docs) repository in GitHub. If any formatting conventions are unclear to you, use existing content as a starting template and write what makes sense to you. The `kie-docs` documentation team can work with the content that you contribute.
   * **Index file**: Single index file (`index.adoc`) that lists chapter files with `include` statements and contains any additional introductory content for the Kogito documentation as a whole.
+
+* `titles-enterprise`: Directory for testing Red Hat enterprise documentation. This directory is used internally by Red Hat technical writers only.
 
 # Contributing to Kogito documentation
 

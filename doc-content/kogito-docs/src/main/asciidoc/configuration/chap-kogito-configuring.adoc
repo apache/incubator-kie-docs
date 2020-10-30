@@ -1,0 +1,2377 @@
+[id="chap-kogito-configuring"]
+= Configuring {PRODUCT} supporting services and runtime capabilities
+ifdef::context[:parent-context: {context}]
+:context: kogito-configuring
+
+// Purpose statement for the assembly
+[role="_abstract"]
+As a developer of business processes and decisions, you can configure {PRODUCT} supporting services and runtime properties for advanced use cases with your {PRODUCT} services.
+
+// Modules - concepts, procedures, refs, etc.
+[id="con-kogito-supporting-services-and-configuration_{context}"]
+== {PRODUCT} supporting services and runtime configuration
+
+[role="_abstract"]
+{PRODUCT} supporting services consist of middleware infrastructure services and other dedicated services that help you build additional functionality in the {PRODUCT} domain-specific services that you develop.
+
+{PRODUCT} supports the following key middleware infrastructure services:
+
+* Infinispan persistence
+* Apache Kafka reactive messaging
+
+{PRODUCT} also provides the following dedicated services:
+
+* {PRODUCT} Data Index Service indexing and querying
+* {PRODUCT} Jobs Service job scheduling
+
+The {PRODUCT} runtime supports various configuration options for these supporting services and for other capabilities, such as the following examples:
+
+* Custom event listeners
+* Prometheus metrics monitoring
+* Process instance management
+
+These supporting services, runtime configurations, and {PRODUCT} add-on components enable you to optimize your {PRODUCT} domain-specific services for your business automation requirements.
+
+[id="ref-kogito-runtime-properties_{context}"]
+== {PRODUCT} runtime properties quick reference
+
+[role="_abstract"]
+The following table serves as a quick reference for commonly used runtime configuration properties supported by {PRODUCT}. You can define these properties in the `src/main/resources/application.properties` file of the relevant {PRODUCT} project or by using the `-D` prefix during application start-up.
+
+NOTE: Some of these properties might require accompanying dependencies in the relevant {PRODUCT} project to enable the specified capability. For more information about dependency requirements, review the sections of the {PRODUCT} configuration documentation that relate to that property.
+
+.Common runtime properties in {PRODUCT}
+[cols="15%,45%,40%"]
+|===
+|Relevance |Property |Description
+
+.3+|Events
+|`kogito.events.processinstances.enabled`
+a|Determines whether runtime events are published for process instances, either `enabled` or `disabled`
+
+Default value: `enabled`
+
+Example: `kogito.events.processinstances.enabled`
+
+a|`kogito.events.usertasks.enabled`
+|Determines whether runtime events are published for user task instances, either `enabled` or `disabled`
+
+Default value: `enabled`
+
+Example: `kogito.events.usertasks.enabled`
+
+a|`kogito.messaging.as-cloudevents`
+|Determines whether messages (sent or received through message events) are published in CloudEvents format, either `true` of `false`
+
+Example: `kogito.messaging.as-cloudevents=true`
+
+.3+|Infinispan persistence
+a|`quarkus.infinispan-client.server-list`
+
+For Spring Boot: `infinispan.remote.server-list`
+a|Defines the location where an Infinispan Server is running, typically used to connect your application to Infinispan for persistence
+
+Example: `quarkus.infinispan-client.server-list=localhost:11222`
+
+For Spring Boot: `infinispan.remote.server-list=127.0.0.1:11222`
+
+a|`quarkus.infinispan-client.auth-username`
+
+`quarkus.infinispan-client.auth-password`
+|Identifies the Infinispan user name and password to authenticate Infinispan persistence capabilities in the relevant application, if required, such as in the {PRODUCT} Data Index Service
+
+Examples:
+
+`quarkus.infinispan-client.auth-username=admin`
+
+`quarkus.infinispan-client.auth-password=admin123`
+
+|`kogito.persistence.infinispan.template`
+|Defines an optional template name of the Infinispan cache configuration to be used to persist process instance data
+
+Example: `kogito.persistence.infinispan.template=MyTemplate`
+
+|Kafka messaging
+a|Incoming:
+
+`mp.messaging.incoming.__MESSAGE_EVENT_NAME__.connector`
+
+`mp.messaging.incoming.__MESSAGE_EVENT_NAME__.topic`
+
+`mp.messaging.incoming.__MESSAGE_EVENT_NAME__.value.deserializer`
+
+Outgoing:
+
+`mp.messaging.outgoing.__MESSAGE_EVENT_NAME__.connector`
+
+`mp.messaging.outgoing.__MESSAGE_EVENT_NAME__.topic`
+
+`mp.messaging.outgoing.__MESSAGE_EVENT_NAME__.value.serializer`
+
+For Spring Boot: `kafka.bootstrapAddress` (messages defined separately in JavaBeans)
+a|Defines the connector, topic, and deserializer for the incoming and outgoing messages and channels for reactive messaging with Apache Kafka
+
+Examples for incoming:
+
+`mp.messaging.incoming.travellers.connector=smallrye-kafka`
+
+`mp.messaging.incoming.travellers.topic=travellers`
+
+`mp.messaging.incoming.travellers.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer`
+
+Examples for outgoing:
+
+`mp.messaging.outgoing.processedtravellers.connector=smallrye-kafka`
+
+`mp.messaging.outgoing.processedtravellers.topic=processedtravellers`
+
+`mp.messaging.outgoing.processedtravellers.value.serializer=org.apache.kafka.common.serialization.StringSerializer`
+
+For Spring Boot: `kafka.bootstrapAddress=localhost:9092`
+
+.7+|{PRODUCT} Jobs Service
+|`kogito.service.url`
+a|Defines the location where the {PRODUCT} service is deployed, typically used by the Jobs Service to find the source of the jobs
+
+Example: `kogito.service.url=http://localhost:8080`
+
+a|`kogito.jobs-service.url`
+|Defines the callback URL that posts to a running {PRODUCT} Jobs Service
+
+Example: `kogito.jobs-service.url=http://localhost:8085`
+
+|`kogito.jobs-service.persistence`
+a|(Specified in Jobs Service) Identifies the persistence mechanism used by the Jobs Service, either `in-memory` or `infinispan`
+
+Default value: `in-memory`
+
+Example: `kogito.jobs-service.persistence=in-memory`
+
+|`kogito.jobs-service.backoffRetryMillis`
+a|(Specified in Jobs Service) Defines the retry back-off time in milliseconds between job execution attempts, in case the execution fails
+
+Default value: `1000`
+
+Example: `kogito.jobs-service.backoffRetryMillis=1000`
+
+|`kogito.jobs-service.maxIntervalLimitToRetryMillis`
+a|(Specified in Jobs Service) Defines the maximum interval in milliseconds when retrying to execute jobs, in case the execution fails
+
+Default value: `60000`
+
+Example: `kogito.jobs-service.maxIntervalLimitToRetryMillis=60000`
+
+|`mp.messaging.outgoing.kogito-job-service-job-status-events.bootstrap.servers`
+a|(Specified in Jobs Service) Identifies the Kafka bootstrap server address with the port used to publish events
+
+Default value: `localhost:9092`
+
+Example: `mp.messaging.outgoing.kogito-job-service-job-status-events.bootstrap.servers=localhost:9092`
+
+|`mp.messaging.outgoing.kogito-job-service-job-status-events.topic`
+a|(Specified in Jobs Service) Defines the name of the Kafka topic where the events are published
+
+Default value: `kogito-jobs-events`
+
+Example: `mp.messaging.outgoing.kogito-job-service-job-status-events.topic=kogito-jobs-events`
+
+|RESTEasy
+|`resteasy.jaxrs.scan-packages`
+a|(Spring Boot only) Lists comma-separated package names that contain REST endpoint Java classes. Sub-packages are automatically scanned. Wildcard notation is supported. Packages generated by DMN namespaces typically start with `http`.
+
+Example: `resteasy.jaxrs.scan-packages=org.kie.kogito.example,http{asterisk}`
+
+|===
+
+[id="con-kogito-runtime-events_{context}"]
+== {PRODUCT} runtime events
+
+[role="_abstract"]
+A runtime event is record of a significant change of state in the application domain at a point in time. {PRODUCT} emits runtime events as a result of successfully executed requests, or _units of work_, in a process instance or task instance in a process. {PRODUCT} can use these events to notify third parties about changes to the BPMN process instance and its data.
+
+=== Process instance events
+
+For every executed process instance, an event is generated that contains information for that instance, such as the following information:
+
+* Process instance metadata, such as the process definition ID, process instance ID, process instance state, and other identifying information
+* Node instances that have been triggered during the execution
+* Variables used and the current state of variables after the execution
+
+These events provide a complete view of the process instances being executed and can be consumed by an event listener, such as a `ProcessEventListener` configuration.
+
+If multiple processes are executed within a single request (unit of work), each process instance is given a dedicated event.
+
+The following event is an example process instance event generated after the request was executed successfully:
+
+.Example process instance event
+[source,json]
+----
+{
+  "specversion": "0.3",
+  "id": "f52af50c-4fe2-4581-9184-7ad48137fb3f",
+  "source": null,
+  "type": "ProcessInstanceEvent",
+  "time": "2019-08-05T17:47:49.019494+02:00[Europe/Warsaw]",
+  "data": {
+    "id": "c1aced49-399b-4938-9071-b2ffa3fb7045",
+    "parentInstanceId": null,
+    "rootInstanceId": null,
+    "processId": "deals",
+    "processName": "SubmitDeal",
+    "startDate": 1565020069015,
+    "endDate": null,
+    "state": 1,
+    "nodeInstances": [
+      {
+        "id": "a8fe24c4-27a5-4869-85df-16e9f170f2c4",
+        "nodeId": "2",
+        "nodeDefinitionId": "CallActivity_1",
+        "nodeName": "Call a deal",
+        "nodeType": "SubProcessNode",
+        "triggerTime": 1565020069015,
+        "leaveTime": null
+      },
+      {
+        "id": "7a3bf1b1-b167-4928-969d-20bddf16c87a",
+        "nodeId": "1",
+        "nodeDefinitionId": "StartEvent_1",
+        "nodeName": "StartProcess",
+        "nodeType": "StartNode",
+        "triggerTime": 1565020069015,
+        "leaveTime": 1565020069015
+      }
+    ],
+    "variables": {
+      "name": "my fancy deal",
+      "traveller": {
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "jon.doe@example.com",
+        "nationality": "American",
+        "address": {
+          "street": "main street",
+          "city": "Boston",
+          "zipCode": "10005",
+          "country": "US"
+        }
+      }
+    }
+  },
+  "kogitoProcessinstanceId": "c1aced49-399b-4938-9071-b2ffa3fb7045",
+  "kogitoParentProcessinstanceId": null,
+  "kogitoRootProcessinstanceId": null,
+  "kogitoProcessId": "deals",
+  "kogitoProcessinstanceState": "1"
+}
+----
+
+The event is in https://cloudevents.io/[CloudEvents] format so that it can be consumed efficiently by other entities.
+
+The event data also includes the following extensions to enable event routing based on the event metadata without requiring the body of the event:
+
+* `kogitoProcessinstanceId`
+* `kogitoParentProcessinstanceId`
+* `kogitoRootProcessinstanceId`
+* `kogitoProcessId`
+* `kogitoProcessinstanceState`
+
+=== User task instance events
+
+If an executed request (unit of work) in a process instance interacts with a user task, an event is generated for that user task and contains information for the task instance, such as the following information:
+
+* Task metadata, such as the task description, priority, start and complete dates, and other identifying information
+* Task input and output data
+* Task assignments, such as the task owner, potential users and groups, business administrator and business administrator groups, or excluded users
+* Task reference name that should be used to interact with the task using the {PRODUCT} service endpoints
+
+The following event is an example user task instance event generated after the relevant request was executed successfully:
+
+.Example user task instance event
+[source,json]
+----
+{
+  "data": {
+    "adminGroups": [],
+    "adminUsers": [],
+    "excludedUsers": [],
+    "id": "4d899471-19dd-485d-b7f4-b313185d430d",
+    "inputs": {
+      "Locale": "en-UK",
+      "trip": {
+        "begin": "2019-09-22T22:00:00Z[UTC]",
+        "city": "Boston",
+        "country": "US",
+        "end": "2019-09-26T22:00:00Z[UTC]",
+        "visaRequired": true
+      },
+      "TaskName": "VisaApplication",
+      "NodeName": "Apply for visa",
+      "Priority": "1",
+      "Skippable": "true",
+      "traveller": {
+        "address": {
+          "city": "Krakow",
+          "country": "Poland",
+          "street": "Polna",
+          "zipCode": "12345"
+        },
+        "email": "jan.kowalski@email.com",
+        "firstName": "Jan",
+        "lastName": "Kowalski",
+        "nationality": "Polish"
+      }
+    },
+    "outputs": {},
+    "potentialGroups": [],
+    "potentialUsers": [],
+    "processId": "travels",
+    "processInstanceId": "63c297cb-f5ac-4e20-8254-02f37bd72b80",
+    "referenceName": "VisaApplication",
+    "startDate": "2019-09-16T15:22:26.658Z[UTC]",
+    "state": "Ready",
+    "taskName": "Apply for visa",
+    "taskPriority": "1"
+  },
+  "id": "9c340cfa-c9b6-46f2-a048-e1114b077a7f",
+  "kogitoProcessId": "travels",
+  "kogitoProcessinstanceId": "63c297cb-f5ac-4e20-8254-02f37bd72b80",
+  "kogitoUserTaskinstanceId": "4d899471-19dd-485d-b7f4-b313185d430d",
+  "kogitoUserTaskinstanceState": "Ready",
+  "source": "http://localhost:8080/travels",
+  "specversion": "0.3",
+  "time": "2019-09-16T17:22:26.662592+02:00[Europe/Berlin]",
+  "type": "UserTaskInstanceEvent"
+}
+----
+
+The event data also includes the following extensions to enable event routing based on the event metadata without requiring the body of the event:
+
+* `kogitoUserTaskinstanceId`
+* `kogitoUserTaskinstanceState`
+* `kogitoProcessinstanceId`
+* `kogitoProcessId`
+
+=== Event publishing
+
+{PRODUCT} generates events only when at least one publisher is configured. A {PRODUCT} service environment can have many event publishers that publish these events into different channels.
+
+By default, {PRODUCT} includes the following message-based event publishers, depending on your application framework:
+
+* *For Quarkus*: https://smallrye.io/smallrye-reactive-messaging/[Reactive Messaging] for sending events using Apache Kafka, Apache Camel, Advanced Message Queuing Protocol (AMQP), or MQ Telemetry Transport (MQTT)
+* *For Spring Boot*: https://spring.io/projects/spring-kafka[Spring for Apache Kafka] for sending events using Kafka
+
+To enable or disable event publishing, you can adjust the following properties in the `src/main/resources/application.properties` file in your {PRODUCT} project:
+
+* `kogito.events.processinstances.enabled`: Enables or disables publishing for process instance events (default: `enabled`)
+* `kogito.events.usertasks.enabled`: Enables or disables publishing for user task instance events (default: `enabled`)
+
+To develop additional event publishers, you can implement the `org.kie.kogito.event.EventPublisher` implementation and include the required annotations for JavaBeans discovery.
+
+////
+//@comment: Excluded for now because not yet supported in Kogito. Will be in its own topic. (Stetson, 1 Apr 2020)
+## Registering work item handlers
+
+To be able to use custom service tasks a work item handler must be registered. Once the work item handler is implemented to can be either packaged in the application itself or as dependency of the application.
+
+`WorkItemHandlerConfig` class should be created to provide custom work item handlers. It must implement `org.kie.kogito.process.WorkItemHandlerConfig` although recommended is to always extend the default implementation (`org.kie.kogito.process.impl.DefaultWorkItemHandlerConfig`) to benefit from the out of the box provided handlers as well.
+
+[source, java]
+----
+@ApplicationScoped
+public class CustomWorkItemHandlerConfig extends DefaultWorkItemHandlerConfig {{
+    register("MyServiceTask", new MyServiceWorkItemHandler());
+}}
+----
+
+NOTE: These classes are meant to be injectable so ensure you properly annotate the class (`@ApplicationScoped`/`@Component`) so they can be found and registered.
+
+You can also take advantage of lifecycle method like `@PostConstruct` and `@PreDestroy` to manage your handlers.
+////
+
+// tag::proc-messaging-enabling[]
+[id="proc-messaging-enabling_{context}"]
+=== Enabling Kafka messaging for {PRODUCT} services
+
+[role="_abstract"]
+{PRODUCT} supports the https://github.com/eclipse/microprofile-reactive-messaging[MicroProfile Reactive Messaging] specification for messaging in your services. You can enable messaging to configure message events as either input or output of business process execution.
+
+For example, the following `handle-travelers.bpmn2` process uses messaging start and end events to communicate with travelers:
+
+.Example process with messaging start and end events
+image::kogito/bpmn/bpmn-messaging-example.png[Image of message-based process]
+
+In this example, the message start and end events require the following information:
+
+* Message name that maps to the channel that delivers messages
+* Message payload that maps to a process instance variable
+
+.Example message configuration for start event
+image::kogito/bpmn/bpmn-messaging-start-event.png[Image of message start event data]
+
+.Example message configuration for end event
+image::kogito/bpmn/bpmn-messaging-end-event.png[Image of message end event data]
+
+For this procedure, the messaging is based on https://kafka.apache.org/[Apache Kafka] as the event publisher, so you must have Kafka installed in order to enable messaging. Your marshalling configuration depends on the messaging solution that you use.
+
+.Prerequisites
+* https://kafka.apache.org/[Apache Kafka] is installed and includes any required topics. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
+
+.Procedure
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.On Quarkus
+[source, xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source,xml]
+----
+<dependency>
+  <groupId>org.springframework.kafka</groupId>
+  <artifactId>spring-kafka</artifactId>
+</dependency>
+<dependency>
+  <groupId>com.fasterxml.jackson.core</groupId>
+  <artifactId>jackson-databind</artifactId>
+</dependency>
+----
+--
+. Configure the incoming and outgoing messaging channels and properties:
++
+--
+* *On Quarkus*: Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the incoming and outgoing messages and channels:
++
+.Configure incoming and outgoing messages and channels
+[source]
+----
+mp.messaging.incoming.travellers.connector=smallrye-kafka
+mp.messaging.incoming.travellers.topic=travellers
+mp.messaging.incoming.travellers.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+mp.messaging.outgoing.processedtravellers.connector=smallrye-kafka
+mp.messaging.outgoing.processedtravellers.topic=processedtravellers
+mp.messaging.outgoing.processedtravellers.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+----
++
+Replace `travellers` with the name of the message start event.
+Replace `processedtravellers` with the name of the message end event.
++
+[NOTE]
+====
+To prevent execution errors due to long wait times with messaging, you can also use the following property to disable waiting for message completion:
+
+.Disable message wait time
+[source]
+----
+mp.messaging.outgoing.[channel-name].waitForWriteCompletion=false
+----
+====
+
+* *On Spring Boot*: Add the following property to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the messaging channel, and create the JavaBeans for the incoming and outgoing messages:
++
+.Configure messaging channel
+[source]
+----
+kafka.bootstrapAddress=localhost:9092
+----
++
+.Create JavaBeans for incoming messages
+[source, java]
+----
+@EnableKafka
+@Configuration
+public class KafkaConsumerConfig {
+
+    @Value(value = "${kafka.bootstrapAddress}")
+    private String bootstrapAddress;
+
+    public ConsumerFactory<String, String> consumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "travellers-group");
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(consumerFactory());
+        return factory;
+    }
+
+}
+----
++
+.Create JavaBeans for outgoing messages
+[source, java]
+----
+@Configuration
+public class KafkaProducerConfig {
+
+    @Value(value = "${kafka.bootstrapAddress}")
+    private String bootstrapAddress;
+
+
+    @Bean
+    public ProducerFactory<String, String> producerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public KafkaTemplate<String, String> kafkaTemplate() {
+        return new KafkaTemplate<>(producerFactory());
+    }
+
+}
+----
+--
+
+NOTE: As an alternative to enabling Kafka messaging explicitly in {PRODUCT} services, you can use the {PRODUCT} Operator to install the Kafka infrastructure and enable messaging for the service during deployment on OpenShift. For more information about enabling Kafka messaging with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-kafka_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
+
+For example {PRODUCT} services with Kafka messaging, see the following example applications in GitHub:
+
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-quickstart-quarkus[`process-kafka-quickstart-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-quickstart-springboot[`process-kafka-quickstart-springboot`]: Example on Spring Boot
+// end::proc-messaging-enabling[]
+
+[id="proc-event-listeners-registering_{context}"]
+=== Registering event listeners
+
+[role="_abstract"]
+You can register custom event listeners to detect and publish events that are not published by {PRODUCT} by default. Your custom event listener configuration must implement the relevant implementation for either processes or rules.
+
+.Procedure
+. Create an event listener configuration class for either process or rule events, such as a `ProcessEventListenerConfig` class or a `RuleEventListenerConfig` class.
+. In your event listener configuration class, extend the default implementation of the configuration class as part of your listener definition:
++
+--
+* Implementation for process events: `org.kie.kogito.process.impl.DefaultProcessEventListenerConfig`
+* Implementation for rule events: `org.drools.core.config.DefaultRuleEventListenerConfig`
+
+.Example process event listener with extended default implementation
+[source, java]
+----
+@ApplicationScoped
+public class ProcessEventListenerConfig extends DefaultProcessEventListenerConfig {
+
+    public ProcessEventListenerConfig() {
+        super(new CustomProcessEventListener());
+    }
+}
+----
+
+.Example rule event listener with extended default implementation
+[source, java]
+----
+@ApplicationScoped
+public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
+
+    public RuleEventListenerConfig() {
+        super(new CustomRuleEventListener());
+    }
+}
+----
+
+NOTE: These configuration classes must be injectable, so ensure that you properly annotate the classes, such as with the annotations `@ApplicationScoped` or `@Component`, so that they can be found and registered.
+
+Alternatively, you can implement the relevant event listener interface instead of extending the default implementation, but this approach excludes other listeners provided by {PRODUCT}.
+
+* Interface for process events: `org.kie.kogito.process.ProcessEventListenerConfig`
+* Interface for rule events: `org.kie.kogito.rules.RuleEventListenerConfig`
+--
+. After the event listener is configured, package the listener configuration class in the `src/main/java` folder of the relevant application or add it as dependency in the `pom.xml` file of the application to make the listener available.
+
+[id="proc-prometheus-metrics-monitoring_{context}"]
+=== Enabling Prometheus metrics monitoring in {PRODUCT}
+
+[role="_abstract"]
+Prometheus is an open-source systems monitoring toolkit that you can use with {PRODUCT} to collect and store metrics related to the execution of Business Process Model and Notation (BPMN) process models, business rules, and Decision Model and Notation (DMN) decision models. You can access the stored metrics through a REST API call to a configured application endpoint, through the Prometheus expression browser, or using a data-graphing tool such as Grafana.
+
+.Prerequisites
+* Prometheus is installed. For information about downloading and using Prometheus, see the https://prometheus.io/docs/introduction/overview/[Prometheus documentation page].
+
+.Procedure
+. In your {PRODUCT} project, add following dependency to the `pom.xml` file to enable the Prometheus add-on:
++
+.Add dependency for Prometheus add-on
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-prometheus-addon</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+. In the `src/main/java` folder of your project, create an event listener configuration class for the following Prometheus event listeners for monitoring processes or rules, such as a `ProcessEventListenerConfig` class or a `RuleEventListenerConfig` class:
++
+--
+* Prometheus event listener for processes: `org.kie.addons.monitoring.process.PrometheusProcessEventListener`
+* Prometheus event listener for rules: `org.kie.addons.monitoring.rule.PrometheusMetricsDroolsListener`
+
+.Example process event listener for Prometheus
+[source, java]
+----
+@ApplicationScoped
+public class ProcessEventListenerConfig extends DefaultProcessEventListenerConfig {
+
+    public ProcessEventListenerConfig() {
+        super(new PrometheusProcessEventListener("acme-travels"));
+    }
+}
+----
+
+.Example rule event listener for Prometheus
+[source, java]
+----
+@ApplicationScoped
+public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
+
+    public RuleEventListenerConfig() {
+        super(new PrometheusMetricsDroolsListener("acme-travels"));
+    }
+}
+----
+
+The argument `acme-travels` in these listener examples identifies the relevant data when the data is returned from the {PRODUCT} runtime and grouped in Prometheus metrics.
+--
+. In the `prometheus.yaml` file of your Prometheus distribution, add the following settings in the `scrape_configs` section to configure Prometheus to scrape metrics from your {PRODUCT} service:
++
+--
+.Example scrape configurations in `prometheus.yaml` file
+[source,yaml,subs="+quotes"]
+----
+scrape_configs:
+  job_name: 'travels'
+metrics_path: /metrics
+static_configs:
+  - targets: ["localhost:8080"]
+----
+
+Replace the values according to your {PRODUCT} service settings.
+--
+. In a command terminal, navigate to your {PRODUCT} project and run the project using your preferred run mode, such as development mode:
++
+--
+.On Quarkus
+[source]
+----
+mvn clean compile quarkus:dev
+----
+
+.On Sprint Boot
+[source]
+----
+mvn clean compile spring-boot:run
+----
+
+After you start your {PRODUCT} service, Prometheus begins collecting metrics and {PRODUCT} publishes the metrics to the configured REST API endpoint.
+--
+. To verify the metrics configuration, use a REST client or curl utility to send a `GET` request to the configured `/metrics` endpoint, such as `\http://localhost:8080/metrics` in this example:
++
+--
+.Example curl command to return Prometheus metrics
+[source]
+----
+curl -X GET http://localhost:8080/metrics
+----
+
+.Example response
+[source]
+----
+# HELP kie_process_instance_completed_total Completed Process Instances
+# TYPE kie_process_instance_completed_total counter
+# HELP kie_process_instance_started_total Started Process Instances
+# TYPE kie_process_instance_started_total counter
+kie_process_instance_started_total{app_id="acme-travels",process_id="travels",} 1.0
+# HELP kie_work_item_duration_seconds Work Items Duration
+# TYPE kie_work_item_duration_seconds summary
+# HELP drl_match_fired_nanosecond Drools Firing Time
+# TYPE drl_match_fired_nanosecond histogram
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="1000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="2000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="3000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="4000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="5000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="6000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="7000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="8000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="9000000.0",} 1.0
+drl_match_fired_nanosecond_bucket{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",le="+Inf",} 1.0
+drl_match_fired_nanosecond_count{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",} 1.0
+drl_match_fired_nanosecond_sum{identifier="acme-travels",rule_name="Brazilian citizens require visa to Australia",} 789941.0
+# HELP kie_process_instance_sla_violated_total Process Instances SLA Violated
+# TYPE kie_process_instance_sla_violated_total counter
+# HELP kie_process_instance_duration_seconds Process Instances Duration
+# TYPE kie_process_instance_duration_seconds summary
+# HELP kie_process_instance_running_total Running Process Instances
+# TYPE kie_process_instance_running_total gauge
+kie_process_instance_running_total{app_id="acme-travels",process_id="travels",} 1.0
+----
+
+If the metrics are not available at the defined endpoint, review and verify the {PRODUCT} and Prometheus configurations described in this section.
+
+You can also interact with your collected metrics and application targets in the Prometheus expression browser at `http://__HOST:PORT__/graph` and `http://__HOST:PORT__/targets`, or integrate your Prometheus data source with a data-graphing tool such as Grafana:
+
+.Prometheus expression browser with {PRODUCT} service targets
+image::kogito/configuration/prometheus-expression-browser-targets.png[Image of targets in Prometheus expression browser]
+
+.Grafana dashboard with {PRODUCT} service metrics
+image::kogito/configuration/prometheus-grafana-data.png[Image of application metrics in Grafana]
+--
+
+[role="_additional-resources"]
+.Additional resources
+* https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started with Prometheus]
+* https://prometheus.io/docs/visualization/grafana/[Grafana Support for Prometheus]
+* https://grafana.com/docs/grafana/latest/features/datasources/prometheus/[Using Prometheus in Grafana]
+
+// tag::con-persistence[]
+[id="con-persistence_{context}"]
+== Persistence in {PRODUCT} services
+
+[role="_abstract"]
+{PRODUCT} supports runtime persistence for preserving process data in your services, such as active process nodes and process instance variables, across application restarts. For {PRODUCT} persistence, you can use https://infinispan.org/[Infinispan] and configure key-value storage definitions to persist data, or you can use https://www.mongodb.com/[MongoDB] to persist data in a document-based format.
+
+Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
+
+Node instances that are currently active or in wait states are persisted. When a process instance finishes execution but has not reached the end state (completed or aborted), the node instance data is persisted.
+
+=== Persistence workflow in {PRODUCT}
+
+In {PRODUCT}, a process instance is persisted when the process reaches a wait state, where the process does not execute anymore but has not reached the end state (completed or aborted).
+
+For example, when a process reaches a user task or a catching signal event, the process instance pauses and the {PRODUCT} {PROCESS_ENGINE} takes a complete snapshot of the process, including the following data:
+
+* Process instance metadata, such as process instance ID, process definition ID, state, description, and start date
+* Process instance variables
+* Active node instances, including local variables
+
+Process instance metadata is persisted with a predefined protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema that is aware of the metadata and supports node instances that are in wait states.
+
+Process instance and node instance variables are persisted based on the generated protobuf schema and generated marshallers. Custom data types are also persisted during execution.
+
+For straight-through process instances that do not trigger any activity, persistence is not invoked and no data is stored.
+
+Each process definition has its own cache for storing runtime information. The cache is based on the process definition ID and is named in the Infinispan Server or in the MongoDB Server. If no process cache exists, cache is automatically created in Infinispan or in MongoDB. This setup facilitates maintenance of process instance data and reduces concurrency on the cache instances.
+
+=== Persisted process instance variables and data types
+
+Persisted process variables, local variables, and other process data are stored with the process instance. The stored data is marshalled into bytes format so it can be transferred and persisted into the key-value storage definition for Infinispan or into document-based format for MongoDB. The marshalling and unmarshalling is implemented based on protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) and requires a schema and marshallers for handling a specified type of data.
+
+{PRODUCT} generates both the protobuf schema (as PROTO files) and marshallers for persisting variables. The {PRODUCT} marshallers are based on the https://github.com/infinispan/protostream[ProtoStream] subproject of Infinispan.
+
+When you build your {PRODUCT} project, {PRODUCT} scans all process definitions and extracts information about the data within the business assets. Based on the unique data types (regardless of how many processes reference a specified type), a PROTO file called `kogito-application.proto` is generated that builds a complete schema for the application. This file is stored in the `target/classes/persistence/` folder of your project after successful build.
+
+.Example PROTO file generated by {PRODUCT} to persist process data
+[source]
+----
+syntax = "proto2";
+package org.kie.kogito.examples;
+import "kogito-types.proto";
+
+message Order {
+        option java_package = "org.kie.kogito.examples.demo";
+        optional string orderNumber = 1;
+        optional bool shipped = 2;
+        optional double total = 3;
+}
+message Person {
+        option java_package = "org.kie.kogito.examples.demo";
+        optional bool adult = 1;
+        optional int32 age = 2;
+        optional string name = 3;
+}
+----
+
+NOTE: Each `kogito-application.proto` file imports a `kogito-types.proto` file that automatically defines the base types managed by {PRODUCT}.
+
+Based on the `kogito-application.proto` file, marshallers are also generated and configured in the application so that whenever a particular data type is used in a process instance, the data is successfully marshalled and unmarshalled.
+
+=== Supported data types for persisted variables
+
+For optimal persistence with process data and variables, use Java objects as data types that represent your process variables. If you use other formats for data types, your data might not be persisted or your {PRODUCT} project might fail to compile.
+
+{PRODUCT} currently supports the following data types for process variables:
+
+.Supported data types
+[cols="30%,70%", options="header"]
+|===
+|Data type |Description
+
+|`java.lang.String`
+|Basic text type
+
+|`java.lang.Integer`
+|Basic number type
+
+|`java.lang.Long`
+|Extended size number type
+
+|`java.lang.Float`
+|Basic floating point number type
+
+|`java.lang.Double`
+|Extended size floating point number type
+
+|`java.util.Date`
+|Basic date type
+
+|Java object
+|Custom data type built with multiple simple types
+
+|Java object with a Java object
+|Custom data type built with multiple simple types and includes another Java object
+
+|Java object with a list of Java objects
+|Custom data type built with multiple simple types and a list of Java objects, and can also contain another Java object
+|===
+// end::con-persistence[]
+
+// tag::proc-infinispan-persistence-enabling[]
+[id="proc-infinispan-persistence-enabling_{context}"]
+=== Enabling Infinispan persistence for {PRODUCT} services
+
+[role="_abstract"]
+You can enable persistence for your {PRODUCT} services using https://infinispan.org/[Infinispan] to persist data, such as active process nodes and process instance variables, so that the data is preserved across application restarts. For {PRODUCT} persistence with Infinispan, you must have a an Infinispan Server installed and running in order to enable persistence.
+
+.Prerequisites
+* https://infinispan.org/[Infinispan Server] 11.0 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+
+.Procedure
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.On Quarkus
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>infinispan-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-infinispan-client</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>infinispan-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>org.infinispan</groupId>
+  <artifactId>infinispan-spring-boot-starter-remote</artifactId>
+  <version>__INFINISPAN_SPRING_BOOT_VERSION__</version>
+</dependency>
+----
+--
+. Add following property to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the connection to the Infinispan Server.
++
+--
+Replace the server host and port information according to your Infinispan Server installation.
+
+.On Quarkus
+[source]
+----
+quarkus.infinispan-client.server-list=localhost:11222
+----
+
+.On Spring Boot
+[source]
+----
+infinispan.remote.server-list=127.0.0.1:11222
+----
+--
+
+NOTE: As an alternative to enabling Infinispan persistence explicitly in {PRODUCT} services, you can use the {PRODUCT} Operator to install the Infinispan infrastructure and enable persistence for the service during deployment on OpenShift. For more information about enabling Infinispan persistence with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-infinispan_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
+
+For example {PRODUCT} services with Infinispan persistence, see the following example applications in GitHub:
+
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-infinispan-persistence-quarkus[`process-infinispan-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-infinispan-persistence-springboot[`process-infinispan-persistence-springboot`]: Example on Spring Boot
+// end::proc-infinispan-persistence-enabling[]
+
+// tag::proc-mongodb-persistence-enabling[]
+[id="proc-mongodb-persistence-enabling_{context}"]
+=== Enabling MongoDB persistence for {PRODUCT} services
+
+[role="_abstract"]
+As an alternative to using Infinispan for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.mongodb.com/[MongoDB]. MongoDB is a general purpose, document-based database that enables you to store data in JSON-like documents instead of key-value storage definitions in Infinispan-based persistence storage. For {PRODUCT} persistence with MongoDB, you must have a MongoDB Server installed and running in order to enable persistence.
+
+.Prerequisites
+* https://www.mongodb.com/try/download[MongoDB Server] 3.6 or later is installed and running. For information about MongoDB installation and configuration, see the https://docs.mongodb.com/manual/installation/[MongoDB documentation].
+
+.Procedure
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.On Quarkus
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>mongodb-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-mongodb-client</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>mongodb-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-data-mongodb</artifactId>
+  <version>__MONGODB_SPRING_BOOT_VERSION__</version>
+</dependency>
+----
+--
+. Add following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure MongoDB persistence and to connect to the relevant MongoDB Server and database.
++
+--
+Replace the server host, port, and database information according to your MongoDB Server installation. By default, the database is named `kogito`.
+
+.On Quarkus
+[source]
+------
+kogito.persistence.type=mongodb
+quarkus.mongodb.connection-string = mongodb://localhost:27017
+quarkus.mongodb.database=kogito_db
+------
+
+.On Spring Boot
+[source]
+------
+kogito.persistence.type=mongodb
+spring.data.mongodb.uri=mongodb://localhost:27017
+spring.data.mongodb.database=kogito_db
+------
+--
+
+After you enable MongoDB persistence for your {PRODUCT} services, you can use MongoDB tools such as https://www.mongodb.com/try/download/compass[MongoDB Compass] to query and review the process instance information and model variables from the database, as shown in the following example:
+
+.Example persisted process instance
+[source,json]
+----
+{
+  "_id": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
+  "processInstance": {
+    "processType": "RuleFlow",
+    "id": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
+    "processId": "dealreviews",
+    "state": 1,
+    "nodeInstance": [
+      {
+        "id": "be9542c0-8cc3-4fbc-ac6c-f337bb176682",
+        "nodeId": "2",
+        "content": {
+          "type": "HUMAN_TASK_NODE",
+          "humanTask": {
+            "workItemId": "d5a61e95-9dce-472b-8dfe-dd948e086f7a",
+            "workitem": {
+              "id": "d5a61e95-9dce-472b-8dfe-dd948e086f7a",
+              "processInstancesId": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
+              "name": "Human Task",
+              "state": 0,
+              "variable": [
+                {
+                  "name": "Skippable",
+                  "strategyIndex": 0,
+                  "value": "true",
+                  "dataType": "java.lang.String"
+                },
+                {
+                  "name": "deal",
+                  "strategyIndex": 0,
+                  "value": "my fancy deal",
+                  "dataType": "java.lang.String"
+                },
+                {
+                  "name": "ActorId",
+                  "strategyIndex": 0,
+                  "value": "john",
+                  "dataType": "java.lang.String"
+                },
+                {
+                  "name": "TaskName",
+                  "strategyIndex": 0,
+                  "value": "review",
+                  "dataType": "java.lang.String"
+                },
+                {
+                  "name": "NodeName",
+                  "strategyIndex": 0,
+                  "value": "Review the deal",
+                  "dataType": "java.lang.String"
+                },
+                {
+                  "name": "traveller",
+                  "strategyIndex": 0,
+                  "value": {
+                    "firstName": "John",
+                    "lastName": "Doe",
+                    "email": "jon.doe@example.com",
+                    "nationality": "American",
+                    "address": {
+                      "street": "main street",
+                      "city": "Boston",
+                      "zipCode": "10005",
+                      "country": "US"
+                    }
+                  },
+                  "dataType": "org.acme.travels.Traveller"
+                }
+              ],
+              "nodeInstanceId": "be9542c0-8cc3-4fbc-ac6c-f337bb176682",
+              "nodeId": "2",
+              "phaseId": "active",
+              "phaseStatus": "Ready",
+              "startDate": "1598460385978",
+              "taskName": "review",
+              "potUsers": [
+                "john"
+              ],
+              "taskReferenceName": "Review the deal"
+            }
+          }
+        },
+        "level": 1,
+        "slaCompliance": 0,
+        "triggerDate": "1598460385976"
+      }
+    ],
+    "variable": [
+      {
+        "name": "deal",
+        "strategyIndex": 0,
+        "value": "my fancy deal",
+        "dataType": "java.lang.String"
+      },
+      {
+        "name": "traveller",
+        "strategyIndex": 0,
+        "value": {
+          "firstName": "John",
+          "lastName": "Doe",
+          "email": "jon.doe@example.com",
+          "nationality": "American",
+          "address": {
+            "street": "main street",
+            "city": "Boston",
+            "zipCode": "10005",
+            "country": "US"
+          }
+        },
+        "dataType": "org.acme.travels.Traveller"
+      }
+    ],
+    "parentProcessInstanceId": "57bffb3d-06a7-48e0-87be-004a722792db",
+    "completedNodeIds": [
+      "_7E3D27D0-6644-4E55-8E41-9F68BD0D1327"
+    ],
+    "iterationLevels": [
+      {
+        "id": "_3597E33A-1C00-41B3-924E-09EA47F79D93",
+        "level": 1
+      }
+    ],
+    "description": "Deal Review",
+    "signalCompletion": true,
+    "slaCompliance": 0,
+    "rootProcessInstanceId": "57bffb3d-06a7-48e0-87be-004a722792db",
+    "startDate": "1598460385975",
+    "rootProcessId": "deals"
+  },
+  "strategies": [
+    {
+      "name": "org.kie.kogito.mongodb.marshalling.DocumentMarshallingStrategy",
+      "value": 0
+    }
+  ]
+}
+----
+
+For example {PRODUCT} services with MongoDB persistence, see the following example applications in GitHub:
+
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-mongodb-persistence-quarkus[`process-mongodb-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-mongodb-persistence-springboot[`process-mongodb-persistence-springboot`]: Example on Spring Boot
+// end::proc-mongodb-persistence-enabling[]
+
+[id="con-data-index-service_{context}"]
+== {PRODUCT} Data Index Service
+
+[role="_abstract"]
+{PRODUCT} provides a Data Index Service that stores all {PRODUCT} events related to processes, tasks, and domain data. The Data Index Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then indexes the returned data for future GraphQL queries and stores the data in the Infinispan persistence store. The Data Index Service is at the core of all {PRODUCT} search, insight, and management capabilities.
+
+.Data Index Service architecture in an example {PRODUCT} service
+image::kogito/configuration/data-index-architecture_enterprise.png[Diagram of an example Kogito service using Data Index Service]
+
+The {PRODUCT} Data Index Service has the following key attributes:
+
+* Distinct focus on domain data
+* Flexible data structure
+* Distributable and cloud-ready format
+* Infinispan-based persistence support
+* Message-based communication with {PRODUCT} runtime (Apache Kafka, cloud events )
+* Powerful querying API using GraphQL
+
+NOTE: The {PRODUCT} Data Index Service is not intended for permanent storage or audit log purposes. The Data Index Service is designed to make business domain data accessible for processes that are currently in progress.
+
+=== Data Index Service workflow in {PRODUCT}
+
+The {PRODUCT} Data Index Service is a Quarkus application, based on https://vertx.io/[Vert.x] with https://smallrye.io/smallrye-reactive-messaging/[Reactive Messaging], that exposes a https://graphql.org[GraphQL] endpoint that client applications use to access business domain-specific data and other information about running process instances.
+
+The Data Index Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then indexes the returned data for future GraphQL queries. These events contain information about units of work executed for a process.
+
+Indexed data from the Data Index Service is parsed and pushed into the following Infinispan caches:
+
+* *Domain cache*: Generic cache for each process definition where the process instance variables are pushed as the root content. This cache also includes some process instance metadata, which enables data correlation between domain and process instances. Data is transferred in JSON format to an Infinispan Server.
+* *Process instance cache*: Cache for each process instance. This cache contains all process instance information, including all metadata and other detailed information such as executed nodes.
+* *User task instance cache*: Cache for each user task instance. This cache contains all task instance information, including all metadata and other detailed information such as data input and output.
+
+The indexing functionality in the Data Index Service is based on https://lucene.apache.org/[Apache Lucene], and storage for the Data Index Service is provided by https://infinispan.org/[Infinispan]. Communication between the Data Index Service and Infinispan is handled through a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers.
+
+After the data is indexed and stored in a cache, the Data Index Service inspects the process model to update the GraphQL schema and enable a type-checked query system that consumer clients can use to access the data.
+
+.Infinispan indexing
+[NOTE]
+====
+
+Infinispan also supports data indexing through an embedded Apache Lucene engine. To determine which attributes must be indexed, Inifinispan requires `@Indexed` and `@Field` Hibernate Search parameters that annotate the relevant protobuf file attributes:
+
+.Example indexed model in Infinispan Server configuration
+[source]
+----
+/* @Indexed */
+message ProcessInstanceMeta {
+    /* @Field(store = Store.YES) */
+    optional string id = 1;
+}
+----
+
+For more information about Infinispan indexing, see https://infinispan.org/docs/stable/titles/developing/developing.html#enable_indexing[Indexing of protobuf encoded entries] in the Infinispan documentation.
+====
+
+[id="proc-data-index-service-using_{context}"]
+=== Using the {PRODUCT} Data Index Service to query application data
+
+[role="_abstract"]
+{PRODUCT} provides a Data Index Service that stores all {PRODUCT} events related to processes, tasks, and domain data. The Data Index Service uses Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then indexes the returned data for future GraphQL queries and stores the data in the Infinispan persistence store. The Data Index Service is at the core of all {PRODUCT} search, insight, and management capabilities.
+
+You can use the {PRODUCT} Data Index Service to index, store, and query process data in your {PRODUCT} services.
+
+.Prerequisites
+* https://infinispan.org/[Infinispan Server] 11.0 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://kafka.apache.org/[Apache Kafka] is installed, including required topics, and the Kafka messaging server is running. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
++
+--
+For a list of configuration options for setting up the Kafka consumer, see https://kafka.apache.org/documentation/#consumerconfigs[Consumer Configs] in the Kafka documentation.
+
+For more information about using Kafka messaging on Quarkus, see https://quarkus.io/guides/kafka[Using Apache Kafka with reactive messaging] in the Quarkus documentation.
+--
+
+.Procedure
+. Configure your {PRODUCT} project to enable Infinispan persistence and Apache Kafka messaging.
++
+--
+For instructions on enabling persistence, see xref:proc-infinispan-persistence-enabling_kogito-configuring[].
+
+For instructions on enabling messaging, see xref:proc-messaging-enabling_kogito-configuring[].
+--
+. Go to the https://repository.jboss.org/org/kie/kogito/data-index-service-infinispan/[`data-index-service-infinispan`] artifacts page, select the latest release of the Data Index Service, and download the `data-index-service-infinispan-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `data-index-service-infinispan-__VERSION__-runner.jar` file and enter the following command to run the Data Index Service with the required Infinispan credentials:
++
+--
+.Running the Data Index Service
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.infinispan-client.auth-username=__INFINISPAN_USER_NAME__ \
+  -Dquarkus.infinispan-client.auth-password=__INFINISPAN_PASSWORD__ \
+  -jar data-index-service-infinispan-__VERSION__-runner.jar
+----
+
+For more information about Infinispan authentication on Quarkus, see https://quarkus.io/guides/infinispan-client[Infinispan client] in the Quarkus documentation.
+
+To change the logging level of the Data Index Service, such as for debugging, you can specify the following start-up properties as needed when you run the Data Index Service:
+
+.Modifying Data Index Service logging level for debugging
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.log.console.level=DEBUG -Dquarkus.log.category.\"org.kie.kogito\".min-level=DEBUG  \
+  -Dquarkus.log.category.\"org.kie.kogito\".level=DEBUG  \
+  -jar data-index-service-infinispan-__VERSION__-runner.jar
+----
+--
+. In a separate command terminal window, navigate to your {PRODUCT} project and run the project using your preferred run mode, such as development mode:
++
+--
+.On Quarkus
+[source]
+----
+mvn clean compile quarkus:dev
+----
+
+.On Sprint Boot
+[source]
+----
+mvn clean compile spring-boot:run
+----
+
+With the Data Index Service and your {PRODUCT} project both configured and running, the Data Index Service starts consuming messages from the defined Kafka topics, such as `kogito-processinstances-events`.
+--
+. In a web browser, navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
++
+--
+To query the available data using the https://github.com/graphql/graphiql[GraphiQL] interface, navigate to `http://__HOST__:__PORT__/graphql`, such as `\http://localhost:8080/graphql` in this example, and begin executing supported queries to interact with your application data.
+
+.Example query for process instance data
+[source]
+----
+{ ProcessInstances {
+  id,
+  processId,
+  processName,
+  state,
+  nodes {
+    name,
+    type,
+    enter,
+    exit
+  }
+} }
+----
+
+.Example response
+image::kogito/openshift/kogito-data-index-graphiql-process-instances.png[Image of GraphQL query and response for process instances]
+
+For available query types, click *Docs* in the upper-right corner of the GraphiQL interface.
+
+For more information about supported queries with the Data Index Service, see xref:ref-data-index-service-queries_kogito-configuring[].
+
+NOTE: As an alternative to enabling the Data Index Service explicitly for {PRODUCT} services, you can use the {PRODUCT} Operator to install the Data Index Service custom resource for the service deployment on OpenShift. For more information about installing the Data Index Service with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-data-index-service_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
+--
+
+[id="ref-data-index-service-queries_{context}"]
+=== Supported GraphQL queries with the Data Index Service
+
+[role="_abstract"]
+After you configure and run your {PRODUCT} service and the {PRODUCT} Data Index Service, you can query the available data using the https://github.com/graphql/graphiql[GraphiQL] interface displayed at `http://__HOST__:__PORT__/graphql`, such as `\http://localhost:8080/graphql`.
+
+The {PRODUCT} Data Index Service supports GraphQL queries for process definitions (domain cache) and for process instances and task instances (instance caches).
+
+==== GraphQL queries for process definitions (domain cache)
+
+Use the following GraphQL queries to retrieve data about process definitions. These example queries assume that a `Travels` Business Process Model and Notation (BPMN) process model is running or has been executed.
+
+Retrieve data from process definitions::
++
+--
+You can retrieve data about a specified process definition from your {PRODUCT} service.
+
+.Example query
+[source]
+----
+{
+  Travels {
+    visaApplication {
+      duration
+    }
+    flight {
+      flightNumber
+      gate
+    }
+    hotel {
+      name
+      address {
+        city
+        country
+      }
+    }
+    traveller {
+      firstName
+      lastName
+      nationality
+      email
+    }
+  }
+}
+----
+--
+
+Correlate data using the `metadata` parameter::
++
+--
+You can use the `metadata` parameter to correlate data from process definitions (domain cache) with data from process instances and task instances (instance caches). This parameter is added to all root models that are deployed in the Data Index Service and enables you to retrieve and filter query data.
+
+.Example query
+[source]
+----
+{
+  Travels {
+    flight {
+      flightNumber
+      arrival
+      departure
+    }
+    metadata {
+      lastUpdate
+      userTasks {
+        name
+      }
+      processInstances {
+        processId
+      }
+    }
+  }
+}
+----
+--
+
+Filter query results using the `where` and `metadata` parameters::
++
+--
+You can use the `where` parameter with multiple combinations to filter query results based on process definition attributes. The attributes available for search depend on the BPMN process model that is deployed, such as a `Travels` process model in this example.
+
+.Example query
+[source]
+----
+{
+  Travels(where: {traveller: {firstName: {like: "Cri*"}}}) {
+    flight {
+      flightNumber
+      arrival
+      departure
+    }
+    traveller {
+      email
+    }
+  }
+}
+----
+
+NOTE: The `like` operator is case sensitive.
+
+You can also use the `metadata` parameter to filter correlated query results from related process instances or tasks.
+
+.Example query
+[source]
+----
+{
+  Travels(where: {metadata: {processInstances: {id: {equal: "1aee8ab6-d943-4dfb-b6be-8ea8727fcdc5"}}}}) {
+    flight {
+      flightNumber
+      arrival
+      departure
+    }
+  }
+}
+----
+
+.Example query
+[source]
+----
+{
+  Travels(where: {metadata: {userTasks: {id: {equal: "de52e538-581f-42db-be65-09e8739471a6"}}}}) {
+    flight {
+      flightNumber
+      arrival
+      departure
+    }
+  }
+}
+----
+--
+
+Sort query results using the `orderBy` parameter::
++
+--
+You can use the `orderBy` parameter to sort query results based on process definition attributes. You can also specify the direction of sorting in ascending `ASC` order or descending `DESC` order. Multiple attributes are applied to the database query in the order they are specified in the query filter.
+
+.Example query
+[source]
+----
+{
+  Travels(orderBy: {trip: {begin: ASC}}) {
+    flight {
+      flightNumber
+      arrival
+      departure
+    }
+  }
+}
+----
+--
+
+Limit and offset query results using the `pagination` parameter::
++
+--
+You can use the `pagination` parameter to specify a `limit` and `offset` for query results.
+
+.Example query
+[source]
+----
+{
+  Travels(where: {traveller: {firstName: {like: "Cri*"}}}, pagination: {offset: 0, limit: 10}) {
+    flight {
+      flightNumber
+      arrival
+      departure
+    }
+    traveller {
+      email
+    }
+  }
+}
+----
+--
+
+==== GraphQL queries for process instances and user task instances (instance caches)
+
+Use the following GraphQL queries to retrieve data about process instances and user task instances.
+
+Retrieve data from process instances::
++
+--
+You can retrieve data about a specified process instance from your process definition.
+
+.Example query
+[source]
+----
+{
+  ProcessInstances {
+    id
+    processId
+    state
+    parentProcessInstanceId
+    rootProcessId
+    rootProcessInstanceId
+    variables
+    nodes {
+      id
+      name
+      type
+    }
+  }
+}
+----
+--
+
+Retrieve data from user task instances::
++
+--
+You can retrieve data from a specified user task instance from the process instance.
+
+.Example query
+[source]
+----
+{
+  UserTaskInstances {
+    id
+    name
+    actualOwner
+    description
+    priority
+    processId
+    processInstanceId
+  }
+}
+----
+--
+
+Filter query results using the `where` parameter::
++
+--
+You can use the `where` parameter with multiple combinations to filter query results based on process or task attributes.
+
+.Example query
+[source]
+----
+{
+  ProcessInstances(where: {state: {equal: ACTIVE}}) {
+    id
+    processId
+    processName
+    start
+    state
+    variables
+  }
+}
+----
+
+.Example query
+[source]
+----
+{
+  ProcessInstances(where: {id: {equal: "d43a56b6-fb11-4066-b689-d70386b9a375"}}) {
+    id
+    processId
+    processName
+    start
+    state
+    variables
+  }
+}
+----
+
+.Example query
+[source]
+----
+{
+  UserTaskInstances(where: {state: {equal: "Ready"}}) {
+    id
+    name
+    actualOwner
+    description
+    priority
+    processId
+    processInstanceId
+  }
+}
+----
+
+By default, every filtered attribute is executed as an `AND` operation in queries. You can modify this behavior by combining filters with an `AND` or `OR` operator.
+
+.Example query
+[source]
+----
+{
+  ProcessInstances(where: {or: {state: {equal: ACTIVE}, rootProcessId: {isNull: false}}}) {
+    id
+    processId
+    processName
+    start
+    end
+    state
+  }
+}
+----
+
+.Example query
+[source]
+----
+{
+  ProcessInstances(where: {and: {processId: {equal: "travels"}, or: {state: {equal: ACTIVE}, rootProcessId: {isNull: false}}}}) {
+    id
+    processId
+    processName
+    start
+    end
+    state
+  }
+}
+----
+
+Depending on the attribute type, the following operators are also available:
+
+* String array argument:
+** `contains` : String
+** `containsAll`: Array of strings
+** `containsAny`: Array of strings
+** `isNull`: Boolean (`true` or `false`)
+
+* String argument:
+** `in`: Array of strings
+** `like`: String
+** `isNull`: Boolean (`true` or `false`)
+** `equal`: String
+
+* ID argument:
+** `in`: Array of strings
+** `equal`: String
+** `isNull`: Boolean (`true` or `false`)
+
+* Boolean argument:
+** `isNull`: Boolean (`true` or `false`)
+** `equal`: Boolean (`true` or `false`)
+
+* Numeric argument:
+** `in`: Array of integers
+** `isNull`: Boolean
+** `equal`: Integer
+** `greaterThan`: Integer
+** `greaterThanEqual`: Integer
+** `lessThan`: Integer
+** `lessThanEqual`: Integer
+** `between`: Numeric range
+** `from`: Integer
+** `to`: Integer
+
+* Date argument:
+** `isNull`: Boolean (`true` or `false`)
+** `equal`: Date time
+** `greaterThan`: Date time
+** `greaterThanEqual`: Date time
+** `lessThan`: Date time
+** `lessThanEqual`: Date time
+** `between`: Date range
+** `from`: Date time
+** `to`: Date time
+--
+
+Sort query results using the `orderBy` parameter::
++
+--
+You can use the `orderBy` parameter to sort query results based on process or task attributes. You can also specify the direction of sorting in ascending `ASC` order or descending `DESC` order. Multiple attributes are applied to the database query in the order they are specified in the query filter.
+
+.Example query
+[source]
+----
+{
+  ProcessInstances(where: {state: {equal: ACTIVE}}, orderBy: {start: ASC}) {
+    id
+    processId
+    processName
+    start
+    end
+    state
+  }
+}
+----
+
+.Example query
+[source]
+----
+{
+  UserTaskInstances(where: {state: {equal: "Ready"}}, orderBy: {name: ASC, actualOwner: DESC}) {
+    id
+    name
+    actualOwner
+    description
+    priority
+    processId
+    processInstanceId
+  }
+}
+----
+--
+
+Limit and offset query results using the `pagination` parameter::
++
+--
+You can use the `pagination` parameter to specify a `limit` and `offset` for query results.
+
+.Example query
+[source]
+----
+{
+  ProcessInstances(where: {state: {equal: ACTIVE}}, orderBy: {start: ASC}, pagination: {limit: 10, offset: 0}) {
+    id
+    processId
+    processName
+    start
+    end
+    state
+  }
+}
+----
+--
+
+[id="proc-data-index-service-security_{context}"]
+=== Enabling {PRODUCT} Data Index Service security with OpenID Connect
+
+[role="_abstract"]
+For Quarkus-based {PRODUCT} services, you can use the https://quarkus.io/guides/security-openid-connect[Quarkus OpenID Connect adapter] with the {PRODUCT} Data Index Service to enable security using token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
+
+IMPORTANT: This procedure applies only when you are using a locally cloned copy of the https://github.com/kiegroup/kogito-apps/tree/master/data-index[{PRODUCT} Data Index Service] repository in GitHub.
+
+.Prerequisites
+* You have cloned the https://github.com/kiegroup/kogito-apps/tree/master/data-index[{PRODUCT} Data Index Service] repository from GitHub.
+
+.Procedure
+. In a command terminal, navigate to the local clone of the {PRODUCT} Data Index Service repository and enter the following command to run the application with the required security properties:
++
+--
+.Run the Data Index Service with security properties
+[source]
+----
+mvn clean compile quarkus:dev  \
+  -Dquarkus.profile=keycloak  \
+  -Dkogito.protobuf.folder=/home/git/kogito-apps/tree/master/data-index/data-index-service/src/test/resources  \
+  -Dkogito.protobuf.watch=true
+----
+
+The {PRODUCT} Data Index Service contains a Quarkus profile to encapsulate the security configuration, so if the service requires security, you can specify the `quarkus.profile=keycloak` property at build time to enable the needed security. If the `keycloak` Quarkus profile is not added, the OpenID Connect extension is disabled.
+--
+. Navigate to the `src/main/resources/application.properties` file of the Data Index Service project and add the following properties:
++
+--
+.Required security properties in `applications.properties` file
+[source]
+----
+# OpenID Connect configurations
+%keycloak.quarkus.oidc.enabled=true
+%keycloak.quarkus.oidc.tenant-enabled=true
+%keycloak.quarkus.oidc.auth-server-url=http://localhost:8280/auth/realms/kogito
+%keycloak.quarkus.oidc.client-id=kogito-service
+%keycloak.quarkus.oidc.credentials.secret=secret
+%keycloak.quarkus.oidc.application-type=service
+
+%keycloak.quarkus.oidc.web-app-tenant.auth-server-url=http://localhost:8280/auth/realms/kogito
+%keycloak.quarkus.oidc.web-app-tenant.client-id=kogito-service
+%keycloak.quarkus.oidc.web-app-tenant.credentials.secret=secret
+%keycloak.quarkus.oidc.web-app-tenant.application-type=web-app
+
+kogito.data-index.vertx-graphql.ui.path=/graphiql
+kogito.data-index.vertx-graphql.ui.tenant=web-app-tenant
+
+# HTTP security configurations
+%keycloak.quarkus.http.auth.permission.authenticated.paths=/*
+%keycloak.quarkus.http.auth.permission.authenticated.policy=authenticated
+----
+
+NOTE: The `quarkus.oidc.enabled` property enables or disables security at build time, while the `quarkus.oidc.tenant-enabled` property enables or disables security at runtime.
+
+Replace any property definitions with those of your specific environment, especially the following properties:
+
+* `quarkus.oidc.auth-server-url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL. If you work with Keycloak OIDC server, ensure that the base URL is in the following format: `https://__HOST__:__PORT__/auth/realms/__KEYCLOAK_REALM__`.
+* `quarkus.oidc.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
+* `quarkus.oidc.credentials.secret`: The client secret for the application.
+
+NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-enabled` property, the `quarkus.http.auth.permission` path and policy must specify how authentication is applied. By default, if security is enabled, the user must be authenticated to access any path.
+
+The default configuration provides a multi-tenant configuration so that the {PRODUCT} Data Index Service can use two endpoints with different security https://quarkus.io/guides/security-openid-connect#quarkus-oidc_quarkus.oidc.application-type[`quarkus.oidc.application-type`] configurations:
+
+* The `/graphql` endpoint is configured as a `service` application that enables Bearer token authentication.
+* The `/graphiql` interface endpoint, shown in the previous configuration file example, is configured as a `web-app` application that redirects unauthenticated users to the Keycloak login page. You configure this endpoint using the `kogito.data-index.vertx-graphql.ui.path` property.
+--
+. In the same `application.properties` file, also configure the resources to be exposed and the required permissions for accessing the resources.
++
+--
+For example, you can enable only users with the role `confidential` to access a single `/graphql` endpoint:
+
+.Example GraphQL security role configuration
+[source]
+----
+%keycloak.quarkus.http.auth.policy.role-policy1.roles-allowed=confidential
+%keycloak.quarkus.http.auth.permission.roles1.paths=/graphql
+%keycloak.quarkus.http.auth.permission.roles1.policy=role-policy1
+----
+--
+. Stop and restart the {PRODUCT} Data Index Service to ensure that the security changes are applied.
+
+[role="_additional-resources"]
+.Additional resources
+* https://quarkus.io/guides/security[Security Architecture and Guides]
+* https://quarkus.io/guides/security-openid-connect#configuring-using-the-application-properties-file[Configuring using the application.properties file]
+* https://quarkus.io/guides/security-openid-connect-multitenancy[Using OpenID Connect multi-tenancy]
+
+[id="proc-data-index-service-mongodb_{context}"]
+=== Enabling MongoDB persistence for the {PRODUCT} Data Index Service
+
+[role="_abstract"]
+Instead of using the default Infinispan-based persistence in the {PRODUCT} Data Index Service, you can configure the Data Index Service to use https://www.mongodb.com/[MongoDB] persistence storage if needed.
+
+.Prerequisites
+* https://www.mongodb.com/try/download[MongoDB Server] 3.6 or later is installed and running. For information about MongoDB installation and configuration, see the https://docs.mongodb.com/manual/installation/[MongoDB documentation].
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/data-index-service-mongodb/[`data-index-service-mongodb`] artifacts page, select the latest release of the Data Index Service, and download the `data-index-service-mongodb-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `data-index-service-mongodb-__VERSION__-runner.jar` file and enter the following command to run the Data Index Service with the required MongoDB connection information:
++
+--
+.Running the Data Index Service with MongoDB connection information
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.mongodb.connection-string=__MONGODB_SERVER_CONNECTION_STRING__ \
+  -Dquarkus.mongodb.database=__DATABASE_NAME__ \
+  -jar data-index-service-mongodb-__VERSION__-runner.jar
+----
+
+For more information about MongoDB configuration on Quarkus, see https://quarkus.io/guides/mongodb#quarkus-mongodb_configuration[Using the MongoDB client] in the Quarkus documentation.
+--
+. After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
+
+NOTE: Indexes are created on every attribute that is annotated with `@Indexed` and `@Field` in the protobuf files. However, a single MongoDB collection can have no more than 64 indexes, including the default `_id` Index.
+
+[role="_additional-resources"]
+.Additional resources
+* xref:proc-data-index-service-using_kogito-configuring[]
+* xref:con-persistence_kogito-configuring[]
+
+[id="con-jobs-service_{context}"]
+== {PRODUCT} Jobs Service
+
+[role="_abstract"]
+{PRODUCT} provides a Jobs Service for scheduling Business Process Model and Notation (BPMN) process events that are configured to be executed at a specified time. These time-based events in a process model are known as _jobs_.
+
+By default, {PRODUCT} services use an in-memory timer service to handle jobs defined in your BPMN process models. This default timer service does not cover long time intervals and is only suitable for short delays defined in the process. For advanced use cases where time intervals can be days or weeks or when additional event handling options are required, you can configure your {PRODUCT} project to use the {PRODUCT} Jobs Service as an external timer service.
+
+The Jobs Service does not execute a job, but triggers a callback that might be an HTTP request on an endpoint specified for the job request or any other configured callback. The Jobs Service receives requests for job scheduling and then sends a request at the time specified on the job request.
+
+.Jobs Service architecture
+image::kogito/configuration/jobs-service-architecture_enterprise.png[Diagram of the Jobs Service architecture]
+
+NOTE: The {PRODUCT} Jobs Service currently supports only HTTP `POST` requests that are sent to an endpoint specified on the job-scheduling request. The HTTP callback information must be specified in the job-scheduling request.
+
+The main goal of the Jobs Service is to work with only active jobs. The Jobs Service tracks only the jobs that are scheduled and that need to be executed. When a job reaches a final state, the job is removed from the Jobs Service. All job information and transition states are sent to the {PRODUCT} Data Index Service where they can be indexed and made available for GraphQL queries.
+
+The Jobs Service implementation is based on non-blocking APIs and https://smallrye.io/smallrye-reactive-messaging/[Reactive Messaging] on top of Quarkus, which provides effective throughput and resource utilization. The scheduling engine is implemented on top of https://vertx.io/[Vert.x] and the external requests are built using a non-blocking HTTP client based on Vert.x.
+
+=== Supported job states in the {PRODUCT} Jobs Service
+
+The {PRODUCT} Jobs Service uses an internal state control mechanism to manage the job scheduling lifecycle using the following supported job states:
+
+* *Scheduled*
+* *Executed*
+* *Canceled*
+* *Retry*
+* *Error*
+
+The Jobs Service workflow through these states is illustrated in the following diagram:
+
+.Jobs Service state control workflow
+image::kogito/configuration/jobs-service-state-control_enterprise.png[Diagram of Jobs Service states]
+
+=== Supported job types in the {PRODUCT} Jobs Service
+
+The {PRODUCT} Jobs Service supports the following job types:
+
+* *Time scheduled*: A job that is scheduled at a specified time and executed only once when that point in time is reached. The time must be specified on the job scheduling request and must be in the future.
+* *Periodic scheduled*: A job that is scheduled at a specified time and executed after a specified interval, and then executed repeatedly over a specified period of time until a limit of executions is reached. The execution limit and interval must be specified in the job-scheduling request.
+
+=== Supported configuration properties in the {PRODUCT} Jobs Service
+
+The {PRODUCT} Jobs Service supports the following configuration properties. You can set these properties either using the `-D` prefix during Jobs Service start-up or in the `src/main/resources/application.properties` file of the Jobs Service project.
+
+.Supported configuration properties in Jobs Service
+[cols="30%,40%,15%,15%"]
+|===
+|Name |Description |Value |Default
+
+|`kogito.jobs-service.persistence`
+|Identifies the persistence mechanism used by the Jobs Service.
+|`in-memory`, `infinispan`
+|`in-memory`
+
+|`kogito.jobs-service.backoffRetryMillis`
+|Defines the retry back-off time in milliseconds between job execution attempts, in case the execution fails
+|Long type
+|`1000`
+
+|`kogito.jobs-service.maxIntervalLimitToRetryMillis`
+|Defines the maximum interval in milliseconds when retrying to execute jobs, in case the execution fails
+|Long type
+|`60000`
+
+|`mp.messaging.outgoing.kogito-job-service-job-status-events.bootstrap.servers`
+|Identifies the Kafka bootstrap server address with the port used to publish events
+|String
+|`localhost:9092`
+
+|`mp.messaging.outgoing.kogito-job-service-job-status-events.topic`
+|Defines the name of the Kafka topic where the events are published
+|String
+|`kogito-jobs-events`
+|===
+
+////
+// @comment: These endpoints are used internally by Jobs Service and may confuse users who think they need to use them in some way. Excluding for now. (Stetson, 1 Apr 2020)
+### Usage
+
+The basic actions on Job Service are made through REST as follow:
+
+#### Schedule a Job
+
+POST
+
+{url-job-service}{jobs-path}
+
+```
+{
+    "id": "1",
+    "priority": "1",
+    "expirationTime": "2019-11-29T18:16:00Z",
+    "callbackEndpoint": "http://localhost:8080/callback"
+}
+```
+
+Example:
+[subs="attributes"]
+ curl -X POST \
+  {url-job-service}{jobs-path}/ \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"id": "1",
+	"priority": "1",
+	"expirationTime": "2019-11-29T18:16:00Z",
+	"callbackEndpoint": "http://localhost:8080/callback"
+}'
+
+{sp} +
+
+#### Reschedule a Job
+
+POST
+
+{url-job-service}{jobs-path}
+
+```
+{
+	"id": "1",
+	"priority": "1",
+	"expirationTime": "2019-11-29T18:19:00Z",
+	"callbackEndpoint": "http://localhost:8080/callback"
+}
+```
+
+Example:
+[subs="attributes"]
+ curl -X POST \
+  {url-job-service}{jobs-path}/ \
+  -H 'Content-Type: application/json' \
+  -d '{
+	"id": "1",
+	"priority": "1",
+	"expirationTime": "2019-11-29T18:19:00Z",
+	"callbackEndpoint": "http://localhost:8080/callback"
+}'
+
+{sp} +
+
+#### Cancel a scheduled Job
+
+DELETE
+
+{url-job-service}{jobs-path}/1
+
+Example:
+[subs="attributes"]
+ curl -X DELETE {url-job-service}{jobs-path}/1
+
+{sp} +
+
+#### Retrieve a scheduled Job
+
+GET
+
+{url-job-service}{jobs-path}/1
+
+Example:
+[subs="attributes"]
+ curl -X GET {url-job-service}{jobs-path}/1
+
+{sp} +
+
+---
+////
+
+
+////
+//@comment: Excluded for now because underlying details that might confuse the user when trying to understand how to actually use it. (Stetson, 1 Apr 2020)
+# Kogito Job Service add-ons
+
+Addons are specific classes that provides integration with Kogito Job Service to the runtime services.
+This allows to use Job Service as a timer service for process instances.
+Whenever there is a need to schedule timer as part of process instance it will be scheduled in the Job Service and the job service will callback the service upon timer expiration.
+
+The general implementation of the add-on is as follows:
+
+* an implementation of `org.kie.kogito.jobs.JobsService` interface that is used by the service to schedule jobs
+* REST endpoint registered on `/management/jobs` path
+
+## Configuration properties
+
+Regardless of the runtime being used following are two configuration properties that are expected (and by that are mandatory)
+
+[cols="40%,400%,20%"]
+|===
+|Name |Description |Example
+
+|`kogito.service.url`
+|A URL that identifies where the service is deployed to. Used by runtime events to set the source of the event.
+|http://localhost:8080
+
+|`kogito.jobs-service.url`
+|An URL that posts to a running Kogito Job Service, it is expected to be in form `scheme://host:port`
+|http://localhost:8085
+|===
+
+## JobService implementation
+
+A dedicated `org.kie.kogito.jobs.JobsService` implementation is provided based on the runtime being used (either Quarkus or SpringBoot) as it relies on the technology used in these runtime to optimise dependencies and integration.
+
+### Quarkus
+
+For Quarkus based runtimes, there is `org.kie.kogito.jobs.management.quarkus.VertxJobsService` implementation that utilises Vert.x `WebClient` to interact with Job Service over HTTP.
+
+It configures web client by default based on properties found in application.properties.
+Though in case this is not enough it supports to provide custom instance of `io.vertx.ext.web.client.WebClient` type that will be used instead to communicate with Job Service.
+
+### Spring Boot
+
+For Spring Boot based runtimes, there is `org.kie.kogito.jobs.management.springboot.SpringRestJobsService` implementation that utilises Spring `RestTemplate` to interact with Job Service over HTTP.
+
+It configures rest template by default based on properties found in application.properties.
+Though in case this is not enough it supports to provide custom instance of `org.springframework.web.client.RestTemplate` type that will be used instead to communicate with Job Service.
+
+## REST endpoint for callbacks
+
+The REST endpoint that is provided with the add-on is responsible for receiving the callbacks from Job Service at exact time when the timer was scheduled and by that move the process instance execution forward.
+
+The callback URL is given to the Job Service upon scheduling and as such does provide all the information that are required to move the instance
+
+* process id
+* process instance id
+* timer instance id
+
+NOTE: Timer instance id is build out of two parts - actual job id (in UUID format) and a timer id (a timer definition id generated by the process engine).
+An example of a timer instance id is `62cad2e4-d343-46ac-a89c-3e313a30c1ad_1` where `62cad2e4-d343-46ac-a89c-3e313a30c1ad` is the UUID of the job and `1` is the timer definition id.
+Both values are separated with `_`
+
+### API documentation
+
+The current API documentation is based on Swagger, and the service has an embedded UI available at
+{url-job-service}/swagger-ui/[{url-job-service}/swagger-ui]
+////
+
+[id="proc-jobs-service-using_{context}"]
+=== Using the {PRODUCT} Jobs Service as a timer service
+
+[role="_abstract"]
+By default, {PRODUCT} services use an in-memory timer service to handle time-based events (jobs) defined in your Business Process Model and Notation (BPMN) process models. This default timer service does not cover long time intervals and is only suitable for short delays defined in the process.
+
+For advanced use cases where time intervals can be days or weeks or when additional event handling options are required, you can configure your {PRODUCT} project to use the {PRODUCT} Jobs Service as an external timer service. Whenever you need to schedule a timer as part of process instance, the timer is scheduled in the Jobs Service and the Jobs Service calls back to the {PRODUCT} service upon timer expiration.
+
+The {PRODUCT} Jobs Service also supports Infinispan persistence that you can enable when you run the Jobs Service so that job data is preserved across application restarts.
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service/[`jobs-service`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with Infinispan persistence enabled:
++
+--
+.Running the Jobs Service with Infinispan persistence enabled
+[source,subs="+quotes"]
+----
+$ java  \
+    -Dkogito.job-service.persistence=infinispan  \
+    -jar jobs-service-__VERSION__-runner.jar
+----
+
+Infinispan persistence enables the job data to be preserved across application restarts. If you do not use Infinispan persistence, the Jobs Service uses the default in-memory storage and all job information is lost between application restarts.
+
+To change the logging level of the Jobs Service, such as for debugging, you can specify the following start-up properties:
+
+.Modifying Jobs Service logging level for debugging
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.log.console.level=DEBUG -Dquarkus.log.category.\"org.kie.kogito\".min-level=DEBUG  \
+  -Dquarkus.log.category.\"org.kie.kogito\".level=DEBUG  \
+  -jar jobs-service-__VERSION__-runner.jar
+----
+--
+. In your {PRODUCT} project, add the following dependency to the `pom.xml` file to enable the Jobs Service add-on:
++
+--
+.On Quarkus
+[source, xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>jobs-management-quarkus-addon</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source, xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>jobs-management-springboot-addon</artifactId>
+</dependency>
+----
+--
+. In your {PRODUCT} project, add the following properties to the `src/main/resources/application.properties` to define the locations of the Jobs Service and the callback to be used when the timer expires:
++
+.Configure {PRODUCT} service properties for Jobs Service
+[source]
+----
+kogito.jobs-service.url=http://localhost:8085
+kogito.service.url=http://localhost:8080
+----
+. In a command terminal, navigate to your {PRODUCT} project and run the project using your preferred run mode, such as development mode:
++
+--
+.On Quarkus
+[source]
+----
+mvn clean compile quarkus:dev
+----
+
+.On Sprint Boot
+[source]
+----
+mvn clean compile spring-boot:run
+----
+
+With the Jobs Service and your {PRODUCT} project both configured and running, the Jobs Service can receive any job-scheduling requests to function as the external timer service.
+
+By default, the implementation of the Jobs Service uses the following basic components:
+
+* An implementation of the `org.kie.kogito.jobs.JobsService` interface that is used by the service to schedule jobs
+* A REST endpoint registered at the path `/management/jobs`
+
+If the default REST clients used by the Jobs Service add-on do not meet your needs, you can configure custom REST clients using the relevant service implementors. The REST client depends on the application type:
+
+* On Quarkus, the Jobs Service uses a Vert.x web client: `io.vertx.ext.web.client.WebClient`
+* On Spring Boot, the Jobs Service uses a rest template: `org.springframework.web.client.RestTemplate`
+
+In both cases, you produce an instance of the client to enable detailed setup of the client.
+--
+
+NOTE: As an alternative to enabling the Jobs Service explicitly for {PRODUCT} services, you can use the {PRODUCT} Operator to install the Jobs Service custom resource for the service deployment on OpenShift. For more information about installing the Jobs Service with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-jobs-service_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
+
+[id="proc-jobs-service-persistence_{context}"]
+=== Enabling Infinispan persistence in the {PRODUCT} Jobs Service
+
+[role="_abstract"]
+The {PRODUCT} Jobs Service supports the following persistence mechanisms for job data:
+
+* *In-memory persistence*: (Default) Job data is persisted with the Jobs Service in-memory storage during the Jobs Service runtime. If the Jobs Service is restarted, all job information is lost. If no other persistence configuration is set, the Jobs Service uses this persistence mechanism.
+* *Infinispan persistence*: Job data is persisted using Infinispan storage so that the data is preserved across application restarts. If the Jobs Service is restarted, the service continues to process any previously scheduled jobs.
+
+You can enable Infinispan persistence in the {PRODUCT} Jobs Service during application start-up and in the Jobs Service `application.properties` file.
+
+.Procedure
+Run the Jobs Service with the property `-Dkogito.job-service.persistence=infinispan`:
+
+.Enabling Infinispan persistence during Jobs Service start-up
+[source,subs="+quotes"]
+----
+$ java  \
+    -Dkogito.job-service.persistence=infinispan  \
+    -jar jobs-service-__VERSION__-runner.jar
+----
+
+Alternatively, you can add the same property to the `src/main/resources/application.properties` file in the Jobs Service project.
+
+For more information about Infinispan configuration with Quarkus applications, see https://quarkus.io/guides/infinispan-client[Infinispan client] in the Quarkus documentation.
+
+[id="proc-jobs-service-messaging_{context}"]
+=== Enabling Kafka messaging in the {PRODUCT} Jobs Service
+
+[role="_abstract"]
+The {PRODUCT} Jobs Service supports Apache Kafka messaging to publish events for each job state transition to a defined Kafka topic. Any application can subscribe to this Kafka topic to receive information about jobs and job state transitions. For example, the {PRODUCT} Data Index Service is subscribed to the Jobs Service Kafka topic so that if you configure and run the Jobs Service, the Data Index Service can begin indexing jobs with their current state.
+
+You can enable Kafka messaging in the {PRODUCT} Jobs Service during application start-up and in the Jobs Service `application.properties` file.
+
+.Procedure
+. In the `src/main/resources/application.properties` file in the Jobs Service project, add the following properties to identify the Kafka bootstrap server with the port used to publish events and the Kafka topic where the events are published:
++
+.Defining Kafka server and topic in Jobs Service `application.properties`
+[source,subs="+quotes"]
+----
+mp.messaging.outgoing.kogito-job-service-job-status-events.bootstrap.servers=__SERVER_ADDRESS__
+mp.messaging.outgoing.kogito-job-service-job-status-events.topic=__TOPIC_NAME__
+----
+. Run the Jobs Service with the property `-Dquarkus.profile=events-support`:
++
+--
+.Enabling Kafka messaging during Jobs Service start-up
+[source,subs="+quotes"]
+----
+$ java  \
+    -Dquarkus.profile=events-support  \
+    -jar jobs-service-__VERSION__-runner.jar
+----
+
+Alternatively, you can add the environment variable `QUARKUS_PROFILE=events-support`.
+--
+
+[id="proc-jobs-service-security_{context}"]
+=== Enabling {PRODUCT} Jobs Service security with OpenID Connect
+
+[role="_abstract"]
+For Quarkus-based {PRODUCT} services, you can use the https://quarkus.io/guides/security-openid-connect[Quarkus OpenID Connect adapter] with the {PRODUCT} Jobs Service to enable security using bearer token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
+
+IMPORTANT: This procedure applies only when you are using a locally cloned copy of the https://github.com/kiegroup/kogito-apps/tree/master/jobs-service[{PRODUCT} Jobs Service] repository in GitHub.
+
+.Prerequisites
+* You have cloned the https://github.com/kiegroup/kogito-apps/tree/master/jobs-service[{PRODUCT} Jobs Service] repository from GitHub.
+
+.Procedure
+. In a command terminal, navigate to the local clone of the {PRODUCT} Jobs Service repository and enter the following command to run the application with the required security properties:
++
+--
+.Run the Jobs Service with security properties
+[source]
+----
+mvn clean compile quarkus:dev  -Dquarkus.profile=keycloak
+----
+
+The Jobs Service contains a Quarkus profile to encapsulate the security configuration, so if the service requires security, you can specify the `quarkus.profile=keycloak` property at build time to enable the needed security. If the `keycloak` Quarkus profile is not added, the OpenID Connect extension is disabled.
+--
+. Navigate to the `src/main/resources/application.properties` file of the Jobs Service project and add the following properties:
++
+--
+.Required security properties in `applications.properties` file
+[source]
+----
+%keycloak.quarkus.oidc.enabled=true
+%keycloak.quarkus.oidc.tenant-enabled=true
+%keycloak.quarkus.oidc.auth-server-url=http://localhost:8280/auth/realms/kogito
+%keycloak.quarkus.oidc.client-id=kogito-jobs-service
+%keycloak.quarkus.oidc.credentials.secret=secret
+%keycloak.quarkus.http.auth.policy.role-policy1.roles-allowed=confidential
+%keycloak.quarkus.http.auth.permission.roles1.paths=/*
+%keycloak.quarkus.http.auth.permission.roles1.policy=role-policy1
+----
+
+NOTE: The `quarkus.oidc.enabled` property enables or disables security at build time, while the `quarkus.oidc.tenant-enabled` property enables or disables security at runtime.
+
+Replace any property definitions with those of your specific environment, especially the following properties:
+
+* `quarkus.oidc.auth-server-url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL. If you work with Keycloak OIDC server, ensure that the base URL is in the following format: `https://__HOST__:__PORT__/auth/realms/__KEYCLOAK_REALM__`.
+* `quarkus.oidc.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
+* `quarkus.oidc.credentials.secret`: The client secret for the application.
+--
+. In the same `application.properties` file, also configure the resources to be exposed and the required permissions for accessing the resources.
++
+--
+NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-enabled` property, the `quarkus.http.auth.permission` path and policy must specify how authentication is applied. By default, if security is enabled, the user must be authenticated to access any path.
+
+This example configuration enables only users with role `confidential` to access any endpoint.
+--
+. Stop and restart the {PRODUCT} Jobs Service to ensure that the security changes are applied.
+
+[role="_additional-resources"]
+.Additional resources
+* https://quarkus.io/guides/security[Security Architecture and Guides]
+* https://quarkus.io/guides/security-openid-connect#configuring-using-the-application-properties-file[Configuring using the application.properties file]
+* https://quarkus.io/guides/security-openid-connect-multitenancy[Using OpenID Connect multi-tenancy]
+
+include::{asciidoc-dir}/bpmn/chap-kogito-developing-process-services.adoc[tags=con-bpmn-process-management-addon]
+
+[id="con-trusty-service_{context}"]
+== {PRODUCT} Trusty Service and Explainability Service
+
+[role="_abstract"]
+{PRODUCT} provides a Trusty Service that stores all {PRODUCT} tracing events related to decisions made in {PRODUCT} services. As an aid to the Trusty Service workflow for storing tracing events, {PRODUCT} also provides a supplemental Explainability Service that provides an explanation for the decisions made in {PRODUCT} services.
+
+The Trusty Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then processes the tracing events and stores the data, including any explainability results from the Explainability Service, in the Infinispan persistence store. The Explainability Service likewise uses Apache Kafka messaging to consume CloudEvents messages from the Trusty Service, and then applies explainability algorithms. Some algorithms require the Explainability Service to interact with the {PRODUCT} service that evaluated the decision. This communication is performed with HTTP `POST` requests.
+
+The Trusty Service and Explainability Service are at the core of the TrustyAI metrics monitoring initiative in {PRODUCT}.
+
+.Trusty Service and Explainability Service architecture in an example {PRODUCT} service
+image::kogito/configuration/trusty-architecture_enterprise.png[Diagram of an example Kogito service using Trusty Service]
+
+The {PRODUCT} Trusty Service has the following key attributes:
+
+* Focus on decisions
+* Flexible data structure
+* Distributable and cloud-ready format
+* Infinispan-based persistence support
+* Message-based communication with {PRODUCT} runtime (Apache Kafka, cloud events )
+* Integration with the Explainability Service to retrieve advanced analysis for the decisions
+
+The {PRODUCT} Trusty Service and Explainability Service are Quarkus applications, based on https://vertx.io/[Vert.x] with https://smallrye.io/smallrye-reactive-messaging/[Reactive Messaging]. Tracing data from the Trusty Service is parsed and pushed into the *Decisions* cache for each decision made in a {PRODUCT} service. Each record contains information about all decision inputs, outputs, and errors, if any.
+
+The Trusty Service storage is provided by https://infinispan.org/[Infinispan]. Communication between the Trusty Service and Infinispan is handled through a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers.
+
+After the tracing event is analyzed and stored, the Trusty Service exposes the data with a dedicated API.
+
+For information about using the {PRODUCT} Trusty Service and Explainability Service with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-trusty-service_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
+
+For example {PRODUCT} services that use the Trusty Service and Explainability Service, see the following example applications in GitHub:
+
+* https://github.com/kiegroup/kogito-examples/tree/stable/dmn-tracing-quarkus[`dmn-tracing-quarkus`]: A DMN decision service on Quarkus that uses the `tracing-decision-quarkus-addon` add-on to generate tracing events that the {PRODUCT} Trusty Service and Explainability Service can consume and expose.
+* https://github.com/kiegroup/kogito-examples/tree/stable/trusty-demonstration[`trusty-demonstration`]: A tutorial for deploying the `dmn-tracing-quarkus` example application on Kubernetes as a demonstration of {PRODUCT} Trusty Service and Explainability Service capabilities in a cloud environment.
+
+[id="proc-trusty-service-security_{context}"]
+=== Enabling {PRODUCT} Trusty Service security with OpenID Connect
+
+[role="_abstract"]
+For Quarkus-based {PRODUCT} services, you can use the https://quarkus.io/guides/security-openid-connect[Quarkus OpenID Connect adapter] with the {PRODUCT} Trusty Service to enable security using token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
+
+IMPORTANT: This procedure applies only when you are using a locally cloned copy of the https://github.com/kiegroup/kogito-apps/tree/master/trusty[{PRODUCT} Trusty Service] repository in GitHub.
+
+.Prerequisites
+* You have cloned the https://github.com/kiegroup/kogito-apps/tree/master/trusty[{PRODUCT} Trusty Service] repository from GitHub.
+
+.Procedure
+. In a command terminal, navigate to the local clone of the {PRODUCT} Trusty Service repository and enter the following command to run the application with the required security properties:
++
+--
+.Run the trusty Service with security properties
+[source]
+----
+mvn clean compile quarkus:dev -Dquarkus.profile=keycloak
+----
+
+The {PRODUCT} Trusty Service contains a Quarkus profile to encapsulate the security configuration, so if the service requires security, you can specify the `quarkus.profile=keycloak` property at build time to enable the needed security. If the `keycloak` Quarkus profile is not added, the OpenID Connect extension is disabled.
+--
+. Navigate to the `src/main/resources/application.properties` file of the Trusty Service project and add the following properties:
++
+--
+.Required security properties in `applications.properties` file
+[source]
+----
+# OpenID Connect configurations
+%keycloak.quarkus.oidc.enabled=true
+%keycloak.quarkus.oidc.tenant-enabled=true
+%keycloak.quarkus.oidc.auth-server-url=http://localhost:8280/auth/realms/kogito
+%keycloak.quarkus.oidc.client-id=kogito-service
+%keycloak.quarkus.oidc.credentials.secret=secret
+%keycloak.quarkus.oidc.application-type=service
+
+# HTTP security configurations
+%keycloak.quarkus.http.auth.permission.authenticated.paths=/*
+%keycloak.quarkus.http.auth.permission.authenticated.policy=authenticated
+----
+
+NOTE: The `quarkus.oidc.enabled` property enables or disables security at build time, while the `quarkus.oidc.tenant-enabled` property enables or disables security at runtime.
+
+Replace any property definitions with those of your specific environment, especially the following properties:
+
+* `quarkus.oidc.auth-server-url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL. If you work with Keycloak OIDC server, ensure that the base URL is in the following format: `https://__HOST__:__PORT__/auth/realms/__KEYCLOAK_REALM__`.
+* `quarkus.oidc.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
+* `quarkus.oidc.credentials.secret`: The client secret for the application.
+
+NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-enabled` property, the `quarkus.http.auth.permission` path and policy must specify how authentication is applied. By default, if security is enabled, the user must be authenticated to access any path.
+
+--
+. Stop and restart the {PRODUCT} Trusty Service to ensure that the security changes are applied.
+
+[role="_additional-resources"]
+.Additional resources
+* https://quarkus.io/guides/security[Security Architecture and Guides]
+* https://quarkus.io/guides/security-openid-connect#configuring-using-the-application-properties-file[Configuring using the application.properties file]
+* https://quarkus.io/guides/security-openid-connect-multitenancy[Using OpenID Connect multi-tenancy]
+
+ifdef::KOGITO-ENT[]
+[role="_additional-resources"]
+== Additional resources
+* {URL_CREATING_RUNNING}[_{CREATING_RUNNING}_]
+* {URL_DEPLOYING_ON_OPENSHIFT}[_{DEPLOYING_ON_OPENSHIFT}_]
+* {URL_DECISION_SERVICES}[_{DECISION_SERVICES}_]
+* {URL_PROCESS_SERVICES}[_{PROCESS_SERVICES}_]
+endif::[]
+
+ifdef::parent-context[:context: {parent-context}]
+ifndef::parent-context[:!context:]

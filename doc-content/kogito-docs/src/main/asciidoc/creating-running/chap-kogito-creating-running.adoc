@@ -1,0 +1,2150 @@
+[id="chap-kogito-creating-running"]
+= Creating and running your first {PRODUCT} services
+ifdef::context[:parent-context: {context}]
+:context: kogito-creating-running
+
+// Purpose statement for the assembly
+[role="_abstract"]
+As a developer of business processes and decisions, you can use {PRODUCT} business automation to build  cloud-native applications that adapt to your business domain and tooling.
+
+.Prerequisites
+* JDK 11 or later is installed.
+* Apache Maven 3.6.2 or later is installed.
+
+// Modules - concepts, procedures, refs
+ifdef::KOGITO-ENT[]
+// tag::con-kogito-automation[]
+[id="con-kogito-automation_{context}"]
+== {PRODUCT} business automation
+
+[role="_abstract"]
+{PRODUCT} is a cloud-native business automation technology for building cloud-ready business applications. The name _Kogito_ derives from the Latin "Cogito", as in "Cogito, ergo sum" ("I think, therefore I am"), and is pronounced `[ˈkoː.d͡ʒi.to]` (_KO-jee-to_). The letter _K_ has reference to Kubernetes, the base for {OPENSHIFT} as the target cloud platform for {PRODUCT}, and to the Knowledge Is Everything (KIE) open source business automation project from which {PRODUCT} originates.
+
+{PRODUCT} is designed specifically to excel in a hybrid cloud environment and to be adaptable to your domain and tooling needs. The core objective of {PRODUCT} is to help you mold a set of business processes and decisions into your own domain-specific cloud-native set of services.
+
+.Business processes and decisions to cloud services
+image::kogito/creating-running/kogito-assets-to-cloud_enterprise.png[Image of business assets moving to cloud services]
+
+When you are using {PRODUCT}, you are building a cloud-native application as a set of independent domain-specific services, collaborating to achieve some business value. The processes and decisions that you use to describe the target behavior are executed as part of the services that you create. The resulting services are highly distributed and scalable with no centralized orchestration service, and the runtime that your service uses is optimized for what your service needs.
+
+// @comment: Excluding for simplicity for now (Stetson, 18 Feb 2020)
+//If you need long-lived processes, you can persist the runtime state externally in a data grid such as Infinispan. Each {PRODUCT} service also produces events that can be consumed by other services. For example, if you use Apache Kafka, events can be aggregated and indexed in a data index service, offering advanced query capabilities through GraphQL.
+
+{PRODUCT} includes components that are based on well-known business automation KIE projects, specifically https://drools.org[Drools], https://jbpm.org[jBPM], and https://optaplanner.org[OptaPlanner], to offer dependable, open source solutions for business rules, business processes, and constraint solving.
+
+=== Cloud-first priority
+
+{PRODUCT} is designed to run and scale on a cloud infrastructure. You can use {PRODUCT} with the latest cloud-based technologies, such as Quarkus, Knative, and Apache Kafka, to get fast boot times and instant scaling on container application platforms, such as {OPENSHIFT}.
+
+.Technologies used with {PRODUCT}
+image::kogito/creating-running/kogito-related-technolgies_enterprise.png[Image of cloud-based technologies]
+
+For example, {PRODUCT} is compatible with the following technologies:
+
+* *{OPENSHIFT}*, based on Kubernetes, is the target platform for building and managing containerized applications.
+* *Quarkus* is the new native Java stack for Kubernetes that you can use when you build applications with {PRODUCT} services.
+* *Spring Boot* is also supported with {PRODUCT} if you need to use the Spring Framework with {PRODUCT}.
+ifdef::KOGITO-COMM[]
+* *GraalVM* with Quarkus enables you to use native compilation with {PRODUCT}, resulting in fast start-up times and minimal footprint. For example, a native {PRODUCT} service starts in about 0.003ms, about 100 times faster than a non-native start-up. Fast start-up is almost a necessity in a cloud ecosystem, especially if you need small serverless applications.
+endif::[]
+* *Knative* enables you to build serverless applications with {PRODUCT} that you can scale up or down (to zero) as needed.
+* *Prometheus* and *Grafana* are compatible with {PRODUCT} services for monitoring and analytics with optional extensions.
+* *Kafka*, *Infinispan*, and *Keycloak* are also some of the middleware technologies that {PRODUCT} supports for messaging, persistence, and security.
+
+=== Domain-specific flexibility
+
+{PRODUCT} adapts to your business domain instead of forcing you to modify your domain to work with {PRODUCT}. You can expose your {PRODUCT} services with domain-specific APIs, based on the processes and decisions that you have defined. Domain-specific APIs for {PRODUCT} services do not require third-party or internal APIs.
+
+For example, a process for onboarding employees could generate remote REST API endpoints that you can use to onboard new employees or get information on their status, all using domain-specific JSON data.
+
+.Example custom API endpoints in Swagger
+image::kogito/creating-running/kogito-domain-api-endpoints-example.png[Image of REST API endpoints in Swagger UI]
+
+You can also expose domain-specific data through events or in a data index so that the data can be consumed and queried by other services.
+
+=== Developer-centered experience
+
+Another focus of {PRODUCT} is optimal developer experience. You can use much or all of your existing tooling and workflow to develop, build, and deploy {PRODUCT} services, whether locally for testing or into the cloud. Quarkus offers development mode features to help with local testing, such as live reload of your processes and decisions in your running applications for advanced debugging.
+
+{PRODUCT} tooling is embeddable so that you can continue using the workflow you already use for cloud-native services. For example, the *{PRODUCT} Bundle* VSCode extension enables you to edit your Business Process Model and Notation (BPMN) 2.0 business processes and Decision Model and Notation (DMN) decision models directly in your VSCode IDE, next to your other application code.
+
+.Building a {PRODUCT} process service in VSCode
+image::kogito/creating-running/kogito-run-quarkus-devmode-demo.gif[Demo of {PRODUCT} BPMN2 extension in VSCode]
+
+To deploy your services into the cloud, you can use the {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-and-cli_kogito-deploying-on-openshift[{PRODUCT} Operator], which guides you through every step. The {PRODUCT} Operator is based on the https://sdk.operatorframework.io/[Operator SDK] and automates many of the deployment steps for you. For example, when you give the operator a link to the Git repository that contains your application, the operator can automatically configure the components required to build your project from source and deploy the resulting services. {PRODUCT} also offers a command-line interface (CLI) to simplify some of these deployment tasks.
+// end::con-kogito-automation[]
+
+// tag::con-kogito-quarkus-springboot[]
+[id="con-kogito-quarkus-springboot_{context}"]
+=== {PRODUCT} on Quarkus and Spring Boot
+
+[role="_abstract"]
+The primary Java frameworks that {PRODUCT} supports are Quarkus (recommended) and Spring Boot.
+
+https://quarkus.io/[Quarkus] is a Kubernetes-native Java framework with a container-first approach to building Java applications, especially for Java virtual machines (JVMs) such as GraalVM and HotSpot. Quarkus optimizes Java specifically for Kubernetes by reducing the size of both the Java application and container image footprint, eliminating some of the Java programming workload from previous generations, and reducing the amount of memory required to run those images.
+
+For {PRODUCT} services, Quarkus is the preferred framework for optimal Kubernetes compatibility and enhanced developer features, such as live reload in development mode for advanced debugging.
+
+https://spring.io/projects/spring-boot[Spring Boot] is a Java-based framework for building standalone production-ready Spring applications. Spring Boot enables you to develop Spring applications with minimal configurations and without an entire Spring configuration setup.
+
+For {PRODUCT} services, Spring Boot is supported for developers who need to use {PRODUCT} in an existing Spring Framework environment.
+// end::con-kogito-quarkus-springboot[]
+endif::[]
+
+// tag::ref-kogito-app-examples[]
+[id="ref-kogito-app-examples_{context}"]
+== Example applications with {PRODUCT} services
+
+[role="_abstract"]
+{PRODUCT} includes example applications in the https://github.com/kiegroup/kogito-examples[`kogito-examples`] repository in GitHub. These example applications contain various types of {PRODUCT} services on Quarkus or Spring Boot to help you develop your own applications. The services use one or more Business Process Model and Notation (BPMN) process models, Decision Model and Notation (DMN) decision models, Drools Rule Language (DRL) rule units, XLS spreadsheet decision tables, or Java classes to define the service logic.
+
+For information about each example application and instructions for using them, see the `README` file in the relevant application folder.
+
+NOTE: In the https://github.com/kiegroup/kogito-examples[`{PRODUCT_INIT}-examples`] repository in GitHub, the example applications in the default `stable` branch use the latest version of {PRODUCT}.
+
+The following list describes some of the examples provided with {PRODUCT}:
+
+Decision services::
+* `dmn-quarkus-example` and `dmn-springboot-example`: A decision service (on Quarkus or Spring Boot) that uses DMN to determine driver penalty and suspension based on traffic violations.
+* `rules-quarkus-helloworld`: A Hello World decision service on Quarkus with a single DRL rule unit.
+* `ruleunit-quarkus-example` and `ruleunit-springboot-example`: A decision service (on Quarkus or Spring Boot) that uses DRL with rule units to validate a loan application and that exposes REST operations to view application status.
+
+Decision services that use the {PRODUCT} Trusty Service and Explainability Service::
+* `dmn-tracing-quarkus`: A DMN decision service on Quarkus that uses the `tracing-decision-quarkus-addon` add-on to generate tracing events that the {PRODUCT} Trusty Service and Explainability Service can consume and expose.
+* `trusty-demonstration`: A tutorial for deploying the `dmn-tracing-quarkus` example application on Kubernetes as a demonstration of {PRODUCT} Trusty Service and Explainability Service capabilities in a cloud environment.
+
+Process services::
+* `process-quarkus-example` and `process-springboot-example`: A process service (on Quarkus or Spring Boot) for ordering items and that exposes REST operations to create new orders or to list and delete active orders.
+* `onboarding-example`: A combination of a process service and two decision services that use DMN and DRL for onboarding new employees.
+* `flexible-process-quarkus` and `flexible-process-springboot`: A process service (on Quarkus or Spring Boot) that uses flexible processes for case management in {PRODUCT}.
+
+Process services that use {PRODUCT_OP}::
+* `process-optaplanner-quarkus` and `process-optaplanner-springboot`: A process service (on Quarkus or Spring Boot) that uses {PRODUCT_OP} to optimize airline flight schedules and seat assignments. For information about {PRODUCT_OP} integration with {PRODUCT}, see the https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html#integrationWithQuarkus[{PRODUCT_OP} documentation].
+
+Process services for OpenShift deployment::
+* `kogito-travel-agency`: A combination of process services and decision services that use DRL and XLS for travel booking, intended for deployment on {OPENSHIFT}.
+
+Serverless Workflow services::
+* `serverless-workflow-greeting-quarkus` and `serverless-workflow-greeting-springboot`: A Serverless Workflow greeting service with both JSON and YAML workflow definitions.
+* `serverless-workflow-service-calls-quarkus` and `serverless-workflow-service-calls-springboot`: A Serverless Workflow service for returning country information.
+* `serverless-workflow-events-quarkus`: A Serverless Workflow service for processing job applicant approvals and that showcases event-driven services.
+// end::ref-kogito-app-examples[]
+
+[id="proc-kogito-app-examples-running_{context}"]
+=== Running the {PRODUCT} example applications
+
+[role="_abstract"]
+To get started quickly with {PRODUCT}, you can run any of the example applications in the https://github.com/kiegroup/kogito-examples[`kogito-examples`] repository in GitHub and experiment with the {PRODUCT} services.
+
+For this procedure, use the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] or https://github.com/kiegroup/kogito-examples/tree/stable/process-springboot-example[`process-springboot-example`] application. You can follow similar steps with the other {PRODUCT} examples on Quarkus or Spring Boot.
+
+In the `process-quarkus-example` and `process-springboot-example` applications, the `orders.bpmn2` process describes the steps that need to be followed when ordering items. The process includes a script task for writing debug information and a call activity for invoking a subprocess, using a custom `Order` data object.
+
+.Example `orders.bpmn2` process
+image::kogito/creating-running/bpmn-model-example-orders.png[Image of `orders.bpmn` example process]
+
+The `Add items` subprocess invokes the following `orderItems.bpmn2` process, which uses a `CalculationService.calculateTotal` custom Java service and a user task to verify the order.
+
+.Example `orderItems.bpmn2` process invoked as a subprocess
+image::kogito/creating-running/bpmn-model-example-order-items.png[Image of `orderItems.bpmn` example process]
+
+The `persons.bpmn2` process invokes a Drools Rule Languge (DRL) rule unit in a business rule task to determine customer age, followed by a user task for special handling requirements for children, if applicable.
+
+.Example `persons.bpmn2` process invoked as a subprocess
+image::kogito/creating-running/kogito-bpmn-example-person.png[Image of `persons` process diagram]
+
+Based on these processes and on application configurations, this example service exposes REST operations to create new orders, to list and delete active orders, and to determine the age of a specified person.
+
+.Procedure
+. Download the latest https://github.com/kiegroup/kogito-examples/releases[`kogito-examples`] release to a local directory and extract the file.
+. In a command terminal, navigate to the extracted `kogito-examples-__RELEASE__/process-__PLATFORM__-example` folder, and enter one of the following commands to build and run the example.
++
+--
+Quarkus and Spring Boot support the following run modes:
+
+* *Development mode*: For local testing. On Quarkus, development mode also offers live reload of your processes and decisions in your running applications for advanced debugging.
+* *JVM mode*: For compatibility with a Java virtual machine (JVM).
+ifdef::KOGITO-COMM[]
+* *Native mode*: (Quarkus only, requires GraalVM) For direct binary execution as native code.
+endif::[]
+
+The command that you use depends on your preferred run mode and application environment:
+
+* For development mode:
++
+.On Quarkus
+[source]
+----
+$ mvn clean compile quarkus:dev
+----
++
+.On Sprint Boot
+[source]
+----
+$ mvn clean compile spring-boot:run
+----
++
+* For JVM mode:
++
+.On Quarkus and Spring Boot
+[source]
+----
+$ mvn clean package
+$ java -jar target/sample-kogito-1.0-SNAPSHOT-runner.jar
+----
++
+ifdef::KOGITO-COMM[]
+* For native mode (requires GraalVM):
++
+.On Quarkus only
+[source]
+----
+$ mvn clean package -Dnative
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
++
+endif::[]
+--
+. After the {PRODUCT} service is running, use a REST client, curl utility, or the Swagger UI configured for the application at http://localhost:8080/swagger-ui/ to send API requests with the following components:
++
+--
+* *URL*: `\http://localhost:8080/`
+* *HTTP headers*:
+** `accept`: `application/json`
+** `content-type`: `application/json`
+* *HTTP methods*: `GET`, `POST`, `PUT` or `DELETE`
+
+.Example POST request body to create an order (JSON)
+[source,json]
+----
+{
+  "approver": "john",
+  "order": {
+    "orderNumber": "12345",
+    "shipped": false
+  }
+}
+----
+
+.Example curl command to create an order
+[source]
+----
+curl -X POST http://localhost:8080/orders -H 'content-type: application/json' -H 'accept: application/json' -d '{"approver" : "john", "order" : {"orderNumber" : "12345", "shipped" : false}}'
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+  "approver": "john",
+  "id": "6b53c227-6d5e-40b7-8c8c-a541a2a47d58",
+  "order": {
+    "orderNumber": "12345",
+    "shipped": false,
+    "total": 0.3845152065899532
+  }
+}
+----
+
+.Swagger UI to interact with all application endpoints (\http://localhost:8080/swagger-ui/)
+image::kogito/creating-running/kogito-swagger-example-jbpm.png[Image of Swagger UI for example application]
+
+NOTE: For the predefined {PRODUCT} example applications, the Swagger UI for interacting with service endpoints is available only on Quarkus examples that you run in
+ifdef::KOGITO-ENT[]
+development mode.
+endif::[]
+ifdef::KOGITO-COMM[]
+development mode or in native mode.
+endif::[]
+
+This example procedure uses the following curl commands for convenience:
+
+* Create an order:
++
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/orders -H 'content-type: application/json' -H 'accept: application/json' -d '{"approver" : "john", "order" : {"orderNumber" : "12345", "shipped" : false}}'
+----
++
+.Example response
+[source]
+----
+{"approver":"john","id":"6b53c227-6d5e-40b7-8c8c-a541a2a47d58","order":{"orderNumber":"12345","shipped":false,"total":0.3845152065899532}}
+----
++
+The new order has an `"id"` field with a generated UUID that you can use to retrieve details about this specific order, if needed.
+
+* View active orders:
++
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/orders -H 'content-type: application/json' -H 'accept: application/json'
+----
++
+.Example response
+[source]
+----
+[{"approver":"john","id":"6b53c227-6d5e-40b7-8c8c-a541a2a47d58","order":{"orderNumber":"12345","shipped":false,"total":0.3845152065899532}}]
+----
+
+* View order details using the returned UUID:
++
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/orders/6b53c227-6d5e-40b7-8c8c-a541a2a47d58 -H 'content-type: application/json' -H 'accept: application/json'
+----
++
+.Example response
+[source]
+----
+{"approver":"john","id":"6b53c227-6d5e-40b7-8c8c-a541a2a47d58","order":{"orderNumber":"12345","shipped":false,"total":0.3845152065899532}}
+----
++
+You use the `"id"` value for the order that was returned when you created the order or when you retrieved active orders.
+
+* Cancel the order using the returned UUID:
++
+.Example request
+[source]
+----
+curl -X DELETE http://localhost:8080/orders/6b53c227-6d5e-40b7-8c8c-a541a2a47d58 -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+[id="con-kogito-modelers_{context}"]
+== {PRODUCT} BPMN and DMN modelers
+
+[role="_abstract"]
+{PRODUCT} provides the following extensions or applications that you can use to design Business Process Model and Notation (BPMN) process models and Decision Model and Notation (DMN) decision models for your {PRODUCT} services using graphical modelers.
+
+For convenience, all {PRODUCT} BPMN and DMN modelers are available in the https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] desktop application.
+
+* *{PRODUCT} VSCode extension*: (Recommended) Enables you to view and design BPMN models, DMN models, and test scenario files in Visual Studio Code (VSCode). The VSCode extension in the {PRODUCT} Business Modeler Hub requires VSCode 1.46.0 or later.
++
+To install the {PRODUCT} VSCode extension directly in VSCode without the {PRODUCT} Business Modeler Hub, select the *Extensions* menu option in VSCode and search for and install the *{PRODUCT} Bundle* extension.
+* *{PRODUCT} GitHub Chrome extension*: Enables you to view and design BPMN and DMN models in GitHub repositories in Google Chrome.
++
+To install the {PRODUCT} GitHub Chrome extension without the {PRODUCT} Business Modeler Hub, you can download and extract the `chrome_extension_kogito_kie_editors___VERSION__.zip` file from the https://github.com/kiegroup/kogito-tooling/releases[`kogito-tooling`] releases page in GitHub, and then in the upper-right corner in Chrome, go to *Customize and control* -> *Settings* -> *Extensions* -> *Load unpacked* and open the extracted `dist` folder.
+* *Business Modeler desktop application*: Enables you to view and design BPMN and DMN models locally.
++
+To run the {PRODUCT} Business Modeler desktop application without the {PRODUCT} Business Modeler Hub, you can download and extract the `business_modeler_preview___RELEASE__.zip` file from the https://github.com/kiegroup/kogito-tooling/releases[`kogito-tooling`] releases page in GitHub, and then follow the instructions in the application `README` file to run the application on your specific operating system.
+* *Business Modeler online viewer*: Enables you to view and design BPMN and DMN models online at `https://kiegroup.github.io/kogito-online/`. The online modeler supports the `.new` format, so you can also enter `bpmn.new` or `dmn.new` in a web browser to start designing a new BPMN or DMN model in the online modeler.
+
+[id="proc-kogito-modelers_{context}"]
+=== Installing and using the {PRODUCT} Business Modeler Hub
+
+[role="_abstract"]
+{PRODUCT} provides a https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] desktop application with all {PRODUCT} extensions or applications for modeling Business Process Model and Notation (BPMN) process models and Decision Model and Notation (DMN) decision models in {PRODUCT} services. {PRODUCT} currently provides extensions for VSCode (recommended) and GitHub modelers, a desktop application for offline modeling, and an online modeler.
+
+As you develop {PRODUCT} services, you can use the {PRODUCT} Business Modeler Hub to install, launch, or uninstall the available modeling extensions or applications as needed.
+
+.Procedure
+. In a web browser, go to the https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] download page, select the relevant *Operating System* option, and click *Download*.
+. Extract the downloaded `business_modeler_hub_preview___RELEASE__` binary file to a local directory.
++
+--
+* On Linux: In a command terminal, navigate to the directory where you downloaded the `business_modeler_hub_preview___RELEASE__` binary file and enter the following command to extract the contents:
++
+.Extract the {PRODUCT} Business Modeler Hub distribution
+[source,subs="attributes+,+quotes"]
+----
+$ tar -xzpf business_modeler_hub_preview___RELEASE__.tar.gz
+----
+
+* On Windows or Mac: In your file browser, navigate to the directory where you downloaded the `business_modeler_hub_preview___RELEASE__` binary file and extract the ZIP file.
+--
+. In a command terminal, navigate to the extracted `business_modeler_hub_preview___RELEASE__` folder and enter the following command to run the application:
++
+--
+.Run the {PRODUCT} Business Modeler Hub application
+[source,subs="attributes+,+quotes"]
+----
+$ cd __PATH_TO_MODELER_HUB__
+$ ./Business\ Modeler\ Hub\ Preview-__RELEASE__/Business\ Modeler\ Hub\ Preview
+----
+
+The *Business Modeler Hub* opens in a new window:
+
+.{PRODUCT} Business Modeler Hub window
+image::kogito/creating-running/kogito-modeler-hub.png[Image of Business Modeler Hub]
+
+NOTE: If the *Business Modeler Hub* window does not appear, review the `README` documentation in the Business Modeler Hub application folder for any details specific to your operating system.
+
+Use the {PRODUCT} Business Modeler Hub to install, launch, or uninstall the available extensions or applications as needed.
+--
+
+[id="proc-kogito-vscode-extension_{context}"]
+=== Installing the {PRODUCT} VSCode extension bundle without the {PRODUCT} Business Modeler Hub
+
+[role="_abstract"]
+Although you can install and launch the {PRODUCT} Visual Studio Code (VSCode) extension from the https://kiegroup.github.io/kogito-online/#/download[Business Modeler Hub] desktop application, along with all other available {PRODUCT} modelers, you can also install {PRODUCT} VSCode extensions from Visual Studio Marketplace directly in VSCode.
+
+VSCode is the preferred integrated development environment (IDE) for developing {PRODUCT} services. {PRODUCT} provides a *{PRODUCT} Bundle* VSCode extension that enables you to design Decision Model and Notation (DMN) decision models, Business Process Model and Notation (BPMN) 2.0 business processes, and test scenarios directly in VSCode. {PRODUCT} also provides individual *DMN Editor* and *BPMN Editor* VSCode extensions for DMN or BPMN support only, if needed.
+
+.Prerequisites
+* https://code.visualstudio.com/[VSCode] 1.46.0 or later is installed.
+
+.Procedure
+. In your VSCode IDE, select the *Extensions* menu option and search for *{PRODUCT} Bundle* for DMN, BPMN, and test scenario file support.
++
+For DMN or BPMN file support only, you can also search for the individual *DMN Editor* or *BPMN Editor* extensions.
+. When the {PRODUCT} extension appears in the extension list in VSCode, select it and click *Install*.
+. For optimal VSCode editor behavior, after the extension installation is complete, reload or close and re-launch your instance of VSCode.
+
+After you install the VSCode extension bundle, any `.dmn` or `.bpmn2` files that you open in VSCode are automatically displayed as graphical models. Additionally, any `.scesim` files that you open are automatically displayed as tabular test scenario models for testing the functionality of your business decisions.
+
+If the {PRODUCT} DMN, BPMN, or test scenario modelers open only the XML source of a DMN, BPMN, or test scenario file and displays an error message, review the reported errors and the model file to ensure that all elements are correctly defined.
+
+NOTE: For new DMN or BPMN models, you can also enter `dmn.new` or `bpmn.new` in a web browser to design your DMN or BPMN model in the {PRODUCT} online modeler. When you finish creating your model, you can click *Download* in the online modeler page to import your DMN or BPMN file into your {PRODUCT} project in VSCode.
+
+[id="proc-kogito-creating-project_{context}"]
+== Creating a Maven project for a {PRODUCT} service
+
+[role="_abstract"]
+Before you can begin developing {PRODUCT} services, you need to create a Maven project where you can build your {PRODUCT} assets and any other related resources for your application.
+
+.Procedure
+. In a command terminal, navigate to a local folder where you want to store the new {PRODUCT} project.
+. Enter the following command to generate a project within a defined folder:
++
+--
+.On Quarkus
+[source,subs="attributes+"]
+----
+$ mvn archetype:generate \
+    -DarchetypeGroupId=org.kie.kogito \
+    -DarchetypeArtifactId=kogito-quarkus-archetype \
+    -DgroupId=org.acme -DartifactId=sample-kogito \
+    -DarchetypeVersion={PRODUCT_VERSION_LONG} \
+    -Dversion=1.0-SNAPSHOT
+----
+////
+@comment: The following standard command for Quarkus isn't working currently but may be restored for Dev Preview
+
+mvn io.quarkus:quarkus-maven-plugin:create -DprojectGroupId=com.company -DprojectArtifactId=sample-kogito -Dextensions="kogito"
+////
+
+.On Spring Boot
+[source,subs="attributes+"]
+----
+$ mvn archetype:generate \
+    -DarchetypeGroupId=org.kie.kogito \
+    -DarchetypeArtifactId=kogito-springboot-archetype \
+    -DgroupId=org.acme -DartifactId=sample-kogito \
+    -DarchetypeVersion={PRODUCT_VERSION_LONG} \
+    -Dversion=1.0-SNAPSHOT
+----
+
+This command generates a `sample-kogito` Maven project and imports the {PRODUCT} extension for all required dependencies and configurations to prepare your application for business automation.
+--
+. Open or import the project in your VSCode IDE to view the contents.
+
+[id="proc-kogito-creating-project-custom_{context}"]
+=== Creating a custom {PRODUCT} project using code scaffolding
+
+WARNING: This feature is experimental and might be substantially modified or removed in a future release. This feature also requires a special project setup. The generated code uses APIs that in {PRODUCT} are not final and will not function the same way in future releases.
+
+[role="_abstract"]
+The Quarkus extension and Maven plug-in within a standard {PRODUCT} project generate all the required code and boilerplate for your {PRODUCT} services so that you do not have to write the project setup code yourself. By default, a {PRODUCT} project generates a REST service from business assets automatically. The generated service usually exposes default REST endpoints using the information that is inferred from the business assets that you include in your project.
+
+If you want to customize the code for your {PRODUCT} project, such as adding more REST endpoints, you can use _code scaffolding_ to generate the project code to a specified user directory and then modify the code as needed.
+
+With code scaffolding, you generate your {PRODUCT} project with the {PRODUCT} Maven archetype as usual, but you disable the project ability to automatically regenerate the project code and explicitly instruct {PRODUCT} to generate the code in a custom target directory. The code is generated one time in the specified target directory and is not regenerated at build time unless you explicitly request it. You can customize the project code in the specified target directory as needed.
+
+NOTE: On Quarkus, disabling code regeneration also disables hot reload of business assets in development mode. This limitation will be improved in a future release.
+
+.Procedure
+. In a command terminal, navigate to a local folder where you want to store the custom {PRODUCT} project and enter the following command to generate your {PRODUCT} project with the {PRODUCT} Maven archetype as usual:
++
+--
+.On Quarkus
+[source,subs="attributes+"]
+----
+$ mvn archetype:generate \
+    -DarchetypeGroupId=org.kie.kogito \
+    -DarchetypeArtifactId=kogito-quarkus-archetype \
+    -DgroupId=org.acme -DartifactId=sample-kogito \
+    -DarchetypeVersion={PRODUCT_VERSION_LONG} \
+    -Dversion=1.0-SNAPSHOT
+----
+////
+@comment: The following standard command for Quarkus isn't working currently but may be restored for Dev Preview
+
+mvn io.quarkus:quarkus-maven-plugin:create -DprojectGroupId=com.company -DprojectArtifactId=sample-kogito -Dextensions="kogito"
+////
+
+.On Spring Boot
+[source,subs="attributes+"]
+----
+$ mvn archetype:generate \
+    -DarchetypeGroupId=org.kie.kogito \
+    -DarchetypeArtifactId=kogito-springboot-archetype \
+    -DgroupId=org.acme -DartifactId=sample-kogito \
+    -DarchetypeVersion={PRODUCT_VERSION_LONG} \
+    -Dversion=1.0-SNAPSHOT
+----
+
+This command generates a `sample-kogito` Maven project and imports the {PRODUCT} extension for all required dependencies and configurations to prepare your application for business automation.
+--
+. In the project `pom.xml` file, modify the project dependencies and plug-ins to disable code regeneration:
++
+--
+* *On Quarkus*: Delete the `kogito-quarkus` dependency and add the `kogito-maven-plugin` plug-in, as shown in the following examples:
++
+.Deleting the `kogito-quarkus` dependency
+[source,xml]
+----
+<dependencies>
+  ...
+  <dependency>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-quarkus</artifactId>
+  </dependency>
+  ...
+</dependencies>
+----
++
+.Adding the `kogito-maven-plugin` plug-in
+[source,xml]
+----
+<build>
+  ...
+  <plugins>
+    ...
+    <plugin>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>kogito-maven-plugin</artifactId>
+      <configuration>
+        <onDemand>true</onDemand>
+      </configuration>
+    </plugin>
+    ...
+  </plugins>
+  ...
+</build>
+----
+
+* *On Spring Boot*: Modify the existing `kogito-maven-plugin` plug-in as shown in the following example:
++
+.Modifying the `kogito-maven-plugin` plug-in
+[source,xml]
+----
+<build>
+  ...
+  <plugins>
+    ...
+    <plugin>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>kogito-maven-plugin</artifactId>
+      <configuration>
+        <onDemand>true</onDemand>
+      </configuration>
+    </plugin>
+    ...
+  </plugins>
+  ...
+</build>
+----
+--
+. In a command terminal, navigate to the root of your {PRODUCT} project and enter the following command to generate your modified project using code scaffolding:
++
+--
+.Generating the {PRODUCT} project using code scaffolding
+[source]
+----
+ $ mvn compile kogito:scaffold
+----
+
+This command compiles the assets in your project and generates the code in the `src/main/java` directory. In the automatic {PRODUCT} project build, the default directory is `target/generated-sources/kogito`.
+
+If you want to override the default location for code generation, use the following command to define a custom target directory:
+
+.Generating the {PRODUCT} project using code scaffolding with a custom directory
+[source]
+----
+ $ mvn compile kogito:scaffold -Dkogito.codegen.sources.directory=src/main/generated-java
+----
+
+The `kogito.codegen.sources.directory` parameter defines the custom target directory where you want the code to be generated, such as `src/main/generated-java` in this example.
+
+WARNING: If you invoke the generation command again with the same target directory, the files are overwritten. This limitation will be fixed in a future release.
+
+After you run the scaffolding command, either the default `src/main/java` directory or the custom target directory that you defined now contains the following resources:
+
+* Your existing project files
+* Generated data classes corresponding to process variables or Decision Model and Notation (DMN) definitions
+* Generated REST endpoints
+
+This example project contains a `persons` Business Process Model and Notation (BPMN) process model, so the generated REST endpoints are modified as shown in the following Java object:
+
+.Modified REST endpoints for a `person` BPMN process model
+[source,java]
+----
+package org.acme.travels;
+
+// Imports
+
+@Path("/persons")
+@ApplicationScoped
+public class PersonsResource {
+
+    @Inject
+    @Named("persons")
+    Process<PersonsModel> process;
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public PersonsModelOutput createResource_persons(
+            @Context HttpHeaders httpHeaders,
+            @QueryParam("businessKey") String businessKey,
+            @Valid @NotNull PersonsModelInput resource) {
+        ...
+    }
+
+    // Other endpoints
+}
+----
+
+The `PersonsModel`, `PersonModelInput`, and `PersonsModelOutput` elements are the generated data models. These models are inferred automatically from the process variables in the process. Input and output models are inferred by how you tagged your process variables.
+
+Similar endpoints are generated for any available rule units. This example project contains a `PersonValidationService` class for a rule unit model, so the generated REST endpoints are modified as shown in the following Java object:
+
+.Modified REST endpoints for a `PersonValidationService` rule unit class
+[source,java]
+----
+package org.acme.travels;
+
+// Imports
+
+@Path("/persons-validation-service")
+@ApplicationScoped
+public class PersonsValidationServiceResource {
+
+    @Inject
+    RuleUnit<PersonValidationService> unit;
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public QueryResult fireRules(PersonValidationService resource) {
+        ...
+    }
+
+    // Other endpoints
+}
+----
+--
+
+[role="_additional-resources"]
+.Additional resources
+* {URL_PROCESS_SERVICES}#con-bpmn-variables_kogito-developing-process-services[Variables in {PRODUCT} processes]
+* xref:proc-kogito-designing-app-rule-units_kogito-creating-running[]
+
+[id="proc-kogito-designing-app_{context}"]
+== Designing the application logic for a {PRODUCT} service using DMN and BPMN
+
+[role="_abstract"]
+After you create your {PRODUCT} project, you can create or import Business Process Model and Notation (BPMN) 2.0 business processes, Decision Model and Notation (DMN) decision models, Drools Rule Language (DRL) business rules, XLS or XLSX decision tables, and other assets in the `src/main/resources` folder of your project. You can also include Java classes in the `src/main/java` folder of your project that act as Java services or that provide implementations that you call from your business processes or decisions.
+
+The example for this procedure is a basic {PRODUCT} service that provides a REST endpoint `/persons`. This endpoint is automatically generated based on an example `PersonProcess.bpmn2` business process that employs an example `PersonDecisions.dmn` DMN model to make decisions based on the data being processed.
+
+The business process contains the business logic of the {PRODUCT} service. The process provides the complete set of steps to achieve the business goal. The process is also the entry point to the service that can be consumed by other services.
+
+The business decision contains the decision logic of the {PRODUCT} service. In this example, the decision logic is invoked as part of the business process. You can define business rules and decisions in several ways, such as with DMN models, DRL rules, or XLS or XLSX decision tables. The example for this procedure uses a DMN model.
+
+.Procedure
+. In the Maven project that you generated for your {PRODUCT} service, navigate to the `src/main/java/org/acme` folder and add the following `Person.java` file:
++
+--
+.Example person Java object
+[source,java]
+----
+package org.acme;
+
+import java.io.Serializable;
+
+public class Person {
+
+	private String name;
+	private int age;
+	private boolean adult;
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public int getAge() {
+		return age;
+	}
+
+	public void setAge(int age) {
+		this.age = age;
+	}
+
+	public boolean isAdult() {
+		return adult;
+	}
+
+	public void setAdult(boolean adult) {
+		this.adult = adult;
+	}
+
+	@Override
+	public String toString() {
+		return "Person [name=" + name + ", age=" + age + ", adult=" + adult + "]";
+	}
+
+}
+----
+This example Java object sets and retrieves a person's name, age, and adult status.
+--
+. Navigate to the `src/main/resources` folder and add the following `PersonDecisions.dmn` DMN decision model:
++
+--
+.Example `PersonDecisions` DMN decision requirements diagram (DRD)
+image::kogito/creating-running/kogito-dmn-example-person.png[Image of PersonDecisions decision diagram]
+
+.Example DMN boxed expression for `isAdult` decision
+image::kogito/creating-running/kogito-dmn-example-person-logic.png[Image of PersonDecisions decision table]
+
+.Example DMN data types
+image::kogito/creating-running/kogito-dmn-example-person-data-types.png[Image of PersonDecisions data types]
+
+This example DMN model consists of a basic DMN input node and a decision node defined by a DMN decision table with a custom structured data type.
+
+In VSCode (recommended), you can add the *{PRODUCT} Bundle* VSCode extension to design the decision requirements diagram (DRD), boxed expression, and data types with the {PRODUCT} DMN modeler.
+
+To create this example DMN model quickly, you can copy the following `PersonDecisions.dmn` file content:
+
+.Example DMN file
+[source,xml]
+----
+<dmn:definitions xmlns:dmn="http://www.omg.org/spec/DMN/20180521/MODEL/" xmlns="https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="http://www.drools.org/kie/dmn/1.2" xmlns:dmndi="http://www.omg.org/spec/DMN/20180521/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:feel="http://www.omg.org/spec/DMN/20180521/FEEL/" id="_84B432F5-87E7-43B1-9101-1BAFE3D18FC5" name="PersonDecisions" typeLanguage="http://www.omg.org/spec/DMN/20180521/FEEL/" namespace="https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1">
+  <dmn:extensionElements/>
+  <dmn:itemDefinition id="_DEF2C3A7-F3A9-4ABA-8D0A-C823E4EB43AB" name="tPerson" isCollection="false">
+    <dmn:itemComponent id="_DB46DB27-0752-433F-ABE3-FC9E3BDECC97" name="Age" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_8C6D865F-E9C8-43B0-AB4D-3F2075A4ECA6" name="Name" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_9033704B-4E1C-42D3-AC5E-0D94107303A1" name="Adult" isCollection="false">
+      <dmn:typeRef>boolean</dmn:typeRef>
+    </dmn:itemComponent>
+  </dmn:itemDefinition>
+  <dmn:inputData id="_F9685B74-0C69-4982-B3B6-B04A14D79EDB" name="Person">
+    <dmn:extensionElements/>
+    <dmn:variable id="_0E345A3C-BB1F-4FB2-B00F-C5691FD1D36C" name="Person" typeRef="tPerson"/>
+  </dmn:inputData>
+  <dmn:decision id="_0D2BD7A9-ACA1-49BE-97AD-19699E0C9852" name="isAdult">
+    <dmn:extensionElements/>
+    <dmn:variable id="_54CD509F-452F-40E5-941C-AFB2667D4D45" name="isAdult" typeRef="boolean"/>
+    <dmn:informationRequirement id="_2F819B03-36B7-4DEB-AED6-2B46AE3ADB75">
+      <dmn:requiredInput href="#_F9685B74-0C69-4982-B3B6-B04A14D79EDB"/>
+    </dmn:informationRequirement>
+    <dmn:decisionTable id="_58370567-05DE-4EC0-AC2D-A23803C1EAAE" hitPolicy="UNIQUE" preferredOrientation="Rule-as-Row">
+      <dmn:input id="_ADEF36CD-286A-454A-ABD8-9CF96014021B">
+        <dmn:inputExpression id="_4930C2E5-7401-46DD-8329-EAC523BFA492" typeRef="number">
+          <dmn:text>Person.Age</dmn:text>
+        </dmn:inputExpression>
+      </dmn:input>
+      <dmn:output id="_9867E9A3-CBF6-4D66-9804-D2206F6B4F86" typeRef="boolean"/>
+      <dmn:rule id="_59D6BFF0-35B4-4B7E-8D7B-E31CB0DB8242">
+        <dmn:inputEntry id="_7DC55D63-234F-497B-A12A-93DA358C0136">
+          <dmn:text>&gt; 18</dmn:text>
+        </dmn:inputEntry>
+        <dmn:outputEntry id="_B3BB5B97-05B9-464A-AB39-58A33A9C7C00">
+          <dmn:text>true</dmn:text>
+        </dmn:outputEntry>
+      </dmn:rule>
+      <dmn:rule id="_8FCD63FE-8AD8-4F56-AD12-923E87AFD1B1">
+        <dmn:inputEntry id="_B4EF7F13-E486-46CB-B14E-1D21647258D9">
+          <dmn:text>&lt;= 18</dmn:text>
+        </dmn:inputEntry>
+        <dmn:outputEntry id="_F3A9EC8E-A96B-42A0-BF87-9FB1F2FDB15A">
+          <dmn:text>false</dmn:text>
+        </dmn:outputEntry>
+      </dmn:rule>
+    </dmn:decisionTable>
+  </dmn:decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_58370567-05DE-4EC0-AC2D-A23803C1EAAE">
+            <kie:width>50</kie:width>
+            <kie:width>100</kie:width>
+            <kie:width>100</kie:width>
+            <kie:width>100</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="dmnshape-_F9685B74-0C69-4982-B3B6-B04A14D79EDB" dmnElementRef="_F9685B74-0C69-4982-B3B6-B04A14D79EDB" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="404" y="464" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="dmnshape-_0D2BD7A9-ACA1-49BE-97AD-19699E0C9852" dmnElementRef="_0D2BD7A9-ACA1-49BE-97AD-19699E0C9852" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="404" y="311" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="dmnedge-_2F819B03-36B7-4DEB-AED6-2B46AE3ADB75" dmnElementRef="_2F819B03-36B7-4DEB-AED6-2B46AE3ADB75">
+        <di:waypoint x="504" y="489"/>
+        <di:waypoint x="404" y="336"/>
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</dmn:definitions>
+----
+
+To create this example DMN model in VSCode using the {PRODUCT} DMN modeler, follow these steps:
+
+.. Open the empty `PersonDecisions.dmn` file and in the upper-right corner of the DMN modeler, click the *Properties* icon and confirm that the DMN model *Name* is set to `PersonDecisions`.
+.. In the left palette, select *DMN Input Data*, drag the node to the canvas, and double-click the node to name it `Person`.
+.. In the left palette, select *DMN Decision*, drag the node to the canvas, double-click the node to name it `isAdult`, and link to it from the input node.
+.. Select the decision node to display the node options and click the *Edit* icon to open the DMN boxed expression editor to define the decision logic for the node.
+.. Click the undefined expression field and select *Decision Table*.
+.. Click the upper-left corner of the decision table to set the hit policy to *Unique*.
+.. Set the input and output columns so that the input source `Person.Age` with type `number` determines the age limit and the output target `isAdult` with type `boolean` determines adult status:
++
+.Example DMN decision table for `isAdult` decision
+image::kogito/creating-running/kogito-dmn-example-person-logic.png[Image of PersonDecisions decision table]
+.. In the upper tab options, select the *Data Types* tab and add the following `tPerson` structured data type and nested data types:
++
+.Example DMN data types
+image::kogito/creating-running/kogito-dmn-example-person-data-types.png[Image of PersonDecisions data types]
+.. After you define the data types, select the *Editor* tab to return to the DMN modeler canvas.
+.. Select the *Person* input node, click the *Properties* icon, and under *Information item*, set the *Data type* to `tPerson`.
+.. Select the *isAdult* decision node, click the *Properties* icon, and under *Information item*, confirm that the *Data type* is still set to `boolean`. You previously set this data type when you created the decision table.
+.. Save the DMN decision file.
+--
+. In the `src/main/resources` folder, add the following `PersonProcess.bpmn2` BPMN process model:
++
+--
+.Example `PersonProcess` BPMN process
+image::kogito/creating-running/kogito-bpmn-example-person.png[Image of person process diagram]
+
+This example process consists of the following basic BPMN components:
+
+* Start event
+* Business rule task
+* Exclusive gateway
+* User task
+* End events
+
+In VSCode (recommended), you can add the *{PRODUCT} Bundle* VSCode extension to model the business process with the {PRODUCT} BPMN modeler.
+
+To create this example process quickly, you can copy the following `PersonProcess.bpmn2` file content:
+
+.Example BPMN file
+[source,xml]
+----
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:bpsim="http://www.bpsim.org/schemas/1.0" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" id="_J4ElsVJgEDiScotxwBQ14Q" exporter="jBPM Process Modeler" exporterVersion="2.0" targetNamespace="http://www.omg.org/bpmn20">
+  <bpmn2:itemDefinition id="_personItem" structureRef="org.acme.Person"/>
+  <bpmn2:itemDefinition id="_isAdultItem" structureRef="Boolean"/>
+  <bpmn2:itemDefinition id="_UserTask_1_SkippableInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_PriorityInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_CommentInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_DescriptionInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_CreatedByInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_TaskNameInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_GroupIdInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_ContentInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_NotStartedReassignInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_NotCompletedReassignInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_NotStartedNotifyInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_NotCompletedNotifyInputXItem" structureRef="Object"/>
+  <bpmn2:itemDefinition id="_UserTask_1_personInputXItem" structureRef="org.acme.Person"/>
+  <bpmn2:itemDefinition id="_BusinessRuleTask_1_namespaceInputXItem" structureRef="java.lang.String"/>
+  <bpmn2:itemDefinition id="_BusinessRuleTask_1_modelInputXItem" structureRef="java.lang.String"/>
+  <bpmn2:itemDefinition id="_BusinessRuleTask_1_decisionInputXItem" structureRef="java.lang.String"/>
+  <bpmn2:itemDefinition id="_BusinessRuleTask_1_PersonInputXItem" structureRef="org.acme.Person"/>
+  <bpmn2:itemDefinition id="_BusinessRuleTask_1_isAdultOutputXItem" structureRef="Boolean"/>
+  <bpmn2:process id="persons" drools:packageName="org.acme" drools:version="1.0" drools:adHoc="false" name="Person Process" isExecutable="true" processType="Public">
+    <bpmn2:property id="person" itemSubjectRef="_personItem" name="person"/>
+    <bpmn2:property id="isAdult" itemSubjectRef="_isAdultItem" name="isAdult"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_1" sourceRef="StartEvent_1" targetRef="BusinessRuleTask_1"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_2" sourceRef="BusinessRuleTask_1" targetRef="ExclusiveGateway_1"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_3" sourceRef="ExclusiveGateway_1" targetRef="UserTask_1">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" language="http://www.java.com/java">return isAdult == false;</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="SequenceFlow_4" sourceRef="UserTask_1" targetRef="EndEvent_1"/>
+    <bpmn2:sequenceFlow id="SequenceFlow_5" sourceRef="ExclusiveGateway_1" targetRef="EndEvent_2">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression" language="http://www.java.com/java">return isAdult == true;</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:startEvent id="StartEvent_1" name="StartProcess">
+      <bpmn2:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>StartProcess</drools:metaValue>
+        </drools:metaData>
+      </bpmn2:extensionElements>
+      <bpmn2:outgoing>SequenceFlow_1</bpmn2:outgoing>
+    </bpmn2:startEvent>
+    <bpmn2:businessRuleTask id="BusinessRuleTask_1" name="Evaluate person" implementation="http://www.jboss.org/drools/dmn">
+      <bpmn2:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>Evaluate person</drools:metaValue>
+        </drools:metaData>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>SequenceFlow_1</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_2</bpmn2:outgoing>
+      <bpmn2:ioSpecification>
+        <bpmn2:dataInput id="BusinessRuleTask_1_namespaceInputX" drools:dtype="java.lang.String" itemSubjectRef="_BusinessRuleTask_1_namespaceInputXItem" name="namespace"/>
+        <bpmn2:dataInput id="BusinessRuleTask_1_decisionInputX" drools:dtype="java.lang.String" itemSubjectRef="_BusinessRuleTask_1_decisionInputXItem" name="decision"/>
+        <bpmn2:dataInput id="BusinessRuleTask_1_modelInputX" drools:dtype="java.lang.String" itemSubjectRef="_BusinessRuleTask_1_modelInputXItem" name="model"/>
+        <bpmn2:dataInput id="BusinessRuleTask_1_PersonInputX" drools:dtype="org.acme.Person" itemSubjectRef="_BusinessRuleTask_1_PersonInputXItem" name="Person"/>
+        <bpmn2:dataOutput id="BusinessRuleTask_1_isAdultOutputX" drools:dtype="Boolean" itemSubjectRef="_BusinessRuleTask_1_isAdultOutputXItem" name="isAdult"/>
+        <bpmn2:inputSet>
+          <bpmn2:dataInputRefs>BusinessRuleTask_1_namespaceInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>BusinessRuleTask_1_decisionInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>BusinessRuleTask_1_modelInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>BusinessRuleTask_1_PersonInputX</bpmn2:dataInputRefs>
+        </bpmn2:inputSet>
+        <bpmn2:outputSet>
+          <bpmn2:dataOutputRefs>BusinessRuleTask_1_isAdultOutputX</bpmn2:dataOutputRefs>
+        </bpmn2:outputSet>
+      </bpmn2:ioSpecification>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>BusinessRuleTask_1_namespaceInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">BusinessRuleTask_1_namespaceInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>BusinessRuleTask_1_decisionInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">isAdult</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">BusinessRuleTask_1_decisionInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>BusinessRuleTask_1_modelInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">PersonDecisions</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">BusinessRuleTask_1_modelInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:sourceRef>person</bpmn2:sourceRef>
+        <bpmn2:targetRef>BusinessRuleTask_1_PersonInputX</bpmn2:targetRef>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataOutputAssociation>
+        <bpmn2:sourceRef>BusinessRuleTask_1_isAdultOutputX</bpmn2:sourceRef>
+        <bpmn2:targetRef>isAdult</bpmn2:targetRef>
+      </bpmn2:dataOutputAssociation>
+    </bpmn2:businessRuleTask>
+    <bpmn2:exclusiveGateway id="ExclusiveGateway_1" name="Exclusive Gateway 1" gatewayDirection="Diverging">
+      <bpmn2:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>Exclusive Gateway 1</drools:metaValue>
+        </drools:metaData>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>SequenceFlow_2</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_5</bpmn2:outgoing>
+      <bpmn2:outgoing>SequenceFlow_3</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:userTask id="UserTask_1" name="Special handling for children">
+      <bpmn2:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>Special handling for children</drools:metaValue>
+        </drools:metaData>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>SequenceFlow_3</bpmn2:incoming>
+      <bpmn2:outgoing>SequenceFlow_4</bpmn2:outgoing>
+      <bpmn2:ioSpecification>
+        <bpmn2:dataInput id="UserTask_1_TaskNameInputX" drools:dtype="Object" itemSubjectRef="_UserTask_1_TaskNameInputXItem" name="TaskName"/>
+        <bpmn2:dataInput id="UserTask_1_personInputX" drools:dtype="org.acme.Person" itemSubjectRef="_UserTask_1_personInputXItem" name="person"/>
+        <bpmn2:dataInput id="UserTask_1_SkippableInputX" drools:dtype="Object" itemSubjectRef="_UserTask_1_SkippableInputXItem" name="Skippable"/>
+        <bpmn2:dataInput id="UserTask_1_PriorityInputX" drools:dtype="Object" itemSubjectRef="_UserTask_1_PriorityInputXItem" name="Priority"/>
+        <bpmn2:inputSet>
+          <bpmn2:dataInputRefs>UserTask_1_TaskNameInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>UserTask_1_personInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>UserTask_1_SkippableInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>UserTask_1_PriorityInputX</bpmn2:dataInputRefs>
+        </bpmn2:inputSet>
+      </bpmn2:ioSpecification>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>UserTask_1_TaskNameInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">ChildrenHandling</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">UserTask_1_TaskNameInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:sourceRef>person</bpmn2:sourceRef>
+        <bpmn2:targetRef>UserTask_1_personInputX</bpmn2:targetRef>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>UserTask_1_SkippableInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">true</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">UserTask_1_SkippableInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>UserTask_1_PriorityInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">1</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">UserTask_1_PriorityInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+    </bpmn2:userTask>
+    <bpmn2:endEvent id="EndEvent_1" name="End Event 1">
+      <bpmn2:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>End Event 1</drools:metaValue>
+        </drools:metaData>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>SequenceFlow_4</bpmn2:incoming>
+    </bpmn2:endEvent>
+    <bpmn2:endEvent id="EndEvent_2" name="End Event 2">
+      <bpmn2:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>End Event 2</drools:metaValue>
+        </drools:metaData>
+      </bpmn2:extensionElements>
+      <bpmn2:incoming>SequenceFlow_5</bpmn2:incoming>
+    </bpmn2:endEvent>
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram>
+    <bpmndi:BPMNPlane bpmnElement="persons">
+      <bpmndi:BPMNShape id="shape_EndEvent_2" bpmnElement="EndEvent_2">
+        <dc:Bounds height="56" width="56" x="622" y="201"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds height="56" width="56" x="622" y="105"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_UserTask_1" bpmnElement="UserTask_1">
+        <dc:Bounds height="78" width="134" x="449" y="94"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_ExclusiveGateway_1" bpmnElement="ExclusiveGateway_1">
+        <dc:Bounds height="56" width="56" x="365" y="105"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_BusinessRuleTask_1" bpmnElement="BusinessRuleTask_1">
+        <dc:Bounds height="71" width="141" x="180" y="97"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds height="56" width="56" x="80" y="105"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_shape_ExclusiveGateway_1_to_shape_EndEvent_2" bpmnElement="SequenceFlow_5">
+        <di:waypoint x="390" y="155"/>
+        <di:waypoint x="393" y="231"/>
+        <di:waypoint x="622" y="219"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_shape_UserTask_1_to_shape_EndEvent_1" bpmnElement="SequenceFlow_4">
+        <di:waypoint x="583" y="133"/>
+        <di:waypoint x="622" y="123"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_shape_ExclusiveGateway_1_to_shape_UserTask_1" bpmnElement="SequenceFlow_3">
+        <di:waypoint x="415" y="130"/>
+        <di:waypoint x="449" y="133"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_shape_BusinessRuleTask_1_to_shape_ExclusiveGateway_1" bpmnElement="SequenceFlow_2">
+        <di:waypoint x="321" y="132.5"/>
+        <di:waypoint x="365" y="130"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_shape_StartEvent_1_to_shape_BusinessRuleTask_1" bpmnElement="SequenceFlow_1">
+        <di:waypoint x="116" y="123"/>
+        <di:waypoint x="180" y="132.5"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmn2:relationship type="BPSimData">
+    <bpmn2:extensionElements>
+      <bpsim:BPSimData>
+        <bpsim:Scenario id="default" name="Simulationscenario">
+          <bpsim:ScenarioParameters/>
+          <bpsim:ElementParameters elementRef="UserTask_1">
+            <bpsim:TimeParameters>
+              <bpsim:ProcessingTime>
+                <bpsim:NormalDistribution mean="0" standardDeviation="0"/>
+              </bpsim:ProcessingTime>
+            </bpsim:TimeParameters>
+            <bpsim:ResourceParameters>
+              <bpsim:Availability>
+                <bpsim:FloatingParameter value="0"/>
+              </bpsim:Availability>
+              <bpsim:Quantity>
+                <bpsim:FloatingParameter value="0"/>
+              </bpsim:Quantity>
+            </bpsim:ResourceParameters>
+            <bpsim:CostParameters>
+              <bpsim:UnitCost>
+                <bpsim:FloatingParameter value="0"/>
+              </bpsim:UnitCost>
+            </bpsim:CostParameters>
+          </bpsim:ElementParameters>
+          <bpsim:ElementParameters elementRef="BusinessRuleTask_1">
+            <bpsim:TimeParameters>
+              <bpsim:ProcessingTime>
+                <bpsim:NormalDistribution mean="0" standardDeviation="0"/>
+              </bpsim:ProcessingTime>
+            </bpsim:TimeParameters>
+            <bpsim:ResourceParameters>
+              <bpsim:Availability>
+                <bpsim:FloatingParameter value="0"/>
+              </bpsim:Availability>
+              <bpsim:Quantity>
+                <bpsim:FloatingParameter value="0"/>
+              </bpsim:Quantity>
+            </bpsim:ResourceParameters>
+            <bpsim:CostParameters>
+              <bpsim:UnitCost>
+                <bpsim:FloatingParameter value="0"/>
+              </bpsim:UnitCost>
+            </bpsim:CostParameters>
+          </bpsim:ElementParameters>
+          <bpsim:ElementParameters elementRef="StartEvent_1">
+            <bpsim:TimeParameters>
+              <bpsim:ProcessingTime>
+                <bpsim:NormalDistribution mean="0" standardDeviation="0"/>
+              </bpsim:ProcessingTime>
+            </bpsim:TimeParameters>
+          </bpsim:ElementParameters>
+        </bpsim:Scenario>
+      </bpsim:BPSimData>
+    </bpmn2:extensionElements>
+    <bpmn2:source>_J4ElsVJgEDiScotxwBQ14Q</bpmn2:source>
+    <bpmn2:target>_J4ElsVJgEDiScotxwBQ14Q</bpmn2:target>
+  </bpmn2:relationship>
+</bpmn2:definitions>
+----
+
+To create this example BPMN process in VSCode using the {PRODUCT} BPMN modeler, follow these steps:
+
+.. Open the empty `PersonProcess.bpmn2` file and in the upper-right corner of the BPMN modeler, click the *Properties* icon and define the following properties:
+* *Process*: Set the following values:
+** *Name*: `Person Process`
+** *ID*: `persons`
+** *Package*: `org.acme`
+* *Process Data*: Add the following process variables:
+** `person` with the type `org.acme.Person` (Use the *Custom* data type option to define the custom type.)
+** `isAdult` with the type `Boolean`
+.. In the left palette, select *Activities* -> *Business Rule*, drag the task to the canvas, and link to it from the start event.
+.. Select the business rule task and define the following properties:
+
+* *General*: Set the rule task *Name* to `Evaluate person`.
+* *Implementation/Execution*: Set the following values:
+** *Rule Language*: `DMN`
+** *Namespace*: The `namespace` property value from the `PersonDecisions.dmn` file that you created previously, such as `\https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1`
+** *Decision Name*: `isAdult`
+** *DMN Model Name*: `PersonDecisions`
+* *Data Assignments*: Add the following assignments:
+** *Data Input*: Add a data input with the name `Person`, with the type `org.acme.Person`, and with the source `person`.
+** *Data Output*: Add a data output with the name `isAdult`, with the type `Boolean`, and with the source `isAdult`.
+.. In the left palette, select *Gateways* -> *Exclusive*, drag the gateway to the canvas, and link to it from the rule task.
+.. In the left palette, select *Activities* -> *User*, drag the user task to the canvas, and link to it from the exclusive gateway.
+.. Select the user task and define the following properties:
+
+* *General*: Set the user task *Name* to `Special handling for children`.
+* *Implementation/Execution*: Set the *Task Name* to `ChildrenHandling`, and add a data input with the name `person`, the type `org.acme.Person`, and the source `person`.
+.. In the left palette, select *End Events* -> *End*, drag two end events to the canvas, and link to one end event from the user task and to the other end event from the exclusive gateway.
+.. Select the connector that connects the exclusive gateway to the end event and for the *Implementation/Execution* property, set the *Condition Expression* to `Java` and enter the condition `return isAdult == true;`.
+.. Select the connector that connects the exclusive gateway to the user task and for the *Implementation/Execution* property, set the *Condition Expression* to `Java` and enter the condition to `return isAdult == false;`
+.. Save the BPMN process file.
+--
+
+[id="proc-kogito-designing-app-rule-units_{context}"]
+=== Using DRL rule units as an alternative decision service
+
+[role="_abstract"]
+As an alternative to using Decision Model and Notation (DMN) to define this example decision service, you can also use a Drools Rule Language (DRL) file implemented as a rule unit.
+
+A DRL rule unit is a module for rules and a unit of execution. A rule unit collects a set of rules with the declaration of the type of facts that the rules act on. A rule unit also serves as a unique namespace for each group of rules. A single rule base can contain multiple rule units. You typically store all the rules for a unit in the same file as the unit declaration so that the unit is self-contained. For more information about rule units, see {URL_DECISION_SERVICES}#con-drl-rule-units_kogito-drl-rules[_{DECISION_SERVICES}_].
+
+.Procedure
+. In the `src/main/resources` folder of your example {PRODUCT} project, instead of using a DMN file, add the following `PersonRules.drl` file:
++
+--
+.Example `PersonRules` DRL file
+[source]
+----
+package org.acme
+unit PersonRules;
+
+import org.acme.Person;
+
+rule isAdult
+	when
+		$person: /person[ age > 18 ]
+	then
+    modify($person) {
+    	setAdult(true)
+    };
+end
+----
+
+This example rule determines that any person who is older than 18 is classified as an adult. The rule file also declares that the rule belongs to the rule unit `PersonRules`. This is the rule unit that you define as part of the business rule task in the example BPMN process. When you build the project, the rule unit is generated and associated with the DRL file.
+
+The rule also defines the condition using OOPath notation. OOPath is an object-oriented syntax extension to XPath for navigating through related elements while handling collections and filtering constraints.
+
+You can also rewrite the same rule condition in a more explicit form using the traditional rule pattern syntax, as shown in the following example:
+
+.Example `PersonRules` DRL file using traditional notation
+[source]
+----
+package org.acme
+unit PersonRules;
+
+import org.acme.Person;
+
+rule isAdult
+	when
+		$person: Person(age > 18) from person
+	then
+    modify($person) {
+    	setAdult(true)
+    };
+end
+----
+--
+. In the `src/main/resources` folder, use the {PRODUCT} BPMN modeler in VSCode to open the `PersonProcess.bpmn2` process diagram that you created.
+. Select the `Evaluate person` business rule task and modify the following properties:
+
+* *Implementation/Execution*: Set the following values:
+** *Rule Language*: `DRL` (instead of `DMN`)
+** *Rule Flow Group*: `unit:org.acme.PersonRules`
++
+This rule unit syntax in the *Rule Flow Group* field specifies that you are using the `org.acme.PersonRules` rule unit instead of a traditional rule flow group. This is the rule unit that you referenced in the example DRL file. When you build the project, the business process implicitly declares the rule unit as part of the business rule task to execute the DRL file.
+* *Data Assignments*: Open the assignment settings and change the data input *Name* to `person` (instead of `Person`). This accommodates the input variable syntax required by the DRL file.
+. Select the connector that connects the exclusive gateway to the end event and for the *Implementation/Execution* property, verify that the *Condition Expression* is set to `Java` and change the condition to `return person.isAdult();`.
+. Select the connector that connects the exclusive gateway to the user task and for the *Implementation/Execution* property, verify that the *Condition Expression* is set to `Java` and change the condition `return ! person.isAdult();`.
+. Save the process file to update the model.
+
+[id="proc-kogito-testing-decision-logic_{context}"]
+== Testing the decision logic for a {PRODUCT} service using test scenarios
+
+[role="_abstract"]
+As you develop business decisions in your {PRODUCT} services, you can use test scenarios to validate the functionality of your decisions before you begin running and using your {PRODUCT} services. With a test scenario, you use data from your project to set given conditions and expected results based on one or more defined business decisions. When you run the scenario, the expected results and actual results of the decision instance are compared. If the expected results match the actual results, the test is successful. If the expected results do not match the actual results, then the test fails.
+
+You define test scenarios in `.scesim` (scenario simulation) files that you can model in Visual Studio Code (VSCode) using the *{PRODUCT} Bundle* VSCode extension. You can use one or multiple `.scesim` files in your {PRODUCT} project, and each `.scesim` file can contain one or multiple test scenarios based on the defined decision data.
+
+The example for this procedure uses a basic `PersonDecisionsTest.scesim` test scenario file that validates the decision logic in the example `PersonDecisions.dmn` Decision Model and Notation (DMN) model that you created previously.
+
+IMPORTANT: Test scenarios in {PRODUCT} currently support DMN decision services only. Test scenarios will support Drools Rule Language (DRL) decision services in a future release.
+
+.Prerequisites
+* You have created the `PersonDecisions.dmn` DMN model that determines whether a specified person is an adult or is underage. For more information about this DMN model, see xref:proc-kogito-designing-app_kogito-creating-running[].
+
+.Procedure
+. In the Maven project that contains your {PRODUCT} decision services, add the following dependency to the `pom.xml` file to enable test scenario execution for your project:
++
+.Dependency to enable test scenario execution
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-scenario-simulation</artifactId>
+  <scope>test</scope>
+</dependency>
+----
+. Navigate to the `src/main` folder of the project and create a `test` folder with the following subfolders. If you have an existing `test` folder structure, you can adapt the steps that follow according to your project layout.
++
+.Test folder structure for test scenarios
+[source]
+----
+src/main/test/
+          └── java/testscenario
+          └── resources
+----
+. Navigate to the `test/java/testscenario` folder and add the following `KogitoScenarioJunitActivatorTest.java` class:
++
+--
+.Activator class for test scenarios
+[source,java]
+----
+package testscenario;
+
+@org.junit.runner.RunWith(org.kogito.scenariosimulation.runner.KogitoJunitActivator.class)
+public class KogitoScenarioJunitActivatorTest {
+
+}
+----
+
+This activator class is a custom https://junit.org/junit5/[JUnit 5] runner that enables the execution of test scenario files in your {PRODUCT} project. When you run test scenarios, this class loads all `.scesim` files available in the project and executes them. For each row (scenario) in a test scenario file, the activator class generates a JUnit test result.
+--
+. Navigate to the `test/resources` folder and add the following `PersonDecisionsTest.scesim` test scenario file:
++
+--
+.Example test scenarios for `PersonDecisions` DMN decision logic
+image::kogito/creating-running/kogito-test-scenario-example-person.png[Image of PersonDecisionsTest test scenario]
+
+The *GIVEN* columns specify input conditions based on the corresponding decision service. The *EXPECT* column specifies the expected results of the decision service based on the defined *GIVEN* conditions. Each row in the table is a defined scenario with example values for the *GIVEN* and *EXPECT* definitions to test the decision logic of the corresponding decision service.
+
+This example test scenario file tests the decision logic for the following `PersonDecisions.dmn` model that you created previously. This DMN model determines whether a specified person is an adult or is underage.
+
+.Example `PersonDecisions` DMN decision requirements diagram (DRD)
+image::kogito/creating-running/kogito-dmn-example-person.png[Image of PersonDecisions decision diagram]
+
+.Example DMN boxed expression for `isAdult` decision
+image::kogito/creating-running/kogito-dmn-example-person-logic.png[Image of PersonDecisions decision table]
+
+In VSCode (recommended), you can add the *{PRODUCT} Bundle* VSCode extension to design the test scenarios with the test scenario modeler.
+
+To create these example test scenarios quickly, you can copy the following `PersonDecisionsTest.scesim` file content:
+
+.Example test scenario file
+[source,xml]
+----
+<ScenarioSimulationModel version="1.8">
+  <simulation>
+    <scesimModelDescriptor>
+      <factMappings>
+        <FactMapping>
+          <expressionElements/>
+          <expressionIdentifier>
+            <name>Index</name>
+            <type>OTHER</type>
+          </expressionIdentifier>
+          <factIdentifier>
+            <name>#</name>
+            <className>java.lang.Integer</className>
+          </factIdentifier>
+          <className>java.lang.Integer</className>
+          <factAlias>#</factAlias>
+          <columnWidth>70</columnWidth>
+          <factMappingValueType>NOT_EXPRESSION</factMappingValueType>
+        </FactMapping>
+        <FactMapping>
+          <expressionElements/>
+          <expressionIdentifier>
+            <name>Description</name>
+            <type>OTHER</type>
+          </expressionIdentifier>
+          <factIdentifier>
+            <name>Scenario description</name>
+            <className>java.lang.String</className>
+          </factIdentifier>
+          <className>java.lang.String</className>
+          <factAlias>Scenario description</factAlias>
+          <columnWidth>300</columnWidth>
+          <factMappingValueType>NOT_EXPRESSION</factMappingValueType>
+        </FactMapping>
+        <FactMapping>
+          <expressionElements>
+            <ExpressionElement>
+              <step>Person</step>
+            </ExpressionElement>
+            <ExpressionElement>
+              <step>Age</step>
+            </ExpressionElement>
+          </expressionElements>
+          <expressionIdentifier>
+            <name>1|1</name>
+            <type>GIVEN</type>
+          </expressionIdentifier>
+          <factIdentifier>
+            <name>Person</name>
+            <className>Person</className>
+          </factIdentifier>
+          <className>number</className>
+          <factAlias>Person</factAlias>
+          <expressionAlias>Age</expressionAlias>
+          <genericTypes/>
+          <columnWidth>114</columnWidth>
+          <factMappingValueType>NOT_EXPRESSION</factMappingValueType>
+        </FactMapping>
+        <FactMapping>
+          <expressionElements>
+            <ExpressionElement>
+              <step>Person</step>
+            </ExpressionElement>
+            <ExpressionElement>
+              <step>Name</step>
+            </ExpressionElement>
+          </expressionElements>
+          <expressionIdentifier>
+            <name>1|2</name>
+            <type>GIVEN</type>
+          </expressionIdentifier>
+          <factIdentifier>
+            <name>Person</name>
+            <className>Person</className>
+          </factIdentifier>
+          <className>string</className>
+          <factAlias>Person</factAlias>
+          <expressionAlias>Name</expressionAlias>
+          <genericTypes/>
+          <columnWidth>114</columnWidth>
+          <factMappingValueType>NOT_EXPRESSION</factMappingValueType>
+        </FactMapping>
+        <FactMapping>
+          <expressionElements>
+            <ExpressionElement>
+              <step>isAdult</step>
+            </ExpressionElement>
+          </expressionElements>
+          <expressionIdentifier>
+            <name>1|4</name>
+            <type>EXPECT</type>
+          </expressionIdentifier>
+          <factIdentifier>
+            <name>isAdult</name>
+            <className>isAdult</className>
+          </factIdentifier>
+          <className>boolean</className>
+          <factAlias>isAdult</factAlias>
+          <expressionAlias>value</expressionAlias>
+          <genericTypes/>
+          <columnWidth>114</columnWidth>
+          <factMappingValueType>NOT_EXPRESSION</factMappingValueType>
+        </FactMapping>
+      </factMappings>
+    </scesimModelDescriptor>
+    <scesimData>
+      <Scenario>
+        <factMappingValues>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Scenario description</name>
+              <className>java.lang.String</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>Description</name>
+              <type>OTHER</type>
+            </expressionIdentifier>
+            <rawValue class="string">Is an adult</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Person</name>
+              <className>Person</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|1</name>
+              <type>GIVEN</type>
+            </expressionIdentifier>
+            <rawValue class="string">20</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Person</name>
+              <className>Person</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|2</name>
+              <type>GIVEN</type>
+            </expressionIdentifier>
+            <rawValue class="string">"John Quark"</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>isAdult</name>
+              <className>isAdult</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|4</name>
+              <type>EXPECT</type>
+            </expressionIdentifier>
+            <rawValue class="string">true</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>#</name>
+              <className>java.lang.Integer</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>Index</name>
+              <type>OTHER</type>
+            </expressionIdentifier>
+            <rawValue class="string">1</rawValue>
+          </FactMappingValue>
+        </factMappingValues>
+      </Scenario>
+      <Scenario>
+        <factMappingValues>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Scenario description</name>
+              <className>java.lang.String</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>Description</name>
+              <type>OTHER</type>
+            </expressionIdentifier>
+            <rawValue class="string">Is underage</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Person</name>
+              <className>Person</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|1</name>
+              <type>GIVEN</type>
+            </expressionIdentifier>
+            <rawValue class="string">15</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Person</name>
+              <className>Person</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|2</name>
+              <type>GIVEN</type>
+            </expressionIdentifier>
+            <rawValue class="string">"Jenny Quark"</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>isAdult</name>
+              <className>isAdult</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|4</name>
+              <type>EXPECT</type>
+            </expressionIdentifier>
+            <rawValue class="string">false</rawValue>
+          </FactMappingValue>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>#</name>
+              <className>java.lang.Integer</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>Index</name>
+              <type>OTHER</type>
+            </expressionIdentifier>
+            <rawValue class="string">2</rawValue>
+          </FactMappingValue>
+        </factMappingValues>
+      </Scenario>
+    </scesimData>
+  </simulation>
+  <background>
+    <scesimModelDescriptor>
+      <factMappings>
+        <FactMapping>
+          <expressionElements/>
+          <expressionIdentifier>
+            <name>1|1</name>
+            <type>GIVEN</type>
+          </expressionIdentifier>
+          <factIdentifier>
+            <name>Empty</name>
+            <className>java.lang.Void</className>
+          </factIdentifier>
+          <className>java.lang.Void</className>
+          <factAlias>INSTANCE 1</factAlias>
+          <expressionAlias>PROPERTY 1</expressionAlias>
+          <columnWidth>114</columnWidth>
+          <factMappingValueType>NOT_EXPRESSION</factMappingValueType>
+        </FactMapping>
+      </factMappings>
+    </scesimModelDescriptor>
+    <scesimData>
+      <BackgroundData>
+        <factMappingValues>
+          <FactMappingValue>
+            <factIdentifier>
+              <name>Empty</name>
+              <className>java.lang.Void</className>
+            </factIdentifier>
+            <expressionIdentifier>
+              <name>1|1</name>
+              <type>GIVEN</type>
+            </expressionIdentifier>
+          </FactMappingValue>
+        </factMappingValues>
+      </BackgroundData>
+    </scesimData>
+  </background>
+  <settings>
+    <dmnFilePath>src/main/resources/PersonDecisions.dmn</dmnFilePath>
+    <type>DMN</type>
+    <dmnNamespace>https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1</dmnNamespace>
+    <dmnName>PersonDecisions</dmnName>
+    <skipFromBuild>false</skipFromBuild>
+    <stateless>false</stateless>
+  </settings>
+  <imports>
+    <imports/>
+  </imports>
+</ScenarioSimulationModel>
+----
+
+To create this example test scenario file in VSCode using the {PRODUCT} test scenario modeler, follow these steps:
+
+.. Open the empty `PersonDecisionsTest.scesim` file and in the *Create Test Scenario* window that appears, set the *Source type* to *DMN*, select the `PersonDecisions.dmn` DMN model from the drop-down options, and click *Create*.
++
+.Create test scenario definition
+image::kogito/creating-running/kogito-test-scenario-example-person-create.png[Image of Create Test Scenario window]
++
+The test scenario modeler automatically generates a scenario template based on the available DMN data types and fields that you defined in the DMN model.
++
+You can right-click the relevant header cells to insert or delete columns as needed to modify the table structure. You can also select the relevant header cells to modify or insert data objects from the *Test Tools* panel in the right toolbar.
+.. For this example, modify the generated test scenario header cells and specified data objects as needed to create the following test scenario template. Use the *Test Tools* panel in the right toolbar to select and insert the data objects as needed. Many of the header cell values might already be defined for you.
++
+* *GIVEN*: Verify that the first header cell (instance) is set to the *Person* data object and that the subheader cells (properties) are set to the *Age* and *Name* data objects. Delete any other columns under *GIVEN* that were automatically generated, if applicable.
+* *EXPECT*: Verify that the first header cell (instance) is set to the *isAdult* data object and that the subheader cell (property) is set to the *value* data object. Delete any other columns under *EXPECT* that were automatically generated, if applicable.
++
+.Define test scenario header cells
+image::kogito/creating-running/kogito-test-scenario-example-person-headers-create.png[Image of test scenario template]
+.. In row 1, create a test scenario with the following values:
++
+* *Scenario description*: `Is an adult`
+* *GIVEN*: Set the following values:
+** *Person* -> *Age*: `20`
+** *Person* -> *Name*: `John Quark`
+* *EXPECT*: Set the following value:
+** *isAdult* -> *value*: `true`
+
++
+This example scenario tests whether the person John Quark with 20 years of age is correctly identified by the `isAdult` DMN decision as an adult (`true`), based on the decision logic that adults are more than 18 years old.
+.. Right-click any cell in row 1, select *Insert row below*, and in row 2, create another test scenario with the following values:
++
+* *Scenario description*: `Is underage`
+* *GIVEN*: Set the following values:
+** *Person* -> *Age*: `15`
+** *Person* -> *Name*: `Jenny Quark`
+* *EXPECT*: Set the following value:
+** *isAdult* -> *value*: `false`
+
++
+This example scenario tests whether the person Jenny Quark with 15 years of age is correctly identified by the `isAdult` DMN decision as not an adult (`false`), based on the decision logic that adults are more than 18 years old.
+.. Save the test scenario file.
+--
+. After you define and save the test scenarios, in a command terminal, navigate to the project that contains your {PRODUCT} decision service and test scenarios and enter the following command to run the test scenarios:
++
+--
+.Run the test scenarios
+[source]
+----
+mvn clean test
+----
+
+A summary of the test scenario execution appears in the command terminal, and detailed reports are generated in the `target/surefire-reports` folder of your {PRODUCT} project.
+
+In the following example output, the test scenarios were executed successfully and encountered no errors:
+
+.Terminal output for successful test scenarios
+[source]
+----
+[INFO] --- maven-surefire-plugin:2.22.1:test (default-test) @ sample-kogito ---
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running testscenario.KogitoScenarioJunitActivatorTest
+./target/classes/PersonDecisions.dmn
+./src/main/resources/PersonDecisions.dmn
+./target/classes/PersonDecisions.dmn
+./src/main/resources/PersonDecisions.dmn
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.535 s - in testscenario.KogitoScenarioJunitActivatorTest
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  52.884 s
+[INFO] Finished at: 2020-05-05T15:19:53-04:00
+[INFO] ------------------------------------------------------------------------
+----
+
+The expected results defined in the test scenarios matched the actual results of the `isAdult` DMN decision instance in the `PersonDecisions.dmn` file. This match of expected and actual results for the decision instance means that the decision logic functions as intended.
+
+In the following example output, the test scenarios were executed and the `Is underage` scenario encountered an error:
+
+.Terminal output for a test scenario that encountered a decision error
+[source]
+----
+[INFO] --- maven-surefire-plugin:2.22.1:test (default-test) @ sample-kogito ---
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running testscenario.KogitoScenarioJunitActivatorTest
+./target/classes/PersonDecisions.dmn
+./src/main/resources/PersonDecisions.dmn
+./target/classes/PersonDecisions.dmn
+./src/main/resources/PersonDecisions.dmn
+[ERROR] Tests run: 2, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.534 s <<< FAILURE! - in testscenario.KogitoScenarioJunitActivatorTest
+[ERROR] #2: Is underage  Time elapsed: 0.06 s  <<< ERROR!
+org.drools.scenariosimulation.backend.runner.IndexedScenarioException: #2: Scenario 'Is underage' failed(/home/jsmith/sample-kogito/target/test-classes/PersonDecisionsTest.scesim)
+Caused by: org.drools.scenariosimulation.backend.runner.ScenarioException: Scenario 'Is underage' failed
+
+[INFO]
+[INFO] Results:
+[INFO]
+[ERROR] Errors:
+[ERROR]   KogitoScenarioJunitActivatorTest » IndexedScenario #2: Scenario 'Is underage' ...
+[INFO]
+[ERROR] Tests run: 2, Failures: 0, Errors: 1, Skipped: 0
+[INFO]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  6.521 s
+[INFO] Finished at: 2020-05-05T15:26:10-04:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:2.22.1:test (default-test) on project sample-kogito: There are test failures.
+[ERROR]
+[ERROR] Please refer to /home/jsmith/sample-kogito/target/surefire-reports for the individual test results.
+[ERROR] Please refer to dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+----
+
+The expected results defined in the `Is underage` test scenario did not match the actual results of the `isAdult` DMN decision instance in the `PersonDecisions.dmn` file. This mismatch of expected and actual results for the decision instance means that either the test scenario identified a flaw in the decision logic or the test scenario is incorrectly defined. In this case, the `Is underage` test scenario was intentionally modified incorrectly with an age of `20` instead of an age of `18` or less. Reverting the age to `15` as shown in the previous example resolves the error.
+--
+
+[id="proc-kogito-running-app_{context}"]
+== Running a {PRODUCT} service
+
+[role="_abstract"]
+After you design the business decisions and processes for your {PRODUCT} service, you can run your Quarkus or Spring Boot application in one of the following modes:
+
+* *Development mode*: For local testing. On Quarkus, development mode also offers live reload of your processes and decisions in your running applications for advanced debugging.
+* *JVM mode*: For compatibility with a Java virtual machine (JVM).
+ifdef::KOGITO-COMM[]
+* *Native mode*: (Quarkus only, requires GraalVM) For direct binary execution as native code.
+endif::[]
+
+.Procedure
+In a command terminal, navigate to the project that contains your {PRODUCT} service and enter one of the following commands, depending on your preferred run mode and application environment:
+
+* For development mode:
++
+--
+.On Quarkus
+[source]
+----
+$ mvn clean compile quarkus:dev
+----
+
+.On Sprint Boot
+[source]
+----
+$ mvn clean compile spring-boot:run
+----
+--
+* For JVM mode:
++
+--
+.On Quarkus and Spring Boot
+[source]
+----
+$ mvn clean package
+$ java -jar target/sample-kogito-1.0-SNAPSHOT-runner.jar
+----
+--
+ifdef::KOGITO-COMM[]
+* For native mode (requires GraalVM):
++
+--
+.On Quarkus only
+[source]
+----
+$ mvn clean package -Dnative
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
+--
+endif::[]
+
+[id="proc-kogito-interacting-app_{context}"]
+== Interacting with a running {PRODUCT} service
+
+[role="_abstract"]
+After your {PRODUCT} service is running, you can send REST API requests to interact with your application and execute your services according to how you set up the application.
+
+This example tests the `/persons` REST API endpoint that is automatically generated based on the `PersonProcess.bpmn2` business process, according to the decisions in the `PersonDecisions.dmn` file (or the rules in the `PersonRules.drl` file if you used a DRL rule unit).
+
+For this example, use a REST client, curl utility, or the Swagger UI configured for the application at http://localhost:8080/swagger-ui/ to send API requests with the following components:
+
+* *URL*: `\http://localhost:8080/persons`
+* *HTTP headers*:
+** `accept`: `application/json`
+** `content-type`: `application/json`
+* *HTTP methods*: `GET`, `POST`, or `DELETE`
+
+.Example POST request body to add an adult (JSON)
+[source,json]
+----
+{
+  "person": {
+    "name": "John Quark",
+    "age": 20
+  }
+}
+----
+
+.Example curl command to add an adult
+[source]
+----
+curl -X POST http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json' -d '{"person": {"name":"John Quark", "age": 20}}'
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+  "id": "3af806dd-8819-4734-a934-728f4c819682",
+  "person": {
+    "name": "John Quark",
+    "age": 20,
+    "adult": false
+  },
+  "isAdult": true
+}
+----
+
+.Swagger UI to interact with all application endpoints (\http://localhost:8080/swagger-ui/)
+image::kogito/creating-running/kogito-swagger-example.png[Image of Swagger UI for example application]
+
+This example procedure uses curl commands for convenience.
+
+.Procedure
+In a command terminal window that is separate from your running application, navigate to the project that contains your {PRODUCT} service and use any of the following curl commands with JSON requests to interact with your running service:
+
+NOTE: On Spring Boot, you might need to modify how your application exposes API endpoints in order for these example requests to function. For more information, see the `README` file included in the example Spring Boot project that you created for this tutorial.
+
+* Add an adult person:
++
+--
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json' -d '{"person": {"name":"John Quark", "age": 20}}'
+----
+
+.Example response
+[source]
+----
+{"id":"3af806dd-8819-4734-a934-728f4c819682","person":{"name":"John Quark","age":20,"adult":false},"isAdult":true}
+----
+--
+* Add an underage person:
++
+--
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json' -d '{"person": {"name":"Jenny Quark", "age": 15}}'
+----
+
+.Example response
+[source]
+----
+{"id":"8eef502b-012b-4628-acb7-73418a089c08","person":{"name":"Jenny Quark","age":15,"adult":false},"isAdult":false}
+----
+--
+* View active process instances:
++
+--
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/persons -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response
+[source]
+----
+[{"id":"8eef502b-012b-4628-acb7-73418a089c08","person":{"name":"Jenny Quark","age":15,"adult":false},"isAdult":false}]
+----
+--
+* View process instance details using the returned process UUID:
++
+--
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/persons/8eef502b-012b-4628-acb7-73418a089c08/tasks -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response (JSON)
+[source]
+----
+{"cdec4241-d676-47de-8c55-4ee4f9598bac":"ChildrenHandling"}
+----
+--
+* View task instance details using the returned process and task UUIDs:
++
+--
+.Example request
+[source]
+----
+curl -X GET http://localhost:8080/persons/8eef502b-012b-4628-acb7-73418a089c08/ChildrenHandling/cdec4241-d676-47de-8c55-4ee4f9598bac -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response
+[source]
+----
+{"person":{"name":"Jenny Quark","age":15,"adult":false},"name":"ChildrenHandling","id":"cdec4241-d676-47de-8c55-4ee4f9598bac"}
+----
+--
+* Complete the evaluation using the returned UUIDs:
++
+--
+.Example request
+[source]
+----
+curl -X POST http://localhost:8080/persons/8eef502b-012b-4628-acb7-73418a089c08/ChildrenHandling/cdec4241-d676-47de-8c55-4ee4f9598bac -H 'content-type: application/json' -H 'accept: application/json' -d '{}'
+----
+--
+
+ifdef::KOGITO-ENT[]
+// tag::ref-kogito-glossary[]
+[id="ref-kogito-glossary_{context}"]
+== {PRODUCT} glossary of terms
+
+[role="_abstract"]
+This glossary defines terms, concepts, or components that are referenced frequently in {PRODUCT} documentation or that have a unique meaning or function in {PRODUCT}.
+
+BPMN model::
+A definition of a business process workflow based on the https://www.omg.org/spec/BPMN/2.0/About-BPMN[Business Process Model and Notation (BPMN) specification]. BPMN is a standard established by the Object Management Group (OMG) for describing and modeling business processes. BPMN defines an XML schema that enables BPMN models to be shared between BPMN-compliant platforms and across organizations so that business analysts and business process developers can collaborate in designing and implementing BPMN process services. The BPMN standard is similar to and can be used together with the Decision Model and Notation (DMN) standard for designing and modeling business decisions.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_PROCESS_SERVICES}#chap-kogito-developing-process-services[_{PROCESS_SERVICES}_]
+
+business domain API::
+An API that your business develops and implements within business applications that contain {PRODUCT} services.
+
+business models::
+The collection of BPMN process models, DMN decision models, DRL rules, XLS decision tables, and any other assets that define the business logic for a {PRODUCT} service.
+
+CloudEvents format::
+A specification for describing event data in a common way. {PRODUCT} runtime events for messages, processes, tasks, and other application activities are published in https://cloudevents.io/[CloudEvents] format so that they can be consumed efficiently by other entities, such as the {PRODUCT} Data Index Service.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-kogito-runtime-events_kogito-configuring[_{PRODUCT} runtime events_]
+* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[_{PRODUCT} Data Index Service_]
+
+decision table::
+A set of business rules defined in a tabular format. Each row in a decision table is a rule, and each column is a condition, an action, or another rule attribute.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DECISION_SERVICES}#con-decision-tables_kogito-decision-tables[_Designing a decision service using spreadsheet decision tables_]
+
+development mode::
+A project build option that provides a fast feedback loop from code changes to a running system using hot reload. Development mode also enables debugging tools such as Swagger in {PRODUCT} runtime services.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CREATING_RUNNING}#proc-kogito-running-app_kogito-creating-running[_Running a {PRODUCT} service_]
+* https://quarkus.io/guides/maven-tooling[_Quarkus - Building applications with Maven_]
+
+DRL rule::
+A definition of a business rule in Drools Rule Language (DRL) format. DRL is a notation established by the https://www.drools.org/[Drools] open source business automation project for defining and describing business rules.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DECISION_SERVICES}#con-drl_kogito-drl-rules[_Designing a decision service using DRL rules_]
+
+DRL rule unit::
+A module for rules and a unit of execution. A rule unit collects a set of rules with the declaration of the type of facts that the rules act on. A rule unit also serves as a unique namespace for each group of rules. A single rule base can contain multiple rule units. You typically store all the rules for a unit in the same file as the unit declaration so that the unit is self-contained.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DECISION_SERVICES}#con-drl-rule-units_kogito-drl-rules[_Rule units in DRL_]
+
+DMN model::
+A definition of a business decision flow based on the https://www.omg.org/spec/DMN[Decision Model and Notation (DMN) specification]. DMN is a standard established by the Object Management Group (OMG) for describing and modeling operational decisions. DMN defines an XML schema that enables DMN models to be shared between DMN-compliant platforms and across organizations so that business analysts and business rules developers can collaborate in designing and implementing DMN decision services. The DMN standard is similar to and can be used together with the Business Process Model and Notation (BPMN) standard for designing and modeling business processes.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DECISION_SERVICES}#con-dmn_kogito-dmn-models[_Designing a decision service using DMN models_]
+
+event listener::
+A procedure or function in a program that reacts to a specified event, such as a completed node in a process or an executed decision.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#proc-event-listeners-registering_kogito-configuring[_Registering event listeners_]
+
+intelligent application::
+An optimized, integrated solution that uses {PRODUCT} services to implement business-domain knowledge.
+
+{PRODUCT} Audit Investigation Console::
+A user interface for monitoring and investigating Decision Model and Notation (DMN) model executions in {PRODUCT}.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DECISION_SERVICES}#con-audit-console_kogito-dmn-models[_{PRODUCT} Audit Investigation Console_]
+
+{PRODUCT} CLI::
+A command-line interface (CLI) that enables you to interact with the {PRODUCT} Operator for deployment tasks. The {PRODUCT} CLI also enables you to deploy {PRODUCT} services from source instead of relying on custom resources and YAML files.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DEPLOYING_ON_OPENSHIFT}#proc-kogito-deploying-on-ocp-kogito-cli_kogito-deploying-on-openshift[_Deploying {PRODUCT} on {OPENSHIFT} using the {PRODUCT} CLI_]
+
+////
+//@comment: Excluding for now due to current build issues with the extension and we aren't using it at this point. (Stetson, 2 Apr 2020)
+{PRODUCT} Quarkus extension::
+An extension required to generate and build a Maven project for {PRODUCT} runtime services on the Quarkus Java framework. You can add the {PRODUCT} extension during project creation using the Quarkus Maven plugin or using the https://code.quarkus.io/[Code with Quarkus] extension manager.
+////
+
+{PRODUCT} Data Index Service::
+A dedicated service in {PRODUCT} that stores all {PRODUCT} events related to processes, tasks, and domain data. The Data Index Service uses Apache Kafka messaging to consume CloudEvents messages from {PRODUCT} services, and then indexes the returned data for future GraphQL queries and stores the data in the Infinispan persistence store. The Data Index Service is at the core of all {PRODUCT} search, insight, and management capabilities.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[_{PRODUCT} Data Index Service_]
+
+{PRODUCT} domain-specific service::
+A business automation service for your business domain that you create using {PRODUCT}. You define the logic of this service using BPMN process models, DMN decision models, or other business models, and any other supported runtime configurations. In {PRODUCT} documentation, the general term for _{PRODUCT} services_ that you create refers to this type of service.
+
+{PRODUCT} Explainability Service::
+A dedicated service in {PRODUCT} that provides an explanation for the decisions made in {PRODUCT} services, in conjunction with the _{PRODUCT} Trusty Service_.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-trusty-service_kogito-configuring[_{PRODUCT} Trusty Service and Explainability Service_]
+
+{PRODUCT} Jobs Service::
+A dedicated service in {PRODUCT} for scheduling BPMN process events that are configured to be executed at a specified time. These time-based events in a process model are known as _jobs_. The Jobs Service does not execute a job, but triggers a callback that might be an HTTP request on a given endpoint specified for the job request or any other configured callback. The Jobs Service receives requests for job scheduling and then sends a request at the time specified on the job request.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-jobs-service_kogito-configuring[_{PRODUCT} Jobs Service_]
+
+{PRODUCT} Management Console::
+A user interface for viewing the state of all available {PRODUCT} services and managing process instances.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_PROCESS_SERVICES}#con-management-console_kogito-developing-process-services[_{PRODUCT} Management Console_]
+
+{PRODUCT} Operator::
+An operator that deploys {PRODUCT} services and manages the required {PRODUCT} infrastructure services. The {PRODUCT} Operator is based on the https://sdk.operatorframework.io/[Operator SDK] and automates many of the deployment steps for you.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-on-ocp_kogito-deploying-on-openshift[_{PRODUCT} on {OPENSHIFT}_]
+
+{PRODUCT} runtime event::
+A record of a significant change of state in the application domain at a point in time. {PRODUCT} emits runtime events as a result of successfully executed requests, or _units of work_, in a process instance or task instance in a process. {PRODUCT} can use these events to notify third parties about changes to the BPMN process instance and its data.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-kogito-runtime-events_kogito-configuring[_{PRODUCT} runtime events_]
+
+{PRODUCT} runtime persistence::
+An optional capability for preserving {PRODUCT} process data in your services across application restarts. {PRODUCT} persistence is based on https://infinispan.org/[Infinispan] and enables you to configure key-value storage definitions to persist data, such as active process nodes and process instance variables.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[_Persistence in {PRODUCT}_]
+
+{PRODUCT} supporting services::
+The collection of middleware infrastructure services and other dedicated services that help you build additional functionality in the {PRODUCT} domain-specific services that you develop. Key middleware infrastructure services in {PRODUCT} include Infinispan or MongoDB persistence and Apache Kafka reactive messaging. Dedicated services provided by {PRODUCT} include the {PRODUCT} Data Index Service, Jobs Service, Trusty Service, and Explainability Service.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[_{PRODUCT} Data Index Service_]
+* {URL_CONFIGURING_KOGITO}#con-jobs-service_kogito-configuring[_{PRODUCT} Jobs Service_]
+* {URL_CONFIGURING_KOGITO}#con-trusty-service_kogito-configuring[_{PRODUCT} Trusty Service and Explainability Service_]
+* {URL_CONFIGURING_KOGITO}#proc-infinispan-persistence-enabling_kogito-configuring[_Enabling Infinispan persistence for {PRODUCT} services_]
+* {URL_CONFIGURING_KOGITO}#proc-mongodb-persistence-enabling_kogito-configuring[_Enabling MongoDB persistence for {PRODUCT} services_]
+* {URL_CONFIGURING_KOGITO}#proc-messaging-enabling_kogito-configuring[_Enabling messaging for {PRODUCT} services_]
+
+{PRODUCT} Task Console::
+A user interface for viewing and interacting with user tasks in {PRODUCT} process services.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_PROCESS_SERVICES}#con-task-console_kogito-developing-process-services[_{PRODUCT} Task Console_]
+
+{PRODUCT} Trusty Service::
+A dedicated service in {PRODUCT} for storing all {PRODUCT} tracing events related to decisions made in {PRODUCT} services. The _{PRODUCT} Explainability Service_ is typically used in conjunction with this service.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-trusty-service_kogito-configuring[_{PRODUCT} Trusty Service and Explainability Service_]
+
+message event::
+A specified point in a business process where a defined message is used as the input (received) or output (sent) as a result of the process execution. For example, a message event might be an email sent to a specified user after a task is complete.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-kogito-runtime-events_kogito-configuring[_{PRODUCT} runtime events_]
+* {URL_CONFIGURING_KOGITO}#proc-messaging-enabling_kogito-configuring[_Enabling messaging for {PRODUCT} services_]
+
+MicroProfile Reactive Messaging::
+A specification for sending and receiving messages within and between microservices using message brokers. {PRODUCT} supports https://github.com/eclipse/microprofile-reactive-messaging[MicroProfile Reactive Messaging] for messaging in {PRODUCT} services, such as message events used as either input or output of business process execution.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#proc-messaging-enabling_kogito-configuring[_Enabling messaging for {PRODUCT} services_]
+
+middleware infrastructure services::
+The collection of supplemental services in {PRODUCT} that provide capabilities such as persistence, messaging, and security. Key middleware infrastructure services in {PRODUCT} include Infinispan persistence and Apache Kafka reactive messaging.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#proc-infinispan-persistence-enabling_kogito-configuring[_Enabling Infinispan persistence for {PRODUCT} services_]
+* {URL_CONFIGURING_KOGITO}#proc-messaging-enabling_kogito-configuring[_Enabling messaging for {PRODUCT} services_]
+
+process definition::
+A model that defines the components, workflow, and functionality for a business process, such as a BPMN model.
+
+process instance::
+An occurrence of a pending, running, or completed business process, based on the process definition.
+
+PROTO file (`.proto`)::
+A data library used for marshalling Java objects in protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) format. {PRODUCT} runtime persistence and communication with Infinispan are handled through a protobuf schema and generated marshallers.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[_Persistence in {PRODUCT}_]
+
+task lifecycle::
+A mechanism that moves a user task or custom task (work item) across various phases, such as *Active* -> *Claim* -> *Complete*. {PRODUCT} provides standard lifecycle phases for user tasks and also supports custom lifecycles or lifecycle phases.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_PROCESS_SERVICES}#con-task-lifecycle_kogito-developing-process-services[_Task lifecycle in {PRODUCT} processes_]
+
+unit of work::
+A component in {PRODUCT} that serves as the basis for {PRODUCT} runtime execution. Units of work capture all steps in a process and are used internally to move a process instance from one state to the next state. After all possible steps in a process are successfully executed, the final state is sent to the {PRODUCT} runtime as a runtime event. {PRODUCT} can then use these events to notify third parties about changes to the BPMN process instance and its data.
++
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-kogito-runtime-events_kogito-configuring[_{PRODUCT} runtime events_]
+
+////
+//@comment: Excluding for now due to current lack of support in Kogito. Will add once settled. (Stetson 2 Apr 2020)
+Work item::
+A custom task, typically a custom service task, that you can reuse across multiple business processes.
+
+Work item handler::
+A Java object that contains the implementation logic for a custom task (work item).
+////
+// tag::ref-kogito-glossary[]
+endif::[]
+
+ifdef::KOGITO-ENT[]
+[role="_additional-resources"]
+== Additional resources
+* {URL_DEPLOYING_ON_OPENSHIFT}[_{DEPLOYING_ON_OPENSHIFT}_]
+* {URL_DECISION_SERVICES}[_{DECISION_SERVICES}_]
+* {URL_PROCESS_SERVICES}[_{PROCESS_SERVICES}_]
+* {URL_CONFIGURING_KOGITO}[_{CONFIGURING_KOGITO}_]
+endif::[]
+
+ifdef::parent-context[:context: {parent-context}]
+ifndef::parent-context[:!context:]
