@@ -94,11 +94,9 @@ Example: `kogito.persistence.infinispan.template=MyTemplate`
 |Kafka messaging
 a|Incoming:
 
-**evacchi: update this**
-
 `mp.messaging.incoming.kogito_incoming_stream.connector`
 
-`mp.messaging.incoming.kogito_incoming_stream.topic`
+`mp.messaging.incoming.kogito_incoming_stream.topic` (optional, defaults to `kogito_incoming_stream`)
 
 `mp.messaging.incoming.kogito_incoming_stream.value.deserializer`
 
@@ -106,11 +104,19 @@ Outgoing:
 
 `mp.messaging.outgoing.kogito_outgoing_stream.connector`
 
-`mp.messaging.outgoing.kogito_outgoing_stream.topic`
+`mp.messaging.outgoing.kogito_outgoing_stream.topic` (optional, defaults to `kogito_outgoing_stream`)
 
 `mp.messaging.outgoing.kogito_outgoing_stream.value.serializer`
 
-For Spring Boot: `kafka.bootstrapAddress` (messages defined separately in JavaBeans)
+For Spring Boot: 
+
+`kafka.bootstrapAddress` (messages defined separately in JavaBeans)
+
+`kogito.addon.cloudevents.kafka.kogito_incoming_stream` (optional, defaults to `kogito_incoming_stream`)
+
+`kogito.addon.cloudevents.kafka.kogito_outgoing_stream` (optional, defaults to `kogito_outgoing_stream`)
+
+
 a|Defines the connector, topic, and deserializer for the incoming and outgoing messages and channels for reactive messaging with Apache Kafka
 
 Examples for incoming:
@@ -129,7 +135,14 @@ Examples for outgoing:
 
 `mp.messaging.outgoing.kogito_outgoing_stream.value.serializer=org.apache.kafka.common.serialization.StringSerializer`
 
-For Spring Boot: `kafka.bootstrapAddress=localhost:9092`
+For Spring Boot: 
+
+`kafka.bootstrapAddress=localhost:9092`
+
+`kogito.addon.cloudevents.kafka.kogito_incoming_stream=travellers`
+
+`kogito.addon.cloudevents.kafka.kogito_outgoing_stream=processedtravellers` 
+
 
 .7+|{PRODUCT} Jobs Service
 |`kogito.service.url`
@@ -429,6 +442,10 @@ For this procedure, the messaging is based on https://kafka.apache.org/[Apache K
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
 </dependency>
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-cloudevents-quarkus-addon</artifactId>
+</dependency>
 ----
 
 .On Spring Boot
@@ -438,6 +455,10 @@ For this procedure, the messaging is based on https://kafka.apache.org/[Apache K
   <groupId>org.springframework.kafka</groupId>
   <artifactId>spring-kafka</artifactId>
 </dependency>
+<dependency> 
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-cloudevents-spring-boot-addon</artifactId>
+</dependency> 
 <dependency>
   <groupId>com.fasterxml.jackson.core</groupId>
   <artifactId>jackson-databind</artifactId>
@@ -452,12 +473,12 @@ For this procedure, the messaging is based on https://kafka.apache.org/[Apache K
 .Configure incoming and outgoing messages and channels
 [source]
 ----
-mp.messaging.incoming.travellers.connector=smallrye-kafka
-mp.messaging.incoming.travellers.topic=travellers
-mp.messaging.incoming.travellers.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
-mp.messaging.outgoing.processedtravellers.connector=smallrye-kafka
-mp.messaging.outgoing.processedtravellers.topic=processedtravellers
-mp.messaging.outgoing.processedtravellers.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+mp.messaging.incoming.kogito_incoming_stream.connector=smallrye-kafka
+mp.messaging.incoming.kogito_incoming_stream.topic=travellers
+mp.messaging.incoming.kogito_incoming_stream.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+mp.messaging.outgoing.kogito_outgoing_stream.connector=smallrye-kafka
+mp.messaging.outgoing.kogito_outgoing_stream.topic=processedtravellers
+mp.messaging.outgoing.kogito_outgoing_stream.value.serializer=org.apache.kafka.common.serialization.StringSerializer
 ----
 +
 Replace `travellers` with the name of the message start event.
@@ -480,6 +501,8 @@ mp.messaging.outgoing.[channel-name].waitForWriteCompletion=false
 [source]
 ----
 kafka.bootstrapAddress=localhost:9092
+kogito.addon.cloudevents.kafka.kogito_incoming_stream=travellers
+kogito.addon.cloudevents.kafka.kogito_outgoing_stream=processedtravellers
 ----
 +
 .Create JavaBeans for incoming messages
