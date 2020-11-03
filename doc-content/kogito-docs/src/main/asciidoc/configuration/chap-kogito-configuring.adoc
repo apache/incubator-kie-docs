@@ -110,7 +110,7 @@ Outgoing:
 
 For Spring Boot: 
 
-`kafka.bootstrapAddress` (messages defined separately in JavaBeans)
+`kafka.bootstrapAddress` 
 
 `kogito.addon.cloudevents.kafka.kogito_incoming_stream` (optional, defaults to `kogito_incoming_stream`)
 
@@ -495,7 +495,7 @@ mp.messaging.outgoing.[channel-name].waitForWriteCompletion=false
 ----
 ====
 
-* *On Spring Boot*: Add the following property to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the messaging channel, and create the JavaBeans for the incoming and outgoing messages:
+* *On Spring Boot*: Add the following property to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the messaging channel:
 +
 .Configure messaging channel
 [source]
@@ -505,60 +505,6 @@ kogito.addon.cloudevents.kafka.kogito_incoming_stream=travellers
 kogito.addon.cloudevents.kafka.kogito_outgoing_stream=processedtravellers
 ----
 +
-.Create JavaBeans for incoming messages
-[source, java]
-----
-@EnableKafka
-@Configuration
-public class KafkaConsumerConfig {
-
-    @Value(value = "${kafka.bootstrapAddress}")
-    private String bootstrapAddress;
-
-    public ConsumerFactory<String, String> consumerFactory() {
-        Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "travellers-group");
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
-    }
-
-    @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
-        return factory;
-    }
-
-}
-----
-+
-.Create JavaBeans for outgoing messages
-[source, java]
-----
-@Configuration
-public class KafkaProducerConfig {
-
-    @Value(value = "${kafka.bootstrapAddress}")
-    private String bootstrapAddress;
-
-
-    @Bean
-    public ProducerFactory<String, String> producerFactory() {
-        Map<String, Object> configProps = new HashMap<>();
-        configProps.put(JsonSerializer.ADD_TYPE_INFO_HEADERS, false);
-        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapAddress);
-        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        return new DefaultKafkaProducerFactory<>(configProps);
-    }
-
-    @Bean
-    public KafkaTemplate<String, String> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
-    }
-
-}
-----
 --
 
 NOTE: As an alternative to enabling Kafka messaging explicitly in {PRODUCT} services, you can use the {PRODUCT} Operator to install the Kafka infrastructure and enable messaging for the service during deployment on OpenShift. For more information about enabling Kafka messaging with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-kafka_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
