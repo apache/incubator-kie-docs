@@ -1,0 +1,35 @@
+[id='better-property-reactivity']
+
+= Improved property reactivity in properties used as arguments for external functions
+
+In previous releases of {PRODUCT}, property reactivity analysis did not infer the name of properties used in an external function call. This behavior resulted in a static method that DRL rules could implement as a constraint, as shown in the following examples:
+
+.Example static method
+[source,java]
+----
+public static boolean isAdult(int age) {
+    return age >= 18;
+}
+----
+
+.Example DRL rule using the static method as a constraint
+----
+rule "Enable Adults" when
+    $p: Person( isAdult(age) )
+then
+    modify($p) { $p.setEnabled(true); }
+end
+----
+
+In this scenario, the {DECISION_ENGINE} could not infer that the property `age` of the fact `Person` was the only one used in constraint evaluation for that pattern and then enable property reactivity only on that property. As a result, the property reactivity analysis failed, so the {DECISION_ENGINE} was forced to enable reactivity for all the properties of the fact `Person` in that pattern, causing the rule to fall into an infinite loop.
+
+In this release of {PRODUCT}, the {DECISION_ENGINE} is enhanced to overcome this limitation. The {DECISION_ENGINE} now enables property reactivity on properties used as arguments for external
+functions invocation, and the previous scenario now does not occur.
+
+For more information about the {DECISION_ENGINE}, see
+ifdef::DM,PAM[]
+{URL_DEVELOPING_DECISION_SERVICES}#assembly-decision-engine[_{DECISION_ENGINE_DOC}_].
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+xref:decision-engine-con_decision-engine[].
+endif::[]
