@@ -332,6 +332,9 @@ To install the {PRODUCT} GitHub Chrome extension without the {PRODUCT} Business 
 +
 To run the {PRODUCT} Business Modeler desktop application without the {PRODUCT} Business Modeler Hub, you can download and extract the `business_modeler_preview___RELEASE__.zip` file from the https://github.com/kiegroup/kogito-tooling/releases[`kogito-tooling`] releases page in GitHub, and then follow the instructions in the application `README` file to run the application on your specific operating system.
 * *Business Modeler online viewer*: Enables you to view and design BPMN and DMN models online at `https://kiegroup.github.io/kogito-online/`. The online modeler supports the `.new` format, so you can also enter `bpmn.new` or `dmn.new` in a web browser to start designing a new BPMN or DMN model in the online modeler.
+* *Business Modeler standalone editors*: Enables you to view and design BPMN and DMN models embedded in your own web applications.
+To download the necessary files, you can use either our NPM artifacts at `https://www.npmjs.com/package/@kogito-tooling/kie-editors-standalone` or download the JavaScript files directly at `https://kiegroup.github.io/kogito-online/standalone/dmn/index.js` for the DMN standalone editor library and `https://kiegroup.github.io/kogito-online/standalone/bpmn/index.js` for the BPMN standalone editor library.
+
 
 [id="proc-kogito-modelers_{context}"]
 === Installing and using the {PRODUCT} Business Modeler Hub
@@ -399,6 +402,96 @@ After you install the VSCode extension bundle, any `.dmn` or `.bpmn2` files that
 If the {PRODUCT} DMN, BPMN, or test scenario modelers open only the XML source of a DMN, BPMN, or test scenario file and displays an error message, review the reported errors and the model file to ensure that all elements are correctly defined.
 
 NOTE: For new DMN or BPMN models, you can also enter `dmn.new` or `bpmn.new` in a web browser to design your DMN or BPMN model in the {PRODUCT} online modeler. When you finish creating your model, you can click *Download* in the online modeler page to import your DMN or BPMN file into your {PRODUCT} project in VSCode.
+
+[id="proc-kogito-standalone-editors_{context}"]
+=== Configuring the {PRODUCT} standalone editors
+
+[role="_abstract"]
+These editors are distributed in a self contained library that provides an all-in-one JavaScript file for each of them, that can be interacted using a comprehensive API for setup and control of them.
+
+.Installation
+There are three ways to install the standalone editors:
+
+. Use our hosted JS files directly
++
+* Add a `<script>` tag to you HTML page:
++
+----
+<script src="https://kiegroup.github.io/kogito-online/standalone/dmn/index.js"></script>
+<script src="https://kiegroup.github.io/kogito-online/standalone/bpmn/index.js"></script>
+----
+. Manual download of each JS file
++
+* Download the files:
+** DMN Editor: https://kiegroup.github.io/kogito-online/standalone/dmn/index.js
+** BPMN Editor: https://kiegroup.github.io/kogito-online/standalone/bpmn/index.js
+* Add them in your own hosted application
+* Add a `<script>` tag to you HTML page:
++
+----
+<script src="https://<YOUR_PAGE>/dmn/index.js"></script>
+----
+. NPM package
++
+* Available at https://www.npmjs.com/package/@kogito-tooling/kie-editors-standalone
+* To add it to your package.json file:
++
+----
+npm install @kogito-tooling/kie-editors-standalone
+----
+* To import each Editor library in your TypeScript file:
++
+----
+import * as DmnEditor from "@kogito-tooling/kie-editors-standalone/dist/dmn"
+import * as BpmnEditor from "@kogito-tooling/kie-editors-standalone/dist/bpmn"
+----
+
+.Usage
+The API is the same for both editors. Here is an example on how to open the DMN Editor:
+
+----
+const editor = DmnEditor.open({
+  container: document.getElementById("dmn-editor-container"),
+  initialContent: Promise.resolve(""),
+  readOnly: false,
+  origin: "",
+  resources: new Map([
+    [
+      "MyIncludedModel.dmn",
+      {
+        contentType: "text",
+        content: Promise.resolve("")
+      }
+    ]
+  ])
+});
+----
+
+Parameters description:
+
+* `container`: HTML element in which the Editor will be appended to.
+* `initialContent`: Promise to a DMN model content. Can be empty. Examples:
+** `Promise.resolve("")`
+** `Promise.resolve("<DIAGRAM_CONTENT_DIRECTLY_HERE>")`
+** `fetch("MyDmnModel.dmn").then(content => content.text())`
+* `readOnly` (optional, defaults to `false`): Use `false` to allow content edition, and `true` for read-only mode, in which the Editor will not allow changes. WARNING: Currently only the DMN Editor supports read-only mode.
+* `origin` (optional, defaults to `window.location.origin`): If for some reason your application needs to change this parameter, you can use it.
+* `resources` (optional, defaults to `[]`): Map of resources that will be provided for the Editor. This can be used, for instance, to provide included models for the DMN Editor or Work Item Definitions for the BPMN Editor. Each entry in the map has the resource name as its key and an object containing the `content-type` (`text` or `binary`) and the resource `content` (Promise similar to the `initialContent` parameter) as its value.
+
+The returned object will contain the methods needed to manipulate the Editor:
+
+* `getContent(): Promise<string>`: Returns a Promise containing the Editor content.
+* `setContent(content: string): void`: Sets the content of the Editor.
+* `getPreview(): Promise<string>`: Returns a Promise containing the SVG string of the current diagram.
+* `subscribeToContentChanges(callback: (isDirty: boolean) => void): (isDirty: boolean) => void`: Setup a callback to be called on every content change in the Editor. Returns the same callback to be used for unsubscription.
+* `unsubscribeToContentChanges(callback: (isDirty: boolean) => void): void`: Unsubscribes the passed callback from content changes.
+* `markAsSaved(): void`: Resets the Editor state, signalizing that its content is saved. This will also fire the subscribed callbacks of content changes.
+* `undo(): void`: Undo the last change in the Editor. This will also fire the subscribed callbacks of content changes.
+* `redo(): void`:  Redo the last undone change in the Editor. This will also fire the subscribed callbacks of content changes.
+* `close(): void`: Closes the Editor.
+* `getElementPosition(selector: string): Promise<Rect>`: Provides an alternative for extending the standard query selector when the element lives inside a canvas or even a video component. The `selector` parameter must follow the format of “<PROVIDER>:::<SELECT>“, e.g. “Canvas:::MySquare” or “Video:::PresenterHand”. Returns a `Rect` representing the element position.
+* `envelopeApi: MessageBusClientApi<KogitoEditorEnvelopeApi>`: Advanced Editor API. See more details in https://github.com/kiegroup/kogito-tooling/blob/master/packages/envelope-bus/src/api/index.ts#L43-L56[MessageBusClientApi] and https://github.com/kiegroup/kogito-tooling/blob/master/packages/editor/src/api/KogitoEditorEnvelopeApi.ts#L34-L41[KogitoEditorEnvelopeApi].
+
 
 [id="proc-kogito-creating-project_{context}"]
 == Creating a Maven project for a {PRODUCT} service
