@@ -1,0 +1,30 @@
+[id='better-property-reactivity']
+
+= Enabling property reactivity also on poperties used as arguments for external functions
+
+Property reactivity analysis wasn't able to infer the name of properties used in an external function call. This means that,
+having a static method like the following
+
+----
+public static boolean isAdult(int age) {
+    return age >= 18;
+}
+----
+
+and a rule using it in a constraint
+
+----
+rule "Enable Adults" when
+    $p: Person( isAdult(age) )
+then
+    modify($p) { $p.setEnabled(true); }
+end
+----
+
+the engine wasn't able to infer that the property `age` of the fact `Person` was the only one used in constraint evaluation
+for that pattern and enable property reactivity only on it. In this situation the property reactivity analysis just failed
+and then the engine was obliged to enable reactivity for all the properties of the fact `Person` in that pattern thus
+causing the former rule to fall into an infinite loop.
+
+This release overcomes this limitation, enabling property reactivity also on properties used as arguments for external
+functions invocation.
