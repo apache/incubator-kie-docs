@@ -2684,6 +2684,134 @@ curl -X POST localhost:8080/management/processes/orders/instances/ec44f890-d21d-
 --
 // end::con-bpmn-process-management-addon[]
 
+// tag::con-bpmn-process-svg-addon[]
+[id="con-bpmn-process-svg-addon_{context}"]
+== {PRODUCT} process SVG add-on
+
+[role="_abstract"]
+{PRODUCT} provides a `process-svg-addon` add-on that enables basic REST operations that you can use to visualize the process
+diagram and execution path of its process instances. These REST operations are supplemental to any other specific REST
+operations that you have configured in your application.
+
+The addon requires to have access to processes svg files. They can be placed at file system where the service rely or
+be available at classpath inside the structure 'META-INF/processSVG/'.
+
+Currently, this is a manually process but it's meant to be automaticaly generated. The VSCode extension provide controls
+to export the process to SVG format:
+
+.Export process diagram at VSCode
+image::kogito/bpmn/kogito-svg-addon-manually-export.png[Manually export to SVG at VSCode]
+
+Once we have the SVGs files generated, they have to renamed to {ProcessId}.svg, to be used by the addon, and placed in a folder in
+filesystem accessible by the service or in a 'META-INF/processSVG' folder at classpath.
+The addon configuration property _kogito.svg.folder.path_ will point to the File system foder, otherwise it will be
+searched at classPath.
+
+To configure process svg REST capabilities for your {PRODUCT} services, you can add the process SVG add-on as a dependency in the `pom.xml` file of your {PRODUCT} project:
+
+.Project dependency to enable process SVG REST operations
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>process-svg-quarkus-addon</artifactId>
+</dependency>
+----
+
+NOTE: Currently, this addon is only available for quarkus services but is planned add support to springboot projects too
+
+The addon provides this set of configuration properties:
+
+.Process SVG addon configuration properties in {PRODUCT}
+[cols="30%,70%"]
+|===
+|Property |Description
+
+a|`kogito.svg.folder.path`
+|Determines in which folder the addon have to search initial process diagrams.'ProcessId.svg'. If this property is not set, the svg would
+be searched in 'META-INF/processSVG/' location along the classpath.
+
+Default value: `empty`
+
+Example: `kogito.events.processinstances.enabled`
+
+a|`kogito.svg.color.completed`
+|Change the color to fill completed nodes when showing the execution path.
+
+Default value: `#C0C0C0`
+
+Example: `kogito.svg.color.completed=#C2C0C1`
+
+a|`kogito.svg.color.completed.border`
+|Change the color of completed nodes border, when showing the execution path.
+
+Default value: `#030303`
+
+Example: `kogito.svg.color.completed.border=#C2C0C1`
+
+a|`kogito.svg.color.active.border`
+|Change the color of active nodes border, when showing the execution path.
+
+Default value: `#FF0000`
+
+Example: `kogito.svg.color.active.border=#C2C0C1`
+
+|===
+
+The {PRODUCT} process SVG add-on provides REST support for the following basic operations:
+
+* *Process Diagram*: Get the process SVG diagram.
+* *Process instance execution path Diagram*:  Get Process SVG diagram displaying the executed path of a specific process instance
+
+
+=== REST endpoints for the process SVG add-on
+
+After you add the `process-svg-quarkus-addon` dependency to your {PRODUCT} project, add the configuration properties
+and run your {PRODUCT} services, you can use the following REST endpoints to get the process related SVGs.
+
+NOTE: These REST operations are supplemental to any other specific REST operations that you have configured in your application.
+
+For each endpoint, use a REST client, curl utility, or Swagger UI (if configured for the application) to send requests with the following components:
+
+==== Process Diagram
+--
+`[GET] /svg/processes/{processId}`
+
+Returns the SVG that shows the process diagram.
+
+* *Base URL*: `http://__HOST__:__PORT__/svg/processes/{processId}`
+* *Path parameters*:
+** `{processId}`: The string identifier of the process definition, such as `travels`
+* *HTTP methods*: `GET`
+
+.Example REST endpoint
+`\http://localhost:8380/svg/processes/travels`
+
+.Example curl request
+[source]
+----
+curl -X GET http://localhost:8380/svg/processes/travels -H 'content-type: application/json' -H 'accept: image/svg+xml'
+----
+--
+
+==== Process instance execution path Diagram*
+
+Return process SVG diagram, showing the process instance executed path:
+--
+`[GET] /svg/processes/{processId}/instances/{processInstanceId}/nodeInstances`
+
+.Example REST endpoint
+`\http://localhost:8380/svg/processes/travels/instances/2d115b55-ff30-42f0-ab21-e0651abb4d04`
+
+.Example curl request
+[source]
+----
+curl -X GET http://localhost:8380/svg/processes/travels/instances/2d115b55-ff30-42f0-ab21-e0651abb4d04 -H 'content-type: application/json' -H 'accept: image/svg+xml'
+----
+--
+
+// end::con-bpmn-process-svg-addon[]
+
 [id="con-management-console_{context}"]
 == {PRODUCT} Management Console
 
@@ -2699,6 +2827,12 @@ The Management Console requires your {PRODUCT} services to use the following {PR
 
 * *{PRODUCT} Data Index Service*: Enables the Management Console to access stored events related to processes and domain data from your {PRODUCT} services. The {PRODUCT} Data Index Service requires Infinispan persistence and Apache Kafka messaging for your {PRODUCT} service. For more information about the Data Index Service, see {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[_{CONFIGURING_KOGITO}_].
 * *{PRODUCT} process management add-on*: Enables the Management Console to interact with the process data from your {PRODUCT} services through the add-on REST endpoint `/management/processes`. If you do not enable this add-on for your {PRODUCT} service, the Management Console provides read-only access to your service data without the ability to modify instances, such as aborting process instances. For more information about the process management add-on, see xref:con-bpmn-process-management-addon_kogito-developing-process-services[].
+
+In order to visualize the process instance execution path at the management console it will be required to add:
+
+* *{PRODUCT} process SVG add-on*: Enables the SVG diagram, visualizating the process instance execution path. If you do
+not enable this add-on for your {PRODUCT} service, the Management Console won't be able to display the Diagram panel.
+For more information about the process management add-on, see xref:con-bpmn-process-svg-addon_kogito-developing-process-services[].
 
 [id="proc-management-console-using_{context}"]
 === Using the {PRODUCT} Management Console to manage process instances
@@ -2846,6 +2980,11 @@ The *Node Trigger* panel displays a list of nodes that you can select from the d
 +
 .Trigger a selected node
 image::kogito/bpmn/kogito-management-console-node-trigger-panel.png[Image of node trigger panel in Management Console]
++
+The *Process Diagram* panel displays the process diagram visualizing the execution path when the svg are provided.
++
+.Process Diagram
+image::kogito/bpmn/kogito-management-console-process-diagram.png[Image of process diagram panel in Management Console]
 +
 As a shortcut to view the process or application UI that triggered a process instance, you can select the *Endpoint* for the specified process instance.
 +
