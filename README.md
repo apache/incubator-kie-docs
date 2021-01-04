@@ -15,8 +15,6 @@ As a Kogito user, developer, or technical writer, you can contribute to Kogito d
 
 >**NOTE**: The other branches in the `kie-docs` repository contain the source of the Drools, jBPM, and OptaPlanner documentation, which are the basis for [Red Hat Decision Manager](https://access.redhat.com/documentation/en-us/red_hat_decision_manager/) and [Red Hat Process Automation Manager](https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/).
 
->**IMPORTANT**: Kogito is currently in early stages of development. Kogito releases contain features and APIs that might not be fully tested and that might change in future versions. Users are discouraged from using Kogito software in production or for business-critical workloads.
-
 Contents
 =================
 
