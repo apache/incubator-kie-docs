@@ -933,8 +933,6 @@ The {PRODUCT} Operator uses the following custom resources to deploy {PRODUCT} d
 
 ==== {PRODUCT} Operator dependencies on third-party operators
 
-===== {PRODUCT} Operator third-party operator instance creation
-
 The {PRODUCT} Operator uses the following third-party operators to deploy {PRODUCT} service infrastructure components:
 
 * *https://github.com/infinispan/infinispan-operator[Infinispan Operator]*: Used to deploy Infinispan Server instances for process data persistence in {PRODUCT} services
@@ -977,17 +975,13 @@ spec:
 
 In this example, if a Kafka cluster named `kogito-kafka` does not exist, then the {PRODUCT} Operator uses the Strimzi Operator to deploy the Kafka cluster for event messaging.
 
-If the required third-party operators are not available to the {PRODUCT} Operator during {PRODUCT} service runtime, then the {PRODUCT} Operator cannot generate the infrastructure components and the user must install these operators in the OpenShift or Kubernetes cluster.
+In case the required third-party operators are not available to the {PRODUCT} Operator during {PRODUCT} service runtime, then the {PRODUCT} Operator cannot generate the infrastructure components, and the user must install the operators in the OpenShift or Kubernetes cluster.
 
-===== {PRODUCT} Operator custom third-party operator instances
+You can also define your custom infrastructure resource and link it in the `KogitoInfra`. In addition to the operators supported for third-party operator instance creation, the {PRODUCT} Operator also allows you to interact with created instances using the following operator:
 
-You can also define your custom infrastructure resource and link it in the `KogitoInfra` resource.
+* *https://github.com/mongodb/mongodb-kubernetes-operator[MongoDB Operator]*: Used to interact with MongoDB instances for process data persistence in {PRODUCT} services
 
-Additionally to above operators supported for creation, the {PRODUCT} Operator also allows you to interact with instances created with this operator:
-
-* *https://github.com/mongodb/mongodb-kubernetes-operator[MongoDB Operator]*: Used to interact with MongoDB created instances for process data persistence in {PRODUCT} services
-
-If you have a custom infrastructure resource, you can specify it in the `spec.resource.name` and `spec.resource.namespace` configurations:
+You can specify your custom infrastructure resource in the `spec.resource.name` and `spec.resource.namespace` configurations:
 
 .Example {PRODUCT} infrastructure resource for custom messaging
 [source,yaml]
@@ -1004,10 +998,9 @@ spec:
     namespace: my-namespace
 ----
 
-In this example, the `KogitoInfra` custom resource does not deploy a Kafka cluster, but connects to the Kafka cluster named `my-kafka-instance` from the namespace `my-namespace` for event messaging.
+In this example, the `KogitoInfra` custom resource does not deploy a Kafka cluster, but connects to the Kafka cluster named `my-kafka-instance` from the `my-namespace` for event messaging.
 
-Similarly, you could define a `KogitoInfra` resource for MongoDB to allow your processes to connect to it.  
-In that case, you also need to define some extra properties into the `KogitoInfra` resource for the {PRODUCT} Operator to interact correctly with the MongoDB instance:
+Similarly, you can define a `KogitoInfra` resource for MongoDB to allow your processes to connect to it. In this case, you also need to define extra properties into the `KogitoInfra` resource for the {PRODUCT} Operator to interact with the MongoDB instance:
 
 .Example {PRODUCT} infrastructure resource for MongoDB
 [source,yaml]
@@ -1027,7 +1020,7 @@ spec:
     database: kogitodatabase
 ----
 
-The {PRODUCT} Data Index Service similarly depends on Infinispan and Kafka infrastructure components. Without Infinispan/MongoDB persistence and Kafka messaging, the Data Index Service cannot function properly. However, you can specify whether the Data Index Service uses the general infrastructure components that the {PRODUCT} Operator generates or a custom alternative for that component.
+The {PRODUCT} Data Index Service similarly depends on Infinispan and Kafka infrastructure components. Without Infinispan or MongoDB persistence and Kafka messaging, the Data Index Service cannot function properly. However, you can specify whether the Data Index Service uses the general infrastructure components that the {PRODUCT} Operator generates or a custom alternative for that component.
 
 For example, by default, the `KogitoSupportingService` custom resource that contains the `DataIndex` service type specifies the `infra` configuration for both Infinispan and Kafka in order to use the corresponding infrastructure components:
 
@@ -1048,7 +1041,7 @@ spec:
 
 You typically create `kogito-infinispan-infra` and `kogito-kafka-infra` custom resources before configuring the `KogitoSupportingService` custom resource that contains the `DataIndex` service type.
 
-You could also connect the {PRODUCT} Data Index Service to a MongoDB instance instead:
+You can also connect the {PRODUCT} Data Index Service to a MongoDB instance instead:
 
 .Default `DataIndex` resource configuration with MongoDB persistence and messaging
 [source,yaml]
@@ -1670,7 +1663,7 @@ infinispan.remote.auth-realm=
 === {PRODUCT} Operator interaction with MongoDB
 
 [role="_abstract"]
-{PRODUCT} Operator allows you to link a Kogito infrastructure to a custom MongoDB instance. You can setup the link for process data persistence in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
+{PRODUCT} Operator allows you to link a {PRODUCT} infrastructure to a custom MongoDB instance. You can set up the link for process data persistence in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
 
 .Enable MongoDB persistence using the {PRODUCT} CLI
 [source,subs="attributes+,+quotes"]
@@ -1724,7 +1717,7 @@ spec:
     - MONGODB_INFRA_NAME
 ----
 
-If you set up a custom MongoDB cluster and do no use a `KogitoInfra` resource, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
+If you set up a custom MongoDB cluster and do not use a `KogitoInfra` resource, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
 
 .Required environment variables for a custom MongoDB cluster
 [source]
@@ -1755,7 +1748,7 @@ spring.data.mongodb.host=
 spring.data.mongodb.port=
 ----
 
-On Spring Boot, we don't use `spring.data.mongodb.uri` as it does not work simultaneously with host, port and credentials properties (Spring Boot) and we do recommend to have the passwords in a Kubernetes secret.
+On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host, port, and credentials properties (Spring Boot). Also, it is recommended to set the password in Kubernetes.
 
 [role="_additional-resources"]
 .Additional resources
@@ -1874,7 +1867,7 @@ You can use the following {PRODUCT} command-line interface (CLI) operation to in
 $ {PRODUCT_INIT} install data-index --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__ -p __PROJECT_NAME__
 ----
 
-Instead of using the default Infinispan-based persistence in the {PRODUCT} Data Index Service, you can use a `KogitoInfra` linked to a MongoDB instance.
+Instead of using the default Infinispan-based persistence in the {PRODUCT} Data Index Service, you can use a `KogitoInfra` resource linked to a MongoDB instance.
 
 .Enable Data Index Service with MongoDB connection information
 [source,subs="attributes+,+quotes"]
@@ -1928,7 +1921,7 @@ The `application.properties` data of the `configMap` resource is mounted in a vo
 
 When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the Data Index Service.
 
-If your {PRODUCT} project uses the `infinispan-persistence-addon` or the `mongodb-persistence-addon` add-on to enable Infinispan/MongoDB persistence explicitly, the {PRODUCT} Operator mounts a volume based on a `configMap` resource created for you during the deployment of the service. This `configMap` resource has the `-protobuf-files` suffix and lists the protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) files that your service generated during build time.
+If your {PRODUCT} project uses the `infinispan-persistence-addon` or the `mongodb-persistence-addon` add-on to enable Infinispan or MongoDB persistence explicitly, the {PRODUCT} Operator mounts a volume based on a `configMap` resource created for you during the deployment of the service. This `configMap` resource has the `-protobuf-files` suffix and lists the protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) files that your service generated during build time.
 
 .Example `configMap` resource with protobuf files listed
 [source,yaml]
@@ -1955,7 +1948,7 @@ When a new persistent {PRODUCT} service is deployed, a new set of protobuf files
 Updated protobuf files are automatically refreshed by Kubernetes volumes, so if you add a new
 property in your domain data, this data is reflected automatically in the Data Index Service without restarts.
 
-If a {PRODUCT} service is removed, the associated protobuf files are also removed and are no longer visible in the Data Index Service, but the data is still persisted in Infinispan/MongoDB.
+If a {PRODUCT} service is removed, the associated protobuf files are also removed and are no longer visible in the Data Index Service, but the data is still persisted in Infinispan or MongoDB.
 
 [id="con-kogito-operator-with-jobs-service_{context}"]
 === {PRODUCT} Operator interaction with the {PRODUCT} Jobs Service
@@ -2201,10 +2194,10 @@ $ ./hack/install.sh
 NOTE: You must be logged in to the relevant Kubernetes cluster using the `kubectl` command. For more information about accessing Kubernetes clusters, see the https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/[Kubernetes documentation].
 
 --
-. If your {PRODUCT} project requires Infinispan/MongoDB persistence and Apache Kafka messaging, install the required Infinispan/MongoDB and Kafka infrastructure components, including the https://github.com/infinispan/infinispan-operator[Infinispan Operator], https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator] and the https://strimzi.io/docs/latest/[Strimzi Operator] (for Kafka cluster deployment with Zookeeper).
+. If your {PRODUCT} project requires Infinispan or MongoDB persistence and Apache Kafka messaging, install the required Infinispan or MongoDB, and Kafka infrastructure components, including the https://github.com/infinispan/infinispan-operator[Infinispan Operator], https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator] and the https://strimzi.io/docs/latest/[Strimzi Operator] (for Kafka cluster deployment with Zookeeper).
 +
 --
-The {PRODUCT} Operator cannot automatically install these operators for Infinispan/MongoDB persistence and Kafka messaging, so you must install the components manually, if needed.
+The {PRODUCT} Operator cannot automatically install these operators for Infinispan or MongoDB persistence, and Kafka messaging, so you must install the components manually if needed.
 
 For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 
