@@ -3470,6 +3470,96 @@ The Audit Investigation Console requires your {PRODUCT} services to use the foll
 * *{PRODUCT} Explainability Service*: Generates explainability data that is stored in the {PRODUCT} Trusty Service. The Audit Investigation Console accesses the explainbility information from tracing-event data for decisions in your {PRODUCT} services. The {PRODUCT} Explainbility Service requires Apache Kafka messaging for your {PRODUCT} service.
 * *{PRODUCT} Tracing decision add-on*: Enables the {PRODUCT} service to produce tracing events and publish the events to Apache Kafka. The add-on also exposes the REST endpoint `/predict` for the {PRODUCT} Explainbility Service.
 
+[id="ref-audit-console-configurations_{context}"]
+=== Supported configurations for the tracing add-on
+
+[role="_abstract"]
+The {PRODUCT} Audit Investigation Console requires the following project dependency for the tracing add-on:
+
+.Project dependency to enable tracing capability on Quarkus
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>tracing-decision-quarkus-addon</artifactId>
+</dependency>
+----
+
+.Project dependency to enable tracing capability on SpringBoot
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>tracing-decision-springboot-addon</artifactId>
+</dependency>
+----
+
+The tracing add-on enables the Trusty Service to interact with the decision-tracing data through the CloudEvents messages. The default configuration for the add-on pushes the decision-tracing events to the `kogito-tracing-decision` Apache Kafka topic and pushes the DMN models used by the {PRODUCT} service to the `kogito-tracing-model` topic under the group ID `kogito-runtimes`.
+
+To specify the Kafka bootstrap server for your {PRODUCT} service, set the following property in the `application.properties` file of your {PRODUCT} project:
+
+.Application property for Kafka bootstrap server
+[source,subs="+quotes"]
+----
+kafka.bootstrap.servers=http://__HOST__:__PORT__
+----
+
+NOTE: In a Kubernetes or OpenShift environment, if you specified the `KAFKA_BOOTSTRAP_SERVERS` environment variable in the relevant container, this application property in your {PRODUCT} project is not required.
+
+On Quarkus, to customize the tracing add-on configurations, use the format `mp.messaging.outgoing.kogito-tracing-decision.__PROPERTY_NAME__` for the decisions, and the format `mp.messaging.outgoing.kogito-tracing-model.__PROPERTY_NAME__` for the DMN models.
+
+For example, to change the topic name for the decision-tracing events, add the following line to the `application.properties` file:
+
+.Example property to change the topic name for decision-tracing events
+[source,subs="+quotes"]
+----
+mp.messaging.outgoing.kogito-tracing-decision.topic=my-kogito-tracing-decision
+----
+
+On SpringBoot, to customize the tracing add-on configurations, set the following properties in the `application.properties` file of your {PRODUCT} project as needed:
+
+.Application properties for the tracing add-on on SpringBoot
+[cols="30%,70%", options="header"]
+|===
+|Property
+|Description
+
+| `kogito.addon.tracing.decision.kafka.bootstrapAddress`
+| Sets the address used in the initial connection to find a bootstrap server on the cluster of `n` brokers
+
+Default value: None (must be set by user)
+
+| `kogito.addon.tracing.decision.kafka.topic.name`
+| Sets the topic name for the decision-tracing events
+
+Default value: `kogito-tracing-decision`
+
+| `kogito.addon.tracing.decision.kafka.topic.partitions`
+| Sets the number of partitions to use for the decision-tracing events topic
+
+Default value: `1`
+
+| `kogito.addon.tracing.decision.kafka.topic.replicationFactor`
+| Sets the factor of the data for the decision-tracing events topic
+
+Default value: `1`
+
+| `kogito.addon.tracing.decision.asyncEnabled`
+| Enables asynchronous callback with the results of the send (success or failure) instead of waiting to complete
+
+Default value: `true`
+
+| `kogito.addon.tracing.model.kafka.topic.name`
+| Sets the topic name for the DMN models used by the {PRODUCT} service
+
+Default value: `kogito-tracing-model`
+|===
+
+[role="_additional-resources"]
+.Additional resources
+* https://quarkus.io/guides/kafka[Using Apache Kafka with Reactive Messaging] in Quarkus documentation
+* https://kafka.apache.org/documentation/#producerconfigs[Producer Configs] in Apache Kafka documentation
+
 [id="proc-audit-console-using_{context}"]
 === Using the {PRODUCT} Audit Investigation Console to view DMN model execution details
 
@@ -3478,9 +3568,10 @@ You can use the {PRODUCT} Audit Investigation Console to view DMN model executio
 
 .Prerequisites
 * A {PRODUCT} Trusty Service instance and Explainbility Service instance are configured and running for your {PRODUCT} service. The Trusty Service enables the Audit Investigation Console to access stored DMN model execution data. The Trusty Service requires Infinispan persistence and Apache Kafka messaging for your {PRODUCT} service. For information about the Trusty Service, see {URL_CONFIGURING_KOGITO}#con-trusty-service_kogito-configuring[_{CONFIGURING_KOGITO}_].
-* The `pom.xml` file of your {PRODUCT} project contains the following dependency for the tracing add-on. This add-on enables the Trusty Service to interact with the decision-tracing data through the CloudEvents messages.
+* The `pom.xml` file of your {PRODUCT} project contains the following dependency for the tracing add-on:
 +
-.Project dependency to enable tracing capability and its configuration on Quarkus
+--
+.Project dependency to enable tracing capability on Quarkus
 [source,xml]
 ----
 <dependency>
@@ -3488,25 +3579,8 @@ You can use the {PRODUCT} Audit Investigation Console to view DMN model executio
   <artifactId>tracing-decision-quarkus-addon</artifactId>
 </dependency>
 ----
-The default configuration pushes the decision tracing events to the kafka topic `kogito-tracing-decision` and the DMN models used by the Kogito application to `kogito-tracing-model` under the group-id `kogito-runtimes`. Edit the `application.properties` file so to specify the kafka bootstrap server with the property 
-+
-[source,subs="+quotes"]
-----
-kafka.bootstrap.servers=
-----
-+
-NOTE: In a Kubernetes or OpenShift environment, if you specified the `KAFKA_BOOTSTRAP_SERVERS` environment variable in the relevant container, this application property in your {PRODUCT} project is not required.
 
-+
-For custom usage of the tracing addon, the configuration can be changed according to https://quarkus.io/guides/kafka[Quarkus Kafka] and https://kafka.apache.org/documentation/#producerconfigs[Apache Kafka] using the prefix `mp.messaging.outgoing.kogito-tracing-decision.<property_name>` for the decisions, and `mp.messaging.outgoing.kogito-tracing-model.<property_name>` for the models. For example, in order to change the topic name for the decision tracing events, add the following line to the `application.properties` file:
-+
-[source,subs="+quotes"]
-----
-mp.messaging.outgoing.kogito-tracing-decision.topic=my-kogito-tracing-decision
----- 
-
-+
-.Project dependency to enable tracing capability and its configuration on SpringBoot
+.Project dependency to enable tracing capability SpringBoot
 [source,xml]
 ----
 <dependency>
@@ -3514,53 +3588,38 @@ mp.messaging.outgoing.kogito-tracing-decision.topic=my-kogito-tracing-decision
   <artifactId>tracing-decision-springboot-addon</artifactId>
 </dependency>
 ----
-The default kafka topic names for the decisions and the models are the same of the Quarkus addon: `kogito-tracing-decision` and `kogito-tracing-model`. As well as the group id `kogito-runtimes`. 
-Edit the `application.properties` file to customize the configuration. The configuration properties are the following:
-+
-[cols="30%,70%", options="header"]
-|===
-|Property
-|Description
-
-| `kogito.addon.tracing.decision.kafka.bootstrapAddress`
-| The address used in the initial connection to find a bootstrap server on the cluster of `n` brokers (no default value, this is mandatory).
-
-| `kogito.addon.tracing.decision.kafka.topic.name`
-| The topic name for the decision tracing events (default `kogito-tracing-decision`).
-
-| `kogito.addon.tracing.decision.kafka.topic.partitions` 
-| How many partitions to use for the decision tracing events topic (default `1`).
-
-| `kogito.addon.tracing.decision.kafka.topic.replicationFactor`
-| The replication factor of the data for the decision tracing events topic (default `1`).
-
-| `kogito.addon.tracing.decision.asyncEnabled`
-| Use an asynchronous callback with the results of the send (success or failure) instead of waiting for the Future to complete (default `true`).
-
-| `kogito.addon.tracing.model.kafka.topic.name`
-| The topic name for the DMN models used by the kogito application (default `kogito-tracing-model`).
-|===
 --
-
-* The `application.properties` file of your {PRODUCT} project contains the following system property for the location where the {PRODUCT} service is deployed, such as `\http://localhost:8080`. This property enables the Explainability Service to generate the URLs to interact with {PRODUCT} and enrich tracing data with explainbility.
+* The `application.properties` file of your {PRODUCT} project contains the following system properties:
 +
+--
 .Application property for REST URLs
 [source,subs="+quotes"]
 ----
 kogito.service.url=http://__HOST__:__PORT__
 ----
-+
+
 NOTE: In a Kubernetes or OpenShift environment, if you specified the `KOGITO_SERVICE_URL` environment variable in the relevant container, this application property in your {PRODUCT} project is not required for the Explainability Service.
+
+.Application property for Kafka bootstrap server
+[source,subs="+quotes"]
+----
+kafka.bootstrap.servers=http://__HOST__:__PORT__
+----
+
+NOTE: In a Kubernetes or OpenShift environment, if you specified the `KAFKA_BOOTSTRAP_SERVERS` environment variable in the relevant container, this application property in your {PRODUCT} project is not required.
+
+The service URL property defines the location where the {PRODUCT} service is deployed, such as `\http://localhost:8080`. This property enables the Explainability Service to generate the URLs to interact with {PRODUCT} and enrich tracing data with explainbility. The bootstrap property defines the Kafka bootstrap server for your {PRODUCT} service.
+--
 
 .Procedure
 . Go to the https://repository.jboss.org/org/kie/kogito/trusty-ui/[`trusty-ui`] artifacts page, select the latest release of the {PRODUCT} Audit Investigation Console, and download the `trusty-ui-__VERSION__-runner.jar` file to a local directory.
 . In a command terminal, navigate to the directory location of the downloaded `trusty-ui-__VERSION__-runner.jar` file and enter the following command to run the Audit Investigation Console:
 +
 --
-.Running the Audit Investigation Console assuming that Trusty Service is running on http://localhost:8081
+.Running the Audit Investigation Console
 [source,subs="+quotes"]
 ----
-$ java -Dquarkus.http.port=9000 -Dkogito.trusty.http.url=http://localhost:8081 -jar trusty-ui-__VERSION__-runner.jar
+$ java -Dquarkus.http.port=9000 -Dkogito.trusty.http.url=http://__HOST__:__PORT__ -jar trusty-ui-__VERSION__-runner.jar
 ----
 
 [NOTE]
