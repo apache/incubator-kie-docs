@@ -1,0 +1,104 @@
+[id='clustering-kie-server-failover-proc_{context}']
+= Failover for jobs in the RUNNING state on failed {KIE_SERVER} nodes
+
+By default, when multiple {KIE_SERVER} nodes are running in cluster, if one {KIE_SERVER} node fails, other available {KIE_SERVER} nodes pick up any jobs in the `QUEUED` or `RETRYING` state from the failed {KIE_SERVER} node. However, these nodes do not pick up jobs that are in the `RUNNING` state.
+
+You can configure your cluster to failover all jobs when a {KIE_SERVER} node fails, including jobs in the `RUNNING` state, to be requeued to another {KIE_SERVER} node. If there is timer start node in a process on the failed {KIE_SERVER} node, the process is started on only one of the nodes.
+
+.Prerequisites
+* You have configured a {EAP} cluster for {KIE_SERVER}.
+
+.Procedure
+. Verify that the following subsystems are present in the `standalone.xml` file and add them if necessary:
++
+[source]
+----
+<extension module="org.jboss.as.clustering.infinispan"/>
+<extension module="org.jboss.as.clustering.jgroups"/>
+----
+. In the `standalone.xml` file, locate the `<subsystem xmlns="urn:jboss:domain:infinispan:9.0">` subsystem and create a container named `jbpm` that includes a cache named `nodes` and a cache names `jobs` as shown in the following example:
++
+[source]
+----
+<cache-container name="jbpm">
+  <transport lock-timeout="60000"/>
+  <replicated-cache name="nodes">
+      <transaction mode="BATCH"/>
+  </replicated-cache>
+  <replicated-cache name="jobs">
+      <transaction mode="BATCH"/>
+  </replicated-cache>
+</cache-container>
+----
+. Add the `jgroups` subsystem for the replicated and distributed caches:
++
+[source]
+----
+<subsystem xmlns="urn:jboss:domain:jgroups:7.0">
+    <channels default="ee">
+        <channel name="ee" stack="udp" cluster="ejb"/>
+    </channels>
+    <stacks>
+        <stack name="udp">
+            <transport type="UDP" socket-binding="jgroups-udp"/>
+            <protocol type="PING"/>
+            <protocol type="MERGE3"/>
+            <socket-protocol type="FD_SOCK" socket-binding="jgroups-udp-fd"/>
+            <protocol type="FD_ALL"/>
+            <protocol type="VERIFY_SUSPECT"/>
+            <protocol type="pbcast.NAKACK2"/>
+            <protocol type="UNICAST3"/>
+            <protocol type="pbcast.STABLE"/>
+            <protocol type="pbcast.GMS"/>
+            <protocol type="UFC"/>
+            <protocol type="MFC"/>
+            <protocol type="FRAG3"/>
+          </stack>
+          <stack name="tcp">
+            <transport type="TCP" socket-binding="jgroups-tcp"/>
+            <socket-protocol type="MPING" socket-binding="jgroups-mping"/>
+            <protocol type="MERGE3"/>
+            <socket-protocol type="FD_SOCK" socket-binding="jgroups-tcp-fd"/>
+            <protocol type="FD_ALL"/>
+            <protocol type="VERIFY_SUSPECT"/>
+            <protocol type="pbcast.NAKACK2"/>
+            <protocol type="UNICAST3"/>
+            <protocol type="pbcast.STABLE"/>
+            <protocol type="pbcast.GMS"/>
+            <protocol type="MFC"/>
+            <protocol type="FRAG3"/>
+          </stack>
+      </stacks>
+    </subsystem>
+----
+. Configure the following interface:
++
+[source]
+----
+<interface name="private">
+    <inet-address value="${jboss.bind.address.private:127.0.0.1}"/>
+</interface>
+----
+. Configure the following socket:
++
+[source]
+----
+<socket-binding-group name="standard-sockets" default-interface="public" port-offset="${jboss.socket.binding.port-offset:0}">
+
+<socket-binding name="jgroups-mping" interface="private" multicast-address="${jboss.default.multicast.address:230.0.0.4}" multicast-port="45700"/>
+
+  <socket-binding name="jgroups-tcp" interface="private" port="7600"/>
+  <socket-binding name="jgroups-tcp-fd" interface="private" port="57600"/>
+  <socket-binding name="jgroups-udp" interface="private" port="55200" multicast-address="${jboss.default.multicast.address:230.0.0.4}" multicast-port="45688"/>
+  <socket-binding name="jgroups-udp-fd" interface="private" port="54200"/>
+----
+. Open the `kie-server.war/WEB-INF/jboss-deployment-structure.xml` file in a text editor and add the `jboss-deployment-structure.xml` below the following dependencies:
++
+[source]
+----
+    <module name="org.infinispan" services="export"/>
+    <module name="org.jgroups" />
+----
+. Copy the `kie-server-services-jbpm-cluster.jar` in `kie-server.war/WEB-INF/lib`.
+//Do I copy the JAR from kie-server.war/WEB-INF/lib to another location?
+The cluster is now configured to use failover for jobs in the `RUNNING` state.
