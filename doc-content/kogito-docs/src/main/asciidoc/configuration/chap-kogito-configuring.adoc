@@ -562,59 +562,57 @@ Alternatively, you can implement the relevant event listener interface instead o
 --
 . After the event listener is configured, package the listener configuration class in the `src/main/java` folder of the relevant application or add it as dependency in the `pom.xml` file of the application to make the listener available.
 
+== Metrics monitoring in {PRODUCT} services
+
+[role="_abstract"]
+{PRODUCT} supports metrics monitoring modules powered by https://micrometer.io/[Micrometer], so you can export your metrics to any monitoring system supported by Micrometer. The primary monitoring module in {PRODUCT} is based on https://prometheus.io/[Prometheus], which enables you to collect and store metrics related to your {PRODUCT} assets, and then visualize those metrics through a configured data-graphing tool such as https://grafana.com/[Grafana].
+
+As an alternative to Prometheus, you can also use https://www.elastic.co/elastic-stack[Elasticsearch] metrics monitoring with your {PRODUCT} services, or you can subscribe to any Micrometer registry using an API exposed by the {PRODUCT} monitoring library.
+
 [id="proc-prometheus-metrics-monitoring_{context}"]
 === Enabling Prometheus metrics monitoring in {PRODUCT}
 
 [role="_abstract"]
-Prometheus is an open-source systems monitoring toolkit that you can use with {PRODUCT} to collect and store metrics related to the execution of Business Process Model and Notation (BPMN) process models, business rules, and Decision Model and Notation (DMN) decision models. You can access the stored metrics through a REST API call to a configured application endpoint, through the Prometheus expression browser, or using a data-graphing tool such as Grafana.
+https://prometheus.io/[Prometheus] is an open source systems monitoring toolkit that you can use with {PRODUCT} to collect and store metrics related to the execution of Business Process Model and Notation (BPMN) process models, business rules, and Decision Model and Notation (DMN) decision models. You can access the stored metrics through a REST API call to a configured application endpoint, through the Prometheus expression browser, or using a data-graphing tool such as https://grafana.com/[Grafana].
 
 .Prerequisites
 * Prometheus is installed. For information about downloading and using Prometheus, see the https://prometheus.io/docs/introduction/overview/[Prometheus documentation page].
 
 .Procedure
-. In your {PRODUCT} project, add following dependency to the `pom.xml` file to enable the Prometheus add-on:
+. In your {PRODUCT} project, depending on the framework you are using, add one of the following dependencies to the `pom.xml` file to enable the Prometheus add-on:
 +
-.Add dependency for Prometheus add-on
+--
+.Add dependency for Prometheus Quarkus add-on
 [source,xml,subs="+quotes"]
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-prometheus-addon</artifactId>
+  <artifactId>monitoring-prometheus-quarkus-addon</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
-. In the `src/main/java` folder of your project, create an event listener configuration class for the following Prometheus event listeners for monitoring processes or rules, such as a `ProcessEventListenerConfig` class or a `RuleEventListenerConfig` class:
-+
+
+.Add dependency for Prometheus Springboot add-on
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-prometheus-springboot-addon</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+
+By default, all stored metrics are exported to the configured monitoring module. If you want to disable certain metrics from being exported, you can set any of the following properties in the `application.properties` file of your {PRODUCT} project:
+
+.Enable or disable specific metrics from being exported
+[source]
+----
+kogito.monitoring.rule.useDefault=false
+kogito.monitoring.process.useDefault=false
+kogito.monitoring.interceptor.useDefault=false
+----
 --
-* Prometheus event listener for processes: `org.kie.addons.monitoring.process.PrometheusProcessEventListener`
-* Prometheus event listener for rules: `org.kie.addons.monitoring.rule.PrometheusMetricsDroolsListener`
 
-.Example process event listener for Prometheus
-[source, java]
-----
-@ApplicationScoped
-public class ProcessEventListenerConfig extends DefaultProcessEventListenerConfig {
-
-    public ProcessEventListenerConfig() {
-        super(new PrometheusProcessEventListener("acme-travels"));
-    }
-}
-----
-
-.Example rule event listener for Prometheus
-[source, java]
-----
-@ApplicationScoped
-public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
-
-    public RuleEventListenerConfig() {
-        super(new PrometheusMetricsDroolsListener("acme-travels"));
-    }
-}
-----
-
-The argument `acme-travels` in these listener examples identifies the relevant data when the data is returned from the {PRODUCT} runtime and grouped in Prometheus metrics.
---
 . In the `prometheus.yaml` file of your Prometheus distribution, add the following settings in the `scrape_configs` section to configure Prometheus to scrape metrics from your {PRODUCT} service:
 +
 --
@@ -622,7 +620,7 @@ The argument `acme-travels` in these listener examples identifies the relevant d
 [source,yaml,subs="+quotes"]
 ----
 scrape_configs:
-  job_name: 'travels'
+  job_name: 'kogito-metrics'
 metrics_path: /metrics
 static_configs:
   - targets: ["localhost:8080"]
@@ -705,6 +703,256 @@ image::kogito/configuration/prometheus-grafana-data.png[Image of application met
 * https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started with Prometheus]
 * https://prometheus.io/docs/visualization/grafana/[Grafana Support for Prometheus]
 * https://grafana.com/docs/grafana/latest/features/datasources/prometheus/[Using Prometheus in Grafana]
+
+[id="con-grafana-dashboards-metrics-monitoring_{context}"]
+==== Grafana dashboards for default metrics in {PRODUCT}
+
+[role="_abstract"]
+If any of the Prometheus monitoring modules are imported as dependencies in the `pom.xml` file of your {PRODUCT} project, some Grafana dashboards that use the default metrics are generated under the folder `target/classes/META-INF/resources/monitoring/dashboards/` every time you compile your {PRODUCT} service.
+
+Two types of dashboards are exported depending on the decision model used on the endpoints:
+
+* *Operational dashboard*: This dashboard is generated for DMN and DRL endpoints and contains the following metrics:
+** Total number of requests on the endpoint
+** Average number of requests per minute on the endpoint
+** Quantiles on the elapsed time to evaluate the requests
+** Exception details
++
+.Generated operational dashboard example
+image::kogito/configuration/grafana-operational-dashboard.png[Generated operational dashboard]
+
+* *Domain-specific dashboard*: Currently this dashboard is exported only for DMN endpoints. The domain-specific dashboard contains a graph for each type of decision in the DMN model. Only the built-in types `number`, `string`, and `boolean` are currently supported.
+** If the output of the decision is a `number` type, the graph contains the quantiles for that metric on a sliding window of 3 minutes.
+** If the output is a `boolean` or a `string` type, the graph contains the number of occurrences for each output on a 10-minute average.
++
+.Generated domain-specific dashboard example
+image::kogito/configuration/grafana-domain-dashboard.png[Generated domain specific dashboard]
+
+NOTE: Generated dashboards for BPMN resources are currently not supported.
+
+[id="proc-elastic-metrics-monitoring_{context}"]
+=== Enabling Elasticsearch metrics monitoring in {PRODUCT}
+
+[role="_abstract"]
+https://www.elastic.co/elastic-stack[Elasticsearch] is a distributed, open source search and analytics engine that you can use with {PRODUCT} to collect and store metrics as an alternative to Prometheus.
+
+.Prerequisites
+* Elastic is installed. For information about downloading and using Elastic, see the https://www.elastic.co/guide/index.html[Elastic Stack and Product Documentation].
+
+.Procedure
+. In your {PRODUCT} project, depending on the framework you are using, add one of the following dependencies to the `pom.xml` file to enable the Elastic add-on:
++
+--
+.Add dependency for Elastic Quarkus add-on
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-elastic-quarkus-addon</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+
+.Add dependency for Elastic Springboot add-on
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-elastic-springboot-addon</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+
+By default, all stored metrics are exported to the configured monitoring module. If you want to disable certain metrics from being exported, you can set any of the following properties in the `application.properties` file of your {PRODUCT} project:
+
+.Enable or disable specific metrics from being exported
+[source]
+----
+kogito.monitoring.rule.useDefault=false
+kogito.monitoring.process.useDefault=false
+kogito.monitoring.interceptor.useDefault=false
+----
+--
+
+. In the `application.properties` file of your {PRODUCT} project, edit the following properties as needed to configure the Elastic add-on:
++
+--
+.Application properties for Elastic monitoring add-on
+[cols="30%,70%", options="header"]
+|===
+|Property
+|Description
+
+| `kogito.addon.monitoring.elastic.host`
+| Specifies the host to send metrics to.
+
+Default value: `\http://localhost:9200`
+
+| `kogito.addon.monitoring.elastic.index`
+| Specifies the index to store metrics in.
+
+Default value: `micrometer-metrics`
+
+| `kogito.addon.monitoring.elastic.step`
+| Sets the interval at which metrics are sent to Elastic.
+
+Default value: Every 1 minute
+
+| `kogito.addon.monitoring.elastic.indexDateFormat`
+| Specifies the index date format used for rolling indices. This is appended to the index name, separated by the `indexDateSeparator`.
+
+Default value: `yyyy-MM`
+
+| `kogito.addon.monitoring.elastic.timestampFieldName`
+| Defines the name of the `timestamp` field.
+
+Default value: `@timestamp`
+
+| `kogito.addon.monitoring.elastic.autoCreateIndex`
+|  Determines whether to create the index automatically if it does not exist.
+
+Default value: `true`
+
+| `kogito.addon.monitoring.elastic.userName`
+| Specifies the Basic Authentication user name.
+
+| `kogito.addon.monitoring.elastic.password`
+|  Specifies the Basic Authentication password.
+
+| `kogito.addon.monitoring.elastic.pipeline`
+|  Specifies the ingest pipeline name.
+
+| `kogito.addon.monitoring.elastic.indexDateSeparator`
+| Specifies the separator between the index name and the date part.
+
+Default value: `-` (hyphen)
+
+| `kogito.addon.monitoring.elastic.documentType`
+| Specifies the type to be used when writing metrics documents to an index. This configuration is only used with Elasticsearch versions 6 and earlier.
+
+Default value: `doc`
+|===
+--
+
+[id="proc-custom-micrometer-metrics-monitoring_{context}"]
+=== Enabling metrics monitoring with a custom Micrometer registry in {PRODUCT}
+
+As an alternative to using the metrics monitoring modules provided in {PRODUCT}, you can subscribe to any Micrometer registry using an API exposed by the {PRODUCT} monitoring library. For the complete list of monitoring systems supported by Micrometer, see the https://micrometer.io/docs[Micrometer Documentation].
+
+As an example, this procedure demonstrates how you can export metrics to the https://micrometer.io/docs/registry/atlas[Micrometer Atlas] metrics database.
+
+.Procedure
+. In your {PRODUCT} project, depending on the framework you are using, add one of the following dependencies to the `pom.xml` file to enable the monitoring core add-on:
++
+--
+.Add dependency for monitoring core Quarkus add-on
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-core-quarkus-addon</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+
+.Add dependency for monitoring core Springboot add-on
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-core-springboot-addon</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+
+By default, all stored metrics are exported to the configured monitoring module. If you want to disable certain metrics from being exported, you can set any of the following properties in the `application.properties` file of your {PRODUCT} project:
+
+.Enable or disable specific metrics from being exported
+[source]
+----
+kogito.monitoring.rule.useDefault=false
+kogito.monitoring.process.useDefault=false
+kogito.monitoring.interceptor.useDefault=false
+----
+
+As an alternative, if you do not want to use the default listeners and the default metrics, you can import the core common module directly:
+
+.Add dependency for monitoring core common module
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>monitoring-core-common</artifactId>
+  <version>__KOGITO_VERSION__</version>
+</dependency>
+----
+
+[NOTE]
+====
+To write custom metrics, you can create custom event listeners and then register your Micrometer `Meter` object to the global `CompositeMeterRegistry` using the method `getDefaultMeterRegistry` of the class `org.kie.kogito.monitoring.core.common.MonitoringRegistry`. For more information about registering custom event listeners in {PRODUCT}, see xref:proc-event-listeners-registering_kogito-configuring[].
+====
+--
+
+. Depending on the registry that you want to use, add the relevant dependency to the `pom.xml` file of your {PRODUCT} project. For this example, the Atlas registry requires the following dependency:
++
+.Add dependency for Atlas registry
+[source,xml,subs="+quotes"]
+----
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-atlas</artifactId>
+  <version>__MICROMETER_VERSION__</version>
+</dependency>
+----
+
+. Subscribe to your registry using the method `addRegistry` of the class `org.kie.kogito.monitoring.core.common.MonitoringRegistry`. For example, on Quarkus, create the following `AtlasProvider.java` class in your {PRODUCT} project:
++
+.Example Java class on Quarkus to subscribe to a custom Micrometer registry for {PRODUCT} core monitoring
+[source,java]
+----
+import java.time.Duration;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Singleton;
+
+import com.netflix.spectator.atlas.AtlasConfig;
+import io.micrometer.atlas.AtlasMeterRegistry;
+import io.micrometer.core.instrument.Clock;
+import io.quarkus.runtime.Startup;
+import org.kie.kogito.monitoring.core.common.MonitoringRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@Singleton
+@Startup
+public class AtlasProvider {
+
+    private AtlasMeterRegistry registry;
+    private static final Logger logger = LoggerFactory.getLogger(AtlasProvider.class);
+
+    private AtlasProvider() {
+    }
+
+    @PostConstruct
+    public void setUp() {
+        AtlasConfig atlasConfig = new AtlasConfig() {
+            @Override
+            public Duration step() {
+                return Duration.ofSeconds(10);
+            }
+
+            @Override
+            public String get(String k) {
+                return null; // accept the rest of the defaults
+            }
+        };
+        registry = new AtlasMeterRegistry(atlasConfig, Clock.SYSTEM);
+        MonitoringRegistry.addRegistry(registry);
+        registry.start();
+        logger.info("Atlas registry added to monitoring addon and started.");
+    }
+}
+----
 
 // tag::con-persistence[]
 [id="con-persistence_{context}"]
