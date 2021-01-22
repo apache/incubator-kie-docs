@@ -959,7 +959,13 @@ public class AtlasProvider {
 == Persistence in {PRODUCT} services
 
 [role="_abstract"]
-{PRODUCT} supports runtime persistence for preserving process data in your services, such as active process nodes and process instance variables, across application restarts. For {PRODUCT} persistence, you can use https://infinispan.org/[Infinispan] and configure key-value storage definitions to persist data, or you can use https://www.mongodb.com/[MongoDB] to persist data in a document-based format.
+{PRODUCT} supports runtime persistence for preserving process data in your services, such as active process nodes and process instance variables, across application restarts.
+
+For {PRODUCT} persistence, you can use one of the following supported persistence stores:
+
+* https://infinispan.org/[*Infinispan*]: (Default) Persists data using configured key-value storage definitions
+* https://www.mongodb.com/[*MongoDB*]: Persists data using a document-based format
+* https://kafka.apache.org/documentation/streams/[*Kafka Streams*]: (Quarkus only) Persists data in Kafka clusters
 
 Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
 
@@ -1339,21 +1345,23 @@ For example {PRODUCT} services with MongoDB persistence, see the following examp
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-mongodb-persistence-springboot[`process-mongodb-persistence-springboot`]: Example on Spring Boot
 // end::proc-mongodb-persistence-enabling[]
 
-// tag::proc-kafka-persistence-enabling[]
-[id="proc-mongodb-persistence-enabling_{context}"]
+// tag::proc-kafka-streams-persistence-enabling[]
+[id="proc-kafka-streams-persistence-enabling_{context}"]
 === Enabling Kafka Streams persistence for {PRODUCT} services
 
 [role="_abstract"]
-As an alternative persistence type for {PRODUCT} runtime, you can now enable persistence for your Quarkus based {PRODUCT} services using Kafka Streams. For {PRODUCT} persistence with Kafka Streams, you must have a Kafka installed and running in order to enable persistence.
+For Quarkus-based {PRODUCT} services, as an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence using https://kafka.apache.org/documentation/streams/[Kafka Streams]. Kafka Streams is a client library for building applications and microservices, where the input and output data are stored in Kafka clusters. For {PRODUCT} persistence with Kafka Streams, you must have Kafka installed and running in order to enable persistence.
+
+NOTE: Kafka Streams persistence is supported for only Quarkus-based {PRODUCT} services.
 
 .Prerequisites
 * https://kafka.apache.org/[Apache Kafka] is installed and includes any required topics. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
 
 .Procedure
-. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
+. Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
 +
 --
-.On Quarkus
+.Project dependency to enable Kafka Streams persistence (Quarkus only)
 [source,xml,subs="attributes+,+quotes"]
 ----
 <dependency>
@@ -1362,27 +1370,24 @@ As an alternative persistence type for {PRODUCT} runtime, you can now enable per
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
 </dependency>
 ----
-
 --
-. Add following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure Kafka persistence and to connect to the relevant Kafka server.
+. Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure Kafka persistence and to connect to the relevant Kafka server.
 +
 --
-Replace the server host, port information according to your Kafka installation.
+Replace the server host and port information according to your Kafka installation.
 
-.On Quarkus
+.Application properties to enable Kafka Streams persistence (Quarkus only)
 [source]
 ------
 kogito.persistence.type=kafka
 kafka.bootstrap.servers=localhost:9092
 ------
-
 --
 
-For example {PRODUCT} services with Kafka persistence, see the following example applications in GitHub:
+For an example {PRODUCT} service with Kafka persistence, see the following example application in GitHub:
 
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-persistence-quarkus[`process-kafka-persistence-quarkus`]: Example on Quarkus
-// end::proc-kafka-persistence-enabling[]
-
+// end::proc-kafka-streams-persistence-enabling[]
 
 [id="con-data-index-service_{context}"]
 == {PRODUCT} Data Index Service
