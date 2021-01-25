@@ -1,0 +1,65 @@
+[id='case-management-variable-tags-con']
+= Variable tags
+Variables store data that is used during runtime. For greater control over variable behavior, you can tag case variables and local variables in the BPMN case file. Tags are simple string values that you add as metadata to a specific variable.
+
+{PRODUCT} supports the following tags for case and local variables:
+
+* *required*: Sets the variable as a requirement in order to start a case. If a case starts without the required variable, {PRODUCT} generates a `VariableViolationException` error.
+* *readonly*: Indicates that the variable is for informational purposes only and can be set only once during case execution. If the value of a read-only variable is modified at any time, {PRODUCT} generates a `VariableViolationException` error.
+* *restricted*: A tag that is used with the `VariableGuardProcessEventListener` to indicate that permission is granted to modify the variable based on the existing role. The *restricted* tag can be replaced by any other tag name if using the second constructor that passes the new tag name.
+
+The `VariableGuardProcessEventListener` class is extended from the `DefaultProcessEventListener` class and supports two different constructors:
+
+** `VariableGuardProcessEventListener`
++
+[source,java]
+----
+public VariableGuardProcessEventListener(String requiredRole, IdentityProvider identityProvider) {
+    this("restricted", requiredRole, identityProvider);
+}
+----
+
+** `VariableGuardProcessEventListener`
++
+[source,java]
+----
+public VariableGuardProcessEventListener(String tag, String requiredRole, IdentityProvider identityProvider) {
+    this.tag = tag;
+    this.requiredRole = requiredRole;
+    this.identityProvider = identityProvider;
+}
+----
+
++
+Therefore, you must add an event listener to the session with the allowed role name and identity provider that returns the user role as shown in the following example:
+
++
+[source,java]
+----
+ksession.addEventListener(new VariableGuardProcessEventListener("AdminRole", myIdentityProvider));
+----
+
++
+In the previous example, the `VariableGuardProcessEventListener` method verifies if a variable is tagged with a security constraint tag (`restricted`). If the user does not have the required role (for example, `AdminRole`), then {PRODUCT} generates a `VariableViolationException` error.
+NOTE: The variable tags that appear in the {CENTRAL} UI, for example `internal`, `input`, `output`, `business-relevant`, and `tracked` are not supported in {PRODUCT}.
+
+You can add the tag directly to the BPMN process source file as a `customTags` metadata property with the tag value defined in the format `![CDATA[__TAG_NAME__]]`.
+
+For example, the following BPMN process applies the `required` tag to an `approved` process variable:
+
+.Example variable tagged in the BPMN modeler
+image::cases/variable-tags.png[Image of variable tags in BPMN modeler]
+
+.Example variable tagged in a BPMN file
+[source,xml]
+----
+<bpmn2:property id="approved" itemSubjectRef="ItemDefinition_9" name="approved">
+  <bpmn2:extensionElements>
+    <tns:metaData name="customTags">
+      <tns:metaValue><![CDATA[required]]></tns:metaValue>
+    </tns:metaData>
+  </bpmn2:extensionElements>
+</bpmn2:property>
+----
+
+You can use more than one tag for a variable where applicable. You can also define custom variable tags in your BPMN files to make variable data available to {PRODUCT} process event listeners. Custom tags do not influence the {PRODUCT} runtime as the standard variable tags do and are for informational purposes only. You define custom variable tags in the same `customTags` metadata property format that you use for standard {PRODUCT} variable tags.
