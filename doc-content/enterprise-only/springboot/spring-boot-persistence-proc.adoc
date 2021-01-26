@@ -1,5 +1,5 @@
 [id='spring-boot-persistence-proc_{context}']
-= Configuring plugable variable persistence
+= Configuring pluggable variable persistence
 
 You can provide an arbitrary entity manager for configured process variable persistence in your {PRODUCT} Spring Boot application. To do this, add named beans during the object marshalling strategy resolution. This configuration defines a second entity manager factory based on a qualifier second data source. This process will not interfere with the primary data source.
 
@@ -9,9 +9,9 @@ You can provide an arbitrary entity manager for configured process variable pers
 
 .Procedure
 
-. Add the following `auditEntityManager` JavaBean to your java class:
+. Add a customized entity manager JavaBean to your java class. The following example shows an entity manager Java Bean called `auditEntityManager` for a Java Persistence API (JPA) data source:
 +
-[source]
+[source, java]
 ----
     @Bean(name = "auditEntityManager")
     @ConditionalOnMissingBean(name = "auditEntityManager")
@@ -19,15 +19,15 @@ You can provide an arbitrary entity manager for configured process variable pers
         return EntityManagerFactoryHelper.create(applicationContext,
                                                  dataSource,
                                                  jpaProperties,
-                                                 AUDIT_PERSISTENCE_UNIT_NAME,
-                                                 PERSISTENCE_XML_LOCATION);
+                                                 "custom-persistent-unit",
+                                                 "classpath:/META-INF/persistence.xml");
     }
 ----
 The `auditEntityManager` becomes an implicit context parameter when the parameters are resolved during MVFLEX Expression Language (MVEL) evaluation.
 
 . Add the following marshalling stragegy to the `kie-deployment-descriptor.xml` file:
 +
-[source]
+[source, xml]
 ----
  <marshalling-strategy>
     <resolver>mvel</resolver>
