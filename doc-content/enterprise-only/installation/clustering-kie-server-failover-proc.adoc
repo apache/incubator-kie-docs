@@ -10,16 +10,16 @@ You can configure your cluster to include jobs in the RUNNING state, to be reque
 
 .Procedure
 . Prepare the environment:
-.. Verify that the following subsystems are present in the `standalone.xml` file and add them if necessary:
+.. Verify that the following extensions are present in the `standalone.xml` file and add them if necessary:
 +
-[source]
+[source, xml]
 ----
 <extension module="org.jboss.as.clustering.infinispan"/>
 <extension module="org.jboss.as.clustering.jgroups"/>
 ----
-.. In the `standalone.xml` file, locate the `<subsystem xmlns="urn:jboss:domain:infinispan:9.0">` subsystem and create a container named `jbpm` that includes a cache named `nodes` and a cache names `jobs` as shown in the following example:
+.. In the `standalone.xml` file, locate the `<subsystem xmlns="urn:jboss:domain:infinispan:9.0">` subsystem and create a container named `jbpm` that includes a cache named `nodes` and a cache named `jobs` as shown in the following example:
 +
-[source]
+[source, xml]
 ----
 <cache-container name="jbpm">
   <transport lock-timeout="60000"/>
@@ -33,7 +33,7 @@ You can configure your cluster to include jobs in the RUNNING state, to be reque
 ----
 .. Add the `jgroups` subsystem for the replicated and distributed caches:
 +
-[source]
+[source, xml]
 ----
 <subsystem xmlns="urn:jboss:domain:jgroups:7.0">
     <channels default="ee">
@@ -74,7 +74,7 @@ You can configure your cluster to include jobs in the RUNNING state, to be reque
 ----
 .. Configure the following interface:
 +
-[source]
+[source, xml]
 ----
 <interface name="private">
     <inet-address value="${jboss.bind.address.private:127.0.0.1}"/>
@@ -82,10 +82,8 @@ You can configure your cluster to include jobs in the RUNNING state, to be reque
 ----
 .. Configure the following socket:
 +
-[source]
+[source, xml]
 ----
-<socket-binding-group name="standard-sockets" default-interface="public" port-offset="${jboss.socket.binding.port-offset:0}">
-
 <socket-binding name="jgroups-mping" interface="private" multicast-address="${jboss.default.multicast.address:230.0.0.4}" multicast-port="45700"/>
 
   <socket-binding name="jgroups-tcp" interface="private" port="7600"/>
@@ -96,11 +94,11 @@ You can configure your cluster to include jobs in the RUNNING state, to be reque
 . Install the Infinispan extension:
 .. Open the `kie-server.war/WEB-INF/jboss-deployment-structure.xml` file in a text editor and add the `jboss-deployment-structure.xml` below the following dependencies:
 +
-[source]
+[source, xml]
 ----
     <module name="org.infinispan" services="export"/>
     <module name="org.jgroups" />
 ----
 .. Copy the `kie-server-services-jbpm-cluster.jar` in `kie-server.war/WEB-INF/lib`.
-//Do I copy the JAR from kie-server.war/WEB-INF/lib to another location?
+
 The cluster is now configured to use failover for jobs in the `RUNNING` state.
