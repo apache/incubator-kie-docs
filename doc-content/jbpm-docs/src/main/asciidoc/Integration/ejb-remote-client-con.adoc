@@ -1,0 +1,65 @@
+[id='ejb-remote-client-con_{context}']
+= Remote EJB client
+
+Remote client support is provided by implementation of the `ClientServiceFactory` interface that is a facade for application server specific code:
+
+.Definition of the `ClientServiceFactory` interface
+[source,java]
+----
+/**
+ * Generic service factory used for remote lookups that are usually container specific.
+ *
+ */
+public interface ClientServiceFactory {
+	
+	/**
+	 * Returns unique name of given factory implementation
+	 * @return
+	 */
+	String getName();
+
+	/**
+	 * Returns remote view of given service interface from selected application
+	 * @param application application identifier on the container
+	 * @param serviceInterface remote service interface to be found
+	 * @return
+	 * @throws NamingException
+	 */
+	<T> T getService(String application, Class<T> serviceInterface) throws NamingException;
+}
+----
+
+You can dynamically register implementations using the `ServiceLoader` mechanism. By default, only one implementation is available in {EAP}. 
+
+Each `ClientServiceFactory` implementation must provide a name. This name is  used to register it within the client registry. You can look up implementations by name.
+
+The following code gets the default {EAP} remote client:
+
+.Getting the default {EAP} remote client
+[source,java]
+----
+// Retrieve a valid client service factory
+ClientServiceFactory factory = ServiceFactoryProvider.getProvider("JBoss");
+
+// Set the application variable to the module name
+String application = "sample-war-ejb-app";
+
+// Retrieve the required service from the factory
+DeploymentServiceEJBRemote deploymentService = factory.getService(application, DeploymentServiceEJBRemote.class);
+----
+
+After retrieving a service you can use its methods.
+
+When working with {EAP} and the remote client you can add the following Maven dependency to bring in all EJB client libraries:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.jboss.as</groupId>
+  <artifactId>jboss-as-ejb-client-bom</artifactId>
+  <version>{EAP_VERSION_LONG}.Final</version> <!-- use the valid version for the server you run on -->
+  <optional>true</optional>
+  <type>pom</type>
+</dependency>
+----
+
