@@ -664,11 +664,12 @@ NOTE: Alternatively, you can also build the project in native mode (requires Gra
 endif::[]
 
 --
-The following resources are generated in the `target` folder in preparation for deployment from binary build:
+The following resources are generated in the `target/quarkus-app` folder in preparation for deployment from binary build:
 
-* `travels-1.0-SNAPSHOT.jar`: Standard JAR file with only the classes and resources of the project.
-* `travels-1.0-SNAPSHOT-runner.jar`: Executable JAR file for the project. Note that this is not an uber-JAR file because the dependencies are copied into the `target/lib` directory.
-* `lib`: Directory with project dependencies.
+* `quarkus-app/app/travels.jar`: Standard JAR file with only the classes and resources of the project.
+* `quarkus-app/quarkus`: Contains generated resources needed by Quarkus application to run.
+* `quarkus-app/lib`: Directory with project dependencies.
+* `quarkus-app/quarkus-run.jar`: Executable JAR file for the project. Note that this is not an uber-JAR file because it needs also the folders `quarkus-app/app`, `quarkus-app/quarkus` and `quarkus-app/lib` to work.
 . From the same `kogito-travel-agency/extended/travels` directory location where you built the project, enter the following command to deploy the travels service to OpenShift using a binary build:
 +
 --
@@ -682,6 +683,8 @@ Uploading directory "target/" as binary input for the build ...
 Uploading finished
 build.build.openshift.io/travels-1 started
 ----
+
+NOTE: The Kogito images are handling the binary build directly from `target` folder, managing the fact that the jar is in `target/quarkus-app` folder.
 
 You can use the following command to check the logs of the builder pod if needed:
 
@@ -1431,9 +1434,12 @@ build.build.openshift.io/travels-1 started
 
 In this example, the following resources were generated in the `target` folder in preparation for the binary build:
 
-* `travels-1.0-SNAPSHOT.jar`: Standard JAR file with only the classes and resources of the project.
-* `travels-1.0-SNAPSHOT-runner.jar`: Executable JAR file for the project. Note that this is not an uber-JAR file because the dependencies are copied into the `target/lib` directory.
-* `lib`: Directory with project dependencies.
+* `quarkus-app/app/travels.jar`: Standard JAR file with only the classes and resources of the project.
+* `quarkus-app/quarkus`: Contains generated resources needed by Quarkus application to run.
+* `quarkus-app/lib`: Directory with project dependencies.
+* `quarkus-app/quarkus-run.jar`: Executable JAR file for the project. Note that this is not an uber-JAR file because it needs also the folders `quarkus-app/app`, `quarkus-app/quarkus` and `quarkus-app/lib` to work.
+
+NOTE: The Kogito images are handling the binary build directly from `target` folder, managing the fact that the jar is in `target/quarkus-app` folder.
 
 After the binary build is complete, the result is pushed to the `travels` Image Stream that was created by the {PRODUCT} Operator and triggers a new deployment.
 
@@ -2323,8 +2329,10 @@ FROM quay.io/kiegroup/kogito-runtime-jvm:latest
 
 ENV RUNTIME_TYPE quarkus
 
-COPY target/*-runner.jar $KOGITO_HOME/bin
-COPY target/lib $KOGITO_HOME/bin/lib
+COPY target/quarkus-app/lib/ $KOGITO_HOME/bin/lib/
+COPY target/quarkus-app/*.jar $KOGITO_HOME/bin
+COPY target/quarkus-app/app/ $KOGITO_HOME/bin/app/
+COPY target/quarkus-app/quarkus/ $KOGITO_HOME/bin/quarkus/
 ----
 
 .On Spring Boot: `springboot.Dockerfile`
