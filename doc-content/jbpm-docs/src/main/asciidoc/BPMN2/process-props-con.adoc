@@ -80,7 +80,7 @@ kcontext.getKieRuntime().setGlobal(name,value);.
 == Variables
 Variables are elements that serve for storing a particular type of data during runtime. The type of data a variable contains is defined by its data type.
 
-Just like any context data, every variable has its scope that defines its "visibility". An element, such as a process, subprocess, or task can only access variables in its own and parent contexts: variables defined in the element's child elements cannot be accessed. Therefore, when an elements requires access to a variable on runtime, its own context is searched first. If the variable cannot be found directly in the element's context, the immediate parent context is searched. The search continues to "level up" until the process context is reached; in case of globals, the search is performed directly on the session container. If the variable cannot be found, a read access request returns `null` and a write access produces an error message, and the process continues its execution. Variables are searched for based on their ID.
+Just like any context data, every variable has its scope that defines its "visibility". An element, such as a process, sub-process, or task can only access variables in its own and parent contexts: variables defined in the element's child elements cannot be accessed. Therefore, when an elements requires access to a variable on runtime, its own context is searched first. If the variable cannot be found directly in the element's context, the immediate parent context is searched. The search continues to "level up" until the process context is reached; in case of globals, the search is performed directly on the session container. If the variable cannot be found, a read access request returns `null` and a write access produces an error message, and the process continues its execution. Variables are searched for based on their ID.
 
 In {PRODUCT}, variables can live in the following contexts:
 
@@ -990,7 +990,7 @@ WorkItemHandlers are used when your Process interacts with other technical syste
 SignallingTaskHandlerDecorator::
 catches the exception and signals it to the Process instance using a configurable event type when the `executeWorkItem()` or `abortWorkItem` methods of the original [class]``WorkItemHandler`` instance throw an exception.
 The exception thrown is passed as part of the event.
-This functionality can be also used to signal to an Event SubProcess defined in the Process definition.
+This functionality can be also used to signal to an Event sub-process defined in the Process definition.
 
 LoggingTaskHandlerDecorator::
 logs error about any exceptions thrown by the `executeWorkItem()` and `abortWorkItem()` methods.
@@ -1002,7 +1002,7 @@ In such a case, consider the following:
 
 * Does the implementation catch all exceptions the code could return?
 * Does the implementation complete or abort the work item after an exception has been caught or uses a mechanisms to retry the process later (in some cases, incomplete process instances might be acceptable)?
-* Does the implementation define any other actions that need to be taken when an exception is caught? Would it be beneficial to interact with other technical systems? Should a Sub-Process be triggered to handle the exception?
+* Does the implementation define any other actions that need to be taken when an exception is caught? Would it be beneficial to interact with other technical systems? Should a sub-process be triggered to handle the exception?
 
 
 [IMPORTANT]
@@ -1016,7 +1016,7 @@ Depending on how your Process definition, calling WorkItemManager.completeWorkIt
 
 [[_service_task_handlers]]
 ==== Service Task handlers
-The following example uses a Throwing Error Intermediate Event to throw an error. An Error Event Sub-Process then catches and handles the error.
+The following example uses a Throwing Error Intermediate Event to throw an error. An Error Event sub-process then catches and handles the error.
 
 When the Throwing Error Intermediate Event throws an error, the process instance is interrupted:
 
@@ -1025,7 +1025,7 @@ When the Throwing Error Intermediate Event throws an error, the process instance
 
 The process starts with a start event and continues to the Throw Exception service task. The task produces an exception, which is propagated as a signal object through the process instance and caught by the sub-process start event in the Exception Handler event sub-process. The workflow continues to the Handle Exception task and the process instance finishes with the sub-process end event.
 
-.Process with an exception handling Event Sub-Process
+.Process with an exception handling Event sub-process
 image::processes/3389.png[]
 
 The following XML is a representation of the process. It contains elements and IDs that are referenced in <<_exception_handling_classes>>.
@@ -1063,7 +1063,7 @@ The following XML is a representation of the process. It contains elements and I
 
     <!-- rest of the serviceTask element and process definition... -->
 
-    <subProcess id="_X" name="Exception Handler" triggeredByEvent="true" >
+    <subprocess id="_X" name="Exception Handler" triggeredByEvent="true" >
       <startEvent id="_X-1" name="subStart">
         <dataOutput id="_X-1_Output" name="event"/>
         <dataOutputAssociation>
@@ -1075,17 +1075,17 @@ The following XML is a representation of the process. It contains elements and I
 
       <!-- rest of the subprocess definition... -->
 
-    </subProcess>
+    </subprocess>
 
   </process>
 ----
 
 . This `<itemDefinition>` element defines a data structure that is used in the `serviceInputItem` property in the process.
 . This `<message>` element (first reference) defines a message that has a String as its content, as defined by the `<itemDefinition>` element on line above. The `<interface>` element below it refers to it (second reference) in order to define what type of content the service (defined by the `<interface>`) expects.
-. This `<error>` element (first reference) defines an error for use later in the process: an Event SubProcess is defined that is triggered by this error (second reference). The content of the error is defined by the `<itemDefinition>` element defined below the `<error>` element.
+. This `<error>` element (first reference) defines an error for use later in the process: an Event sub-process is defined that is triggered by this error (second reference). The content of the error is defined by the `<itemDefinition>` element defined below the `<error>` element.
 . This `<itemDefinition>` element (first reference) defines an item that contains a WorkItem instance. The `<message>` element (second reference) then defines a message that uses this item definition to define its content. The `<interface>` element below that refers to the `<message>` definition (third reference) in order to define the type of content that the service expects.
 +
-In the process itself, a `<property>` element (fourth reference) is defined as having the content defined by the initial `<itemDefinition>`. This is helpful because it means that the Event SubProcess can then store the error it receives in that property (5th reference).
+In the process itself, a `<property>` element (fourth reference) is defined as having the content defined by the initial `<itemDefinition>`. This is helpful because it means that the Event sub-process can then store the error it receives in that property (5th reference).
 
 
 [[_exception_handling_classes]]
