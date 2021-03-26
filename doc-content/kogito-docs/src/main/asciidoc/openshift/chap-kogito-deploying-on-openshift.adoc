@@ -2234,6 +2234,50 @@ spec:
 * https://github.com/coreos/prometheus-operator/blob/master/Documentation/user-guides/getting-started.md[Prometheus Operator]
 * https://operatorhub.io/operator/grafana-operator[Grafana Operator]
 
+[id="proc-kogito-custom-truststore_{context}"]
+=== Replacing {PRODUCT} services TrustStores
+
+[role="_abstract"]
+It's possible to replace the default Java TrustStore that comes with {PRODUCT} images. This task is only needed in case a given {PRODUCT} service makes HTTPS calls to services that require encrypted connections by a private https://dzone.com/articles/understanding-the-role-of-certificate-authorities[Certificate Authority (CA)].
+
+.Prerequisites
+The new Java TrustStore will _replace_ the default one. It's recommended to add the trusted certificates to the default JKS. An alternative is to create a new one from scratch with only the {PRODUCT} service required certificates.
+
+Please note that this TrustStore can be used by any {PRODUCT} service deployed in a given namespace.
+
+To manipulate the TrustStore, you can use https://keystore-explorer.org/[KeyExplorer] (has an interesting UI) or https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html[keytool] (comes with JDK).
+
+.Procedure
+Create a https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-config-file/[Kubernetes Secret] based on the customized TrustStore:
+
+[source,shell]
+---
+$ oc create secret generic kogito-truststore --from-file=cacerts=<path to your JKS> --from-literal=keyStorePassword=<TrustStore Password>
+---
+
+Please note that it's important to keep the Secret keys as defined in the above command. `cacerts` for the TrustStore file and `keyStorePassword` for the TrustStore password.
+
+Now you can deploy the {PRODUCT} service that will use this TrustStore. For example:
+
+[source,yaml]
+---
+piVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: my-service
+spec:
+  replicas: 1
+  image: quay.io/my-namespace/my-service:latest
+  trustStoreSecret: kogito-truststore
+---
+
+Alternatively, you can deploy it using the {PRODUCT} CLI. You only have to pass the flag `truststore-secret`:
+
+[source,shell]
+---
+$ kogito deploy my-service https://mygitrepository/my-service.git --truststore-secret kogito-truststore
+---
+
 [id="proc-kogito-deploying-on-kubernetes_{context}"]
 === Deploying {PRODUCT} services on Kubernetes
 
