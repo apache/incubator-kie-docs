@@ -1,0 +1,15 @@
+[id='optimize-query-payload']
+
+= Changes in the Query results to reduce the size of the kie-server payload
+
+When executing a Drools query using the `QueryCommand`, values are returned using the `FlatQueryResultRow` class, which provides an API to access the results based on the three methods:
+
+* `getIdentifiers()`
+* `getFactHandle(String identifier)`
+* `get(String identifier)`
+
+The latter is used to get the actual object from the result.
+As a reference of the same object is set also in the `DisconnectedFactHandle` returned by `getFactHandle` the payload in both JAXB and JSON while using the kie-server was effectively doubled, and could lead to I/O problems.
+
+The object reference was then removed to reduce the size of the payload while preserving the current behaviour of the API.
+Users accessing the object throughout the `FactHandle` should use the `get(String identifier)` method instead and eventually set manually the object in the `FactHandle`.
