@@ -1,7 +1,7 @@
 [id='kie-server-smart-router-enable-tls-support-proc_{context}']
 = Configuring Smart Router for TLS support
 
-You can configure Smart Router (KIE Server Router) for TLS support to allow HTTPS traffic.
+You can configure Smart Router (KIE Server Router) for Transport Layer Security (TLS) support to allow HTTPS traffic. In addition, you can disable unsecure HTTP connections to Smart Router.
 
 .Prerequisites
 * {KIE_SERVER} is installed on each node of a {EAP} {EAP_VERSION} cluster.
@@ -14,15 +14,38 @@ xref:clustering-smart-router-install-proc_clustering-runtime-standalone[].
 endif::[]
 
 .Procedure
-* To start Smart Router with TLS support and HTTPS enabled, use the TLS keystore properties, for example:
+To start Smart Router, use one of the following methods:
+
+* To start Smart Router with TLS support and HTTPS enabled as well as allowing HTTP connections, enter the following command:
 +
 [source,java]
 ----
 java  -Dorg.kie.server.router.tls.keystore = <KEYSTORE_PATH>
-      -Dorg.kie.server.router.tls.keystore.password = <KEYSTORE_PWD>
+      -Dorg.kie.server.router.tls.keystore.password = <KEYSTORE_PASSWORD>
       -Dorg.kie.server.router.tls.keystore.keyalias = <KEYSTORE_ALIAS>
       -Dorg.kie.server.router.tls.port = <HTTPS_PORT>
       -jar rhpam-7.9.0-smart-router.jar
 ----
 +
-`org.kie.server.router.tls.port` is a property used to configure the HTTPS port. The default HTTPS port value is `9443`.
+In this example, replace the following variables:
+
+* `<KEYSTORE_PATH>`: The path where the keystore will be stored.
+* `<KEYSTORE_PASSWORD>`: The keystore password.
+* `<KEYSTORE_ALIAS>`: The alias name used to store the certificate.
+* `<HTTPS_PORT>`: The HTTPS port. The default HTTPS port is `9443`.
++
+* To start Smart Router with TLS support and HTTPS enabled and with HTTP connections disabled, enter the following command:
++
+[source,java]
+----
+java  -Dorg.kie.server.router.tls.keystore = <KEYSTORE_PATH>
+      -Dorg.kie.server.router.tls.keystore.password = <KEYSTORE_PASSWORD>
+      -Dorg.kie.server.router.tls.keystore.keyalias = <KEYSTORE_ALIAS>
+      -Dorg.kie.server.router.tls.port = <HTTPS_PORT>
+      -Dorg.kie.server.router.port=0
+      -jar rhpam-7.9.0-smart-router.jar
+----
++
+When the `org.kie.server.router.port` system property is set to `0`, then the HTTP listener is not registered. If TLS is configured and the HTTP listener is not registered, then Smart Router listens only on the HTTPS port.
++
+NOTE:  If TLS is not configured and you disable HTTP by setting `org.kie.server.router.port` to `0`, then an error occurs and Smart Router stops.
