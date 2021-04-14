@@ -1,12 +1,12 @@
 [id='message-customtask-proc_{context}']
-= Adding a custom task that sends Kafka messages 
+= Adding a custom task that sends Kafka messages
 
 You can add a `KafkaPublishMessages` custom task to your process. This task sends Kafka messages. It does not use the {KIE_SERVER} Kafka capability, so you can use this task in processes that do not run on a {KIE_SERVER}. However, this task can be more complicated to configure than other {KAFKA_PRODUCT} integration options.
 
 .Procedure
 
 . In the {CENTRAL} administrative settings menu, as the administrative user, select *Custom Tasks Administration*.
-. Ensure that *KafkaPublishMessages* is set to *On*. 
+. Ensure that *KafkaPublishMessages* is set to *On*.
 . In {CENTRAL}, select *Menu* -> *Design* -> *Projects* and then click the space name and the project name.
 . Select the *Settings* -> *Custom Tasks* tab.
 . In the *KafkaPublishMessages* line, click *Install*.
@@ -16,14 +16,31 @@ You can add a `KafkaPublishMessages` custom task to your process. This task send
 ** *Key Serializer class*: The class that provides the key serializer. You can use the standard serializer class name: `org.apache.kafka.common.serialization.StringSerializer`. Alternatively you can use your own custom serializer class.
 ** *Value Serializer class*: The class that provides the value serializer. You can use the standard serializer class name: `org.apache.kafka.common.serialization.StringSerializer`. Alternatively you can use your own custom serializer class.
 +
-In any of these fields, you can enter an `env[_property_]` value. In this case, the {PROCESS_ENGINE} reads the setting from a system property at runtime. For example, you can set *Client ID* to `env[application.client.id]` and then, before running the process service, set the client ID value in the `application.client.id` system property. 
+In any of these fields, you can enter an `env[_property_]` value. In this case, the {PROCESS_ENGINE} reads the setting from a system property at runtime. For example, you can set *Client ID* to `env[application.client.id]` and then, before running the process service, set the client ID value in the `application.client.id` system property.
++
+. If you entered to use a custom serializer class, complete the following additional configuration:
+.. Select the *Settings* -> *Deployments* -> *Work Item Handlers* tab.
+.. In the `KafkaPublishMessages` line, modify the `Value` field to add the `classLoader` parameter. For example,  the initial value of this field can be the following string:
++
+--
+----
+new org.jbpm.process.workitem.kafka.KafkaWorkItemHandler("127.0.0.1:9092", "jbpm", "com.myspace.test.MyCustomSerializer", "com.myspace.test.MyCustomSerializer")
+----
+
+In this example, change the value to the following string:
+
+----
+new org.jbpm.process.workitem.kafka.KafkaWorkItemHandler("127.0.0.1:9092", "jbpm", "com.myspace.test.MyCustomSerializer", "com.myspace.test.MyCustomSerializer", classLoader)
+----
+--
 +
 . Select the *Assets* tab.
 . Select the business process and open the business process designer.
 . Add the `KafkaPublishMessages` custom task, available under *Custom Tasks* in the BPMN modeler palette.
 . In the properties of the custom task, open the data assignments.
+
 . Assign the *Key*, *Topic*, and *Value* inputs to define the message.
 
 .Next steps
 
-If you entered a custom serializer class, you must upload the source code and configure the class, as described in xref:custom-serializer-proc_{context}[].
+If you entered a custom serializer class, you must provide this class to your business application. For instructions about providing custom classes to your business application, see xref:custom-class-provide-proc_{context}[].
