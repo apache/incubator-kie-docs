@@ -966,6 +966,7 @@ For {PRODUCT} persistence, you can use one of the following supported persistenc
 * https://infinispan.org/[*Infinispan*]: (Default) Persists data using configured key-value storage definitions
 * https://www.mongodb.com/[*MongoDB*]: Persists data using a document-based format
 * https://kafka.apache.org/documentation/streams/[*Kafka Streams*]: (Quarkus only) Persists data in Kafka clusters
+* https://www.postgresql.org/[*PostgreSQL*]: Persists data in PostgreSQL
 
 Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
 
@@ -1403,6 +1404,56 @@ For an example {PRODUCT} service with Kafka persistence, see the following examp
 
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-persistence-quarkus[`process-kafka-persistence-quarkus`]: Example on Quarkus
 // end::proc-kafka-streams-persistence-enabling[]
+
+// tag::proc-postgresql-persistence-enabling[]
+[id="proc-postgresql-persistence-enabling_{context}"]
+=== Enabling PostgreSQL persistence for {PRODUCT} services
+
+[role="_abstract"]
+As an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.postgresql.org/[PostgreSQL]. PostgreSQL is a powerful, open source object-relational database system that uses and extends SQL language. Also, PostgreSQL is recognized and provided as a service (SAAS) by different cloud providers. For {PRODUCT} persistence with PostgreSQL, you must have PostgreSQL installed and running to enable persistence.
+
+.Prerequisites
+* https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
+
+.Procedure
+. Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.Project dependency to enable PostgreSQL persistence
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>postgresql-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+----
+--
+. Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
++
+--
+Replace the server host, port, credentials, and other information according to your PostgreSQL installation.
+
+.Application properties to enable PostgreSQL persistence
+[source]
+------
+kogito.persistence.type=postgresql
+kogito.persistence.postgresql.connection.uri=postgresql://kogito-user:kogito-pass@localhost:5432/kogito
+kogito.persistence.auto.ddl=true
+kogito.persistence.query.timeout.millis=10000
+------
+
+* `uri`: This parameter can be customized according to the https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING/[connection string specification].
+* `auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a more controlled environment.
+* `millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value of `millis` is `10000`.
+--
+
+For an example {PRODUCT} service with PostgreSQL persistence, see the following example applications in GitHub:
+
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-quarkus[`process-postgresql-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-springboot[`process-postgresql-persistence-springboot`]: Example on SpringBoot
+
+// end::proc-postgresql-persistence-enabling[]
 
 [id="con-data-index-service_{context}"]
 == {PRODUCT} Data Index Service
