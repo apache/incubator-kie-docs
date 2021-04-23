@@ -7,7 +7,6 @@ You can create heatmap components for a specific process in {CENTRAL}.
 .Prerequisites
 
 * {KIE_SERVER} is deployed and connected to {CENTRAL}.
-* You have set the `dashbuilder.components.enable` system property to `true` in the `standalone.xml` file.
 * You have created a project with at least one business process asset in {CENTRAL}.
 * A project with a process definition has been deployed in {CENTRAL}.
 * Sample process instances are created.
@@ -31,37 +30,26 @@ The *Data Set Creation Wizard* page opens.
 select
    pil.externalId,
    pil.processId,
-    nid,
-    nodetype,
-    nodename,
-    count(nid) as total_hits,
-    avg(execution_time) as averageExecutionTime,
-    min(execution_time) as minExecutionTime,
-    max(execution_time) as maxExecutionTime
-from(
-        select
-                max(log_date) as lastLog,
-                processinstanceid as piid,
-                nodeinstanceid as niid,
-                nodeid as nid,
-                nodetype,
-                nodename,
-                DATEDIFF(SECOND, min(log_date), max(log_date)) as execution_time
-        from
-                NodeInstanceLog
-        group by
-              processinstanceid,
-               nodeinstanceid,
-              nid
-       order by lastLog
-)
+   nil.nodeid,
+   nil.nodetype,
+   nil.nodename,
+   count(nil.nodeid) as total_hits
+from
+    NodeInstanceLog nil
 inner join
-     ProcessInstanceLog pil on pil.processInstanceId = piid
+    ProcessInstanceLog pil on pil.processInstanceId = nil.processInstanceId
+where
+    nil.type = 1
 group by
      pil.externalId,
-     nid,
-     nodename
+     nil.nodeid,
+     nil.nodename
 ----
++
+[NOTE]
+====
+You can modify the SQL query according to your database if required.
+====
 
 ... Complete the *Data Set Creation Wizard* and click *Test*.
 ... Click *Save*.
@@ -73,7 +61,7 @@ group by
 The new page opens in the *Page Editor* and you can see that the *Heatmaps* component is available under the *Components* panel.
 . In the *Components* panel, expand the *Heatmaps* components and drag the *Process Heatmap* component type to the *Page Editor*.
 . In the *Displayer editor* wizard, click *Data* tab and select the newly created {KIE_SERVER} dataset.
-. In the *Data* tab, select *NID* and *AVERAGEEXECUTIONTIME* from the *Columns* field.
+. In the *Data* tab, select *NODEID* and *TOTAL_HITS* from the *Columns* field.
 . Click the *Component Editor* tab and enter the values for the mandatory fields including *Server Template*, *Container ID*, and *Process Definition ID* into the *Component Properties* field.
 +
 [NOTE]
@@ -82,7 +70,7 @@ To access the value of *Server Template*, go to *Deploy* → *Execution Servers*
 For the value of *Container ID*, go to *Manage* → *Process Instances*, you can click on the process instance you want to use and in the, *Deployment* corresponds to the *Container ID* and the *Definition ID* is the *Process Definition ID*.
 ====
 . Click the *Display* tab and edit the value of *Chart*, *Margins*, *Filter*, *Refresh*, and *Columns* as per your requirements.
-. Click *+OK*.
+. Click *OK*.
 +
 .Example process heatmap components
 image::pages/process-heatmap-component.png[]
