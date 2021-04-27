@@ -1,5 +1,16 @@
-[id='pmml-invocation-embedded-proc-trusty_{context}']
-= PMML Trusty
+[id='pmml-invocation-embedded-trusty-proc_{context}']
+= Embedding a PMML trusty call directly in a Java application
+
+A KIE container is local when the knowledge assets are either embedded directly into the calling program or are physically pulled in using Maven dependencies for the KJAR. You typically embed knowledge assets directly into a project if there is a tight relationship between the version of the code and the version of the PMML definition. Any changes to the decision take effect after you have intentionally updated and redeployed the application. A benefit of this approach is that proper operation does not rely on any external dependencies to the run time, which can be a limitation of locked-down environments.
+
+.Prerequisites
+* A KJAR containing the PMML model to execute has been created. For more information about project packaging, see
+ifdef::DM,PAM[]
+{URL_DEPLOYING_AND_MANAGING_SERVICES}#assembly-packaging-deploying[_{PACKAGING_DEPLOYING_PROJECT}_].
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+<<_builddeployutilizeandrunsection>>.
+endif::[]
 
 .Procedure
 . In your client application, add the following dependencies to the relevant classpath of your Java project:
@@ -78,17 +89,15 @@ KieServices kieServices = KieServices.Factory.get();
 KieContainer kieContainer = kieServices.getKieClasspathContainer();
 ----
 
-. Create an instance of the `PMMLRuntime`, that will be used to actually execute the model:
+. Create an instance of the `PMMLRuntime` that is used to execute the model:
 +
---
 [source,java]
 ----
 PMMLRuntime pmmlRuntime = KieRuntimeFactory.of(kieContainer.getKieBase()).get(PMMLRuntime.class);
 ----
 
-. Create an instance of the `PMMLRequestData` class, which applies your PMML model to a set of data:
+. Create an instance of the `PMMLRequestData` class that applies your PMML model to a data set:
 +
---
 [source,java]
 ----
 PMMLRequestData pmmlRequestData = new PMMLRequestData({correlation_id}, {model_name});
@@ -96,17 +105,15 @@ pmmlRequestData.addRequestParam({parameter_name}, {parameter_value})
 ...
 ----
 
-. Create an instance of the `PMMLContext` class, which holds the input data:
+. Create an instance of the `PMMLContext` class that contains the input data:
 +
---
 [source,java]
 ----
 PMMLContext pmmlContext = new PMMLContextImpl(pmmlRequestData);
 ----
 
-. Retrieve the `PMML4Result` executing the PMML model with the required PMML class instances that you have created:
+. Retrieve the `PMML4Result` while executing the PMML model with the required PMML class instances that you created:
 +
---
 [source,java]
 ----
 PMML4Result pmml4Result = pmmlRuntime.evaluate({model_name}, pmmlContext);
