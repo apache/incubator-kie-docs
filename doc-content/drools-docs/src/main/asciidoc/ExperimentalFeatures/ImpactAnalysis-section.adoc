@@ -1,21 +1,22 @@
 [id='impact-analysis']
-= Impact Analysis
+= Impact analysis
 
 [WARNING]
 ====
 This feature is experimental and subject to change.
 ====
 
-Impact Analysis analyzes the relationships between rules and generates a graph. If you specify a rule to be changed, it analyzes rules impacted by the change so they are rendered in the graph.
+The impact analysis feature analyzes the relationships between the rules and generates a graph. When you specify a rule to be changed, the impact analysis feature analyzes the rules that are impacted by the change and renders the rules in the generated graph.
 
-The graph supports DOT, SVG, PNG formats and also simple text output.
+The generated graph supports DOT, SVG, and PNG formats with simple text output.
 
-== Usage
+== Using the impact analysis feature
 
 You can find an example usage in `ExampleUsageTest.java` under `drools-impact-analysis/drools-impact-analysis-itests`
 
-Configure a dependency.
-
+.Procedure
+. Configure the following dependency.
++
 [source,xml]
 ----
     <dependency>
@@ -25,8 +26,8 @@ Configure a dependency.
     </dependency>
 ----
 
-Create a `KieFileSystem` to store your assets as usual. Then call `KieBuilder.buildAll(ImpactAnalysisProject.class)`. You can get `AnalysisModel`.
-
+. Create a `KieFileSystem` to store your assets and call `KieBuilder.buildAll(ImpactAnalysisProject.class)` class.
++
 [source,java]
 ----
       // set up KieFileSystem
@@ -35,47 +36,46 @@ Create a `KieFileSystem` to store your assets as usual. Then call `KieBuilder.bu
       ImpactAnalysisKieModule analysisKieModule = (ImpactAnalysisKieModule) kieBuilder.getKieModule();
       AnalysisModel analysisModel = analysisKieModule.getAnalysisModel();
 ----
++
+You get `AnalysisModel`.
 
-Convert the `AnalysisModel` to `Graph` using `ModelToGraphConverter`.
-
+. Convert the `AnalysisModel` to `Graph` using `ModelToGraphConverter`.
++
 [source,java]
 ----
       ModelToGraphConverter converter = new ModelToGraphConverter();
       Graph graph = converter.toGraph(analysisModel);
 ----
 
-Specify a rule which you plan to change. `ImpactAnalysisHelper` will produce a sub graph which contains the changed rule and impacted rules.
-
+. Specify a rule that you plan to change. The `ImpactAnalysisHelper` generates a graph, containing the changed rule and the impacted rules.
++
 [source,java]
 ----
       ImpactAnalysisHelper impactFilter = new ImpactAnalysisHelper();
       Graph impactedSubGraph = impactFilter.filterImpactedNodes(graph, "org.drools.impact.analysis.example.PriceCheck_11");
 ----
 
-Generate a graph image using `GraphImageGenerator`. You can choose the format from DOT, SVG and PNG.
-
+. Generate a graph image using `GraphImageGenerator`. You can choose the format from DOT, SVG, and PNG.
++
 [source,java]
 ----
       GraphImageGenerator generator = new GraphImageGenerator("example-impacted-sub-graph");
       generator.generateSvg(impactedSubGraph);
 ----
 
-Simple text output is also available using TextReporter. You can choose the format from HierarchyText and FlatText.
-
+. Simple text output is also available using `TextReporter`. You can choose the format from `HierarchyText` and `FlatText`.
++
 [source,java]
 ----
       String hierarchyText = TextReporter.toHierarchyText(impactedSubGraph);
       System.out.println(hierarchyText);
 ----
 
-== Tips
-
-* Typical use case is to view an impacted sub graph. Red node is a changed rule. Yellow nodes are impacted rules. Solid arrow represents positive impact, where the source rule activates the target rule. Dashed arrow represents negative impact, where the source rule deactivates the target rule. Dotted arrow represents unknown impact, where the source rule may activate or deactivate the target rule.
+In a generated graph, red node represents a changed rule and yellow nodes represent the impacted rules. A solid arrow in a generated graph indicates a positive impact, in which the source rule activates the target rule. However, a dashed arrow indicates a negative impact, in which the source rule deactivates the target rule. Also, a dotted arrow represents an unknown impact, in which the source rule might activate or deactivate the target rule.
 
 image::ImpactAnalysis/impactAnalysis1.svg[align="center"]
 
-* Whole graph could be too large if you have many rules.
-* You can collapse the graph based on rule name prefix (= RuleSet in spreadsheet) using `GraphCollapsionHelper`. It will help you to see the overview. You can also use `ImpactAnalysisHelper` to the collapsed graph.
+You can collapse a graph based on the rule name prefix or RuleSet in a spreadsheet using the `GraphCollapsionHelper`. This enables you to view the overview of a graph. Also, you can use `ImpactAnalysisHelper` to the collapsed graph.
 
 [source,java]
 ----
@@ -83,7 +83,7 @@ image::ImpactAnalysis/impactAnalysis1.svg[align="center"]
       Graph impactedCollapsedSubGraph = impactFilter.filterImpactedNodes(collapsedGraph, "org.drools.impact.analysis.example.PriceCheck");
 ----
 
-* You can filter the relations by giving positiveOnly to true for `ModelToGraphConverter`, `ImpactAnalysisHelper` and `GraphCollapsionHelper` constructor. So you can view only positive relations.
+If you only want to view the positive relations in a graph for `ModelToGraphConverter`, `ImpactAnalysisHelper`, and `GraphCollapsionHelper` constructor, then set the `positiveOnly` to `true`.
 
 [source,java]
 ----
@@ -93,7 +93,7 @@ image::ImpactAnalysis/impactAnalysis1.svg[align="center"]
       Graph impactedSubGraph = impactFilter.filterImpactedNodes(graph, "org.drools.impact.analysis.example.PriceCheck_11");
 ----
 
-* If the number of rules is very large, text output would be useful. `[*]`` is a changed rule. `[+]`` is impacted rules. A rule with parentheses means a circular reference so it doesn't render further.
+Text output is useful for a large number of rules. In a text output, `[*]` represents a changed rule, and `[+]` represents impacted rules.
 
 [source]
 ----
