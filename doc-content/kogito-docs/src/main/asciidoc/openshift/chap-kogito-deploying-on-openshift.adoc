@@ -24,28 +24,53 @@ To help you deploy your services on OpenShift, {PRODUCT} provides an operator an
 * *{PRODUCT} command-line interface (CLI)*: A CLI tool that enables you to interact with the {PRODUCT} Operator for deployment tasks. The {PRODUCT} CLI also enables you to deploy {PRODUCT} services from source instead of relying on custom resources and YAML files. You can use the {PRODUCT} CLI as a command-line alternative for deploying {PRODUCT} services without the {OPENSHIFT} web console.
 
 [id="proc-kogito-enabling-probes_{context}"]
-== Enabling probes for Quarkus-based {PRODUCT} services on OpenShift
+== Probes for {PRODUCT} services on {OPENSHIFT}
 
 [role="_abstract"]
-On OpenShift and Kubernetes, https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] check whether an application is ready and working or needs to be restarted. For {PRODUCT} services on Spring Boot, probes communicate with the application through a TCP socket, defaulting to port 8080. For {PRODUCT} services on Quarkus, probes communicate with the application through an HTTP request, typically using the endpoint `/q/health`. This endpoint is exposed by the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension], which is required for all Quarkus-based {PRODUCT} services on OpenShift or Kubernetes.
+The probes in {OPENSHIFT} and Kubernetes verify that an application is working or it needs to be restarted. For {PRODUCT} services on Quarkus and Spring Boot, probes interact with the application using an HTTP request, defaulting to the endpoints that are exposed by an extension. Therefore, to run your {PRODUCT} services on {OPENSHIFT} or Kubernetes, you must import the extensions to enable the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] for your application.
 
-Therefore, to run your Quarkus-based {PRODUCT} services on OpenShift or Kubernetes, you must import the Quarkus `smallrye-health` extension in order to enable the liveness and readiness probes for your application.
+=== Enabling probes for Quarkus-based {PRODUCT} services on {OPENSHIFT}
 
-NOTE: The {PRODUCT} Operator currently does not support startup probes.
+You can enable the probes for the Quarkus-based {PRODUCT} services on {OPENSHIFT}.
 
 .Procedure
-In a command terminal, navigate to the `pom.xml` file of your {PRODUCT} project and add the following dependency for the `smallrye-health` extension:
+. In a command terminal, navigate to the `pom.xml` file of your {PRODUCT} project and add the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health`] extension:
 
-.SmallRye Heath dependency for Quarkus applications on OpenShift
+.SmallRye Health dependency for Quarkus applications on {OPENSHIFT}
 [source,xml]
 ----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-health</artifactId>
-</dependency>
+<dependencies>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+  </dependency>
+</dependencies>
 ----
 
-Alternatively, if you want to configure custom endpoints for the liveness and readiness probes, you can define the probes in the `KogitoRuntime` YAML file of your {PRODUCT} project, as shown in the following example:
+=== Enabling probes for Spring Boot-based {PRODUCT} services on {OPENSHIFT}
+
+You can enable the probes for the Spring Boot-based {PRODUCT} services on {OPENSHIFT}.
+
+.Procedure
+. In a command terminal, navigate to the `pom.xml` file of your {PRODUCT} project and add the following https://docs.spring.io/spring-boot/docs/2.3.0.RELEASE/reference/html/production-ready-features.html[Spring Boot actuator dependency]:
+
+.Spring Boot actuator dependency for Spring Boot applications on {OPENSHIFT}
+[source,xml]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+  </dependency>
+</dependencies>
+----
+
+=== Setting custom probes for {PRODUCT} services on {OPENSHIFT}
+
+You can also configure the custom endpoints for the liveness, readiness, and startup probes.
+
+.Procedure
+. Define the probes in the `KogitoRuntime` YAML file of your {PRODUCT} project, as shown in the following example:
 
 [source,yaml,subs="attributes+"]
 .Example {PRODUCT} service custom resource with custom probe endpoints
@@ -65,6 +90,9 @@ spec:
       httpGet:
         path: /probes/ready # Readiness endpoint
         port: 8080
+    startupProbe:
+      tcpSocket:
+        port: 8080
 ----
 
 [id="proc-kogito-deploying-on-ocp-console_{context}"]
@@ -76,15 +104,29 @@ After you create your {PRODUCT} services as part of a business application, you 
 .Prerequisites
 * The application with your {PRODUCT} services is in a Git repository that is reachable from your OpenShift environment.
 * You have access to the OpenShift web console with `cluster-admin` permissions.
-* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] that are required for Quarkus-based projects on OpenShift or Kubernetes.
+* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] that are required for Quarkus-based projects on {OPENSHIFT} or Kubernetes.
 +
-.SmallRye Heath dependency for Quarkus applications on OpenShift
+.SmallRye Heath dependency for Quarkus applications on {OPENSHIFT}
 [source,xml]
 ----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-health</artifactId>
-</dependency>
+<dependencies>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-health</artifactId>
+  </dependency>
+</dependencies>
+----
+* (Spring Boot only) The `pom.xml` file of your {PRODUCT} project contains the following https://docs.spring.io/spring-boot/docs/2.3.0.RELEASE/reference/html/production-ready-features.html[Spring Boot actuator dependency]. This dependency enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] that are required for Spring Boot-based projects on {OPENSHIFT} or Kubernetes.
++
+.Spring Boot actuator dependency for Spring Boot applications on {OPENSHIFT}
+[source,xml]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+  </dependency>
+</dependencies>
 ----
 
 .Procedure
@@ -223,15 +265,27 @@ ifdef::KOGITO-COMM[]
 https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_cli/getting-started-cli.html[OpenShift documentation].
 endif::[]
 * You have OpenShift permissions to create resources in a specified namespace.
-* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] that are required for Quarkus-based projects on OpenShift or Kubernetes.
+* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] that are required for Quarkus-based projects on {OPENSHIFT} or Kubernetes.
 +
-.SmallRye Heath dependency for Quarkus applications on OpenShift
+.SmallRye Heath dependency for Quarkus applications on {OPENSHIFT}
 [source,xml]
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-smallrye-health</artifactId>
 </dependency>
+----
+* (Spring Boot only) The `pom.xml` file of your {PRODUCT} project contains the following https://docs.spring.io/spring-boot/docs/2.3.0.RELEASE/reference/html/production-ready-features.html[Spring Boot Actuator dependency]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] that are required for Spring Boot-based projects on {OPENSHIFT} or Kubernetes.
++
+.Spring Boot actuator dependency for Spring Boot applications on {OPENSHIFT}
+[source,xml]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+  </dependency>
+</dependencies>
 ----
 
 .Procedure
@@ -353,16 +407,6 @@ endif::[]
 * Git is installed.
 * JDK 11 or later is installed. (https://www.graalvm.org/[GraalVM] is recommended.)
 * Apache Maven 3.6.2 or later is installed.
-* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] that are required for Quarkus-based projects on OpenShift or Kubernetes.
-+
-.SmallRye Heath dependency for Quarkus applications on OpenShift
-[source,xml]
-----
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-smallrye-health</artifactId>
-</dependency>
-----
 
 [id="proc-kogito-travel-agency-clone-repo_{context}"]
 === Cloning the {PRODUCT} examples Git repository
