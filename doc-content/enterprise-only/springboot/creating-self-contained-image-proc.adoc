@@ -1,15 +1,32 @@
 [id='creating-self-contained-image-proc_{context}']
 = Creating a self-contained {PRODUCT} Spring Boot JAR file
 
-You can create a self-contained {PRODUCT} Spring Boot JAR file that contains multiple versions of the same KJAR file, including modules. These are files that have the same `artifactID` and `groupID` attribute values, but have different `version` values. The KJAR files are separated from the `BOOT-INF/lib` JAR files to avoid class loader collisions. Each KJAR classpath container file is isolated from other KJAR classpath container files and does not rely on the Spring Boot class loader.
+You can create a single self-contained {PRODUCT} Spring Boot JAR file that contains a complete service, including {KIE_SERVER} and one or more KJAR files. The {PRODUCT} Spring Boot JAR file does not depend on any KJAR files loading at runtime.
+
+If necessary, the {PRODUCT} Spring Boot JAR file can contain multiple versions of the same KJAR file, including modules. These KJAR files can have the same `artifactID` and `groupID` attribute values, but have different `version` values.
+
+The included KJAR files are separated from any JAR files in the `BOOT-INF/lib` directory to avoid class loader collisions. Each KJAR classpath container file is isolated from other KJAR classpath container files and does not rely on the Spring Boot class loader.
 
 .Prerequisites
 * You have an existing {PRODUCT} Spring Boot project.
+* You have completed development of one or more KJAR files for the project.
 
 .Procedure
-. Add the following properties to your Spring Boot application  `application.properties` file:
+. Build all KJAR files for the project. In the default business application, the KJAR source is contained in the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-kjar` directory, where `BUSINESS-APPLICATION` is the name of the business application. Your project might include other KJAR source directories.
 +
-[source, xml]
+To build the KJAR files, for every KJAR source directory, complete the following steps:
++
+.. Change to the KJAR source directory.
+.. Enter the following command:
++
+----
+mvn install
+----
++
+This command builds the KJAR file and places it into the local Maven repository. By default, this repository is located in the `~/.m2/repo` directory.
+. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service/src/main/resources` directory, add the following properties to your Spring Boot application `application.properties` file:
++
+[source]
 ----
 kieserver.classPathContainer=true
 kieserver.autoScanDeployments=true
@@ -35,7 +52,7 @@ kieserver.autoScanDeployments=true
 +
 When both of these properties are set to `true`, the Spring Boot {KIE_SERVER} automatically scans for deployable artifacts that are packaged within the Spring Boot application using the `package-dependencies-kjar` Maven goal of the `kie-maven-plugin` plug-in.
 +
-. Add the following Maven plug-in in the Spring Boot `service/pom.xml` file where `<GROUP_ID>`, `<ARTIFACT_ID>`, and `<VERSION>` are the group, artifact, and version (GAV) of an artifact that your project uses. These artifacts are located in the Spring Boot project  `kjar/pom.xml` file.
+. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service` directory, add the following Maven plug-in in the Spring Boot `service/pom.xml` file where `<GROUP_ID>`, `<ARTIFACT_ID>`, and `<VERSION>` are the group, artifact, and version (GAV) of a KJAR artifact that your project uses. You can find these values in the `pom.xml` file that is located in the KJAR source directory.
 +
 NOTE: You can add more than one version of an artifact.
 +
@@ -108,9 +125,53 @@ The following example adds two version of the `Evaluation` artifact:
     <plugins>
   <build>
 ----
-. To build the self-contained Spring Boot image, enter the following command in the `service` directory:
+ifdef::PAM[]
++
+. Optional: if you want to be able to configure the {KIE_SERVER} to communicate with a {CENTRAL} Monitoring instance using WebSockets, add the following lines to the `pom.xml` file under the `<dependencies>` tag:
++
+[source, xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-controller-websocket-client</artifactId>
+  <version>${version.org.kie}</version>
+</dependency>
+----
++
+WebSockets communication with a {CENTRAL} Monitoring instance is supported in all cases, including running the instance on {OPENSHIFT}.
+endif::PAM[]
++
+. To build the self-contained Spring Boot image, enter the following command in the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service` directory:
 +
 [source]
 ----
-maven install
+mvn install
 ----
++
+. Optional: to run the self-contained Spring Boot image, locate the JAR file in the `target` subdirectory and enter the following command:
++
+[source]
+----
+java -jar <FILENAME>.jar
+----
++
+In this command, replace `<FILENAME>` with the name of the JAR file.
+ifdef::PAM[]
++
+To configure the {KIE_SERVER} to connect to a {CENTRAL} monitoring instance using WebSockets and run the image, enter the following command:
++
+[source]
+----
+java -jar <FILENAME>.jar -Dorg.kie.server.startup.strategy=LocalContainersStartupStrategy
+-Dorg.kie.server.controller=ws://<BC-HOSTNAME>:<BC-PORT>/websocket/controller
+-Dorg.kie.server.controller.user=<USER> -Dorg.kie.server.controller.pwd=<PASSWORD>
+----
++
+In this command, replace the following values:
++
+** `<FILENAME>` with the name of the JAR file
+** `<BC-HOSTNAME>` with the fully qualified name of the {CENTRAL} Monitoring instance
+** `<BC-PORT>` with the port of the {CENTRAL} Monitoring instance, for example, `8080`
+** `<USER>` with the username of a user configured on the {CENTRAL} Monitoring instance
+** `<PASSWORD>` with the password of the user configured on the {CENTRAL} Monitoring instance
+endif::PAM[]
