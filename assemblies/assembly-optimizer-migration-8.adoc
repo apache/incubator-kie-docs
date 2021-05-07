@@ -33,6 +33,8 @@ OptaPlanner 8 is a new major release and will be the foundation for the 8.x seri
 
 
 Every upgrade note has a label that that indicates how likely it is that your code will be affected by that change. The following table describes each label:
+
+.Upgrade impact labels
 [cols="1,2", options="header"]
 |===
 
@@ -61,7 +63,7 @@ Every upgrade note has a label that that indicates how likely it is that your co
 
 Any backwards incompatible changes are annotated with the *Public API* tag.
 
-== Backwards incompatible changes to the public API since 7.x
+== Changes to the public API that are backwards incompatible since OptaPlanner 7.x
 
 [discrete]
 === Java 11 or higher required
@@ -70,27 +72,27 @@ Any backwards incompatible changes are annotated with the *Public API* tag.
 If you are using JRE or JDK 8, upgrade to JDK 11 or higher.
 
 * On linux, get OpenJDK from your linux software repository.
-For example on Fedora and RHEL:
+On Fedora and Red Hat Enterprise Linux, enter the following command:
 +
 [source, bash]
 ----
 sudo dnf install java-11-openjdk-devel
 ----
 
-* On Windows and macOS, https://adoptopenjdk.net[download OpenJDK from AdoptOpenJDK].
+* On Windows and macOS, download download OpenJDK from the https://adoptopenjdk.net[AdoptOpenJDK] web site.
 
 [discrete]
 === `SolverFactory` and `PlannerBenchmarkFactory` no longer support KIE containers
 *Major*, *Public API*
 
-Because OptaPlanner no aligns with Kogito, the KIE container concept no longer applies.
+Because OptaPlanner now aligns with Kogito, the KIE container concept no longer applies.
 Therefore, `SolverFactory` no longer allows you to create `Solver` instances from KIE containers. This also applies to `PlannerBenchmarkFactory` and benchmarks.
 
 [discrete]
 === OSGi metadata removed
 *Major*, *Public API*
 
-Due to the limited usage of OSGi and the maintenance burden it brings, the OptaPlanner JAR files in the 8.x series no longer include OSGi metadata in their `META-INF/MANIFEST.MF` file.
+Because of the limited usage of OSGi and the maintenance burden it brings, the OptaPlanner JAR files in the OptaPlanner 8.x series no longer include OSGi metadata in their `META-INF/MANIFEST.MF` file.
 
 [discrete]
 === Refrain from using Java serialization
@@ -103,9 +105,9 @@ In OptaPlanner 8, most uses of the `Serializable` marker interface were removed 
 *Major*, *Public API*
 
 In version 7 of OptaPlanner, using `ScoreDirectorFactory` was necessary in order to explain the score.
-In version 8, new functionality was added to the `ScoreManager` and as a result, there is no longer any reason to create new instances of `ScoreDirector`.
+In version 8 of OptPlanner, new functionality was added to the `ScoreManager` and as a result there is no longer any reason to create new instances of `ScoreDirector`.
 
-Before in `*.java`:
+Example of `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -116,7 +118,7 @@ try (ScoreDirector<CloudBalance> scoreDirector = scoreDirectorFactory.buildScore
 }
 ----
 
-After in `*.java`:
+Example of `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -124,19 +126,19 @@ ScoreManager<CloudBalance> scoreManager = ScoreManager.create(solverFactory);
 Score score = scoreManager.updateScore(solution);
 ----
 
-Methods that allowed users to retrieve an instance of `ScoreDirector` and `ScoreDirectorFactory` have been removed from public API without replacement.
-A reduced version of the `ScoreDirector` interface was promoted to public API as part of promoting the
-`ProblemFactChange` interface to public API.
+Methods that allowed users to retrieve an instance of `ScoreDirector` and `ScoreDirectorFactory` have been removed from the public API without replacement.
+A reduced version of the `ScoreDirector` interface was promoted to the public API as part of promoting the
+`ProblemFactChange` interface to the public API.
 
 [discrete]
 === `SolverFactory`: `getSolverConfig()` removed
 *Minor*, *Public API*
 
-The method `SolverFactory.getSolverConfig()` has long been deprecated in favor of `SolverFactory.create(SolverConfig)`.
-A `SolverConfig` is now instantiated before a `SolverFactory` is instantiated, which is more natural.
+The `SolverFactory.getSolverConfig()` method has been deprecated and replaced with the `SolverFactory.create(SolverConfig)` method.
+A `SolverConfig` instance is now instantiated before a `SolverFactory` instance is instantiated, which is more natural.
 The old way has now been removed.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -146,7 +148,7 @@ SolverConfig solverConfig = solverFactory.getSolverConfig();
 Solver<MySolution> solver = solverFactory.buildSolver();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -162,10 +164,10 @@ If you were also passing a `ClassLoader`, pass it to both `SolverConfig.createFr
 === `SolverConfig`: `buildSolver()` removed
 *Minor*, *Public API*
 
-The method `SolverConfig.buildSolver()` is an inner method that doesn't belong in the public API.
-Instead, use `SolverFactory.buildSolver()`.
+The `SolverConfig.buildSolver()` method is an inner method that does not belong in the public API.
+Use the `SolverFactory.buildSolver()` method instead.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -174,7 +176,7 @@ SolverConfig solverConfig = SolverConfig.createFromXmlResource(".../mySolverConf
 Solver<MySolution> solver = solverConfig.buildSolver();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -188,10 +190,10 @@ Solver<MySolution> solver = solverFactory.buildSolver();
 === `PlannerBenchmarkConfig`: `buildPlannerBenchmark()` removed
 *Minor*, *Public API*
 
-The method `PlannerBenchmarkConfig.buildPlannerBenchmark()` is an inner method that doesn't belong in the public API.
-Instead, use `PlannerBenchmarkFactory.buildPlannerBenchmark()`.
+The `PlannerBenchmarkConfig.buildPlannerBenchmark()` method is an inner method that does not belong in the public API.
+Use the `PlannerBenchmarkFactory.buildPlannerBenchmark()` method instead.
 
-Before in `*.java`:
+An example from the the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -201,7 +203,7 @@ PlannerBenchmarkConfig benchmarkConfig = PlannerBenchmarkConfig.createFromXmlRes
 PlannerBenchmark benchmark = benchmarkFactory.buildPlannerBenchmark();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -216,11 +218,9 @@ PlannerBenchmark benchmark = benchmarkFactory.buildPlannerBenchmark();
 === `SolverFactory`: `cloneSolverFactory()` removed
 *Minor*, *Public API*
 
-The method `SolverFactory.cloneSolverFactory()` has long been deprecated in favor of the copy constructor
-`new SolverConfig(SolverConfig)`.
-It has now been removed.
+The `SolverFactory.cloneSolverFactory()` method has been deprecated and replaced with the `new SolverConfig(SolverConfig)` copy constructors and the `SolverFactory.cloneSolverFactory()` method has been removed.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -236,7 +236,7 @@ public void userRequest(..., long userInput) {
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -256,10 +256,10 @@ public void userRequest(..., long userInput) {
 === `SolverFactory`: `createEmpty()` removed
 *Minor*, *Public API*
 
-The method `SolverFactory.createEmpty()` has long been deprecated in favor of `new SolverConfig()`.
-It has now been removed.
+The `SolverFactory.createEmpty()` method has been deprecated and replaced with the `new SolverConfig()` method.
+The `SolverFactory.createEmpty()` method has been removed.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -269,7 +269,7 @@ SolverConfig solverConfig = solverFactory.getSolverConfig()
 Solver<MySolution> solver = solverFactory.buildSolver();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -285,9 +285,9 @@ Solver<MySolution> solver = solverFactory.buildSolver();
 
 OptaPlanner now provides an XML Schema Definition for the solver configuration.
 Although OptaPlanner keeps backward compatibility of the existing XML configuration,
-migrating to the XSD is strongly recommended as OptaPlanner might support only valid configuration XML in the future.
+migrating to the XSD is strongly recommended because OptaPlanner might support only valid configuration XML in the future.
 
-Before in `*SolverConfig.xml`:
+An example from the `*SolverConfig.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -297,7 +297,7 @@ Before in `*SolverConfig.xml`:
 </solver>
 ----
 
-After in `*SolverConfig.xml`:
+An example from the `*SolverConfig.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -307,17 +307,17 @@ After in `*SolverConfig.xml`:
 </solver>
 ----
 
-Using the XSD may require reordering some of the XML elements of the configuration.
+Using the XSD might require reordering some of the XML elements of the configuration.
 Use code completion in the IDE to migrate to a valid XML.
 
 [discrete]
 === Property `subPillarEnabled` in move selector configuration has been removed
 *Minor*, *Public API*
 
-The `subPillarEnabled` property on `PillarSwapMoveSelector` and `PillarChangeMoveSelector` has long been deprecated and replaced by a new property, `subPillarType`.
-It has now been removed.
+The `subPillarEnabled` property on `PillarSwapMoveSelector` and `PillarChangeMoveSelector` has been deprecated and replaced by a new property, `subPillarType`.
+The `subPillarEnabled` property has been removed.
 
-Before in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
+An example from the `*SolverConfig.xml` and `*BenchmarkConfig.xml` files in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -331,7 +331,7 @@ Before in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
       </pillar...MoveSelector>
 ----
 
-After in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
+An example from the`*SolverConfig.xml` and `*BenchmarkConfig.xml` files in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -348,13 +348,13 @@ After in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
 === `Solver`: `getScoreDirectorFactory()` removed
 *Major*, *Public API*
 
-The method `getScoreDirectorFactory()` has long been deprecated and has now been removed from both `Solver` and
+The `getScoreDirectorFactory()` method has been deprecated and has now been removed from both `Solver` and
 `SolverFactory` classes.
 
-Now you do not need to create a `Solver` instance just to calculate or explain a score in the UI.
-Instead, use the `ScoreManager` API.
+You no longer need to create a `Solver` instance just to calculate or explain a score in the UI.
+Use the the `ScoreManager` API instead.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -364,7 +364,7 @@ uiScoreDirectorFactory = solver.getScoreDirectorFactory();
 ...
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -380,11 +380,11 @@ ScoreManager<VehicleRoutingSolution> scoreManager = ScoreManager.create(solverFa
 *Major*, *Public API*
 
 The `explainBestScore()` method on the `Solver` interface has been deprecated in 7.x and now removed.
-The same information can be obtained via the new `ScoreManager` API.
+The same information can be obtained through the the new `ScoreManager` API.
 
-Re Hat recommends users not to parse the results of this method call in any way.
+Red Hat recommends that you do not parse the results of this method call in any way.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -392,7 +392,7 @@ solver = ...;
 scoreExplanation = solver.explainBestScore();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -405,10 +405,10 @@ scoreExplanation = scoreManager.explainScore(solution);
 === ``Solver``'s `getBestSolution()`, `getBestScore()` and `getTimeMillisSpent()` removed
 *Minor*, *Public API*
 
-Several methods on the `Solver` interface have been deprecated in 7.x and now removed.
-The same information can be obtained by registering an `EventListener` via `Solver.addEventListener(...)`.
+Several methods on the `Solver` interface have been deprecated in 7.x and have been removed removed.
+The same information can be obtained by registering an `EventListener` through the `Solver.addEventListener(...)`.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -418,7 +418,7 @@ score = solver.getBestScore();
 timeMillisSpent = solver.getTimeMillisSpent();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -435,10 +435,8 @@ solver.addEventListener(event -> {
 *Major*, *Public API*
 
 The `<scanAnnotatedClasses/>` directive in solver configuration has been deprecated in 7.x and now removed.
-Use the link:../../compatibility/quarkus.html[Quarkus extension] or
-link:../../compatibility/springBoot.html[Spring Boot starter] to automatically scan for annotated classes instead.
 
-Before in `*.xml`:
+An example from the `*.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -449,7 +447,7 @@ Before in `*.xml`:
 </solver>
 ----
 
-After in `*.xml`:
+An example from the `*.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -466,9 +464,9 @@ After in `*.xml`:
 *Major*, *Public API*
 
 The `@PlanningFactProperty` and `@PlanningFactCollectionProperty` now share the same package with other similar annotations, such as `@PlanningSolution`.
-The old annotations have been deprecated in 7.x and now removed.
+The old annotations have been deprecated in 7.x and removed.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -476,7 +474,7 @@ import org.optaplanner.core.api.domain.solution.drools.ProblemFactCollectionProp
 import org.optaplanner.core.api.domain.solution.drools.ProblemFactProperty;
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -493,7 +491,7 @@ The configuration of `EntitySelector`, `ValueSelector` and `MoveSelector` now ha
 In practice, you do not need multiple selection filter classes often, and you can always replace them with a single selection filter class which implements the logic of all of them.
 Passing a single selection class now requires less boilerplate code.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -501,7 +499,7 @@ ValueSelectorConfig valueSelectorConfig = new ValueSelectorConfig();
 valueSelectorConfig.setFilterClassList(Collections.singletonList(MySelectionFilterClass.class));
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -509,9 +507,9 @@ ValueSelectorConfig valueSelectorConfig = new ValueSelectorConfig();
 valueSelectorConfig.setFilterClass(MySelectionFilterClass.class);
 ----
 
-.Replacing multiple selection filter classes with a single one
+.Replacing multiple selection filter classes with a single selection filter class
 
-Before in `*.xml`:
+An example from the `*.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -523,7 +521,7 @@ Before in `*.xml`:
 </swapMoveSelector>
 ----
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -551,7 +549,7 @@ public class FilterB implements SelectionFilter<MySolution, MyPlanningEntity> {
 }
 ----
 
-After in `*.xml`
+An example from the`*.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -562,7 +560,7 @@ After in `*.xml`
 </swapMoveSelector>
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -578,14 +576,14 @@ public class SingleEntityFilter implements SelectionFilter<MySolution, MyPlannin
 ----
 
 [discrete]
-=== `AcceptorConfig` renamed to LocalSearchAcceptorConfig
+=== `AcceptorConfig` renamed to `LocalSearchAcceptorConfig`
 *Minor*
 
-Impacts only configuration API, solver configuration XML remains intact.
+This only impacts the configuration API. The solver configuration XML file remains intact.
 
-Naming consistency with other local-search-specific configuration classes.
+Naming consistency with other local-search-specific configuration classes has been implemented.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -593,7 +591,7 @@ LocalSearchPhaseConfig localSearchPhaseConfig = new LocalSearchPhaseConfig()
         .withAcceptorConfig(new AcceptorConfig().withEntityTabuSize(5));
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -602,15 +600,15 @@ LocalSearchPhaseConfig localSearchPhaseConfig = new LocalSearchPhaseConfig()
 ----
 
 [discrete]
-=== `Custom properties` XML configuration format changes
+=== Custom properties XML configuration format changes
 *Minor*, *Public API*
 
-Impact only the solver configuration XML, specifically `<scoreDirectorFactory/>`, `<moveIteratorFactory/>`,
+This issue only impacts the solver configuration XML, specifically `<scoreDirectorFactory/>`, `<moveIteratorFactory/>`,
 `<moveListFactory/>`, `<partitionedSearch/>` and `<customPhase/>`.
 
-To enforce structure of the configuration XML in build time.
+This change was made to enforce the structure of the configuration XML in build time.
 
-Before in `*.xml`:
+An example from the `*.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -623,7 +621,7 @@ Before in `*.xml`:
 </partitionedSearch>
 ----
 
-After in `*.xml`:
+An example from the`*.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -640,11 +638,11 @@ After in `*.xml`:
 === `<variableNameInclude/>` elements are now wrapped by the `<variableNameIncludes/>` element
 *Minor*, *Public API*
 
-Impact only the solver configuration XML, specifically the `<swapMoveSelector/>` and `<pillarSwapMoveSelector/>`.
+The update only impacts the solver configuration XML, specifically the `<swapMoveSelector/>` and `<pillarSwapMoveSelector/>`.
 
-To enforce structure of the configuration XML in build time.
+The change was made to enforce the structure of the configuration XML in build time.
 
-Before in `*.xml`:
+An example from the `*.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -654,7 +652,7 @@ Before in `*.xml`:
 </swapMoveSelector>
 ----
 
-After in `*.xml`:
+An example from the`*.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -670,13 +668,12 @@ After in `*.xml`:
 === `Solution` interface removed
 *Minor*, *Public API*
 
-`Solution` interface has long been deprecated for removal and has now been removed.
-The same goes for `AbstractSolution`, only used by the Workbench.
+The `Solution` interface has been deprecated and removed. The `AbstractSolution` interface which is only used by {CENTRAL} was also removed.
 
 Remove the `Solution` interface, annotate the `getScore()` method with `@PlanningScore`
 and replace the `getProblemFacts()` method with a `@ProblemFactCollectionProperty` annotation directly on every problem fact getter (or field).
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -704,7 +701,7 @@ public class CloudBalance implements Solution<HardSoftScore> {
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -727,9 +724,9 @@ public class CloudBalance {
 }
 ----
 
-For a single problem fact (which is not wrapped in a `Collection`), use the `@ProblemFactProperty` annotation, as shown below (with field annotations this time):
+For a single problem fact which is not wrapped in a `Collection`, use the `@ProblemFactProperty` annotation, as shown in the following example, with field annotations this time:
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -754,7 +751,7 @@ public class CloudBalance implements Solution<HardSoftScore> {
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -779,10 +776,9 @@ Don't add the `@ProblemFactCollectionProperty` annotation on getters (or fields)
 === `BestSolutionChangedEvent`: `isNewBestSolutionInitialized()` removed
 *Minor*, *Public API*
 
-The method `BestSolutionChangedEvent.isNewBestSolutionInitialized()` has long been deprecated in favor of `BestSolutionChangedEvent.getNewBestSolution().getScore().isSolutionInitialized()`.
-It has now been removed.
+The `BestSolutionChangedEvent.isNewBestSolutionInitialized()` method has been deprecated and replaced with the `BestSolutionChangedEvent.getNewBestSolution().getScore().isSolutionInitialized()` method. The `BestSolutionChangedEvent.isNewBestSolutionInitialized()` method has been removed.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -794,7 +790,7 @@ Before in `*.java`:
     }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -806,9 +802,9 @@ After in `*.java`:
     }
 ----
 
-However, if you also check `isFeasible()`, that's enough because it also checks if the solution is initialized.
+If you also check `isFeasible()`, it is enough because it also checks if the solution is initialized.
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -825,11 +821,11 @@ After in `*.java`:
 === `<valueSelector>`: `variableName` is now an attribute
 *Minor*, *Public API*
 
-When power tweaking move selectors, such as `<changeMoveSelector>`, in a use case with multiple planning variables, the `<variableName>` XML element has been replaced by a `variableName="..."` XML attribute.
+When power-tweaking move selectors, such as `<changeMoveSelector>`, in a use case with multiple planning variables, the `<variableName>` XML element has been replaced by a `variableName="..."` XML attribute.
 This reduces the solver configuration verbosity.
 After being deprecated for the entire 7.x series, the old way has now been removed.
 
-Before in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
+An example from the `*SolverConfig.xml` and `*BenchmarkConfig.xml` files in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -838,7 +834,7 @@ Before in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
   </valueSelector>
 ----
 
-After in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
+An example from the`*SolverConfig.xml` and `*BenchmarkConfig.xml` files in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -851,7 +847,7 @@ After in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
 
 Now that `<solver>` has supported a `<threadFactoryClass>` element for a while, the `<threadFactoryClass>` element under `<partitionedSearch>` has been removed.
 
-Before in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
+An example from the `*SolverConfig.xml` and `*BenchmarkConfig.xml` files in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -864,7 +860,7 @@ Before in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
   </solver>
 ----
 
-After in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
+An example from the`*SolverConfig.xml` and `*BenchmarkConfig.xml` files in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -881,11 +877,11 @@ After in `*SolverConfig.xml` and `*BenchmarkConfig.xml`:
 === `SimpleDoubleScore` and `HardSoftDoubleScore` removed
 *Minor*, *Public API*
 
-The use of double-based score types has https://docs.optaplanner.org/latest/optaplanner-docs/html_single/index.html#avoidFloatingPointNumbersInScoreCalculation[long been frowned upon]
+The use of double-based score types has https://docs.optaplanner.org/latest/optaplanner-docs/html_single/index.html#avoidFloatingPointNumbersInScoreCalculation[been frowned upon]
 as it leads to score corruption.
 They have finally been removed.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -899,7 +895,7 @@ public class MyPlanningSolution {
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -917,16 +913,16 @@ public class MyPlanningSolution {
 === `Score.toInitializedScore()` removed
 *Minor*, *Public API*
 
-The `Score.toInitializedScore()` method has been deprecated in favor of `Score.withInitScore(int)` in 7.x, and now removed.
+The `Score.toInitializedScore()` method was deprecated and replaced with the `Score.withInitScore(int)` method in 7.x and is now removed.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
 score = score.toInitializedScore();
 ----
 
-After in `*.java`:
+An example from the `*.java` in OptaPlanner 8:
 
 [source,java]
 ----
@@ -944,7 +940,7 @@ The following `Comparator` implementations were deprecated in 7.x and now remove
 - `org.optaplanner.core.api.score.constraint.ConstraintMatchTotalScoreComparator`
 - `org.optaplanner.core.api.score.constraint.IndictmentScoreComparator`
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -952,7 +948,7 @@ NaturalScoreComparator comparator = new NaturalScoreComparator();
 ConstraintMatchScoreComparator comparator2 = new ConstraintMatchScoreComparator();
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -982,14 +978,14 @@ The logic of this new filter is therefore inverted as compared to the old filter
 Users should update their `@PlanningEntity` annotations, supplying the new filter instead of the old.
 The old field has now been removed.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
 @PlanningEntity(movableEntitySelectionFilter = MyMovableEntitySelectionFilter.class)
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1026,7 +1022,7 @@ https://docs.optaplanner.org/latest/optaplanner-docs/html_single/index.html#cons
 `ValueRangeFactory` class is a factory class that has only static methods.
 As such, there is no need for the users to extend this class, and it has therefore been made `final`.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1035,7 +1031,7 @@ class MyValueRangeFactory extends ValueRangeFactory {
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1049,16 +1045,16 @@ class MyValueRangeFactory {
 *Minor*, *Public API*
 
 `ConstraintMatchTotal` and `Indictment` classes have been converted into interfaces and in the process, their implementations were moved out of the public API, together with methods that allowed to mutate their state.
-These methods were never intended for public API, and therefore there is no replacement for them.
+These methods were never intended for the public API, and therefore there is no replacement for them.
 
-You may still need the instances themselves if you choose to implement `ConstraintMatchAwareIncrementalScoreCalculator`:
+You might still need the instances themselves if you choose to implement `ConstraintMatchAwareIncrementalScoreCalculator`:
 
 [source,java]
 ----
 ConstraintMatchTotal maximumCapacityMatchTotal = new ConstraintMatchTotal(...);
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1069,10 +1065,10 @@ ConstraintMatchTotal maximumCapacityMatchTotal = new DefaultConstraintMatchTotal
 === `ScoreManager`: generic type `Score` added
 *Major*, *Public API*
 
-The `ScoreManager` and `ScoreExplanation` API's
+The `ScoreManager` and `ScoreExplanation` APIs
 now have a generic type `Score` to avoid downcasts in your code, for example from `Score` to `HardSoftScore`.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1080,7 +1076,7 @@ Before in `*.java`:
     ScoreManager<TimeTable> scoreManager;
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1088,7 +1084,7 @@ After in `*.java`:
     ScoreManager<TimeTable, HardSoftScore> scoreManager;
 ----
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1096,7 +1092,7 @@ Before in `*.java`:
     HardSoftScore score = (HardSoftScore) explanation.getScore();
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1108,10 +1104,10 @@ After in `*.java`:
 === `ConstraintMatchTotal`, `ConstraintMatch` and `Indictment`: generic type `Score` added
 *Major*
 
-Just like `ScoreManager` and `ScoreExplanation`, the `ConstraintMatchTotal`, `ConstraintMatch` and `Indictment` API's
+Just like `ScoreManager` and `ScoreExplanation`, the `ConstraintMatchTotal`, `ConstraintMatch` and `Indictment` APIs
 now have a generic type `Score` to avoid downcasts in your code, for example from `Score` to `HardSoftScore`.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1121,7 +1117,7 @@ Before in `*.java`:
     HardSoftScore totalScore = (HardSoftScore) constraintMatchTotal.getScore();
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1131,7 +1127,7 @@ After in `*.java`:
     HardSoftScore totalScore = constraintMatchTotal.getScore();
 ----
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1141,7 +1137,7 @@ Before in `*.java`:
     HardSoftScore totalScore = (HardSoftScore) indictment.getScore();
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1159,7 +1155,7 @@ After in `*.java`:
 The interface `ConstraintMatchAwareIncrementalScoreCalculator`
 now also has a generic type parameter for `Score` to avoid raw type usages of `ConstraintMatchTotal` and `Indictment`.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1180,7 +1176,7 @@ public class MachineReassignmentIncrementalScoreCalculator
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1208,7 +1204,7 @@ public class MachineReassignmentIncrementalScoreCalculator
 The abstract class `AbstractCustomPhaseCommand` was removed.
 Any class that extends it should directly implement the `CustomPhaseCommand` interface.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1222,7 +1218,7 @@ public class DinnerPartySolutionInitializer extends AbstractCustomPhaseCommand<D
 }
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1247,7 +1243,7 @@ The deprecated class `org.optaplanner.core.impl.score.director.incremental.Abstr
 has also been removed.
 Replace the use of the removed interfaces and classes with their counterparts in the public API.
 
-Before in `*EasyScoreCalculator.java*`:
+An example from the `*EasyScoreCalculator.java*` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1260,7 +1256,7 @@ Before in `*EasyScoreCalculator.java*`:
   }
 ----
 
-After in `*EasyScoreCalculator.java*`:
+An example from the`*EasyScoreCalculator.java*` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -1273,7 +1269,7 @@ After in `*EasyScoreCalculator.java*`:
   }
 ----
 
-Before in `*IncrementalScoreCalculator.java*`:
+An example from the `*IncrementalScoreCalculator.java*` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1286,7 +1282,7 @@ Before in `*IncrementalScoreCalculator.java*`:
   }
 ----
 
-After in `*IncrementalScoreCalculator.java*`:
+An example from the`*IncrementalScoreCalculator.java*` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -1299,7 +1295,7 @@ After in `*IncrementalScoreCalculator.java*`:
   }
 ----
 
-Before in `*ConstraintMatchAwareIncrementalScoreCalculator.java*`:
+An example from the `*ConstraintMatchAwareIncrementalScoreCalculator.java*` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1315,7 +1311,7 @@ Before in `*ConstraintMatchAwareIncrementalScoreCalculator.java*`:
   }
 ----
 
-After in `*ConstraintMatchAwareIncrementalScoreCalculator.java*`:
+An example from the`*ConstraintMatchAwareIncrementalScoreCalculator.java*` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -1333,11 +1329,11 @@ After in `*ConstraintMatchAwareIncrementalScoreCalculator.java*`:
 === `PlannerBenchmarkFactory`: `createFromSolverFactory()` removed
 *Major*, *Public API*
 
-The method `PlannerBenchmarkFactory.createFromSolverFactory()` has long been deprecated in favor of
-`PlannerBenchmarkFactory.createFromSolverConfigXmlResource(String)`.
-It has now been removed.
+The `PlannerBenchmarkFactory.createFromSolverFactory()` method has been deprecated and replaced with the
+`PlannerBenchmarkFactory.createFromSolverConfigXmlResource(String)` method. The `PlannerBenchmarkFactory.createFromSolverFactory()` method has been removed.
 
-Before in `*.java`:
+
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1346,7 +1342,7 @@ SolverFactory<CloudBalance> solverFactory = SolverFactory.createFromXmlResource(
 PlannerBenchmarkFactory benchmarkFactory = PlannerBenchmarkFactory.createFromSolverFactory(solverFactory);
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1361,12 +1357,12 @@ and then `PlannerBenchmarkFactory.create(PlannerBenchmarkConfig)` instead.
 === `PlannerBenchmarkFactory`: `getPlannerBenchmarkConfig()` removed
 *Minor*, *Public API*
 
-The method `PlannerBenchmarkFactory.getPlannerBenchmarkConfig()` has long been deprecated in favor of
-`PlannerBenchmarkFactory.create(PlannerBenchmarkConfig)`.
-A `PlannerBenchmarkConfig` is now instantiated before a `PlannerBenchmarkFactory` is instantiated, which is more natural.
-The old was has now been removed.
+The `PlannerBenchmarkFactory.getPlannerBenchmarkConfig()` method has been deprecated and replaced with the
+`PlannerBenchmarkFactory.create(PlannerBenchmarkConfig)` method.
+A `PlannerBenchmarkConfig` instance is now instantiated before a `PlannerBenchmarkFactory` instance is instantiated. This order is more logical.
+The old one has now been removed.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1377,7 +1373,7 @@ PlannerBenchmarkConfig benchmarkConfig = benchmarkFactory.getPlannerBenchmarkCon
 PlannerBenchmark benchmark = benchmarkFactory.buildPlannerBenchmark();
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1394,9 +1390,9 @@ PlannerBenchmark benchmark = benchmarkFactory.buildPlannerBenchmark();
 
 OptaPlanner now provides an XML Schema Definition for the benchmark configuration.
 Although OptaPlanner keeps backward compatibility of the existing XML configuration,
-migrating to the XSD is strongly recommended as OptaPlanner may support only valid configuration XML in the future.
+migrating to the XSD is strongly recommended as OptaPlanner might support only valid configuration XML in the future.
 
-Before in `*BenchmarkConfig.xml`:
+An example from the `*BenchmarkConfig.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1406,7 +1402,7 @@ Before in `*BenchmarkConfig.xml`:
 </plannerBenchmark>
 ----
 
-After in `*BenchmarkConfig.xml`:
+An example from the`*BenchmarkConfig.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -1416,7 +1412,7 @@ After in `*BenchmarkConfig.xml`:
 </plannerBenchmark>
 ----
 
-Using the XSD may require reordering some of the XML elements of the configuration.
+Using the XSD might require reordering some of the XML elements of the configuration.
 Use code completion in the IDE to migrate to a valid XML.
 
 [discrete]
@@ -1426,7 +1422,7 @@ Use code completion in the IDE to migrate to a valid XML.
 The `<xStreamAnnotatedClass/>` has been removed from the `<problemBenchmarks/>` configuration together with  the corresponding
 `getXStreamAnnotatedClassList()` and `setXStreamAnnotatedClassList()` methods in the `ProblemBenchmarksConfig` class.
 
-Before in `*.java`:
+An example from the `*.java` in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1434,7 +1430,7 @@ ProblemBenchmarksConfig problemBenchmarksConfig = new ProblemBenchmarksConfig();
 problemBenchmarksConfig.setXStreamAnnotatedClassList(MySolution.class);
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1452,7 +1448,7 @@ ProblemBenchmarksConfig problemBenchmarksConfig = new ProblemBenchmarksConfig();
 problemBenchmarksConfig.setSolutionFileIOClass(MySolutionFileIO.class);
 ----
 
-Before in `*BenchmarkConfig.xml`:
+An example from the `*BenchmarkConfig.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1469,8 +1465,7 @@ Before in `*BenchmarkConfig.xml`:
 </plannerBenchmark>
 ----
 
-After in `*BenchmarkConfig.xml`:
-
+An example from the`*BenchmarkConfig.xml` file in OptaPlanner 8:
 [source,xml]
 ----
 <plannerBenchmark>
@@ -1491,10 +1486,9 @@ After in `*BenchmarkConfig.xml`:
 === `BenchmarkAggregatorFrame`: `createAndDisplay(PlannerBenchmarkFactory)` removed
 *Minor*
 
-The method `BenchmarkAggregatorFrame.createAndDisplay(PlannerBenchmarkFactory)` has long been deprecated in favor of `BenchmarkAggregatorFrame.createAndDisplayFromXmlResource(String)`.
-It has now been removed.
+The `BenchmarkAggregatorFrame.createAndDisplay(PlannerBenchmarkFactory)` method has been deprecated and replaced with the `BenchmarkAggregatorFrame.createAndDisplayFromXmlResource(String)` method. The `BenchmarkAggregatorFrame.createAndDisplay(PlannerBenchmarkFactory)` method has been removed.
 
-Before in `*.java`:
+An example from the `*.java` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1503,7 +1497,7 @@ PlannerBenchmarkFactory benchmarkFactory = PlannerBenchmarkFactory.createFromXml
 BenchmarkAggregatorFrame.createAndDisplay(benchmarkFactory);
 ----
 
-After in `*.java`:
+An example from the `*.java` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1511,7 +1505,7 @@ BenchmarkAggregatorFrame.createAndDisplayFromXmlResource(
         ".../cloudBalancingBenchmarkConfig.xml");
 ----
 
-If you programmatically adjust the benchmark configuration, you can use ``BenchmarkAggregatorFrame.createAndDisplay(PlannerBenchmarkConfig)` instead.
+If you programmatically adjust the benchmark configuration, you can use `BenchmarkAggregatorFrame.createAndDisplay(PlannerBenchmarkConfig)` instead.
 
 [discrete]
 === Removed JavaScript expression support in configuration
@@ -1521,7 +1515,7 @@ Various elements of both the solver configuration and benchmark configuration no
 JavaScript expressions.
 Users need to replace these with either auto-configuration or with integer constants.
 
-Before in `solverConfig.xml`:
+An example from the `solverConfig.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1532,7 +1526,7 @@ Before in `solverConfig.xml`:
     </solver>
 ----
 
-After in `solverConfig.xml`:
+An example from the`solverConfig.xml`file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -1543,7 +1537,7 @@ After in `solverConfig.xml`:
     </solver>
 ----
 
-Before in `benchmarkConfig.xml`:
+An example from the `benchmarkConfig.xml` file in OptaPlanner 7:
 
 [source,xml]
 ----
@@ -1554,7 +1548,7 @@ Before in `benchmarkConfig.xml`:
     </plannerBenchmark>
 ----
 
-After in `benchmarkConfig.xml`:
+An example from the`benchmarkConfig.xml` file in OptaPlanner 8:
 
 [source,xml]
 ----
@@ -1572,10 +1566,9 @@ After in `benchmarkConfig.xml`:
 A deprecated interface `VariableListener` from package `org.optaplanner.core.impl.domain.variable.listener` has ben removed,
 along with a deprecated interface `StatefulVariableListener`
 and a deprecated class `VariableListenerAdapter` in that same package.
-Instead, use an interface `VariableListener` from package `org.optaplanner.core.api.domain.variable`.
+Use an interface `VariableListener` from package `org.optaplanner.core.api.domain.variable` instead.
 
-Before in `*VariableListener.java*`:
-
+An example of a `*VariableListener.java*` file in OptaPlanner 7:
 [source,java]
 ----
   ...
@@ -1596,7 +1589,7 @@ Before in `*VariableListener.java*`:
 
 ----
 
-After in `*VariableListener.java*`:
+An example from a `*VariableListener.java*` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1617,7 +1610,7 @@ After in `*VariableListener.java*`:
   }
 ----
 
-Before in `*StatefulVariableListener.java*`:
+An example of a `*StatefulVariableListener.java*` file in OptaPlanner 7:
 
 [source,java]
 ----
@@ -1639,7 +1632,7 @@ Before in `*StatefulVariableListener.java*`:
 
 ----
 
-After in `*StatefulVariableListener.java*`:
+An example from the`*StatefulVariableListener.java*` file in OptaPlanner 8:
 
 [source,java]
 ----
@@ -1674,12 +1667,3 @@ if all their field values are equal.
 
 The `equals()` override in `ConstraintMatch` has been removed
 in order to not fail on constraints with non-distinct matches.
-
-== From 8.5.0.Final to 8.6.0.Final
-
-[discrete]
-=== `@PlanningId` can no longer return null
-*Minor*
-
-If a field (or getter) annotated with a `@PlanningId` annotation returns a `null` value,
-the `Solver` now fails fast immediately, instead of failing fast when the second instance with `null` value appears.
