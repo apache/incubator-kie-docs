@@ -1,0 +1,120 @@
+[id='pmml-invocation-embedded-trusty-proc_{context}']
+= Embedding a PMML trusty call directly in a Java application
+
+A KIE container is local when the knowledge assets are either embedded directly into the calling program or are physically pulled in using Maven dependencies for the KJAR. You embed knowledge assets directly into a project if there is a tight relationship between the version of the code and the version of the PMML definition. Any changes to the decision take effect after you have intentionally updated and redeployed the application. A benefit of this approach is that proper operation does not rely on any external dependencies to the run time, which can be a limitation of locked-down environments.
+
+.Prerequisites
+* A KJAR containing the PMML model to execute has been created. For more information about project packaging, see
+ifdef::DM,PAM[]
+{URL_DEPLOYING_AND_MANAGING_SERVICES}#assembly-packaging-deploying[_{PACKAGING_DEPLOYING_PROJECT}_].
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+<<_builddeployutilizeandrunsection>>.
+endif::[]
+
+.Procedure
+. In your client application, add the following dependencies to the relevant classpath of your Java project:
++
+--
+[source,xml,subs="attributes+"]
+----
+<!-- Required for the PMML compiler -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>kie-pmml-dependencies</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- Required for the KIE public API -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-api</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependencies>
+
+<!-- Required if not using classpath KIE container -->
+<dependency>
+  <groupId>org.kie</groupId>
+  <artifactId>kie-ci</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+----
+
+The `<version>` is the Maven artifact version for {PRODUCT} currently used in your project (for example, {MAVEN_ARTIFACT_VERSION}).
+
+ifdef::DM,PAM[]
+[NOTE]
+====
+Instead of specifying a {PRODUCT} `<version>` for individual dependencies, consider adding the {PRODUCT_BA} bill of materials (BOM) dependency to your project `pom.xml` file. The {PRODUCT_BA} BOM applies to both {PRODUCT_DM} and {PRODUCT_PAM}. When you add the BOM files, the correct versions of transitive dependencies from the provided Maven repositories are included in the project.
+
+Example BOM dependency:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>com.redhat.ba</groupId>
+  <artifactId>ba-platform-bom</artifactId>
+  <version>{BOM_VERSION}</version>
+  <scope>import</scope>
+  <type>pom</type>
+</dependency>
+----
+
+For more information about the {PRODUCT_BA} BOM, see
+ifdef::PAM[]
+https://access.redhat.com/solutions/3405361[What is the mapping between RHPAM product and maven library version?].
+endif::[]
+ifdef::DM[]
+https://access.redhat.com/solutions/3363991[What is the mapping between RHDM product and maven library version?].
+endif::[]
+====
+endif::DM,PAM[]
+--
+. Create a KIE container from `classpath` or `ReleaseId`:
++
+[source,java]
+----
+KieServices kieServices = KieServices.Factory.get();
+
+ReleaseId releaseId = kieServices.newReleaseId( "org.acme", "my-kjar", "1.0.0" );
+KieContainer kieContainer = kieServices.newKieContainer( releaseId );
+----
++
+Alternative option:
++
+[source,java]
+----
+KieServices kieServices = KieServices.Factory.get();
+
+KieContainer kieContainer = kieServices.getKieClasspathContainer();
+----
+
+. Create an instance of the `PMMLRuntime` that is used to execute the model:
++
+[source,java]
+----
+PMMLRuntime pmmlRuntime = KieRuntimeFactory.of(kieContainer.getKieBase()).get(PMMLRuntime.class);
+----
+
+. Create an instance of the `PMMLRequestData` class that applies your PMML model to a data set:
++
+[source,java]
+----
+PMMLRequestData pmmlRequestData = new PMMLRequestData({correlation_id}, {model_name});
+pmmlRequestData.addRequestParam({parameter_name}, {parameter_value})
+...
+----
+
+. Create an instance of the `PMMLContext` class that contains the input data:
++
+[source,java]
+----
+PMMLContext pmmlContext = new PMMLContextImpl(pmmlRequestData);
+----
+
+. Retrieve the `PMML4Result` while executing the PMML model with the required PMML class instances that you created:
++
+[source,java]
+----
+PMML4Result pmml4Result = pmmlRuntime.evaluate({model_name}, pmmlContext);
+----

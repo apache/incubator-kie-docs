@@ -1,0 +1,63 @@
+[id='pmml-naming-conventions-trusty-con_{context}']
+= PMML trusty support and naming conventions in {PRODUCT}
+
+When you add a PMML file to a project in {PRODUCT}, multiple assets are generated. The tree and scorecard models are translated to rules, and regression and mining models are translated to Java classes. Each type of PMML model generates a different set of assets, but all PMML model types generate at least the following set of assets:
+
+* A root package whose name is derived from the PMML file name
+* In the root package, a Java factory class that is used to instantiate the model
+* A subpackage specific to the model whose name is derived from the model name
+* For rule models, two `rule-mapper` classes that are used to instantiate the rule network
+* For mining models, children model packages and classes are nested in the parent model
+
+NOTE: Currently, only one model for each PMML file is allowed. Also, extensions are temporarily not supported.
+
+The following are naming conventions for generated PMML packages and classes:
+
+* The root package name is the name of the original PMML file in lowercase and without space, for example, `sampleregression`.
+* The name of the generated `factory` Java class is the PMML file name with `Factory` added to it in the format `fileName+"Factory"` and first uppercase letter, for example, `SampleRegressionFactory`.
+* The subpackage name of a model is the name of the original model in lowercase and without space, for example, `compoundnestedpredicatescorecard`.
+* The names of the generated data classes are determined by the model type:
+** Rules models: A top-level `PMMLRuleMappersImpl` is generated including references to `PMMLRuleMapperImpl` classes that are nested in the subpackages.
+** Mining models:
+*** The name of the created `segmentation` subpackage is the name of the original model in lowercase, without space, and `segmentation` added to it in the format `modelName+”segmentation”`, for example, `mixedminingsegmentation`.
+*** In the `segmentation` subpackage, a `segmentation` Java class is created that contains the references to the nested models. The name of the created `segmentation` Java class is the model name with `Segmentation` added to it in the format `modelName+Segmentation`, for example, `MixedMiningSegmentation`.
+*** For each segment, a specific subpackage is created. The name of the segment specific subpackage is the original model name in lowercase with `segment` and a progressive integer starting from 0 added to it in the format `modelName+segment+integer`. For example, `mixedminingsegment0`, `mixedminingsegment1`.
+
+[discrete]
+== Known limitations of PMML trusty implementation
+
+The following list shows elements that are not implemented for PMML trusty:
+
+* `Target` element is not implemented
+* `Extension` element is not implemented
+* `MiningSchema` or `MiningField` elements that are not implemented, include:
+** `importance`
+** `outliers`
+** `lowValue`
+** `highValue`
+** `invalidValueTreatment`
+** `invalidValueReplacement`
+* `OutputField` elements that are not implemented, include:
+** Decisions
+** Value
+** Rule feature
+** Algorithm
+** `isMultiValued`
+** `segmentId`
+** `isFinalResult`
+* `TransformationDictionary` or `LocalTransformation` expressions that are not supported, include:
+** `NormContinuous`
+** `NormDiscrete`
+** `MapValues`
+** `TextIndex`
+** `Aggregate`
+** `Lag`
+* `ModelStats`, `ModelExplanation`, and `ModelExplanation` element is not implemented in all models including regression, tree, scorecard, and mining
+* `verification` element is not implemented in tree, scorecard, and mining model
+* `VariableWeight` element is not implemented in mining model
+* Tree model elements that are not implemented, include:
+** `IsMissing` or `IsNotMissing`
+** `Surrogate` in `CompoundPredicate`
+** `missingValuePenalty`
+** `splitCharacteristic`
+** `isScorable`
