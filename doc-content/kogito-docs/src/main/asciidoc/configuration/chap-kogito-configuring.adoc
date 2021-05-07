@@ -155,13 +155,6 @@ a|`kogito.jobs-service.url`
 
 Example: `kogito.jobs-service.url=http://localhost:8085`
 
-|`kogito.jobs-service.persistence`
-a|(Specified in Jobs Service) Identifies the persistence mechanism used by the Jobs Service, either `in-memory` or `infinispan`
-
-Default value: `in-memory`
-
-Example: `kogito.jobs-service.persistence=in-memory`
-
 |`kogito.jobs-service.backoffRetryMillis`
 a|(Specified in Jobs Service) Defines the retry back-off time in milliseconds between job execution attempts, in case the execution fails
 
@@ -2199,11 +2192,6 @@ The {PRODUCT} Jobs Service supports the following configuration properties. You 
 |===
 |Name |Description |Value |Default
 
-|`kogito.jobs-service.persistence`
-|Identifies the persistence mechanism used by the Jobs Service.
-|`in-memory`, `infinispan`
-|`in-memory`
-
 |`kogito.jobs-service.backoffRetryMillis`
 |Defines the retry back-off time in milliseconds between job execution attempts, in case the execution fails
 |Long type
@@ -2393,20 +2381,20 @@ By default, {PRODUCT} services use an in-memory timer service to handle time-bas
 
 For advanced use cases where time intervals can be days or weeks or when additional event handling options are required, you can configure your {PRODUCT} project to use the {PRODUCT} Jobs Service as an external timer service. Whenever you need to schedule a timer as part of process instance, the timer is scheduled in the Jobs Service and the Jobs Service calls back to the {PRODUCT} service upon timer expiration.
 
-The {PRODUCT} Jobs Service also supports Infinispan persistence that you can enable when you run the Jobs Service so that job data is preserved across application restarts.
+The {PRODUCT} Jobs Service also supports Infinispan or PostgreSQL persistence that you can enable when you run the Jobs Service so that job data is preserved across application restarts.
 
 .Procedure
-. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service/[`jobs-service`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-__VERSION__-runner.jar` file to a local directory.
-. In a command terminal, navigate to the directory location of the downloaded `jobs-service-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with Infinispan persistence enabled:
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-common[`jobs-service-common`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-common-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-common-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with in-memory persistence enabled:
 +
 --
-.Running the Jobs Service with Infinispan persistence enabled
+.Running the Jobs Service with in-memory persistence enabled
 [source,subs="+quotes"]
 ----
 $ java -jar jobs-service-common-__VERSION__-runner.jar
 ----
 
-Infinispan persistence enables the job data to be preserved across application restarts. If you do not use Infinispan persistence, the Jobs Service uses the default in-memory storage and all job information is lost between application restarts.
+If the Jobs Service uses the default in-memory storage, all job information is lost between application restarts.
 
 To change the logging level of the Jobs Service, such as for debugging, you can specify the following start-up properties:
 
@@ -2416,7 +2404,7 @@ To change the logging level of the Jobs Service, such as for debugging, you can 
 $ java  \
   -Dquarkus.log.console.level=DEBUG -Dquarkus.log.category.\"org.kie.kogito\".min-level=DEBUG  \
   -Dquarkus.log.category.\"org.kie.kogito\".level=DEBUG  \
-  -jar jobs-service-__VERSION__-runner.jar
+  -jar jobs-service-common-__VERSION__-runner.jar
 ----
 --
 . In your {PRODUCT} project, add the following dependency to the `pom.xml` file to enable the Jobs Service add-on:
@@ -2481,30 +2469,58 @@ In both cases, you produce an instance of the client to enable detailed setup of
 NOTE: As an alternative to enabling the Jobs Service explicitly for {PRODUCT} services, you can use the {PRODUCT} Operator to install the Jobs Service custom resource for the service deployment on OpenShift. For more information about installing the Jobs Service with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-jobs-service_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
 
 [id="proc-jobs-service-persistence_{context}"]
-=== Enabling Infinispan persistence in the {PRODUCT} Jobs Service
+=== Persistence in the {PRODUCT} Jobs Service
 
 [role="_abstract"]
 The {PRODUCT} Jobs Service supports the following persistence mechanisms for job data:
 
 * *In-memory persistence*: (Default) Job data is persisted with the Jobs Service in-memory storage during the Jobs Service runtime. If the Jobs Service is restarted, all job information is lost. If no other persistence configuration is set, the Jobs Service uses this persistence mechanism.
 * *Infinispan persistence*: Job data is persisted using Infinispan storage so that the data is preserved across application restarts. If the Jobs Service is restarted, the service continues to process any previously scheduled jobs.
+* *PostgreSQL persistence*: Job data is persisted using PostgreSQL storage so that the data is preserved across application restarts. If the Jobs Service is restarted, the service continues to process any previously scheduled jobs. Flyway is used to manage database schema.
 
-You can enable Infinispan persistence in the {PRODUCT} Jobs Service during application start-up and in the Jobs Service `application.properties` file.
+[id="proc-jobs-service-persistence-infinispan_{context}"]
+==== Enabling Infinispan persistence in the {PRODUCT} Jobs Service
+
+You can enable Infinispan persistence in the {PRODUCT} Jobs Service during application start-up.
 
 .Procedure
-Run the Jobs Service with the property `-Dkogito.job-service.persistence=infinispan`:
-
-.Enabling Infinispan persistence during Jobs Service start-up
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-infinispan[`jobs-service-infinispan`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-infinispan-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-infinispan-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with Infinispan persistence enabled:
++
+--
+.Running the Jobs Service with Infinispan persistence enabled
 [source,subs="+quotes"]
 ----
 $ java  \
-    -Dkogito.job-service.persistence=infinispan  \
-    -jar jobs-service-__VERSION__-runner.jar
+    -jar jobs-service-infinispan-__VERSION__-runner.jar
 ----
 
-Alternatively, you can add the same property to the `src/main/resources/application.properties` file in the Jobs Service project.
-
 For more information about Infinispan configuration with Quarkus applications, see https://quarkus.io/guides/infinispan-client[Infinispan client] in the Quarkus documentation.
+--
+
+[id="proc-jobs-service-persistence-postgresql_{context}"]
+==== Enabling PostgreSQL persistence in the {PRODUCT} Jobs Service
+
+You can enable PostgreSQL persistence in the {PRODUCT} Jobs Service during application start-up.
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-postgresql[`jobs-service-postgresql`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-postgresql-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-postgresql-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with PostgreSQL persistence enabled:
++
+--
+.Running the Jobs Service with PostgreSQL persistence enabled
+[source,subs="+quotes"]
+----
+$ java  \
+    -Dquarkus.datasource.jdbc.url=__DATASOURCE_JDBC_URL__ \
+    -Dquarkus.datasource.reactive.url=__DATASOURCE_URL__ \
+    -Dquarkus.datasource.username=__DATASOURCE_USERNAME__ \
+    -Dquarkus.datasource.password=__DATASOURCE_PASSWORD__ \
+    -jar jobs-service-postgresql-__VERSION__-runner.jar
+----
+
+For more information about PostgreSQL configuration with Quarkus applications, see https://quarkus.io/guides/reactive-sql-clients[Quarkus reactive SQL client] and https://quarkus.io/guides/flyway[Flyway] in the Quarkus documentation.
+--
 
 [id="proc-jobs-service-messaging_{context}"]
 === Enabling Kafka messaging in the {PRODUCT} Jobs Service
@@ -2531,7 +2547,7 @@ mp.messaging.outgoing.kogito-job-service-job-status-events.topic=__TOPIC_NAME__
 ----
 $ java  \
     -Dquarkus.profile=events-support  \
-    -jar jobs-service-__VERSION__-runner.jar
+    -jar jobs-service-common-__VERSION__-runner.jar
 ----
 
 Alternatively, you can add the environment variable `QUARKUS_PROFILE=events-support`.
