@@ -1,0 +1,63 @@
+[id="con-download-maven_{context}"]
+
+= Downloading and configuring the Quarkus Maven repository
+
+If you do not want to use the online Maven repository, you can download and configure the Quarkus Maven repository to create a Quarkus application with Maven. The Quarkus Maven repository contains many of the requirements that Java developers typically use to build their applications.  This procedure describes how to edit the `settings.xml` file to configure the Quarkus Maven repository.
+
+NOTE: When you configure the repository by modifying the Maven `settings.xml` file, the changes apply to all of your Maven projects.
+
+.Procedure
+. Download the {QUARKUS} Maven repository ZIP file from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html?downloadType=distributions&product=redhat.quarkus[Software Downloads] page of the Red Hat Customer Portal (login required).
+. Expand the downloaded archive.
+. Change directory to the `~/.m2/` directory and open the Maven `settings.xml` file in a text editor or integrated development environment (IDE).
+
+. Add the following lines to the `<profiles>` element of the `settings.xml` file, where `_QUARKUS_MAVEN_REPOSITORY_` is the path of the Quarkus Maven repository that you downloaded.  The format of `_QUARKUS_MAVEN_REPOSITORY_` must be `\file://$PATH`, for example `\file:///home/userX/rh-quarkus-{QUARKUS_VERSION_LONG}.GA-maven-repository/maven-repository`.
++
+[source,xml,subs="attributes+,+quotes"]
+----
+<!-- Configure the Quarkus Maven repository -->
+<profile>
+  <id>red-hat-enterprise-maven-repository</id>
+  <repositories>
+    <repository>
+      <id>red-hat-enterprise-maven-repository</id>
+      <url>__QUARKUS_MAVEN_REPOSITORY__</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>red-hat-enterprise-maven-repository</id>
+      <url>__QUARKUS_MAVEN_REPOSITORY__</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+</profile>
+----
++
+. Add the following lines to the `<activeProfiles>` element of the `settings.xml` file and save the file.
++
+[source,xml]
+----
+<activeProfile>red-hat-enterprise-maven-repository</activeProfile>
+----
+
+[IMPORTANT]
+====
+If your Maven repository contains outdated artifacts, you might encounter one of the following Maven error messages when you build or deploy your project, where `_ARTIFACT_NAME_` is the name of a missing artifact and `_PROJECT_NAME_` is the name of the project you are trying to build:
+
+* `Missing artifact _PROJECT_NAME_`
+* `[ERROR] Failed to execute goal on project _ARTIFACT_NAME_; Could not resolve dependencies for _PROJECT_NAME_`
+
+To resolve the issue, delete the cached version of your local repository located in the  `~/.m2/repository` directory to force a download of the latest Maven artifacts.
+====
