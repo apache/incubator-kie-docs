@@ -1,0 +1,78 @@
+[id='proc-quarkus-dependency-injection_{context}']
+
+
+= Using {ProductName} dependency injection
+Dependency injection enables a service to be used in a way that is completely independent of any client consumption. It separates the creation of client dependencies from the client’s behavior, which enables program designs to be loosely coupled.
+
+Dependency injection in {ProductLongName} is based on {ProductName} ArC which is a CDI-based build-time oriented dependency injection solution tailored for {ProductName} architecture. Because ArC is a transitive dependency of `quarkus-resteasy`, and `quarkus-resteasy` is a dependency of your project, ArC will already be downloaded.
+
+.Prerequisites
+* You have created the school timetable project.
+
+.Procedure
+. To modify the application and add a companion bean, create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:
++
+[source, java]
+----
+package org.acme.quickstart;
+
+import javax.enterprise.context.ApplicationScoped;
+
+@ApplicationScoped
+public class GreetingService {
+
+    public String greeting(String name) {
+        return "hello " + name;
+    }
+
+}
+----
+
+. Edit the `src/main/java/org/acme/quickstart/GreetingResource.java` to inject the `GreetingService` and create a new endpoint using it:
++
+[source, java]
+----
+package org.acme.quickstart;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
+
+@Path("/hello")
+public class GreetingResource {
+
+    @Inject
+    GreetingService service;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/greeting/{name}")
+    public String greeting(@PathParam String name) {
+        return service.greeting(name);
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+. If you stopped the application, enter the following command to restart it:
++
+[source]
+----
+./mvnw compile quarkus:dev
+----
+. To verify that the endpoint returns `hello quarkus`, enter the following command in a new terminal window:
++
+[source,shell,subs=attributes+]
+----
+curl -w "\n" http://localhost:8080/hello/greeting/quarkus
+hello quarkus
+----
