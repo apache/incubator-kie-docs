@@ -118,6 +118,7 @@ Process services::
 * `process-quarkus-example` and `process-springboot-example`: A process service (on Quarkus or Spring Boot) for ordering items and that exposes REST operations to create new orders or to list and delete active orders.
 * `onboarding-example`: A combination of a process service and two decision services that use DMN and DRL for onboarding new employees.
 * `flexible-process-quarkus` and `flexible-process-springboot`: A process service (on Quarkus or Spring Boot) that uses flexible processes for case management in {PRODUCT}.
+* `process-usertasks-quarkus-with-console` and `process-usertasks-springboot-with-console`: A process service with user tasks (on Quarkus or Spring Boot), displaying the entire user task lifecycle using the {PRODUCT} Management and Task Console.
 
 Process services that use {PRODUCT_OP}::
 * `process-optaplanner-quarkus` and `process-optaplanner-springboot`: A process service (on Quarkus or Spring Boot) that uses {PRODUCT_OP} to optimize airline flight schedules and seat assignments. For information about {PRODUCT_OP} integration with {PRODUCT}, see the https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html#integrationWithQuarkus[{PRODUCT_OP} documentation].
@@ -314,6 +315,77 @@ You use the `"id"` value for the order that was returned when you created the or
 curl -X DELETE http://localhost:8080/orders/6b53c227-6d5e-40b7-8c8c-a541a2a47d58 -H 'content-type: application/json' -H 'accept: application/json'
 ----
 --
+
+[id="proc-kogito-app-examples-with-console-running_{context}"]
+=== Interacting with {PRODUCT} Management and Task Console using example applications
+
+You can interact with the {PRODUCT} Management and Task Console to run the processes using the example applications in the https://github.com/kiegroup/kogito-examples[`kogito-examples`] repository in GitHub. The example applications containing the `with-consoles` suffix, allow you to experiment with the {PRODUCT} services and {PRODUCT} Management and Task Console.
+
+The Management and Task Console need to interact with the {PRODUCT} Data Index service using minimal persistence configuration, which you can perform using docker-compose configuration. The example applications provide docker-compose configuration to configure and start the required services, including Kafka, Infinispan, {PRODUCT} Data Index, {PRODUCT} Management Console, and {PRODUCT} Task Console.
+
+.Default services started by docker-compose 'with-console' example applications
+image::kogito/creating-running/docker-compose.png[Image of default services started by docker-compose 'with-console' examples]
+
+NOTE: In each example application, the docker-compose starts the needed services to run the project. The docker-compose also configures additional services such as Keycloak (process-usertasks-with-security-oidc-PLATFORM-with-console) or {PRODUCT} Jobs (process-usertasks-timer-quarkus-with-console).
+
+.Procedure
+. Download the latest https://github.com/kiegroup/kogito-examples/releases[`kogito-examples`] release to a local directory and extract the file.
+. In a command terminal, navigate to the extracted `kogito-examples-__RELEASE__/process-usertask-PLATFORM__-with-console` folder
+. Compile the project to generate the persistence file descriptor, which docker-compose uses.
+. From the docker-compose folder, execute `./startServices.sh` to start the containers with the services needed in each case.
+. Enter one of the following commands to build and run the example:
++
+--
+Quarkus and Spring Boot support the following run modes:
+
+* *Development mode*: For local testing. On Quarkus, development mode also offers live reload of your processes and decisions in your running applications for advanced debugging.
+* *JVM mode*: For compatibility with a Java virtual machine (JVM).
+ifdef::KOGITO-COMM[]
+* *Native mode*: (Quarkus only, requires GraalVM) For direct binary execution as native code.
+endif::[]
+
+The command that you use depends on your preferred run mode and application environment:
+
+* For development mode:
++
+.On Quarkus
+[source]
+----
+$ mvn clean compile quarkus:dev
+----
++
+.On Sprint Boot
+[source]
+----
+$ mvn clean compile spring-boot:run
+----
++
+* For JVM mode:
++
+.On Quarkus and Spring Boot
+[source]
+----
+$ mvn clean package
+$ java -jar target/sample-kogito-1.0-SNAPSHOT-runner.jar
+----
++
+ifdef::KOGITO-COMM[]
+* For native mode (requires GraalVM):
++
+.On Quarkus only
+[source]
+----
+$ mvn clean package -Dnative
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
++
+endif::[]
+--
+. When the {PRODUCT} service is running, use a REST client, curl utility, or the Swagger UI (if configured for the application) to start a new request.
+. Use the {PRODUCT} Management console to see the created process instance available by default at `http://localhost:8280`.
+. Use the {PRODUCT} Task console available by default at `http://localhost:8380` to execute the user tasks.
+
+In case some ports need to be changed, you can find the configuration of the containers in the `docker-compose/docker-compose.yml` file.
 
 [id="con-kogito-modelers_{context}"]
 == {PRODUCT} BPMN and DMN modelers
