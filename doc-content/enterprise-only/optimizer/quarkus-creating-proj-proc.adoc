@@ -1,0 +1,130 @@
+[id='proc-quarkus-creating-proj_{context}']
+
+
+= Creating the school timetable project
+
+The school timetable project lets you get up and running with {PLANNER} and Quarkus application using Apache Maven and the Quarkus Maven plug-in.
+
+.Procedure
+
+. In a command terminal, enter the following command to verify that Maven is using JDK {OPTAPLANNER_JDK_VERSION} and that the Maven version is  {OPTAPLANNER_MAVEN_VERSION} or higher:
++
+[source]
+----
+mvn --version
+----
+
+. If the preceding command does not return JDK {OPTAPLANNER_JDK_VERSION}, add the path to JDK {OPTAPLANNER_JDK_VERSION} to the PATH environment variable and enter the preceding command again.
+
+. To generate the project, enter one of the following commands:
++
+NOTE: Apple macOS and Microsoft Windows are not supported production environments.
++
+* If you are using Linux or Apple macOS, enter the following command:
++
+[source,shell,subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{QUARKUS_BOM}:create \
+    -DprojectGroupId=com.example \
+    -DprojectArtifactId=optaplanner-quickstart  \
+    -Dextensions="resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson" \
+    -DplatformGroupId=com.redhat.quarkus \
+    -DplatformVersion={QUARKUS_BOM} \
+    -DnoExamples
+----
++
+This command create the following elements in the `./optaplanner-quickstart` directory:
++
+** The Maven structure
+** Example `Dockerfile` file in `src/main/docker`
+** The application configuration file
++
+.Properties used in the mvn `io.quarkus:quarkus-maven-plugin:{QUARKUS_BOM}:create` command
+[cols="30%,70%", options="header"]
+|===
+h| Property
+h| Description
+
+| `projectGroupId`
+| The group ID of the project.
+
+| `projectArtifactId`
+| The artifact ID of the project.
+
+| `extensions`
+| A comma-separated list of Quarkus extensions to use with this project. For a full list of Quarkus extensions, enter `mvn quarkus:list-extensions` on Therefore command line.
+
+| `platformGroupId`
+| The Group ID of the target platform.
+
+| `platformVersion`
+| The version of the platform that you want the project to use.
+
+| `noExamples`
+| Creates a project with the project structure but without tests or classes.
+
+|===
++
+The values of the `projectGroupID` and the `projectArtifactID` properties are used to generate the project version. The default project version is `1.0.0-SNAPSHOT`. The values of the `platformGroupId` and `platformVersion` properties are used by `quarkus-universe-bom` to manage project dependencies.
+
+. After the directory structure is created, open the `optaplanner-quickstart/pom.xml` file in a text editor and examine the contents of the file to ensure it contains the following elements:
+//is this the correct path to the BOM?
++
+[source,xml,subs=attributes+]
+----
+<properties>
+	...
+	<quarkus-plugin.version>{QUARKUS_BOM}</quarkus-plugin.version>
+	<quarkus.platform.artifact-id>quarkus-universe-bom</quarkus.platform.artifact-id>
+	<quarkus.platform.group-id>com.redhat.quarkus</quarkus.platform.group-id>
+	<quarkus.platform.version>{QUARKUS_BOM}.Final-redhat-00001</quarkus.platform.version>
+  </properties>
+  <dependencyManagement>
+	<dependencies>
+  	<dependency>
+    	<groupId>${quarkus.platform.group-id}</groupId>
+    	<artifactId>${quarkus.platform.artifact-id}</artifactId>
+    	<version>${quarkus.platform.version}</version>
+    	<type>pom</type>
+    	<scope>import</scope>
+  	</dependency>
+	</dependencies>
+  </dependencyManagement>
+  <dependencies>
+	<dependency>
+  	<groupId>org.optaplanner</groupId>
+  	<artifactId>optaplanner-quarkus</artifactId>
+	</dependency>
+	<dependency>
+  	<groupId>org.optaplanner</groupId>
+  	<artifactId>optaplanner-quarkus-jackson</artifactId>
+	</dependency>
+	<dependency>
+  	<groupId>io.quarkus</groupId>
+  	<artifactId>quarkus-resteasy-jackson</artifactId>
+	</dependency>
+	<dependency>
+  	<groupId>io.quarkus</groupId>
+  	<artifactId>quarkus-resteasy</artifactId>
+	</dependency>
+	<dependency>
+  	<groupId>io.quarkus</groupId>
+  	<artifactId>quarkus-arc</artifactId>
+	</dependency>
+	<dependency>
+  	<groupId>io.quarkus</groupId>
+  	<artifactId>quarkus-junit5</artifactId>
+  	<scope>test</scope>
+	</dependency>
+----
++
+The Quarkus BOM is imported into the `pom.xml` file. Therefore, you do not need to list the versions of individual Quarkus dependencies in the `pom.xml` file.
+. Review the `quarkus-resteasy` dependency in the `pom.xml` file. This dependency enables you to develop REST applications:
++
+[source,xml]
+----
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
+    </dependency>
+----

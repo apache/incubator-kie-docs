@@ -1,0 +1,48 @@
+[id='solver-service-proc_{context}']
+= Create the solver service
+
+Solving planning problems on REST threads causes HTTP timeout issues. Therefore, the Quarkus extension injects a SolverManager, which runs solvers in a separate thread pool and can solve multiple data sets in parallel.
+
+.Procedure
+Create the src/main/java/org/acme/optaplanner/rest/TimeTableResource.java class:
+
+[source, java]
+----
+package org.acme.optaplanner.rest;
+
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+
+import org.acme.optaplanner.domain.TimeTable;
+import org.optaplanner.core.api.solver.SolverJob;
+import org.optaplanner.core.api.solver.SolverManager;
+
+@Path("/timeTable")
+public class TimeTableResource {
+
+    @Inject
+    SolverManager<TimeTable, UUID> solverManager;
+
+    @POST
+    @Path("/solve")
+    public TimeTable solve(TimeTable problem) {
+        UUID problemId = UUID.randomUUID();
+        // Submit the problem to start solving
+        SolverJob<TimeTable, UUID> solverJob = solverManager.solve(problemId, problem);
+        TimeTable solution;
+        try {
+            // Wait until the solving ends
+            solution = solverJob.getFinalBestSolution();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IllegalStateException("Solving failed.", e);
+        }
+        return solution;
+    }
+
+}
+----
+
+This initial implementation waits for the solver to finish, which can still cause an HTTP timeout. The complete implementation avoids HTTP timeouts much more elegantly.
