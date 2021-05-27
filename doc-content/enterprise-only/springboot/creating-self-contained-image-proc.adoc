@@ -46,13 +46,20 @@ kieserver.autoScanDeployments=true
 |`kieserver.autoScanDeployments`
 |`true, false`
 |When set to `true`, {KIE_SERVER} scans and deploys all KJAR files available in the Spring Boot application, whether they are declared programmatically or through the Maven plug-in.
-
 |===
-
 +
 When both of these properties are set to `true`, the Spring Boot {KIE_SERVER} automatically scans for deployable artifacts that are packaged within the Spring Boot application using the `package-dependencies-kjar` Maven goal of the `kie-maven-plugin` plug-in.
 +
-. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service` directory, add the following Maven plug-in in the Spring Boot `service/pom.xml` file where `<GROUP_ID>`, `<ARTIFACT_ID>`, and `<VERSION>` are the group, artifact, and version (GAV) of a KJAR artifact that your project uses. You can find these values in the `pom.xml` file that is located in the KJAR source directory.
+If your business application will run in an {OPENSHIFT} pod or in any other environment where the current directory is not writable, add the `spring.jta.log-dir` parameter that points to a writable location. For example:
++
+[source]
+----
+spring.jta.log-dir=/tmp
+----
++
+This parameter sets the location for the transaction log.
++
+. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service` directory, add the following Maven plug-in in the Spring Boot `pom.xml` file where `<GROUP_ID>`, `<ARTIFACT_ID>`, and `<VERSION>` are the group, artifact, and version (GAV) of a KJAR artifact that your project uses. You can find these values in the `pom.xml` file that is located in the KJAR source directory.
 +
 NOTE: You can add more than one version of an artifact.
 +
@@ -77,7 +84,7 @@ NOTE: You can add more than one version of an artifact.
           <artifactItems>
             <artifactItem>
               <groupId><GROUP_ID></groupId>
-              <artifactId><ARTIFACT_ID>/artifactId>
+              <artifactId><ARTIFACT_ID></artifactId>
               <version><VERSION></version>
             </artifactItem>
           </artifactItems>
@@ -122,12 +129,13 @@ The following example adds two version of the `Evaluation` artifact:
           </artifactItems>
         </configuration>
       </plugin>
-    <plugins>
-  <build>
+    </plugins>
+  </build>
 ----
 ifdef::PAM[]
 +
-. Optional: if you want to be able to configure the {KIE_SERVER} to communicate with a {CENTRAL} Monitoring instance using WebSockets, add the following lines to the `pom.xml` file under the `<dependencies>` tag:
+. Optional: if you want to be able to configure the {KIE_SERVER} to communicate with a {CENTRAL} monitoring instance using WebSockets, make the following changes:
+.. Add the following lines to the `pom.xml` file under the `<dependencies>` tag:
 +
 [source, xml]
 ----
@@ -138,7 +146,14 @@ ifdef::PAM[]
 </dependency>
 ----
 +
-WebSockets communication with a {CENTRAL} Monitoring instance is supported in all cases, including running the instance on {OPENSHIFT}.
+WebSockets communication with a {CENTRAL} monitoring instance is supported in all cases, including running the instance on {OPENSHIFT}.
+.. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service/src/main/resources/application.properties` file, add or change the following properties:
++
+[source]
+----
+kieserver.location=${org.kie.server.location}
+kieserver.controllers=${org.kie.server.controller}
+----
 endif::PAM[]
 +
 . To build the self-contained Spring Boot image, enter the following command in the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service` directory:
@@ -162,16 +177,26 @@ To configure the {KIE_SERVER} to connect to a {CENTRAL} monitoring instance usin
 +
 [source]
 ----
-java -jar <FILENAME>.jar -Dorg.kie.server.startup.strategy=LocalContainersStartupStrategy
--Dorg.kie.server.controller=ws://<BC-HOSTNAME>:<BC-PORT>/websocket/controller
--Dorg.kie.server.controller.user=<USER> -Dorg.kie.server.controller.pwd=<PASSWORD>
+java -Dorg.kie.server.location=http://<LOCATION>:<PORT>/rest/server -Dorg.kie.server.controller=ws://<BC-HOSTNAME>:<BC-PORT>/websocket/controller -Dorg.kie.server.controller.user=<USER> -Dorg.kie.server.controller.pwd=<PASSWORD> -jar <FILENAME>.jar
 ----
 +
 In this command, replace the following values:
 +
-** `<FILENAME>` with the name of the JAR file
-** `<BC-HOSTNAME>` with the fully qualified name of the {CENTRAL} Monitoring instance
+** `<LOCATION>` with the fully qualified host name for accessing your service. {CENTRAL} monitoring accesses the service to retrieve process information and displays a URL for the service with this host name
+** `<PORT>` with the port for accessing your service, for example, `8090`
+** `<BC-HOSTNAME>` with the fully qualified name of the {CENTRAL} monitoring instance
 ** `<BC-PORT>` with the port of the {CENTRAL} Monitoring instance, for example, `8080`
-** `<USER>` with the username of a user configured on the {CENTRAL} Monitoring instance
-** `<PASSWORD>` with the password of the user configured on the {CENTRAL} Monitoring instance
+** `<USER>` with the username of a user configured on the {CENTRAL} monitoring instance
+** `<PASSWORD>` with the password of the user configured on the {CENTRAL} monitoring instance
+** `<FILENAME>` with the name of the JAR file
++
+[NOTE]
+====
+This configuration uses unsecured HTTP communication for your service. If you configure your Spring Boot business application with a valid SSL certificate, you can replace `http:` with `https:` to use secure HTTPS communication. For more information about configuring SSL on Spring Boot, see https://docs.spring.io/spring-boot/docs/{SPRING_BOOT_VERSION}.RELEASE/reference/html/howto.html#howto-configure-ssl[Spring Boot documentation].
+====
++
+[NOTE]
+====
+If you want to view process information from {CENTRAL} monitoring, you must ensure that the user that is logged into {CENTRAL} can also be authenticated with your service using the same password.
+====
 endif::PAM[]
