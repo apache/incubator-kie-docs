@@ -1400,10 +1400,14 @@ For an example {PRODUCT} service with Kafka persistence, see the following examp
 
 // tag::proc-postgresql-persistence-enabling[]
 [id="proc-postgresql-persistence-enabling_{context}"]
-=== Enabling PostgreSQL persistence for {PRODUCT} services
+=== PostgreSQL persistence for {PRODUCT} services
 
 [role="_abstract"]
 As an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.postgresql.org/[PostgreSQL]. PostgreSQL is a powerful, open source object-relational database system that uses and extends SQL language. Also, PostgreSQL is recognized and provided as a service (SAAS) by different cloud providers. For {PRODUCT} persistence with PostgreSQL, you must have PostgreSQL installed and running to enable persistence.
+
+==== Enabling PostgreSQL persistence using reactive driver for {PRODUCT} services
+
+You can enable PostgreSQL persistence for your {PRODUCT} services using reactive driver.
 
 .Prerequisites
 * https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
@@ -1452,7 +1456,79 @@ export PGDATABASE=kogito
 ------
 For more information about the full list of supported variables, see https://vertx.io/docs/vertx-pg-client/java/#_environment_variables[vertx-pg-client].
 
-For an example {PRODUCT} service with PostgreSQL persistence, see the following example applications in GitHub:
+==== Enabling PostgreSQL persistence using JDBC driver for {PRODUCT} services
+
+You can enable PostgreSQL persistence for your {PRODUCT} services using JDBC driver.
+
+.Prerequisites
+* https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
+
+.Procedure
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.On Quarkus
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>jdbc-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-agroal</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>jdbc-persistence-addon</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>org.postgresql</groupId>
+  <artifactId>postgresql</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
+----
+--
+. Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
++
+--
+Replace the server host, port, and database information according to your MongoDB Server installation. By default, the database is named `kogito`.
+
+.On Quarkus
+[source]
+------
+kogito.persistence.type=jdbc
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=kogito-user
+quarkus.datasource.password=kogito-pass
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/kogito
+------
+
+.On Spring Boot
+[source]
+------
+kogito.persistence.type=jdbc
+spring.datasource.username=kogito-user
+spring.datasource.password=kogito-pass
+spring.datasource.url=jdbc:postgresql://localhost:5432/kogito
+------
+--
+
+For an example {PRODUCT} service with PostgreSQL persistence using reactive and JDBC driver, see the following example applications in GitHub:
 
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-quarkus[`process-postgresql-persistence-quarkus`]: Example on Quarkus
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-springboot[`process-postgresql-persistence-springboot`]: Example on SpringBoot
