@@ -1079,7 +1079,7 @@ For optimal persistence with process data and variables, use Java objects as dat
 You can enable persistence for your {PRODUCT} services using https://infinispan.org/[Infinispan] to persist data, such as active process nodes and process instance variables, so that the data is preserved across application restarts. For {PRODUCT} persistence with Infinispan, you must have a an Infinispan Server installed and running in order to enable persistence.
 
 .Prerequisites
-* https://infinispan.org/[Infinispan Server] 11.0 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://infinispan.org/[Infinispan Server] 12.1.4 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 
 .Procedure
 . Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
@@ -1490,8 +1490,15 @@ Indexed data from the Data Index Service is parsed and pushed into the following
 * *Domain cache*: Generic cache for each process definition where the process instance variables are pushed as the root content. This cache also includes some process instance metadata, which enables data correlation between domain and process instances. Data is transferred in JSON format to an Infinispan Server.
 * *Process instance cache*: Cache for each process instance. This cache contains all process instance information, including all metadata and other detailed information such as executed nodes.
 * *User task instance cache*: Cache for each user task instance. This cache contains all task instance information, including all metadata and other detailed information such as data input and output.
+* *Jobs cache*: Cache for each scheduled job instance. This cache contains all job instance information, including all detailed information related to a specific job, such as the number of times a job is fired and next time the same job will be fired.
 
-The indexing functionality in the Data Index Service is based on https://lucene.apache.org/[Apache Lucene], and storage for the Data Index Service is provided by https://infinispan.org/[Infinispan]. Communication between the Data Index Service and Infinispan is handled through a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers.
+The indexing functionality in the Data Index Service is provided by choosing one of the following persistent providers:
+
+* https://infinispan.org/[Infinispan]
+* https://www.mongodb.com/[MongoDB]
+* https://www.postgresql.org/[PostgreSQL]
+
+When using Infinispan, https://lucene.apache.org/[Apache Lucene] provides indexing and a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers manage the communication between the Data Index Service and Infinispan.
 
 After the data is indexed and stored in a cache, the Data Index Service inspects the process model to update the GraphQL schema and enable a type-checked query system that consumer clients can use to access the data.
 
@@ -1514,6 +1521,12 @@ message ProcessInstanceMeta {
 For more information about Infinispan indexing, see https://infinispan.org/docs/stable/titles/developing/developing.html#enable_indexing[Indexing of protobuf encoded entries] in the Infinispan documentation.
 ====
 
+==== Index the domain-specific data in Data Index Service
+
+You can enable or disable the domain-specific types or custom types indexing in {PRODUCT}. To achieve this, you can change the value of the `kogito.data-index.domain-indexing` property to `true` or `false`, based on the behavior you want to achieve. By default, the domain indexing is enabled on Data Index Service using MongoDB and Infinispan persistence type. When you disable the domain indexing, the Data Index Service stops creating custom types in GraphQL queries, and the GraphQL schema starts exposing queries only for `ProcessInstances`, `UserTaskInstances`, and `Jobs` types.
+
+NOTE: The Data Index PostgreSQL persistence provider does not support indexing for custom types. Therefore, setting the `kogito.data-index.domain-indexing` property to `true` does not have any impact.
+
 [id="proc-data-index-service-using_{context}"]
 === Using the {PRODUCT} Data Index Service to query application data
 
@@ -1523,7 +1536,7 @@ For more information about Infinispan indexing, see https://infinispan.org/docs/
 You can use the {PRODUCT} Data Index Service to index, store, and query process data in your {PRODUCT} services.
 
 .Prerequisites
-* https://infinispan.org/[Infinispan Server] 11.0 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://infinispan.org/[Infinispan Server] 12.1.4 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 * https://kafka.apache.org/[Apache Kafka] is installed, including required topics, and the Kafka messaging server is running. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
 +
 --
@@ -1621,9 +1634,9 @@ NOTE: As an alternative to enabling the Data Index Service explicitly for {PRODU
 [role="_abstract"]
 After you configure and run your {PRODUCT} service and the {PRODUCT} Data Index Service, you can query the available data using the https://github.com/graphql/graphiql[GraphiQL] interface displayed at `http://__HOST__:__PORT__/graphql`, such as `\http://localhost:8080/graphql`.
 
-The {PRODUCT} Data Index Service supports GraphQL queries for process definitions (domain cache) and for process instances and task instances (instance caches).
+The {PRODUCT} Data Index Service supports GraphQL queries for domain-specific (domain cache) types and for process instances, task instances, and jobs.
 
-==== GraphQL queries for process definitions (domain cache)
+==== GraphQL queries for domain-specific types (domain cache)
 
 Use the following GraphQL queries to retrieve data about process definitions. These example queries assume that a `Travels` Business Process Model and Notation (BPMN) process model is running or has been executed.
 
@@ -1665,7 +1678,7 @@ You can retrieve data about a specified process definition from your {PRODUCT} s
 Correlate data using the `metadata` parameter::
 +
 --
-You can use the `metadata` parameter to correlate data from process definitions (domain cache) with data from process instances and task instances (instance caches). This parameter is added to all root models that are deployed in the Data Index Service and enables you to retrieve and filter query data.
+You can use the `metadata` parameter to correlate data from domain-specific types (domain cache) with data from process instances and task instances. This parameter is added to all root models that are deployed in the Data Index Service and enables you to retrieve and filter query data.
 
 .Example query
 [source]
@@ -1789,9 +1802,9 @@ You can use the `pagination` parameter to specify a `limit` and `offset` for que
 ----
 --
 
-==== GraphQL queries for process instances and user task instances (instance caches)
+==== GraphQL queries for process instances, user task instances, and jobs
 
-Use the following GraphQL queries to retrieve data about process instances and user task instances.
+Use the following GraphQL queries to retrieve data about process instances, user task instances, and jobs.
 
 Retrieve data from process instances::
 +
@@ -1823,7 +1836,7 @@ You can retrieve data about a specified process instance from your process defin
 Retrieve data from user task instances::
 +
 --
-You can retrieve data from a specified user task instance from the process instance.
+You can retrieve data from a specified user task instance.
 
 .Example query
 [source]
@@ -1837,6 +1850,27 @@ You can retrieve data from a specified user task instance from the process insta
     priority
     processId
     processInstanceId
+  }
+}
+----
+--
+
+Retrieve data from jobs::
++
+--
+You can retrieve data from a specified job instance.
+
+.Example query
+[source]
+----
+{
+  Job {
+    id
+    status
+    priority
+    processId
+    processInstanceId
+    executionCounter
   }
 }
 ----
@@ -2147,6 +2181,36 @@ For more information about MongoDB configuration on Quarkus, see https://quarkus
 . After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
 
 NOTE: Indexes are created on every attribute that is annotated with `@Indexed` and `@Field` in the protobuf files. However, a single MongoDB collection can have no more than 64 indexes, including the default `_id` Index.
+
+[id="proc-data-index-service-postgresql_{context}"]
+=== Enabling PostgreSQL persistence for the {PRODUCT} Data Index Service
+
+[role="_abstract"]
+Instead of using the default Infinispan-based persistence in the {PRODUCT} Data Index Service, you can configure the Data Index Service to use https://www.postgresql.org/[PostgreSQL] persistence storage if needed.
+
+.Prerequisites
+* https://www.postgresql.org/download/[PostgreSQL Server] 13 or later is installed and running. For information about PostgreSQL installation and configuration, see the https://www.postgresql.org/docs/[PostgreSQL documentation].
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/data-index-service-postgresql/[`data-index-service-postgresql`] artifacts page, select the latest release of the Data Index Service, and download the `data-index-service-postgresql-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `data-index-service-postgresql-__VERSION__-runner.jar` file and enter the following command to run the Data Index Service with the required PostgreSQL connection information:
++
+--
+.Running the Data Index Service with PostgreSQL connection information
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.datasource.jdbc.url=__POSTGRESQL_SERVER_JDBC_URL__ \
+  -Dquarkus.datasource.username=__POSTGRESQL_USERNAME__ \
+  -Dquarkus.datasource.password=__POSTGRESQL_PASSWORD__ \
+  -jar data-index-service-postgresql-__VERSION__-runner.jar
+----
+
+For more information about PostgreSQL configuration on Quarkus, see https://quarkus.io/guides/datasource#jdbc-configuration[JDBC Configuration Reference] in the Quarkus documentation.
+--
+. After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
+
+NOTE: Data Index Service with PostgreSQL does not support indexing domain-specific data. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`, and `Jobs`.
 
 [role="_additional-resources"]
 .Additional resources
