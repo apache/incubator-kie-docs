@@ -1077,6 +1077,21 @@ For optimal persistence with process data and variables, use Java objects as dat
 |Java object with a list of Java objects
 |Custom data type built with multiple simple types and a list of Java objects, and can also contain another Java object
 |===
+
+=== Enabling optimistic locking with persistence
+
+{PRODUCT} runtimes need to safely handle concurrent requests to shared instances such as process instances or tasks. {PRODUCT} handles these requests using persistence enabled optimistic locking for concurrency control with the version on record (using the version field in the database or the metadata version in the case of Infinispan). This feature is optional and can be activated only with persistence by adding the following properties to the src/main/resources/application.properties file in your {PRODUCT} project,
+[source]
+------
+kogito.persistence.optimistic.lock=true
+------
+
+Below are the databases that support optimistic locking 
+
+* Infinispan
+* MongoDB
+* PostgreSQL (Reactive and JDBC options)
+
 // end::con-persistence[]
 
 // tag::proc-infinispan-persistence-enabling[]
@@ -1219,140 +1234,149 @@ After you enable MongoDB persistence for your {PRODUCT} services, you can use Mo
 [source,json]
 ----
 {
-  "_id": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
-  "processInstance": {
-    "processType": "RuleFlow",
-    "id": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
-    "processId": "dealreviews",
-    "state": 1,
-    "nodeInstance": [
-      {
-        "id": "be9542c0-8cc3-4fbc-ac6c-f337bb176682",
-        "nodeId": "2",
-        "content": {
-          "type": "HUMAN_TASK_NODE",
-          "humanTask": {
-            "workItemId": "d5a61e95-9dce-472b-8dfe-dd948e086f7a",
-            "workitem": {
-              "id": "d5a61e95-9dce-472b-8dfe-dd948e086f7a",
-              "processInstancesId": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
-              "name": "Human Task",
-              "state": 0,
-              "variable": [
-                {
-                  "name": "Skippable",
-                  "strategyIndex": 0,
-                  "value": "true",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "deal",
-                  "strategyIndex": 0,
-                  "value": "my fancy deal",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "ActorId",
-                  "strategyIndex": 0,
-                  "value": "john",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "TaskName",
-                  "strategyIndex": 0,
-                  "value": "review",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "NodeName",
-                  "strategyIndex": 0,
-                  "value": "Review the deal",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "traveller",
-                  "strategyIndex": 0,
-                  "value": {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "jon.doe@example.com",
-                    "nationality": "American",
-                    "address": {
-                      "street": "main street",
-                      "city": "Boston",
-                      "zipCode": "10005",
-                      "country": "US"
-                    }
-                  },
-                  "dataType": "org.acme.travels.Traveller"
-                }
-              ],
-              "nodeInstanceId": "be9542c0-8cc3-4fbc-ac6c-f337bb176682",
-              "nodeId": "2",
-              "phaseId": "active",
-              "phaseStatus": "Ready",
-              "startDate": "1598460385978",
-              "taskName": "review",
-              "potUsers": [
-                "john"
-              ],
-              "taskReferenceName": "Review the deal"
-            }
-          }
-        },
-        "level": 1,
-        "slaCompliance": 0,
-        "triggerDate": "1598460385976"
-      }
-    ],
+  "_id": {
+    "$oid": "60d0dd7130a5c559252bbef2"
+  },
+  "processType": "RuleFlow",
+  "processId": "dealreviews",
+  "id": "4c0ba244-d99e-46e7-8404-51970bf47a40",
+  "parentProcessInstanceId": "b4e666dc-7f61-4e09-9eb3-2e10bf1abc00",
+  "description": "Deal Review",
+  "state": 1,
+  "startDate": "1624300913211",
+  "signalCompletion": true,
+  "rootProcessInstanceId": "b4e666dc-7f61-4e09-9eb3-2e10bf1abc00",
+  "rootProcessId": "deals",
+  "sla": {
+    "slaCompliance": 0
+  },
+  "context": {
     "variable": [
       {
         "name": "deal",
-        "strategyIndex": 0,
-        "value": "my fancy deal",
-        "dataType": "java.lang.String"
+        "dataType": "java.lang.String",
+        "value": {
+          "@type": "type.googleapis.com/google.protobuf.StringValue",
+          "value": "my fancy deal"
+        }
       },
       {
         "name": "traveller",
-        "strategyIndex": 0,
+        "dataType": "org.acme.deals.Traveller",
         "value": {
+          "@type": "org.kie.kogito/org.kie.kogito.app.Traveller",
+          "address": {
+            "city": "Boston",
+            "country": "US",
+            "street": "main street",
+            "zipCode": "10005"
+          },
+          "email": "jon.doe@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "email": "jon.doe@example.com",
-          "nationality": "American",
-          "address": {
-            "street": "main street",
-            "city": "Boston",
-            "zipCode": "10005",
-            "country": "US"
-          }
-        },
-        "dataType": "org.acme.travels.Traveller"
+          "nationality": "American"
+        }
       }
     ],
-    "parentProcessInstanceId": "57bffb3d-06a7-48e0-87be-004a722792db",
-    "completedNodeIds": [
-      "_7E3D27D0-6644-4E55-8E41-9F68BD0D1327"
+    "nodeInstance": [
+      {
+        "id": "c3549554-9787-42d5-82d0-decff6a17930",
+        "nodeId": "2",
+        "content": {
+          "@type": "type.googleapis.com/org.kie.kogito.serialization.process.protobuf.WorkItemNodeInstanceContent",
+          "workItemId": "b87e9296-92c6-4e83-8dcf-6e62882e418b",
+          "variable": [
+            {
+              "name": "ActorId",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "john"
+              }
+            },
+            {
+              "name": "NodeName",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "Review the deal"
+              }
+            },
+            {
+              "name": "Skippable",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "true"
+              }
+            },
+            {
+              "name": "TaskName",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "review"
+              }
+            },
+            {
+              "name": "deal",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "my fancy deal"
+              }
+            },
+            {
+              "name": "traveller",
+              "dataType": "org.acme.deals.Traveller",
+              "value": {
+                "@type": "org.kie.kogito/org.kie.kogito.app.Traveller",
+                "address": {
+                  "city": "Boston",
+                  "country": "US",
+                  "street": "main street",
+                  "zipCode": "10005"
+                },
+                "email": "jon.doe@example.com",
+                "firstName": "John",
+                "lastName": "Doe",
+                "nationality": "American"
+              }
+            }
+          ],
+          "phaseId": "active",
+          "phaseStatus": "Ready",
+          "name": "Human Task",
+          "startDate": "1624300913214",
+          "workItemData": {
+            "@type": "type.googleapis.com/org.kie.kogito.serialization.process.protobuf.HumanTaskWorkItemData",
+            "taskName": "review",
+            "potUsers": [
+              "john"
+            ],
+            "taskReferenceName": "Review the deal"
+          }
+        },
+        "level": 1,
+        "triggerDate": "1624300913213",
+        "sla": {
+          "slaCompliance": 0
+        }
+      }
     ],
     "iterationLevels": [
       {
         "id": "_3597E33A-1C00-41B3-924E-09EA47F79D93",
         "level": 1
       }
-    ],
-    "description": "Deal Review",
-    "signalCompletion": true,
-    "slaCompliance": 0,
-    "rootProcessInstanceId": "57bffb3d-06a7-48e0-87be-004a722792db",
-    "startDate": "1598460385975",
-    "rootProcessId": "deals"
+    ]
   },
-  "strategies": [
-    {
-      "name": "org.kie.kogito.mongodb.marshalling.DocumentMarshallingStrategy",
-      "value": 0
-    }
-  ]
+  "completedNodeIds": [
+    "_7E3D27D0-6644-4E55-8E41-9F68BD0D1327"
+  ],
+  "version": {
+    "$numberLong": "1"
+  }
 }
 ----
 
@@ -1452,7 +1476,7 @@ kogito.persistence.query.timeout.millis=10000
 * `auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a more controlled environment.
 * `millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value of `millis` is `10000`.
 --
-
+	
 Alternatively, you can define the connection properties using the environment variables as shown in the following example:
 
 .Environment variables to enable PostgreSQL persistence
