@@ -2881,6 +2881,50 @@ NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-ena
 --
 . Stop and restart the {PRODUCT} Trusty Service to ensure that the security changes are applied.
 
+[id="con-kogito-task-assigning-service_{context}"]
+== {PRODUCT} Task Assigning Service
+
+[role="_abstract"]
+{PRODUCT} provides a Task Assigning Service that enables you to assign the user tasks created by the {PRODUCT} services to users as part of an optimal solution. This optimal solution is estimated by {PRODUCT_OP}, a lightweight and embeddable planning engine that optimizes planning problems.
+
+You can use {PRODUCT} services to model and execute multiple business processes. A typical business process consists of different nodes including events, gateways, connectors, and tasks to define a process logic. Each node in a business process contains a specific semantic and is instantiated using a process engine when a related process instance is executed. Business processes that require the intervention of a human user are designed using user task nodes.
+
+The following example business process consists of three tasks that require human intervention:
+
+.Example business process
+image::kogito/configuration/task-assigning-service/PurchaseOrderProcessDefinition.png[]
+
+When a system executes several process instances, it can have many user task instances waiting for external user action.
+
+.Default task inbox
+image::kogito/configuration/task-assigning-service/TaskListWithClaimAvailableActions.png[]
+
+=== BPMN standard Task Assigning
+
+Generally, the runtime engines assign user tasks to a group of users. The target audience is added as part of the user task configuration. In the following example, you can see how *Review Purchase Order* task is configured with the `PurchaseDepartment` group:
+
+.Example user task configuration
+image::kogito/configuration/task-assigning-service/ReviewPurchaseOrderTaskConfiguration.png[]
+
+A new task instance of the *Review Purchase Order* task is created at runtime and transitioned to the *Active* phase automatically. Once the task is assigned to the *PurchaseDepartment* group, the status of the task is changed to *Ready*. This makes the *Review Purchase Order* task available in the task inbox for all the users in the *PurchaseDepartment* group. To get ownership of the task, a user must execute the claim operation. The following example shows how a user is claiming `#cbf41` task.
+
+.Example task claim operation
+image::kogito/configuration/task-assigning-service/TaskListWithAvailableActionsForSelectedTask.png[]
+
+When a user claims a task, the status of the task is changed to *Reserved* and the task is assigned to the claiming user. When a user claims a task, the user becomes the actual owner of the task and the task appears only on the user's Task Inbox. The following example shows the task information and available actions for `#cbf41` task after the execution of the claim operation:
+
+.Example execution of a task claim operation
+image::kogito/configuration/task-assigning-service/TaskListWithAvailableActionsForReservedTaskWithUser1.png[]
+
+=== {PRODUCT_OP} driven task assigning
+
+The Task Assigning Service enables you to assign the user tasks among the users according to an optimal plan, which is estimated by {PRODUCT_OP}. The following example shows the content of Task Inbox for `user1` and `user2` when the Task Assigning Service is running:
+
+.Example tasks assigned by the Task Assigning Service
+image::kogito/configuration/task-assigning-service/TasksAssignedToUser1AndUser2ByTheTaskAssigningService.png[]
+
+The previous example shows that user tasks including `#895c6` and`#cbf41` are assigned to `user1` and user tasks `#5aac` and `#ddc34` are assigned to `user2`. The remaining tasks including `#fdcc0`, `#a93d4`, and `#5be2b` are unassigned tasks and will be analyzed later. 
+
 [role="_additional-resources"]
 .Additional resources
 * https://quarkus.io/guides/security[Security Architecture and Guides]
