@@ -24,33 +24,97 @@ mvn install
 ----
 +
 This command builds the KJAR file and places it into the local Maven repository. By default, this repository is located in the `~/.m2/repo` directory.
-. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service/src/main/resources` directory, add the following properties to your Spring Boot application `application.properties` file:
+. In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service/src/main/resources` directory, add the following property to your Spring Boot application `application.properties` file:
 +
 [source]
 ----
 kieserver.classPathContainer=true
+----
++
+When this property is set to `true`, {KIE_SERVER} uses the class loader used by the container to load KJAR files and their dependencies.
++
+. Complete one of the following actions to ensure that {KIE_SERVER} loads the necessary KJAR modules:
+** To configure {KIE_SERVER} to scans and deploy all KJAR modules available in the Spring Boot application, add the following property to the `application.properties` file:
++
+[source]
+----
 kieserver.autoScanDeployments=true
 ----
 +
-
-[cols="30%,15%,55%", options="header"]
-|===
-|Parameter
-|Values
-|Description
-
-|`kieserver.classPathContainer`
-|`true, false`
-|When set to `true`, {KIE_SERVER} uses the class loader used by the container to load KJAR files and their dependencies.
-
-|`kieserver.autoScanDeployments`
-|`true, false`
-|When set to `true`, {KIE_SERVER} scans and deploys all KJAR files available in the Spring Boot application, whether they are declared programmatically or through the Maven plug-in.
-
-|===
-
+When this property is set to `true`, {KIE_SERVER} deploys all KJAR modules available in the application, whether they are declared programmatically or through the Maven plug-in.
 +
-When both of these properties are set to `true`, the Spring Boot {KIE_SERVER} automatically scans for deployable artifacts that are packaged within the Spring Boot application using the `package-dependencies-kjar` Maven goal of the `kie-maven-plugin` plug-in.
+This option is the simplest method to include all KJAR modules. However, it has two drawbacks:
++
+--
+*** The application sets all container IDs and aliases automatically, based on the group, artifact, and version (GAV) of every KJAR module. You cannot set a custom container ID or alias for a KJAR module.
+*** At startup time, the application scans the JAR file and the class path for KJAR modules. Therefore, the duration of startup might be increased.
+--
++
+To avoid these drawbacks, you can configure every KJAR module individually using the `application.properties` file or using Java source code, as described in one of the following options.
++
+** To configure every KJAR module individually using the `application.properties` file, for each of the KJAR modules that you want to include in the service, add the following properties to the `application.properties` file:
++
+[source]
+----
+kieserver.deployments[<n>].containerId=<container>
+kieserver.deployments[<n>].alias=<alias>
+kieserver.deployments[<n>].artifactId=<artifact>
+kieserver.deployments[<n>].groupId=<group>
+kieserver.deployments[<n>].version=<version>
+----
++
+Replace the following values:
++
+--
+*** `<n>`: A sequential number: `0` for the first KJAR module, `1` for the second module, and so on
+*** `<container>`: The container ID for the KJAR module
+*** `<alias>`: The alias for the KJAR module
+*** `<artifact>`: The artifact ID for the KJAR module
+*** `<group>`: The group ID for the KJAR module
+*** `<version>`: The version ID for the KJAR module
+--
++
+The following example configures two versions of the `Evaluation` KJAR module:
++
+[source]
+----
+kieserver.deployments[0].alias=evaluation_v1
+kieserver.deployments[0].containerId=evaluation_v1
+kieserver.deployments[0].artifactId=Evaluation
+kieserver.deployments[0].groupId=com.myspace
+kieserver.deployments[0].version=1.0.0-SNAPSHOT
+
+kieserver.deployments[1].alias=evaluation_v2
+kieserver.deployments[1].containerId=evaluation_v2
+kieserver.deployments[1].artifactId=Evaluation
+kieserver.deployments[1].groupId=com.myspace
+kieserver.deployments[1].version=2.0.0-SNAPSHOT
+----
++
+** To configure every KJAR module individually using Java source code, create a class in your business application service, similar to the following example:
++
+[source,java]
+----
+@Configuration
+public class KieContainerDeployer {
+
+    @Bean
+    public KieContainerResource evaluation_v1() {
+        KieContainerResource container = new KieContainerResource("evaluation_v1", new ReleaseId("com.myspace", "Evaluation", "1.0.0-SNAPSHOT"), STARTED);
+        container.setConfigItems(Arrays.asList(new KieServerConfigItem(KieServerConstants.PCFG_RUNTIME_STRATEGY, "PER_PROCESS_INSTANCE", "String")));
+        return container;
+    }
+
+    @Bean
+    public KieContainerResource evaluation_v2() {
+        KieContainerResource container = new KieContainerResource("evaluation_v2", new ReleaseId("com.myspace", "Evaluation", "2.0.0-SNAPSHOT"), STARTED);
+        container.setConfigItems(Arrays.asList(new KieServerConfigItem(KieServerConstants.PCFG_RUNTIME_STRATEGY, "PER_PROCESS_INSTANCE", "String")));
+        return container;
+    }
+}
+----
++
+For every KJAR module that you want to include, create a `KieContainerResource` bean in this class. The name of the bean is the container name, the first parameter of `KieContainerResource()` is the alias name, and the parameters of `ReleaseId()` are the group ID, artifact ID, and version ID of the KJAR module.
 +
 . In the `<BUSINESS-APPLICATION>/<BUSINESS-APPLICATION>-service` directory, add the following Maven plug-in in the Spring Boot `service/pom.xml` file where `<GROUP_ID>`, `<ARTIFACT_ID>`, and `<VERSION>` are the group, artifact, and version (GAV) of a KJAR artifact that your project uses. You can find these values in the `pom.xml` file that is located in the KJAR source directory.
 +
@@ -158,7 +222,7 @@ java -jar <FILENAME>.jar
 In this command, replace `<FILENAME>` with the name of the JAR file.
 ifdef::TOEXCLUDE_NOTDEFINED[]
 +
-To configure the {KIE_SERVER} to connect to a {CENTRAL} monitoring instance using WebSockets and run the image, enter the following command:
+To configure {KIE_SERVER} to connect to a {CENTRAL} monitoring instance using WebSockets and run the image, enter the following command:
 +
 [source]
 ----
