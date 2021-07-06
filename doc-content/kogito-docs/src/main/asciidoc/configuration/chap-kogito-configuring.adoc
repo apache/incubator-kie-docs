@@ -2899,7 +2899,8 @@ When a system executes several process instances, it can have many user task ins
 .Default task inbox
 image::kogito/configuration/task-assigning-service/TaskListWithClaimAvailableActions.png[]
 
-=== BPMN standard Task Assigning
+[id="con-bpm-task-assigning-service_{context}"]
+=== BPM standard Task Assigning
 
 Generally, the runtime engines assign user tasks to a group of users. The target audience is added as part of the user task configuration. In the following example, you can see how *Review Purchase Order* task is configured with the `PurchaseDepartment` group:
 
@@ -2916,6 +2917,7 @@ When a user claims a task, the status of the task is changed to *Reserved* and t
 .Example execution of a task claim operation
 image::kogito/configuration/task-assigning-service/TaskListWithAvailableActionsForReservedTaskWithUser1.png[]
 
+[id="con-optaplanner-driven-task-assigning_{context}"]
 === {PRODUCT_OP} driven task assigning
 
 The Task Assigning Service enables you to assign the user tasks among the users according to an optimal plan, which is estimated by {PRODUCT_OP}. The following example shows the content of Task Inbox for `user1` and `user2` when the Task Assigning Service is running:
@@ -2932,8 +2934,8 @@ The back-end Task Assigning process for the previous example includes the follow
 . It is identified that the *Review Purchase Order* task is defined for the `PurchaseDepartment` group.
 . An optimized plan is estimated and all the tasks including unassigned tasks are assigned based on their configuration such as group condition and {PRODUCT_OP} optimization rules. The resulting optimized plan consists of the following statements:
 +
-* Tasks #895ca and #cbf41 must be assigned to `user1`
-* Tasks #5aa2c and #ddc34 must be assigned to `user2`
+* Tasks `#895ca` and `#cbf41` must be assigned to `user1`
+* Tasks `#5aa2c` and `#ddc34` must be assigned to `user2`
 
 . The Task Assigning Service performs the assignments. Note that the users are required to execute the `claim` operation. Therefore, the users focus on completing their assigned tasks, and the assignment is performed by {PRODUCT_OP}.
 
@@ -2944,8 +2946,1206 @@ Overall, the Task Assigning Service analyzes the available tasks, estimates an o
 In the previous example, only user tasks configuration is considered for the assignments estimation by {PRODUCT_OP}. However, the assignment estimation can also include the business information related to the user tasks.
 ====
 
-The {PRODUCT} services that are running create many process instances and user tasks, and at the same time the users complete the assigned tasks. This user task creation and completion cycles repeatedly. In this scenario, the Task Assigning Service instructs the {PRODUCT_OP} to re-estimate the plan and generate new assignments to reflect a new optimized plan. {PRODUCT_OP} consists of the ability to react on the changing context. For more information, see Optaplanner documentation.
+The {PRODUCT} services that are running create many process instances and user tasks, and at the same time the users complete the assigned tasks. This user task creation and completion cycles repeatedly. In this scenario, the Task Assigning Service instructs the {PRODUCT_OP} to re-estimate the plan and generate new assignments to reflect a new optimized plan. {PRODUCT_OP} consists of the ability to react on the changing context. For more information, see the https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
 
+The continuous task reassignments can have negative impact on the user experience. This problem can be managed by combining different repeated and continuous planning techniques. For more information, see the Repeated Planning section of the https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+A simple strategy is to introduce the concept of a planning window, which is a defined subset of the tasks that are available and cannot be changed or reassigned when new plans are estimated. The planning window is only available to the users and the tasks in the planning window are known as published tasks.
+
+The previous example contains a planning window with a size of two. This indicates that only two tasks from the optimized plan are assigned in the processes runtime for each user to focus on. When the users complete the assigned tasks, the Task Assigning Service assigns additional tasks based on the optimized plan. Also, {PRODUCT_OP} maintains information about the best assignments for all the tasks.
+
+In the previous example, the assignments are distributed as follows:
+
+* `user1` is assigned to `#895ca` and `#cbf41` tasks, which belong to the planning window
+* `user2` is assigned to `#5aa2c` and `#ddc34` tasks, which belong to the planning window
+
+The unassigned tasks do not belong to the planning window, therefore the unassigned tasks are assigned using {PRODUCT_OP}.
+
+[id="con-task-assigning-service-kogito-services_{context}"]
+=== Task Assigning Service in {PRODUCT} services
+
+The following figure displays the architecture of a standard {PRODUCT} services installation, in which the Task Assigning Service is optional:
+
+.Task Assigning Service in {PRODUCT} services installation
+image::kogito/configuration/task-assigning-service/TaskAssigningServiceArchitecture.png[Task Assigning Service Architecture]
+
+The Task Assigning Service also interacts with the following {PRODUCT} services:
+
+* Apache Kafka messaging service to consume the CloudEvents that are generated by the user tasks
+* Data Index Query API to load the tasks status information when required
+* {PRODUCT} services runtime API to generate the desired task assignments
+* User Service Connector to connect with external user service and receive user information
+
+[id="proc-using-task-assigning-service_{context}"]
+=== Using the Task Assigning Service
+
+You can use the Task Assigning Service to assign the user tasks that are created by the {PRODUCT} service to users using an optimal solution. The optimal solution is estimated by {PRODUCT_OP}.
+
+.Prerequisites
+
+* https://kafka.apache.org/[Apache Kafka] is installed, including the {PRODUCT} runtimes required topics, and the Kafka messaging server is running. For information about Kafka installation and configuration, see https://kafka.apache.org/documentation/[Apache Kafka documentation].
+* The {PRODUCT} Data Index Service is running. For information about Data Index Service installation and configuration see {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service].
+* {PRODUCT} services are running. The set of {PRODUCT} services with business processes are running and properly configured for generating the user tasks related to CloudEvents and sending them to the Apache Kafka messaging service. For more information about creating and running {PRODUCT} services see {URL_CREATING_RUNNING}#chap-kogito-creating-running[_{CREATING_RUNNING}_].
+
+.Procedure
+
+. Go to the https://repository.jboss.org/org/kie/kogito/task-assigning-service/[`task-assigning-service`] artifacts page, select the latest release of the Task Assigning Service, and download the `task-assigning-service-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `task-assigning-service-__VERSION__-runner.jar` file and enter the following command to run the Task Assigning Service:
++
+.Running the Task Assigning Service
+[source,subs="+quotes"]
+----
+$ java -jar task-assigning-service-__VERSION__-runner.jar
+----
+
+[id="con-task-assigning-service-config_{context}"]
+=== Task Assigning Service configuration
+
+Considering that the Task Assigning Service is part of a Quarkus application, then all the configuration parameters are defined in the next topics. The configuration parameters can be established using the available Quarkus configuration sources.
+
+For more information about configuring a Quarkus application, see https://quarkus.io/guides/config[Quarkus - Configuring your Application] in the Quarkus documentation.
+
+[NOTE]
+====
+Generally, most of the parameters are pre-configured with appropriate values. However, the `application. properties` file is placed in the `$TASK_ASSIGNING_SERVICE_HOME/config` directory, which can be used to configure the Task Assigning Service parameters.
+====
+
+[id="ref-global-config-params-task-assigning_{context}"]
+==== Global configuration parameters of Task Assigning Service
+
+The Task Assigning Service contains the following global configuration parameters:
+
+.Global configuration parameters of Task Assigning Service
+[cols="30%,50%,20%", options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `kogito.task-assigning.data-index.server-url`
+| URL of the Data Index Service
+| http://localhost:8180/graphql
+
+| `kogito.task-assigning.data-index.connect-timeout-duration`
+a| Timeout for the established connection when a Data Index Service query is executed
+
+For example, a value of 0 that is `PT0S` represents no timeout. The format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT30S`: configures 30 seconds
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT30S`
+
+| `kogito.task-assigning.data-index.read-timeout-duration`
+a| Timeout for the data reading when a Data Index Service query is executed
+
+The value of this parameter must be adjusted according to the amount of expected data and is typically related with the `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/pageSize` property.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT3M`: configures 3 minutes
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT3M`
+
+| `kogito.task-assigning.process-runtime.connect-timeout-duration`
+a| Timeout for the established connection when a {PRODUCT} runtimes operation is executed
+
+For example, a value of 0 that is `PT0S` represents no timeout. The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT30S`: configures 30 seconds
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT30S`
+
+| `kogito.task-assigning.process-runtime.read-timeout-duration`
+a| Timeout for the data reading when a {PRODUCT} runtimes operation is executed
+
+For example, a value of 0 that is `PT0S` represents no timeout. The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT1M`: configures 1 minute
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT1M`
+
+| `kogito.task-assigning.oidc-client`
+| Name of the OidcClient to use when an OpenId Connect compliant authorization server such as Keycloak is being used for securing the access to the Data Index Service and the {PRODUCT} runtimes.
+
+The same OidcClient configuration is used for all the accesses, so you must have the proper permissions for accessing both the Data Index Service and the {PRODUCT} runtimes.
+
+For more information about how to configure this OidcClients, see https://quarkus.io/guides/security-openid-connect-client[Quarkus - Using OpenID Connect Client].
+
+| NA
+
+| `kogito.task-assigning.user`
+| User ID for connecting to the Data Index Service and the {PRODUCT} runtimes when the systems are secured using the Basic Authentication mechanism.
+
+| NA
+
+| `kogito.task-assigning.password`
+| User password for connecting to the Data Index Service and the {PRODUCT} runtimes when the systems are secured using the Basic Authentication mechanism.
+| NA
+
+| `kogito.task-assigning.publish-window-size`
+| Maximum number of tasks for each user that are assigned in {PRODUCT} runtimes when an optimized plan is estimated.
+
+
+The value of this parameter must be low to 2, 3, or 4, as it is expected that the tasks are assigned to the users according to an optimized plan, which changes over the time. The high values for this parameter leads to BPM standard task assigning that can nullify the Task Assigning Service work.
+
+| `2`
+
+| `kogito.task-assigning.wait-for-improved-solution-duration`
+
+| Time interval to improve a solution before the optimized plan is sent to the {PRODUCT} runtimes.
+
+This time interval is applied every time a new set of changes is processed, therefore it must be short. For example, `PT0.500` representing 500 milliseconds.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| `PT0S` (no wait)
+
+| `kogito.task-assigning.improve-solution-on-background-duration`
+
+| Time interval for performing background optimization of the current solution after the optimized plan is sent to the {PRODUCT} runtimes.
+
+In case, no changes are produced in the processes and a better solution is calculated during that period, then a new optimized plan is automatically sent to the {PRODUCT} runtimes.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| `PT1M`
+
+| `kogito.task-assigning.user-service-connector`
+| Name of the User Service Connector for accessing an external user service.
+| `PropertiesConnector`
+
+| `kogito.task-assigning.user-service-sync-interval`
+
+a| Time interval for refreshing the user information from an external user service.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+* `PT2H`: configures 2 hours
+* `PT30M`: configures 30 minutes
+
+| `PT2H`
+
+| `quarkus.optaplanner.solver-config-xml`
+
+| Path to classpath resource with the solver configuration when a customized configuration is used.
+
+If the resource is not found or the configuration is incorrect, the Task Assigning Service does not start.
+
+| `taskAssigningDefaultSolverConfig.xml`
+
+| `org.kie.kogito.taskassigning.core.model.planningUserId`
+
+a| This parameter configures the user for being assigned with the tasks that no other user in the system can be assigned to.
+
+For example, if a task has a required skill "astronaut" and no other user can be found with this skill, it is assigned to the `planninguser`. However, this parameter is only restricted to skills.
+
+| `planninguser`
+
+|===
+
+[id="con-task-assigning-kafka-messaging-config_{context}"]
+==== Kafka messaging configuration
+
+The Task Assigning Service reacts upon the CloudEvents that are generated by the user tasks in {PRODUCT} services.
+
+The following table describes the set of parameters that are required to configure Apache Kafka messaging. However, based on the target installation, any configuration parameter of the Quarkus Apache Kafka can be used. For more information, see https://quarkus.io/guides/kafka#configuration[Quarkus Apache Kafka Configuration].
+
+.Kafka messaging configuration parameters
+[cols="30%,50%,20%",options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `kafka.bootstrap.servers`
+| Comma-separated list of `host:port` to establish the initial connection to the Kafka cluster.
+
+For more information about Kafka configuration, see https://quarkus.io/guides/kafka#configuring-the-kafka-connector[Configuring the Kafka connector].
+
+| `localhost:9290`
+
+| `mp.messaging.incoming.kogito-usertaskinstances-events.topic`
+
+| Kafka topic where the CloudEvents are published. The CloudEvents are generated by the user tasks in{PRODUCT} runtimes.
+
+| `kogito-usertaskinstances-events`
+
+| `mp.messaging.incoming.kogito-usertaskinstances-events.group.id`
+
+| Kafka group ID for consumption of the CloudEvents. The CloudEvents are generated by the user tasks in{PRODUCT} runtimes.
+
+Generally, the default value must not be changed unless necessary. If the default value is changed, then the changed value must not be used in the same group ID as another service that consumes the CloudEvents, such as Data Index Service.
+
+| `kogito-task-assigning-service`
+
+|===
+
+==== Solution data loading configuration
+
+When you start the Task Assigning Service, it is required to execute a set of initial data loading queries against the Data Index Service and the configured User System Service.
+
+The following table describes the parameters that are required to configure the data loading:
+
+.Data loading configuration parameters
+[cols="30%,50%,20%", options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/pageSize`
+
+| Page size for the data loading queries of tasks
+| `3000`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/maxRetries`
+
+| Number of retries to execute when the data loading operation fails. `-1` represents an infinite number of retries.
+
+| `-1`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/delay`
+
+| Time delay in retries
+
+| `2000`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/delayUnit`
+| Time unit to measure the delay in retries. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MILLIS
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/maxDuration`
+
+a| Maximum amount of time for continuing retrying.
+
+NOTE: In case the maximum number of configured retries is reached, the Task Assigning Service fails.
+
+| `15`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/durationUnit`
+
+| Time unit to measure the max duration. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MINUTES
+
+|===
+
+The data loading configuration parameters conform with the Quarkus fault tolerance mechanisms. For more information about the fault tolerance mechanism, see https://quarkus.io/guides/smallrye-fault-tolerance[Quarkus - Smallrye Fault Tolerance].
+
+==== Users data synchronization configuration
+
+The following table describes the configuration parameters that are applied when the users data is synchronized from an external user service. The users data synchronization is executed on a regular configurable basis.
+
+.Users data synchronization configuration parameters
+[cols="30%,50%,20%", options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `kogito.task-assigning.user-service-sync-interval`
+
+| Time interval for refreshing the user information using a user service
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+* `PT2H`: configures 2 hours
+* `PT30M`: configures 30 minutes
+
+| `PT2H`
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/maxRetries`
+
+| Number of retries to execute when the data loading operation fails. The value `-1` represents an infinite number of retries.
+
+| `-1`
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/delay`
+
+a| Time delay when performing retries.
+
+NOTE: In case the maximum number of configured retries is reached, the Task Assigning Service fails.
+
+| 2000
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/delayUnit`
+
+| Time unit to measure the delay when performing retries. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MILLIS
+
+| org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/durationUnit
+
+| Time unit to measure the maximum duration. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MINUTES
+
+|===
+
+The configuration parameters of users data synchronization conform with the Quarkus fault tolerance mechanisms. For more information about the fault tolerance mechanism, see https://quarkus.io/guides/smallrye-fault-tolerance[Quarkus - Smallrye Fault Tolerance].
+
+[id="con-user-service-connector_{context}"]
+==== User Service Connector
+
+The estimation of an optimal plan for assigning user tasks requires consideration of business information as part of the definitions of the users, for example, using groups, skills related to a user, or using affinities in certain topics in the Task Assigning Service. For more information about using skills and affinities, see see xref:con-skills-affinities_kogito-configuring[].
+
+The business-related information is managed by an external user service and must be provided in each particular installation. The retrieval of this information is delegated to the `UserServiceConnector` component.
+
+A `UserServiceConnector` component must implement the following interface:
+
+.UserServiceConnector API
+[source,java]
+----
+/**
+ * User service connector implementations are loaded by CDI and must be qualified with the
+ * UserServiceConnectorQualifier in order to configure the particular implementation name.
+ * This name is used for configuring the property kogito.task-assigning.user-service-connector
+ * in cases where this connector is to be used.
+ *
+ * e.g.
+ *
+ *
+ *     @ApplicationScoped
+ *     @UserServiceConnectorName("MyUserServiceConnector")
+ *     public class MyUserServiceConnector implements UserServiceConnector {
+ *          ......
+ *     }
+ */
+public interface UserServiceConnector {
+
+    /**
+     * Invoked by the task assigning service as part of the initialization procedure and
+     * before any other method is invoked.
+     */
+    void start();
+
+    /**
+     * @return the list of all users present in the external user service.
+     */
+    List<User> findAllUsers();
+
+    /**
+     * Get the user information corresponding the user identified by the id.
+     *
+     * @param id a user identifier.
+     * @return the User corresponding to the given identifier, null if no user was found.
+     */
+    User findUser(String id);
+
+}
+----
+
+[id="con-user-service-connector-config_{context}"]
+==== User Service Connector configuration
+
+The implementation of User Service Connector is loaded by CDI and must be qualified using the `UserServiceConnectorQualifier` to define a particular name. The defined name can be used for configuring the `kogito.task-assigning.user-service-connector` parameter.
+
+By default, the following configuration is provided:
+
+.Default User Service Connector configuration
+[source,subs="+quotes"]
+----
+kogito.task-assigning.user-service-connector=PropertiesConnector
+----
+
+[id="con-properties-connector_{context}"]
+====  PropertiesConnector
+
+The `PropertiesConnector` is a basic `UserServiceConnector` implementation that loads the user definitions and attributes from the properties, which encountered on the different configuration sources. The configuration sources can be used for the Task Assigning Service Quarkus application, for example, the `applicaion.properties` file.
+
+For more information about configuring a Quarkus application, see https://quarkus.io/guides/config[Quarkus - Configuring your Application].
+
+You can define the users using the following examples:
+
+.Example for defining users
+[source]
+----
+kogito.task-assigning.properties-connector.user.poul.groups=interns,managers
+kogito.task-assigning.properties-connector.user.poul.attribute.skills=C#,kotlin
+kogito.task-assigning.properties-connector.user.poul.attribute.affinities=sports
+kogito.task-assigning.properties-connector.user.poul.attribute.name=Poul
+kogito.task-assigning.properties-connector.user.poul.attribute.surname=Simon
+----
+
+The previous example defines the following user:
+
+.Example user
+[source]
+----
+User {
+    id = "poul",
+    GroupSet = {"interns", "managers"}
+    AttributeMap = {
+        {"name", "Poul"}
+        {"surname", "Simon"}
+        {"skills", "C#,kotlin"}
+        {"affinities", "sports"}
+}
+----
+
+By using the Quarkus profiles configuration mechanism, you can also define users in a per profile basis, for example:
+
+.Example for defining users in per profile basis
+[source]
+----
+%dev.kogito.task-assigning.properties-connector.user.mary.groups=managers
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.skills=javascript,ada
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.affinities=movies
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.name=Mary
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.surname=Poppins
+----
+
+In the previous example, user `Mary` is considered only when the `dev` profile is activated. For example, you can use the  Quarkus configuration parameter `-Dquarkus.profile=dev` when the application starts.
+
+[id="ref-default-constraints_{context}"]
+==== Default constraints
+
+The Task Assigning Service uses different constraints to generate an optimized plan. Generally, a large set of use cases is covered and no extensions are required to use the constraints. However, you can work with the customized set of constraints provided by users if required. For more information about using customized constraints, see see xref:proc-custom-solver-constraints-config_kogito-configuring[].
+
+To generate an optimized solution, you can use a `BendableLongScore` with two levels of hard constraints and six levels of soft constraints. You can customize the level of constraints by following a set of restrictions.
+
+.Default constraints for Task Assigning Service
+[cols="30%,15%,55%", options="header"]
+|===
+|Constraint
+|Level
+|Description
+
+| Required Potential Owner
+| Hard constraint 0 (required)
+| Determines whether a task must be assigned to one of its Potential Owners or the Planning User in case no Potential Owner is found.
+
+The customization provided by users must include this constraint as a first-level hard constraint, otherwise, the business process semantics is not considered by the task assigning integration. For example, the tasks are assigned to the users who are not Potential Owners.
+
+In case the `Required Potential Owner` constraint is customized, the task must be assigned to the Planning User when no other user is suitable for the customized condition.
+
+| Required Skills
+| Hard constraint 1
+| Determines that a task can only be assigned to a user, who has all the configured skills. For more information about skills, see xref:con-skills-affinities_kogito-configuring[]. In case, no user is found with the configured skills of the task, then the task is assigned to the Planning User. However, if the task does not consist of configured skills, the constraint contains no effect.
+
+In case the `Required Skills` constraint is customized, the task must be assigned to the Planning User when no other user is suitable for the customized condition.
+
+| `PlanningUser` assignment
+| Soft constraint 0 (required)
+| Penalizes the Planning User assignment. This constraint enforces the minimization of the Planning User assignment and ensures that the Planning User is assigned as the last available option. This constraint cannot be customized.
+
+| High level priority
+| Soft constraint 1
+| Enforces the assignment of higher priority tasks first.
+
+| Desired affinities
+| Soft constraint 2
+| Assigns the tasks according to the configured affinities. For more information about affinities, see xref:con-skills-affinities_kogito-configuring[]. If a task consists of configured affinities, the task is assigned to the user with most of the related affinities.
+
+In case, a task does not have configured affinities, the constraint does not affect.
+
+| Minimize makespan
+| Soft constraint 3 (required)
+| Reduces the time to complete all the tasks. This constraint must be included.
+
+| Medium level priority
+| Soft constraint 4
+| Ensures that medium level priority tasks are assigned after higher priority tasks.
+
+| Low level priority
+| Soft constraint 5
+| Ensures that low level priority tasks are assigned at last.
+
+|===
+
+[NOTE]
+====
+The `TaskAssigningSolution` is based on the `BendableLongScore` scoring function, therefore potential users provided a set of constraints are based on the same scoring function. However, the scoring function and the core model classes can be changed in a future release.
+====
+
+The following code shows the implementation of default constraints:
+
+.Default constraints implementation
+[source,java]
+----
+public class DefaultTaskAssigningConstraints {
+
+public static Constraint requiredPotentialOwner(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> !TaskAssigningConditions.userMeetsPotentialOwnerOrPlanningUserCondition(taskAssignment.getTask(), taskAssignment.getUser()))
+.penalize("Required Potential Owner", constraintWeight);
+}
+
+public static Constraint requiredSkills(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> !TaskAssigningConditions.userMeetsRequiredSkillsOrPlanningUserCondition(taskAssignment.getTask(), taskAssignment.getUser()))
+.penalize("Required Skills", constraintWeight);
+}
+
+public static Constraint planningUserAssignment(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> ModelConstants.IS_PLANNING_USER.test(taskAssignment.getUser().getId()))
+.penalize("PlanningUser assignment", constraintWeight);
+}
+
+public static Constraint highLevelPriority(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> PriorityHelper.isHighLevel(taskAssignment.getTask().getPriority()))
+.penalize("High level priority",
+constraintWeight,
+TaskAssignment::getEndTimeInMinutes);
+}
+
+public static Constraint desiredAffinities(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> taskAssignment.getUser().isEnabled())
+.reward("Desired Affinities",
+constraintWeight,
+taskAssignment -> TaskHelper.countMatchingLabels(taskAssignment.getTask(), taskAssignment.getUser(), DefaultLabels.AFFINITIES.name()));
+}
+
+public static Constraint minimizeMakespan(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> taskAssignment.getNextElement() == null)
+.penalize("Minimize makespan",
+constraintWeight,
+taskAssignment -> taskAssignment.getEndTimeInMinutes() * taskAssignment.getEndTimeInMinutes());
+}
+
+public static Constraint mediumLevelPriority(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> PriorityHelper.isMediumLevel(taskAssignment.getTask().getPriority()))
+.penalize("Medium level priority",
+constraintWeight,
+TaskAssignment::getEndTimeInMinutes);
+}
+
+public static Constraint lowLevelPriority(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+return constraintFactory.from(TaskAssignment.class)
+.filter(taskAssignment -> PriorityHelper.isLowLevel(taskAssignment.getTask().getPriority()))
+.penalize("Low level priority",
+constraintWeight,
+TaskAssignment::getEndTimeInMinutes);
+}
+
+public static BendableLongScore hardLevelWeight(int hardLevel, long hardScore) {
+return BendableLongScore.ofHard(HARD_LEVELS_SIZE, SOFT_LEVELS_SIZE, hardLevel, hardScore);
+}
+
+public static BendableLongScore softLevelWeight(int softLevel, long softScore) {
+return BendableLongScore.ofSoft(HARD_LEVELS_SIZE, SOFT_LEVELS_SIZE, softLevel, softScore);
+}
+}
+----
+
+The following shows the implementation of constraint provider used by the default Solver configuration:
+
+.Default constraint provider
+[source,java]
+----
+public class DefaultTaskAssigningConstraintProvider implements ConstraintProvider {
+
+@Override
+public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
+return new Constraint[] {
+requiredPotentialOwner(constraintFactory),
+requiredSkills(constraintFactory),
+planningUserAssignment(constraintFactory),
+highLevelPriority(constraintFactory),
+desiredAffinities(constraintFactory),
+minimizeMakespan(constraintFactory),
+mediumLevelPriority(constraintFactory),
+lowLevelPriority(constraintFactory)
+};
+}
+
+protected Constraint requiredPotentialOwner(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.requiredPotentialOwner(constraintFactory, hardLevelWeight(0, 1));
+}
+
+protected Constraint requiredSkills(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.requiredSkills(constraintFactory, hardLevelWeight(1, 1));
+}
+
+protected Constraint planningUserAssignment(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.planningUserAssignment(constraintFactory, softLevelWeight(0, 1));
+}
+
+protected Constraint highLevelPriority(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.highLevelPriority(constraintFactory, softLevelWeight(1, 1));
+}
+
+protected Constraint desiredAffinities(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.desiredAffinities(constraintFactory, softLevelWeight(2, 1));
+}
+
+protected Constraint minimizeMakespan(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.minimizeMakespan(constraintFactory, softLevelWeight(3, 1));
+}
+
+protected Constraint mediumLevelPriority(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.mediumLevelPriority(constraintFactory, softLevelWeight(4, 1));
+}
+
+protected Constraint lowLevelPriority(ConstraintFactory constraintFactory) {
+return DefaultTaskAssigningConstraints.lowLevelPriority(constraintFactory, softLevelWeight(5, 1));
+}
+}
+----
+
+[NOTE]
+====
+Users providing customization of the Solver configuration can use the `org.kie.kogito.taskassigning.core.model.solver.DefaultTaskAssigningConstraints` and `org.kie.kogito.taskassigning.core.model.solver.DefaultTaskAssigningConstraintProvider` classes as a start point. However, these classes are not part of the public API and therefore, might change in a future release.
+====
+
+For more information about constraints building and configuration see https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+[id="con-skills-affinities_{context}"]
+==== Skills and affinities
+
+The skills and affinities in the Task Assigning Service implement the ability to declare business-related information. The business-related information is considered by the default constraints or the customized set of constraints. This process is a decision mechanism that you can use for the group-based assignment semantics defined in the business process to assign the user tasks. Also, this decision mechanism assists to generate the estimated attributes that are automatically defined to the task and user representation, which is used by {PRODUCT_OP}. The calculated attributes are generated by the `TaskAttributesProcessor` and the `UserAttributesProcesor`.
+
+You can link business-related information to a user task using the input configuration of the same user task. The following is an example of input configuration:
+
+.Example skills and affinities configuration.
+image::kogito/configuration/task-assigning-service/SkillsAndAffinitiesConfigurationExample.png[]
+
+In the previous example, a process variable `variableWithTheSkills` is linked with the user task input name `skills`, and the corresponding value is processed using the `DefaultTaskAttributesProcessor` to calculate the `SKILLS` attribute in the internal model, which is managed by {PRODUCT_OP}.
+
+[id="con-task-attributes-processors_{context}"]
+==== Task attributes processors
+
+The task attributes processors generate task attributes in an internal model. The `TaskAttributesProcessors` are executed when the Task Assigning Service is activated.
+
+.Task attributes processor
+image::kogito/configuration/task-assigning-service/TaskAttributesProcessor.png[]
+
+The `TaskAttributesProcessors` transforms user task information into a task attribute in the internal model, which is managed by {PRODUCT_OP}. The default constraints consider the task attributes for Task Assigning Service.
+
+For example, the input data `skills` with the value `skill1`, `skill2` resulted in the attribute `SKILLS` with {"skill1", "skill2"} set of values.
+
+[id="con-user-attributes-processors_{context}"]
+==== User attributes processors
+
+The user attributes processors generate user attributes in an internal model. The `UserAttributesProcessors` are executed when information for a user is queries and the Task Assigning Service is activated.
+
+.User attributes processor
+image::kogito/configuration/task-assigning-service/UserAttributesProcessor.png[]
+
+The `UserAttributesProcessors` transforms external user information into a user attribute in the internal model, which is managed by {PRODUCT_OP}. The default constraints consider the user attributes for Task Assigning Service.
+
+For example, an external user attribute `affinities` with the value `news` resulted in the attribute `AFFINITIES` with the {"news"} values.
+
+[id="ref-default-attributes-processors_{context}"]
+==== Default attributes processors
+
+{PRODUCT} provides the following default attributes processors to manage the `SKILLS` and `AFFINITIES` attributes:
+
+* `DefaultTaskAttributeProcessor`: Processes the user tasks with `skills` and `affinities` input values as a string of comma-separated values and creates Java set objects with tokenized string values for each attribute. The resulting set of values is assigned to the calculated attributes `SKILLS` and `AFFINITIES` respectively.
++
+For example, the input values `english, finance` of `skills` is extracted as a set with the {"english", "finance"} values and assigned to the `SKILLS` attribute.
++
+You can customize the `DefaultTaskAttributeProcessor` processor using the following configuration parameters:
+
+** `kogito.task-assigning.default-task-attributes-processor.enabled` parameter to enable or disable the processing. The default value of this parameter is `true`.
+** `kogito.task-assigning.default-task-attributes-processor.priority` parameter to configure the execution order for the `DefaultTaskAttributeProcessor` processor. The default value of this parameter is `0`.
+** `kogito.task-assigning.default-task-attributes-processor.skills` parameter to change the name of the input value of the user task, in which `SKILLS` attribute is calculated. The default value of this parameter is `skills`.
+** `kogito.task-assigning.default-task-attributes-processor.affinities` parameter to change the name of the input value of the user, in which `AFFINITIES` attribute is calculated. The default value of this parameter is `affinities`.
+
+* `DefaultUserAttributesProcessor`: Calculates the `SKILLS` and `AFFINITIES` attributes for a user. You can customize this processor using the following parameters:
+
+** `kogito.task-assigning.default-user-attributes-processor.enabled` parameter is used to enable or disable the processing. The default value of this parameter is `true`.
+** `kogito.task-assigning.default-user-attributes-processor.priority` parameter configures the execution order for the `DefaultUserAttributesProcessor` processor. The default value of this parameter is `0`.
+** `kogito.task-assigning.default-user-attributes-processor.skills` parameter to change the name of the external user attribute, in which `SKILLS` attribute is calculated. The default value of this parameter is `skills`.
+** `kogito.task-assigning.default-user-attributes-processor.affinities` parameter to change the name of the external user attribute, in which `AFFINITIES` attribute is calculated. The default value of this parameter is `affinities`.
+
+[id="con-task-assigning-service-health-checks_{context}"]
+=== Task Assigning Service health checks
+
+The Task Assigning Service implements the https://github.com/eclipse/microprofile-health[MicroProfile Health] compatible readiness and liveness health checks. For more information about adding health checks to your Quarkus application, see https://quarkus.io/guides/smallrye-health[Quarkus SmallRye Health].
+
+Readiness::
+
+The following example shows the results of executing the readiness health check for the Task Assigning Service URL `http://localhost:8280/q/health/ready`:
+
+.Example readiness health check execution
+[source,json]
+----
+{
+  "status": "UP",
+  "checks": [
+    {
+      "name": "Task Assigning Service - readiness check",
+      "status": "UP",
+      "data": {
+        "service-status": "READY"
+      }
+    },
+    {
+      "name": "SmallRye Reactive Messaging - readiness check",
+      "status": "UP",
+      "data": {
+        "kogito-usertaskinstances-events": "[OK]"
+      }
+    }
+  ]
+}
+----
+
+Liveness::
+
+The following example shows the results of executing the liveness health check for the Task Assigning Service URL `http://localhost:8280/q/health/live`:
+
+.Example liveness health check execution
+[source, json]
+----
+{
+  "status": "UP",
+  "checks": [
+    {
+      "name": "SmallRye Reactive Messaging - liveness check",
+      "status": "UP",
+      "data": {
+        "kogito-usertaskinstances-events": "[OK]"
+      }
+    },
+    {
+      "name": "Task Assigning Service - liveness check",
+      "status": "UP",
+      "data": {
+        "service-status": "READY"
+      }
+    }
+  ]
+}
+----
+
+[id="con-extensions-task-assigning_{context}"]
+=== Task Assigning Service extensions in {PRODUCT}
+
+The Task Assigning Service supports extension elements that extend the content of the Task Assigning Service. To optimize the Task Assigning Service, {PRODUCT} supports the following additional extensions:
+
+* Use a customized xref:proc-custom-solver-constraints-config_kogito-configuring[].
+* Add user provided xref:con-user-service-connector_kogito-configuring[].
+* Add user provided xref:proc-create-custom-task-attributes-processors_kogito-configuring[] and xref:proc-create-custom-user-attributes-processors_kogito-configuring[].
+
+==== Using Task Assigning Service extensions
+
+To optimize the Task Assigning Service, you can use the additional Task Assigning Service extension in {PRODUCT}.
+
+.Procedure
+
+. Create a Quarkus application and add the following dependencies to include the Task Assigning Service:
++
+.Dependencies to include the Task Assigning Service
+[source, xml]
+----
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>task-assigning-service-extension-example</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <compiler-plugin.version>3.8.1</compiler-plugin.version>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <quarkus-plugin.version>1.13.3.Final</quarkus-plugin.version>
+    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+
+    <!-- Kogito version corresponding to the task assigning service base to extend -->
+    <kogito.version>2.0.0-SNAPSHOT</kogito.version>
+
+    <!-- Quarkus version required by the task assigning service -->
+    <quarkus.platform.version>1.13.3.Final</quarkus.platform.version>
+
+    <!--
+      If the kogito.version is aligned with the version of the kogito components delivered in the
+      quarkus.platform.version the quarkus-universe-bom can be used, otherwise use the
+      quarkus-bom.
+    -->
+    <!--<quarkus.platform.artifact-id>quarkus-universe-bom</quarkus.platform.artifact-id>-->
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>${quarkus.platform.artifact-id}</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+    <!--
+      The assigning service integration api defines the contracts for implementing user
+      customized TaskAttributesProcessor, UserAttributesProcessor and UserServiceConnectors
+    -->
+    <dependency>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>task-assigning-integration-api</artifactId>
+      <version>${kogito.version}</version>
+    </dependency>
+
+    <!-- Incorporates the task assigning service -->
+    <dependency>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>task-assigning-service</artifactId>
+      <version>${kogito.version}</version>
+    </dependency>
+
+    <!-- any other required dependency -->
+
+  </dependencies>
+
+   ...
+
+</project>
+----
++
+For more information about how to create a Quarkus application, see https://quarkus.io/get-started/[Quarkus - Get Started].
+
+. Add the extension components.
++
+For more information about extension components, see xref:proc-custom-solver-constraints-config_kogito-configuring[], xref:con-user-service-connector_kogito-configuring[], xref:proc-create-custom-task-attributes-processors_kogito-configuring[], and xref:proc-create-custom-user-attributes-processors_kogito-configuring[].
+
+. Build and start your Quarkus application.
+
+[NOTE]
+====
+You can add the extensions as part of the existing application or other Maven modules, in which the modules must be added as dependencies.
+====
+
+[id="proc-custom-solver-constraints-config_{context}"]
+==== Configuring custom solver and constraints
+
+You can configure the custom solver and constraints in the Task Assigning Service.
+
+.Procedure
+
+. Create a solver configuration file, such as `myExampleSolverConfig.xml` in the project directory.
++
+.Solver configuration file
+[source,java]
+----
+src/main/resources/META-INF/myExampleSolverConfig.xml
+----
+
+. Create a customized `org.optaplanner.core.api.score.stream.ConstraintProvider` implementation, such as `org.kie.kogito.solver.ExtendedConstraintProvider` and configure the solver as follows:
++
+.Solver configuration
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<solver xmlns="https://www.optaplanner.org/xsd/solver"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
+
+  <!-- the Solver must execute in daemon mode -->
+  <daemon>true</daemon>
+  <moveThreadCount>AUTO</moveThreadCount>
+
+  <!-- the following solution and entities configurations must be used -->
+  <solutionClass>org.kie.kogito.taskassigning.core.model.TaskAssigningSolution</solutionClass>
+  <entityClass>org.kie.kogito.taskassigning.core.model.ChainElement</entityClass>
+  <entityClass>org.kie.kogito.taskassigning.core.model.TaskAssignment</entityClass>
+
+  <scoreDirectorFactory>
+    <!-- configure the customized ConstraintProvider -->
+    <constraintProviderClass>org.kie.kogito.solver.ExtendedConstraintProvider</constraintProviderClass>
+  </scoreDirectorFactory>
+
+  <constructionHeuristic>
+    <changeMoveSelector>
+      <!-- in general it's recommended to keep this ChangeMoveFilter -->
+      <filterClass>org.kie.kogito.taskassigning.core.model.solver.filter.TaskByGroupAndSkillsChangeMoveFilter</filterClass>
+    </changeMoveSelector>
+  </constructionHeuristic>
+
+  <localSearch>
+    <termination>
+      <!-- NOTE: please keep this termination period inside the localSearch configuration. -->
+      <unimprovedSpentLimit>PT2M</unimprovedSpentLimit>
+    </termination>
+  </localSearch>
+</solver>
+----
+
+. To use the solver configuration, set the following parameter in your application `src/resources/META-INF/application.properties` file:
++
+.Example parameter setting in the application file
+[source]
+----
+quarkus.optaplanner.solver-config-xml=myExampleSolverConfig.xml
+----
+
+For more information on writing OptaPlanner solver configurations and `ConstraintProviders`, see https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+For information about which constraints are mandatory for the Task Assigning Service, see xref:ref-default-constraints_kogito-configuring[].
+
+[id="proc-create-custom-user-service-connector_{context}"]
+==== Creating custom User Service Connector
+
+You can create a custom User Service Connector for the Task Assigning Service.
+
+.Procedure
+
+. To create your custom User Service Connector, implement the `org.kie.kogito.taskassigning.user.service.UserServiceConnector` interface as follows:
++
+.User Service Connector interface implementation
+[source,java]
+----
+/**
+* Give a name to the UserServiceConnector implementation by using the
+* @UserServiceConnectorQualifier annotation.
+* This name is used for configuring the kogito.task-assigning.user-service-connector
+* parameter to use this connector.
+*
+* note: while it is a recommended practice the selected name does not necessary
+* have to be the same as the class name.
+*/
+@ApplicationScoped
+@UserServiceConnectorQualifier("MyExampleUserServiceDBConnector")
+public class MyExampleUserServiceDBConnector implements UserServiceConnector {
+
+/**
+* Invoked by the task assigning service as part of the initialization procedure and
+* before any other method is invoked.
+*/
+@Override
+public void start() {
+// execute any required initialization procedure
+}
+
+/**
+* @return the list of all users present in the external user service.
+*/
+@Override
+public List<User> findAllUsers() {
+// query the DB and return the list of users
+return Collections.emptyList();
+}
+
+/**
+* Get the user information corresponding to the user identified by the id.
+* @param userId a user identifier.
+* @return the user corresponding to the given identifier, null if no user was found.
+*/
+@Override
+public User findUser(String userId) {
+// query the DB and return the user corresponding or null if not found.
+return null;
+}
+}
+----
++
+[NOTE]
+====
+The implementations of the User Service Connector are loaded using CDI and configured with the name provided by the `UserServiceConnectorQualifier`. Ensure that your implementation contains the following annotations:
+`@ApplicationScoped`
+`@UserServiceConnectorQualifier("MyExampleUserServiceDBConnector")`
+====
+
+. Set the following parameter in your `application.properties` file:
++
+.Parameter for `application.properties` file
+[source]
+----
+kogito.task-assigning.user-service-connector=MyExampleUserServiceDBConnector
+----
+
+The defined User Service Connector is automatically loaded and available when your application starts.
+
+[id="proc-create-custom-task-attributes-processors_{context}"]
+==== Creating custom task attributes processors
+
+The xref:con-task-attributes-processors_kogito-configuring[] are CDI loaded components, which are invoked when a new user task is created or an existing user task is changed. The task attributes processors define the calculated attributes in an internal task model, which is managed by {PRODUCT_OP}.
+
+The task attributes processors are invoked in the following scenarios:
+
+* When a new user task is created in the {PRODUCT} runtimes, and a corresponding new task is added to the data model, which is managed by {PRODUCT_OP}.
+* When an existing user task is changed and the changes added to the data model are detected.
+
+You can create a custom task attributes processor for the Task Assigning Service.
+
+.Procedure
+
+To create your custom task attributes processor, implement the `org.kie.kogito.taskassigning.model.processing.TaskAttributesProcessor` as follows:
+
+.Task attribute processor implementation
+[source,java]
+----
+@ApplicationScoped
+public class MyExampleTaskAttributeProcessor implements TaskAttributesProcessor {
+
+    /**
+     * Indicates the priority of this processor when multiple task attributes processors
+     * are applied, lower numbers executes first.
+     */
+    @Override
+    public int getPriority() {
+        return 50;
+    }
+
+    /**
+     * Indicates if the processor is enabled. Disabled processors are not applied.
+     */
+    @Override
+    public boolean isEnabled() {
+        return false;
+    }
+
+    /**
+     * Executed when a new human task is created in the Kogito runtimes, or changes
+     * in the TaskInfo information for an existing human task are detected.
+     * The targetAttributes will be assigned to the internal Task counterpart
+     * managed by OptaPlanner.
+     *
+     * @param taskInfo Information about the Kogito runtimes human task that was created or modified.
+     * @param targetAttributes Attributes to assign to the Task counterpart managed by OptaPlanner.
+     */
+    @Override
+    public void process(TaskInfo taskInfo, Map<String, Object> targetAttributes) {
+        // custom attribute calculated by using the TaskInfo information or any other procedure.
+        Object myCustomAttributeValue = new Object();
+        targetAttributes.put("myCustomAttribute", myCustomAttributeValue);
+    }
+}
+----
+
+The `org.kie.kogito.taskassigning.model.processing.TaskInfo` interface represents the user task information that is available to the task attributes processor:
+
+.Example `TaskInfo` interface
+[source,java]
+----
+public interface TaskInfo {
+
+    String getTaskId();
+
+    String getName();
+
+    String getDescription();
+
+    String getReferenceName();
+
+    String getPriority();
+
+    String getProcessInstanceId();
+
+    String getProcessId();
+
+    String getRootProcessInstanceId();
+
+    String getRootProcessId();
+
+    Set<String> getPotentialUsers();
+
+    Set<String> getPotentialGroups();
+
+    Set<String> getAdminUsers();
+
+    Set<String> getAdminGroups();
+
+    Set<String> getExcludedUsers();
+
+    ZonedDateTime getStarted();
+
+    Map<String, Object> getInputs();
+
+    String getEndpoint();
+}
+----
+
+The custom task attributes processor is loaded and available when your application starts.
+
+[id="proc-create-custom-user-attributes-processors_{context}"]
+==== Creating custom user attributes processors
+
+The xref:con-user-attributes-processors_kogito-configuring[] are CDI loaded components that are invoked when user information is refreshed using an external user service. The user attributes processors set the calculated attributes in an internal user model, which is managed by {PRODUCT_OP}.
+
+[NOTE]
+====
+You can configure the user information refresh interval using the `kogito.task-assigning.user-service-sync-interval` parameter.
+====
+
+You can create a custom user attributes processor for the Task Assigning Service.
+
+.Procedure
+
+To create your custom user attributes processor, implement the `org.kie.kogito.taskassigning.model.processing.UserAttributesProcessor` interface as follows:
+
+.User attributes processor interface implementation
+[source,java]
+----
+@ApplicationScoped
+public class MyExampleUserAttributesProcessor implements UserAttributesProcessor {
+
+    /**
+     * Indicates the priority of this processor when multiple user attributes processors
+     * are applied, lower numbers executes first.
+     */
+    @Override
+    public int getPriority() {
+        return 30;
+    }
+
+    /**
+     * Indicates if the processor is enabled. Disabled processors are not applied.
+     */
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    /**
+     * Executed when the user information is refreshed from the external user service.
+     *
+     * @param externalUser User instance returned by the external user service query.
+     * @param targetAttributes Attributes to assign to the User counterpart
+     * managed by OptaPlanner.
+     */
+    @Override
+    public void process(User externalUser, Map<String, Object> targetAttributes) {
+        // custom attribute calculated by using the User information or any other procedure.
+        Object myCustomAttributeValue = new Object();
+        targetAttributes.put("myCustomAttribute", myCustomAttributeValue);
+    }
+}
+----
+
+The `org.kie.kogito.taskassigning.user.service.User` interface represents the user information that is returned by the User Service Connector when the user information is refreshed from an external user service.
+
+.Example `org.kie.kogito.taskassigning.user.service.User` interface
+[source,java]
+----
+public interface User {
+
+    String getId();
+
+    Set<Group> getGroups();
+
+    Map<String, Object> getAttributes();
+
+}
+----
+
+The user attributes processors is automatically loaded and available when your application starts.
 
 
 [role="_additional-resources"]
@@ -2962,8 +4162,6 @@ ifdef::KOGITO-ENT[]
 * {URL_DECISION_SERVICES}[_{DECISION_SERVICES}_]
 * {URL_PROCESS_SERVICES}[_{PROCESS_SERVICES}_]
 endif::[]
-
-include::{asciidoc-dir}/configuration/task-assigning-service/chap-kogito-task-assigning-service.adoc[leveloffset=+1]
 
 ifdef::parent-context[:context: {parent-context}]
 ifndef::parent-context[:!context:]
