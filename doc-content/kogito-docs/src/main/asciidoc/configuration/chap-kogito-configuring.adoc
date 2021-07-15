@@ -47,18 +47,25 @@ NOTE: Some of these properties might require accompanying dependencies in the re
 
 .3+|Events
 |`kogito.events.processinstances.enabled`
-a|Determines whether runtime events are published for process instances, either `enabled` or `disabled`
+a|Determines whether runtime events are published for process instances, either `true` or `false`
 
-Default value: `enabled`
+Default value: `true`
 
-Example: `kogito.events.processinstances.enabled`
+Example: `kogito.events.processinstances.enabled=true`
 
 a|`kogito.events.usertasks.enabled`
-|Determines whether runtime events are published for user task instances, either `enabled` or `disabled`
+|Determines whether runtime events are published for user task instances, either `true` or `false`
 
-Default value: `enabled`
+Default value: `true`
 
-Example: `kogito.events.usertasks.enabled`
+Example: `kogito.events.usertasks.enabled=true`
+
+a|`kogito.events.variables.enabled`
+|Determines whether runtime events are published for process instances variables, either `true` or `false`
+
+Default value: `true`
+
+Example: `kogito.events.variables.enabled=true`
 
 a|`kogito.messaging.as-cloudevents`
 |Determines whether messages (sent or received through message events) are published in CloudEvents format, either `true` of `false`
@@ -154,13 +161,6 @@ a|`kogito.jobs-service.url`
 |Defines the callback URL that posts to a running {PRODUCT} Jobs Service
 
 Example: `kogito.jobs-service.url=http://localhost:8085`
-
-|`kogito.jobs-service.persistence`
-a|(Specified in Jobs Service) Identifies the persistence mechanism used by the Jobs Service, either `in-memory` or `infinispan`
-
-Default value: `in-memory`
-
-Example: `kogito.jobs-service.persistence=in-memory`
 
 |`kogito.jobs-service.backoffRetryMillis`
 a|(Specified in Jobs Service) Defines the retry back-off time in milliseconds between job execution attempts, in case the execution fails
@@ -272,11 +272,11 @@ The following event is an example process instance event generated after the req
       }
     }
   },
-  "kogitoProcessinstanceId": "c1aced49-399b-4938-9071-b2ffa3fb7045",
-  "kogitoParentProcessinstanceId": null,
-  "kogitoRootProcessinstanceId": null,
-  "kogitoProcessId": "deals",
-  "kogitoProcessinstanceState": "1"
+  "kogitoprocinstanceid": "c1aced49-399b-4938-9071-b2ffa3fb7045",
+  "kogitoparentprociid": null,
+  "kogitorootprociid": null,
+  "kogitoprocid": "deals",
+  "kogitoprocist": "1"
 }
 ----
 
@@ -284,11 +284,11 @@ The event is in https://cloudevents.io/[CloudEvents] format so that it can be co
 
 The event data also includes the following extensions to enable event routing based on the event metadata without requiring the body of the event:
 
-* `kogitoProcessinstanceId`
-* `kogitoParentProcessinstanceId`
-* `kogitoRootProcessinstanceId`
-* `kogitoProcessId`
-* `kogitoProcessinstanceState`
+* `kogitoprocinstanceid`
+* `kogitoparentprociid`
+* `kogitorootprociid`
+* `kogitoprocid`
+* `kogitoprocist`
 
 === User task instance events
 
@@ -348,10 +348,10 @@ The following event is an example user task instance event generated after the r
     "taskPriority": "1"
   },
   "id": "9c340cfa-c9b6-46f2-a048-e1114b077a7f",
-  "kogitoProcessId": "travels",
-  "kogitoProcessinstanceId": "63c297cb-f5ac-4e20-8254-02f37bd72b80",
-  "kogitoUserTaskinstanceId": "4d899471-19dd-485d-b7f4-b313185d430d",
-  "kogitoUserTaskinstanceState": "Ready",
+  "kogitoprocid": "travels",
+  "kogitoprocinstanceid": "63c297cb-f5ac-4e20-8254-02f37bd72b80",
+  "kogitousertaskiid": "4d899471-19dd-485d-b7f4-b313185d430d",
+  "kogitousertaskist": "Ready",
   "source": "http://localhost:8080/travels",
   "specversion": "0.3",
   "time": "2019-09-16T17:22:26.662592+02:00[Europe/Berlin]",
@@ -361,10 +361,10 @@ The following event is an example user task instance event generated after the r
 
 The event data also includes the following extensions to enable event routing based on the event metadata without requiring the body of the event:
 
-* `kogitoUserTaskinstanceId`
-* `kogitoUserTaskinstanceState`
-* `kogitoProcessinstanceId`
-* `kogitoProcessId`
+* `kogitousertaskiid`
+* `kogitousertaskist`
+* `kogitoprocinstanceid`
+* `kogitoprocid`
 
 === Event publishing
 
@@ -377,8 +377,9 @@ By default, {PRODUCT} includes the following message-based event publishers, dep
 
 To enable or disable event publishing, you can adjust the following properties in the `src/main/resources/application.properties` file in your {PRODUCT} project:
 
-* `kogito.events.processinstances.enabled`: Enables or disables publishing for process instance events (default: `enabled`)
-* `kogito.events.usertasks.enabled`: Enables or disables publishing for user task instance events (default: `enabled`)
+* `kogito.events.processinstances.enabled`: Enables or disables publishing process instance events (default: `true`)
+* `kogito.events.usertasks.enabled`: Enables or disables publishing user task instance events (default: `true`)
+* `kogito.events.variables.enabled`: Enables or disables publishing process instances variables events (default: `true`)
 
 To develop additional event publishers, you can implement the `org.kie.kogito.event.EventPublisher` implementation and include the required annotations for JavaBeans discovery.
 
@@ -444,7 +445,7 @@ For this procedure, the messaging is based on https://kafka.apache.org/[Apache K
 </dependency>
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>kogito-cloudevents-quarkus-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-cloudevents</artifactId>
 </dependency>
 ----
 
@@ -457,7 +458,7 @@ For this procedure, the messaging is based on https://kafka.apache.org/[Apache K
 </dependency>
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>kogito-cloudevents-spring-boot-addon</artifactId>
+  <artifactId>kogito-addons-springboot-cloudevents</artifactId>
 </dependency>
 <dependency>
   <groupId>com.fasterxml.jackson.core</groupId>
@@ -587,7 +588,7 @@ https://prometheus.io/[Prometheus] is an open source systems monitoring toolkit 
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-prometheus-quarkus-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-monitoring-prometheus</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -597,7 +598,7 @@ https://prometheus.io/[Prometheus] is an open source systems monitoring toolkit 
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-prometheus-springboot-addon</artifactId>
+  <artifactId>kogito-addons-springboot-monitoring-prometheus</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -748,7 +749,7 @@ https://www.elastic.co/elastic-stack[Elasticsearch] is a distributed, open sourc
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-elastic-quarkus-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-monitoring-elastic</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -758,7 +759,7 @@ https://www.elastic.co/elastic-stack[Elasticsearch] is a distributed, open sourc
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-elastic-springboot-addon</artifactId>
+  <artifactId>kogito-addons-springboot-monitoring-elastic</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -850,7 +851,7 @@ As an example, this procedure demonstrates how you can export metrics to the htt
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-core-quarkus-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-monitoring-core</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -860,7 +861,7 @@ As an example, this procedure demonstrates how you can export metrics to the htt
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-core-springboot-addon</artifactId>
+  <artifactId>kogito-addons-springboot-monitoring-core</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -882,7 +883,7 @@ As an alternative, if you do not want to use the default listeners and the defau
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>monitoring-core-common</artifactId>
+  <artifactId>kogito-addons-monitoring-core</artifactId>
   <version>__KOGITO_VERSION__</version>
 </dependency>
 ----
@@ -966,6 +967,7 @@ For {PRODUCT} persistence, you can use one of the following supported persistenc
 * https://infinispan.org/[*Infinispan*]: (Default) Persists data using configured key-value storage definitions
 * https://www.mongodb.com/[*MongoDB*]: Persists data using a document-based format
 * https://kafka.apache.org/documentation/streams/[*Kafka Streams*]: (Quarkus only) Persists data in Kafka clusters
+* https://www.postgresql.org/[*PostgreSQL*]: Persists data in PostgreSQL
 
 Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
 
@@ -1075,6 +1077,21 @@ For optimal persistence with process data and variables, use Java objects as dat
 |Java object with a list of Java objects
 |Custom data type built with multiple simple types and a list of Java objects, and can also contain another Java object
 |===
+
+=== Enabling optimistic locking with persistence
+
+{PRODUCT} runtimes need to safely handle concurrent requests to shared instances such as process instances or tasks. {PRODUCT} handles these requests using persistence enabled optimistic locking for concurrency control with the version on record (using the version field in the database or the metadata version in the case of Infinispan). This feature is optional and can be activated only with persistence by adding the following properties to the src/main/resources/application.properties file in your {PRODUCT} project,
+[source]
+------
+kogito.persistence.optimistic.lock=true
+------
+
+Below are the databases that support optimistic locking
+
+* Infinispan
+* MongoDB
+* PostgreSQL (Reactive and JDBC options)
+
 // end::con-persistence[]
 
 // tag::proc-infinispan-persistence-enabling[]
@@ -1085,7 +1102,7 @@ For optimal persistence with process data and variables, use Java objects as dat
 You can enable persistence for your {PRODUCT} services using https://infinispan.org/[Infinispan] to persist data, such as active process nodes and process instance variables, so that the data is preserved across application restarts. For {PRODUCT} persistence with Infinispan, you must have a an Infinispan Server installed and running in order to enable persistence.
 
 .Prerequisites
-* https://infinispan.org/[Infinispan Server] 11.0 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://infinispan.org/[Infinispan Server] 12.1.4 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 
 .Procedure
 . Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
@@ -1096,7 +1113,7 @@ You can enable persistence for your {PRODUCT} services using https://infinispan.
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>infinispan-persistence-addon</artifactId>
+  <artifactId>kogito-addons-persistence-infinispan</artifactId>
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
 </dependency>
 <dependency>
@@ -1110,7 +1127,7 @@ You can enable persistence for your {PRODUCT} services using https://infinispan.
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>infinispan-persistence-addon</artifactId>
+  <artifactId>kogito-addons-persistence-infinispan</artifactId>
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
 </dependency>
 <dependency>
@@ -1165,7 +1182,7 @@ As an alternative to using Infinispan for {PRODUCT} runtime persistence, you can
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>mongodb-persistence-addon</artifactId>
+  <artifactId>kogito-addons-persistence-mongodb</artifactId>
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
 </dependency>
 <dependency>
@@ -1179,7 +1196,7 @@ As an alternative to using Infinispan for {PRODUCT} runtime persistence, you can
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>mongodb-persistence-addon</artifactId>
+  <artifactId>kogito-addons-persistence-mongodb</artifactId>
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
 </dependency>
 <dependency>
@@ -1217,140 +1234,149 @@ After you enable MongoDB persistence for your {PRODUCT} services, you can use Mo
 [source,json]
 ----
 {
-  "_id": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
-  "processInstance": {
-    "processType": "RuleFlow",
-    "id": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
-    "processId": "dealreviews",
-    "state": 1,
-    "nodeInstance": [
-      {
-        "id": "be9542c0-8cc3-4fbc-ac6c-f337bb176682",
-        "nodeId": "2",
-        "content": {
-          "type": "HUMAN_TASK_NODE",
-          "humanTask": {
-            "workItemId": "d5a61e95-9dce-472b-8dfe-dd948e086f7a",
-            "workitem": {
-              "id": "d5a61e95-9dce-472b-8dfe-dd948e086f7a",
-              "processInstancesId": "0e6c09de-938f-41f7-acdb-ecbe2e409c23",
-              "name": "Human Task",
-              "state": 0,
-              "variable": [
-                {
-                  "name": "Skippable",
-                  "strategyIndex": 0,
-                  "value": "true",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "deal",
-                  "strategyIndex": 0,
-                  "value": "my fancy deal",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "ActorId",
-                  "strategyIndex": 0,
-                  "value": "john",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "TaskName",
-                  "strategyIndex": 0,
-                  "value": "review",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "NodeName",
-                  "strategyIndex": 0,
-                  "value": "Review the deal",
-                  "dataType": "java.lang.String"
-                },
-                {
-                  "name": "traveller",
-                  "strategyIndex": 0,
-                  "value": {
-                    "firstName": "John",
-                    "lastName": "Doe",
-                    "email": "jon.doe@example.com",
-                    "nationality": "American",
-                    "address": {
-                      "street": "main street",
-                      "city": "Boston",
-                      "zipCode": "10005",
-                      "country": "US"
-                    }
-                  },
-                  "dataType": "org.acme.travels.Traveller"
-                }
-              ],
-              "nodeInstanceId": "be9542c0-8cc3-4fbc-ac6c-f337bb176682",
-              "nodeId": "2",
-              "phaseId": "active",
-              "phaseStatus": "Ready",
-              "startDate": "1598460385978",
-              "taskName": "review",
-              "potUsers": [
-                "john"
-              ],
-              "taskReferenceName": "Review the deal"
-            }
-          }
-        },
-        "level": 1,
-        "slaCompliance": 0,
-        "triggerDate": "1598460385976"
-      }
-    ],
+  "_id": {
+    "$oid": "60d0dd7130a5c559252bbef2"
+  },
+  "processType": "RuleFlow",
+  "processId": "dealreviews",
+  "id": "4c0ba244-d99e-46e7-8404-51970bf47a40",
+  "parentProcessInstanceId": "b4e666dc-7f61-4e09-9eb3-2e10bf1abc00",
+  "description": "Deal Review",
+  "state": 1,
+  "startDate": "1624300913211",
+  "signalCompletion": true,
+  "rootProcessInstanceId": "b4e666dc-7f61-4e09-9eb3-2e10bf1abc00",
+  "rootProcessId": "deals",
+  "sla": {
+    "slaCompliance": 0
+  },
+  "context": {
     "variable": [
       {
         "name": "deal",
-        "strategyIndex": 0,
-        "value": "my fancy deal",
-        "dataType": "java.lang.String"
+        "dataType": "java.lang.String",
+        "value": {
+          "@type": "type.googleapis.com/google.protobuf.StringValue",
+          "value": "my fancy deal"
+        }
       },
       {
         "name": "traveller",
-        "strategyIndex": 0,
+        "dataType": "org.acme.deals.Traveller",
         "value": {
+          "@type": "org.kie.kogito/org.kie.kogito.app.Traveller",
+          "address": {
+            "city": "Boston",
+            "country": "US",
+            "street": "main street",
+            "zipCode": "10005"
+          },
+          "email": "jon.doe@example.com",
           "firstName": "John",
           "lastName": "Doe",
-          "email": "jon.doe@example.com",
-          "nationality": "American",
-          "address": {
-            "street": "main street",
-            "city": "Boston",
-            "zipCode": "10005",
-            "country": "US"
-          }
-        },
-        "dataType": "org.acme.travels.Traveller"
+          "nationality": "American"
+        }
       }
     ],
-    "parentProcessInstanceId": "57bffb3d-06a7-48e0-87be-004a722792db",
-    "completedNodeIds": [
-      "_7E3D27D0-6644-4E55-8E41-9F68BD0D1327"
+    "nodeInstance": [
+      {
+        "id": "c3549554-9787-42d5-82d0-decff6a17930",
+        "nodeId": "2",
+        "content": {
+          "@type": "type.googleapis.com/org.kie.kogito.serialization.process.protobuf.WorkItemNodeInstanceContent",
+          "workItemId": "b87e9296-92c6-4e83-8dcf-6e62882e418b",
+          "variable": [
+            {
+              "name": "ActorId",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "john"
+              }
+            },
+            {
+              "name": "NodeName",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "Review the deal"
+              }
+            },
+            {
+              "name": "Skippable",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "true"
+              }
+            },
+            {
+              "name": "TaskName",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "review"
+              }
+            },
+            {
+              "name": "deal",
+              "dataType": "java.lang.String",
+              "value": {
+                "@type": "type.googleapis.com/google.protobuf.StringValue",
+                "value": "my fancy deal"
+              }
+            },
+            {
+              "name": "traveller",
+              "dataType": "org.acme.deals.Traveller",
+              "value": {
+                "@type": "org.kie.kogito/org.kie.kogito.app.Traveller",
+                "address": {
+                  "city": "Boston",
+                  "country": "US",
+                  "street": "main street",
+                  "zipCode": "10005"
+                },
+                "email": "jon.doe@example.com",
+                "firstName": "John",
+                "lastName": "Doe",
+                "nationality": "American"
+              }
+            }
+          ],
+          "phaseId": "active",
+          "phaseStatus": "Ready",
+          "name": "Human Task",
+          "startDate": "1624300913214",
+          "workItemData": {
+            "@type": "type.googleapis.com/org.kie.kogito.serialization.process.protobuf.HumanTaskWorkItemData",
+            "taskName": "review",
+            "potUsers": [
+              "john"
+            ],
+            "taskReferenceName": "Review the deal"
+          }
+        },
+        "level": 1,
+        "triggerDate": "1624300913213",
+        "sla": {
+          "slaCompliance": 0
+        }
+      }
     ],
     "iterationLevels": [
       {
         "id": "_3597E33A-1C00-41B3-924E-09EA47F79D93",
         "level": 1
       }
-    ],
-    "description": "Deal Review",
-    "signalCompletion": true,
-    "slaCompliance": 0,
-    "rootProcessInstanceId": "57bffb3d-06a7-48e0-87be-004a722792db",
-    "startDate": "1598460385975",
-    "rootProcessId": "deals"
+    ]
   },
-  "strategies": [
-    {
-      "name": "org.kie.kogito.mongodb.marshalling.DocumentMarshallingStrategy",
-      "value": 0
-    }
-  ]
+  "completedNodeIds": [
+    "_7E3D27D0-6644-4E55-8E41-9F68BD0D1327"
+  ],
+  "version": {
+    "$numberLong": "1"
+  }
 }
 ----
 
@@ -1381,7 +1407,7 @@ NOTE: Kafka Streams persistence is supported for only Quarkus-based {PRODUCT} se
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>kafka-persistence-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-persistence-kafka</artifactId>
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
 </dependency>
 ----
@@ -1403,6 +1429,143 @@ For an example {PRODUCT} service with Kafka persistence, see the following examp
 
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-persistence-quarkus[`process-kafka-persistence-quarkus`]: Example on Quarkus
 // end::proc-kafka-streams-persistence-enabling[]
+
+// tag::proc-postgresql-persistence-enabling[]
+[id="proc-postgresql-persistence-enabling_{context}"]
+=== PostgreSQL persistence for {PRODUCT} services
+
+[role="_abstract"]
+As an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.postgresql.org/[PostgreSQL]. PostgreSQL is a powerful, open source object-relational database system that uses and extends SQL language. Also, PostgreSQL is recognized and provided as a service (SAAS) by different cloud providers. For {PRODUCT} persistence with PostgreSQL, you must have PostgreSQL installed and running to enable persistence.
+
+==== Enabling PostgreSQL persistence using reactive driver for {PRODUCT} services
+
+You can enable PostgreSQL persistence for your {PRODUCT} services using reactive driver.
+
+.Prerequisites
+* https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
+
+.Procedure
+. Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.Project dependency to enable PostgreSQL persistence
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-postgresql</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+----
+--
+. Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
++
+--
+Replace the server host, port, credentials, and other information according to your PostgreSQL installation.
+
+.Application properties to enable PostgreSQL persistence
+[source]
+------
+kogito.persistence.type=postgresql
+kogito.persistence.postgresql.connection.uri=postgresql://kogito-user:kogito-pass@localhost:5432/kogito
+kogito.persistence.auto.ddl=true
+kogito.persistence.query.timeout.millis=10000
+------
+
+* `uri`: This parameter can be customized according to the https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING/[connection string specification].
+* `auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a more controlled environment.
+* `millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value of `millis` is `10000`.
+--
+
+Alternatively, you can define the connection properties using the environment variables as shown in the following example:
+
+.Environment variables to enable PostgreSQL persistence
+[source]
+------
+export PGUSER=kogito-user
+export PGPASSWORD=kogito-pass
+export PGDATABASE=kogito
+------
+For more information about the full list of supported variables, see https://vertx.io/docs/vertx-pg-client/java/#_environment_variables[vertx-pg-client].
+
+==== Enabling PostgreSQL persistence using JDBC driver for {PRODUCT} services
+
+You can enable PostgreSQL persistence for your {PRODUCT} services using JDBC driver.
+
+.Prerequisites
+* https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
+
+.Procedure
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.On Quarkus
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-jdbc</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-agroal</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-jdbc</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>org.postgresql</groupId>
+  <artifactId>postgresql</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
+----
+--
+. Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
++
+--
+Replace the server host, port, and database information according to your MongoDB Server installation. By default, the database is named `kogito`.
+
+.On Quarkus
+[source]
+------
+kogito.persistence.type=jdbc
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=kogito-user
+quarkus.datasource.password=kogito-pass
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/kogito
+------
+
+.On Spring Boot
+[source]
+------
+kogito.persistence.type=jdbc
+spring.datasource.username=kogito-user
+spring.datasource.password=kogito-pass
+spring.datasource.url=jdbc:postgresql://localhost:5432/kogito
+------
+--
+
+For an example {PRODUCT} service with PostgreSQL persistence using reactive and JDBC driver, see the following example applications in GitHub:
+
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-quarkus[`process-postgresql-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-springboot[`process-postgresql-persistence-springboot`]: Example on SpringBoot
+
+// end::proc-postgresql-persistence-enabling[]
 
 [id="con-data-index-service_{context}"]
 == {PRODUCT} Data Index Service
@@ -1435,8 +1598,15 @@ Indexed data from the Data Index Service is parsed and pushed into the following
 * *Domain cache*: Generic cache for each process definition where the process instance variables are pushed as the root content. This cache also includes some process instance metadata, which enables data correlation between domain and process instances. Data is transferred in JSON format to an Infinispan Server.
 * *Process instance cache*: Cache for each process instance. This cache contains all process instance information, including all metadata and other detailed information such as executed nodes.
 * *User task instance cache*: Cache for each user task instance. This cache contains all task instance information, including all metadata and other detailed information such as data input and output.
+* *Jobs cache*: Cache for each scheduled job instance. This cache contains all job instance information, including all detailed information related to a specific job, such as the number of times a job is fired and next time the same job will be fired.
 
-The indexing functionality in the Data Index Service is based on https://lucene.apache.org/[Apache Lucene], and storage for the Data Index Service is provided by https://infinispan.org/[Infinispan]. Communication between the Data Index Service and Infinispan is handled through a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers.
+The indexing functionality in the Data Index Service is provided by choosing one of the following persistent providers:
+
+* https://infinispan.org/[Infinispan]
+* https://www.mongodb.com/[MongoDB]
+* https://www.postgresql.org/[PostgreSQL]
+
+When using Infinispan, https://lucene.apache.org/[Apache Lucene] provides indexing and a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers manage the communication between the Data Index Service and Infinispan.
 
 After the data is indexed and stored in a cache, the Data Index Service inspects the process model to update the GraphQL schema and enable a type-checked query system that consumer clients can use to access the data.
 
@@ -1459,6 +1629,12 @@ message ProcessInstanceMeta {
 For more information about Infinispan indexing, see https://infinispan.org/docs/stable/titles/developing/developing.html#enable_indexing[Indexing of protobuf encoded entries] in the Infinispan documentation.
 ====
 
+==== Index the domain-specific data in Data Index Service
+
+You can enable or disable the domain-specific types or custom types indexing in {PRODUCT}. To achieve this, you can change the value of the `kogito.data-index.domain-indexing` property to `true` or `false`, based on the behavior you want to achieve. By default, the domain indexing is enabled on Data Index Service using MongoDB and Infinispan persistence type. When you disable the domain indexing, the Data Index Service stops creating custom types in GraphQL queries, and the GraphQL schema starts exposing queries only for `ProcessInstances`, `UserTaskInstances`, and `Jobs` types.
+
+NOTE: The Data Index PostgreSQL persistence provider does not support indexing for custom types. Therefore, setting the `kogito.data-index.domain-indexing` property to `true` does not have any impact.
+
 [id="proc-data-index-service-using_{context}"]
 === Using the {PRODUCT} Data Index Service to query application data
 
@@ -1468,7 +1644,7 @@ For more information about Infinispan indexing, see https://infinispan.org/docs/
 You can use the {PRODUCT} Data Index Service to index, store, and query process data in your {PRODUCT} services.
 
 .Prerequisites
-* https://infinispan.org/[Infinispan Server] 11.0 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://infinispan.org/[Infinispan Server] 12.1.4 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 * https://kafka.apache.org/[Apache Kafka] is installed, including required topics, and the Kafka messaging server is running. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
 +
 --
@@ -1566,9 +1742,9 @@ NOTE: As an alternative to enabling the Data Index Service explicitly for {PRODU
 [role="_abstract"]
 After you configure and run your {PRODUCT} service and the {PRODUCT} Data Index Service, you can query the available data using the https://github.com/graphql/graphiql[GraphiQL] interface displayed at `http://__HOST__:__PORT__/graphql`, such as `\http://localhost:8080/graphql`.
 
-The {PRODUCT} Data Index Service supports GraphQL queries for process definitions (domain cache) and for process instances and task instances (instance caches).
+The {PRODUCT} Data Index Service supports GraphQL queries for domain-specific (domain cache) types and for process instances, task instances, and jobs.
 
-==== GraphQL queries for process definitions (domain cache)
+==== GraphQL queries for domain-specific types (domain cache)
 
 Use the following GraphQL queries to retrieve data about process definitions. These example queries assume that a `Travels` Business Process Model and Notation (BPMN) process model is running or has been executed.
 
@@ -1610,7 +1786,7 @@ You can retrieve data about a specified process definition from your {PRODUCT} s
 Correlate data using the `metadata` parameter::
 +
 --
-You can use the `metadata` parameter to correlate data from process definitions (domain cache) with data from process instances and task instances (instance caches). This parameter is added to all root models that are deployed in the Data Index Service and enables you to retrieve and filter query data.
+You can use the `metadata` parameter to correlate data from domain-specific types (domain cache) with data from process instances and task instances. This parameter is added to all root models that are deployed in the Data Index Service and enables you to retrieve and filter query data.
 
 .Example query
 [source]
@@ -1734,9 +1910,9 @@ You can use the `pagination` parameter to specify a `limit` and `offset` for que
 ----
 --
 
-==== GraphQL queries for process instances and user task instances (instance caches)
+==== GraphQL queries for process instances, user task instances, and jobs
 
-Use the following GraphQL queries to retrieve data about process instances and user task instances.
+Use the following GraphQL queries to retrieve data about process instances, user task instances, and jobs.
 
 Retrieve data from process instances::
 +
@@ -1768,7 +1944,7 @@ You can retrieve data about a specified process instance from your process defin
 Retrieve data from user task instances::
 +
 --
-You can retrieve data from a specified user task instance from the process instance.
+You can retrieve data from a specified user task instance.
 
 .Example query
 [source]
@@ -1782,6 +1958,27 @@ You can retrieve data from a specified user task instance from the process insta
     priority
     processId
     processInstanceId
+  }
+}
+----
+--
+
+Retrieve data from jobs::
++
+--
+You can retrieve data from a specified job instance.
+
+.Example query
+[source]
+----
+{
+  Job {
+    id
+    status
+    priority
+    processId
+    processInstanceId
+    executionCounter
   }
 }
 ----
@@ -2093,6 +2290,36 @@ For more information about MongoDB configuration on Quarkus, see https://quarkus
 
 NOTE: Indexes are created on every attribute that is annotated with `@Indexed` and `@Field` in the protobuf files. However, a single MongoDB collection can have no more than 64 indexes, including the default `_id` Index.
 
+[id="proc-data-index-service-postgresql_{context}"]
+=== Enabling PostgreSQL persistence for the {PRODUCT} Data Index Service
+
+[role="_abstract"]
+Instead of using the default Infinispan-based persistence in the {PRODUCT} Data Index Service, you can configure the Data Index Service to use https://www.postgresql.org/[PostgreSQL] persistence storage if needed.
+
+.Prerequisites
+* https://www.postgresql.org/download/[PostgreSQL Server] 13 or later is installed and running. For information about PostgreSQL installation and configuration, see the https://www.postgresql.org/docs/[PostgreSQL documentation].
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/data-index-service-postgresql/[`data-index-service-postgresql`] artifacts page, select the latest release of the Data Index Service, and download the `data-index-service-postgresql-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `data-index-service-postgresql-__VERSION__-runner.jar` file and enter the following command to run the Data Index Service with the required PostgreSQL connection information:
++
+--
+.Running the Data Index Service with PostgreSQL connection information
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.datasource.jdbc.url=__POSTGRESQL_SERVER_JDBC_URL__ \
+  -Dquarkus.datasource.username=__POSTGRESQL_USERNAME__ \
+  -Dquarkus.datasource.password=__POSTGRESQL_PASSWORD__ \
+  -jar data-index-service-postgresql-__VERSION__-runner.jar
+----
+
+For more information about PostgreSQL configuration on Quarkus, see https://quarkus.io/guides/datasource#jdbc-configuration[JDBC Configuration Reference] in the Quarkus documentation.
+--
+. After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
+
+NOTE: Data Index Service with PostgreSQL does not support indexing domain-specific data. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`, and `Jobs`.
+
 [role="_additional-resources"]
 .Additional resources
 * xref:proc-data-index-service-using_kogito-configuring[]
@@ -2147,11 +2374,6 @@ The {PRODUCT} Jobs Service supports the following configuration properties. You 
 [cols="30%,40%,15%,15%"]
 |===
 |Name |Description |Value |Default
-
-|`kogito.jobs-service.persistence`
-|Identifies the persistence mechanism used by the Jobs Service.
-|`in-memory`, `infinispan`
-|`in-memory`
 
 |`kogito.jobs-service.backoffRetryMillis`
 |Defines the retry back-off time in milliseconds between job execution attempts, in case the execution fails
@@ -2342,22 +2564,20 @@ By default, {PRODUCT} services use an in-memory timer service to handle time-bas
 
 For advanced use cases where time intervals can be days or weeks or when additional event handling options are required, you can configure your {PRODUCT} project to use the {PRODUCT} Jobs Service as an external timer service. Whenever you need to schedule a timer as part of process instance, the timer is scheduled in the Jobs Service and the Jobs Service calls back to the {PRODUCT} service upon timer expiration.
 
-The {PRODUCT} Jobs Service also supports Infinispan persistence that you can enable when you run the Jobs Service so that job data is preserved across application restarts.
+The {PRODUCT} Jobs Service also supports Infinispan, PostgreSQL, or MongoDB persistence that you can enable when you run the Jobs Service so that job data is preserved across application restarts.
 
 .Procedure
-. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service/[`jobs-service`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-__VERSION__-runner.jar` file to a local directory.
-. In a command terminal, navigate to the directory location of the downloaded `jobs-service-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with Infinispan persistence enabled:
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-common[`jobs-service-common`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-common-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-common-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with in-memory persistence enabled:
 +
 --
-.Running the Jobs Service with Infinispan persistence enabled
+.Running the Jobs Service with in-memory persistence enabled
 [source,subs="+quotes"]
 ----
-$ java  \
-    -Dkogito.job-service.persistence=infinispan  \
-    -jar jobs-service-__VERSION__-runner.jar
+$ java -jar jobs-service-common-__VERSION__-runner.jar
 ----
 
-Infinispan persistence enables the job data to be preserved across application restarts. If you do not use Infinispan persistence, the Jobs Service uses the default in-memory storage and all job information is lost between application restarts.
+If the Jobs Service uses the default in-memory storage, all job information is lost between application restarts.
 
 To change the logging level of the Jobs Service, such as for debugging, you can specify the following start-up properties:
 
@@ -2367,7 +2587,7 @@ To change the logging level of the Jobs Service, such as for debugging, you can 
 $ java  \
   -Dquarkus.log.console.level=DEBUG -Dquarkus.log.category.\"org.kie.kogito\".min-level=DEBUG  \
   -Dquarkus.log.category.\"org.kie.kogito\".level=DEBUG  \
-  -jar jobs-service-__VERSION__-runner.jar
+  -jar jobs-service-common-__VERSION__-runner.jar
 ----
 --
 . In your {PRODUCT} project, add the following dependency to the `pom.xml` file to enable the Jobs Service add-on:
@@ -2378,7 +2598,7 @@ $ java  \
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>jobs-management-quarkus-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-jobs-management</artifactId>
 </dependency>
 ----
 
@@ -2387,7 +2607,7 @@ $ java  \
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>jobs-management-springboot-addon</artifactId>
+  <artifactId>kogito-addons-springboot-jobs-management</artifactId>
 </dependency>
 ----
 --
@@ -2432,30 +2652,81 @@ In both cases, you produce an instance of the client to enable detailed setup of
 NOTE: As an alternative to enabling the Jobs Service explicitly for {PRODUCT} services, you can use the {PRODUCT} Operator to install the Jobs Service custom resource for the service deployment on OpenShift. For more information about installing the Jobs Service with the {PRODUCT} Operator, see {URL_DEPLOYING_ON_OPENSHIFT}#con-kogito-operator-with-jobs-service_kogito-deploying-on-openshift[_{DEPLOYING_ON_OPENSHIFT}_].
 
 [id="proc-jobs-service-persistence_{context}"]
-=== Enabling Infinispan persistence in the {PRODUCT} Jobs Service
+=== Persistence in the {PRODUCT} Jobs Service
 
 [role="_abstract"]
 The {PRODUCT} Jobs Service supports the following persistence mechanisms for job data:
 
 * *In-memory persistence*: (Default) Job data is persisted with the Jobs Service in-memory storage during the Jobs Service runtime. If the Jobs Service is restarted, all job information is lost. If no other persistence configuration is set, the Jobs Service uses this persistence mechanism.
 * *Infinispan persistence*: Job data is persisted using Infinispan storage so that the data is preserved across application restarts. If the Jobs Service is restarted, the service continues to process any previously scheduled jobs.
+* *PostgreSQL persistence*: Job data is persisted using PostgreSQL storage so that the data is preserved across application restarts. If the Jobs Service is restarted, the service continues to process any previously scheduled jobs. Flyway is used to manage database schema.
+* *MongoDB persistence*: Job data is persisted using MongoDB storage so that the data is preserved across application restarts. If the Jobs Service is restarted, the service continues to process any previously scheduled jobs.
 
-You can enable Infinispan persistence in the {PRODUCT} Jobs Service during application start-up and in the Jobs Service `application.properties` file.
+[id="proc-jobs-service-persistence-infinispan_{context}"]
+==== Enabling Infinispan persistence in the {PRODUCT} Jobs Service
+
+You can enable Infinispan persistence in the {PRODUCT} Jobs Service during application start-up.
 
 .Procedure
-Run the Jobs Service with the property `-Dkogito.job-service.persistence=infinispan`:
-
-.Enabling Infinispan persistence during Jobs Service start-up
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-infinispan[`jobs-service-infinispan`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-infinispan-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-infinispan-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with Infinispan persistence enabled:
++
+--
+.Running the Jobs Service with Infinispan persistence enabled
 [source,subs="+quotes"]
 ----
 $ java  \
-    -Dkogito.job-service.persistence=infinispan  \
-    -jar jobs-service-__VERSION__-runner.jar
+    -jar jobs-service-infinispan-__VERSION__-runner.jar
 ----
 
-Alternatively, you can add the same property to the `src/main/resources/application.properties` file in the Jobs Service project.
-
 For more information about Infinispan configuration with Quarkus applications, see https://quarkus.io/guides/infinispan-client[Infinispan client] in the Quarkus documentation.
+--
+
+[id="proc-jobs-service-persistence-postgresql_{context}"]
+==== Enabling PostgreSQL persistence in the {PRODUCT} Jobs Service
+
+You can enable PostgreSQL persistence in the {PRODUCT} Jobs Service during application start-up.
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-postgresql[`jobs-service-postgresql`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-postgresql-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-postgresql-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with PostgreSQL persistence enabled:
++
+--
+.Running the Jobs Service with PostgreSQL persistence enabled
+[source,subs="+quotes"]
+----
+$ java  \
+    -Dquarkus.datasource.jdbc.url=__DATASOURCE_JDBC_URL__ \
+    -Dquarkus.datasource.reactive.url=__DATASOURCE_URL__ \
+    -Dquarkus.datasource.username=__DATASOURCE_USERNAME__ \
+    -Dquarkus.datasource.password=__DATASOURCE_PASSWORD__ \
+    -jar jobs-service-postgresql-__VERSION__-runner.jar
+----
+
+For more information about PostgreSQL configuration with Quarkus applications, see https://quarkus.io/guides/reactive-sql-clients[Quarkus reactive SQL client] and https://quarkus.io/guides/flyway[Flyway] in the Quarkus documentation.
+--
+
+[id="proc-jobs-service-persistence-mongodb_{context}"]
+==== Enabling MongoDB persistence in the {PRODUCT} Jobs Service
+
+You can enable MongoDB persistence in the {PRODUCT} Jobs Service during application start-up.
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/jobs-service-mongodb[`jobs-service-mongodb`] artifacts page, select the latest release of the Jobs Service, and download the `jobs-service-mongodb-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `jobs-service-mongodb-__VERSION__-runner.jar` file and enter the following command to run the Jobs Service with MongoDB persistence enabled:
++
+--
+.Running the Jobs Service with MongoDB persistence enabled
+[source,subs="+quotes"]
+----
+$ java  \
+    -Dquarkus.mongodb.connection-string=__MONGODB_SERVER_CONNECTION_STRING__ \
+    -Dquarkus.mongodb.database=__DATABASE_NAME__ \
+    -jar jobs-service-mongodb-__VERSION__-runner.jar
+----
+
+For more information about MongoDB configuration with Quarkus applications, see https://quarkus.io/guides/mongodb[Using the MongoDB client] in the Quarkus documentation.
+--
 
 [id="proc-jobs-service-messaging_{context}"]
 === Enabling Kafka messaging in the {PRODUCT} Jobs Service
@@ -2482,7 +2753,7 @@ mp.messaging.outgoing.kogito-job-service-job-status-events.topic=__TOPIC_NAME__
 ----
 $ java  \
     -Dquarkus.profile=events-support  \
-    -jar jobs-service-__VERSION__-runner.jar
+    -jar jobs-service-common-__VERSION__-runner.jar
 ----
 
 Alternatively, you can add the environment variable `QUARKUS_PROFILE=events-support`.
@@ -2584,7 +2855,7 @@ For information about using the {PRODUCT} Trusty Service and Explainability Serv
 
 For example {PRODUCT} services that use the Trusty Service and Explainability Service, see the following example applications in GitHub:
 
-* https://github.com/kiegroup/kogito-examples/tree/stable/dmn-tracing-quarkus[`dmn-tracing-quarkus`]: A DMN decision service on Quarkus that uses the `tracing-decision-quarkus-addon` add-on to generate tracing events that the {PRODUCT} Trusty Service and Explainability Service can consume and expose.
+* https://github.com/kiegroup/kogito-examples/tree/stable/dmn-tracing-quarkus[`dmn-tracing-quarkus`]: A DMN decision service on Quarkus that uses the `kogito-addons-quarkus-tracing-decision` add-on to generate tracing events that the {PRODUCT} Trusty Service and Explainability Service can consume and expose.
 * https://github.com/kiegroup/kogito-examples/tree/stable/trusty-demonstration[`trusty-demonstration`]: A tutorial for deploying the `dmn-tracing-quarkus` example application on Kubernetes as a demonstration of {PRODUCT} Trusty Service and Explainability Service capabilities in a cloud environment.
 
 [id="proc-trusty-service-security_{context}"]
@@ -2641,6 +2912,1291 @@ NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-ena
 
 --
 . Stop and restart the {PRODUCT} Trusty Service to ensure that the security changes are applied.
+
+[id="con-kogito-task-assigning-service_{context}"]
+== {PRODUCT} Task Assigning Service
+
+[role="_abstract"]
+{PRODUCT} provides a Task Assigning Service that enables you to assign the user tasks created by the {PRODUCT} services to users as part of an optimal solution. This optimal solution is calculated by {PRODUCT_OP}, a lightweight and embeddable planning engine that optimizes planning problems.
+
+You can use {PRODUCT} services to model and execute multiple business processes. A typical business process consists of different nodes including events, gateways, connectors, and tasks to define a process logic. Each node in a business process contains a specific semantic and is instantiated using a process engine when a related process instance is executed. Business processes that require the intervention of a human user are designed using user task nodes.
+
+The following example business process consists of three tasks that require human intervention:
+
+.Example business process
+image::kogito/configuration/task-assigning-service/PurchaseOrderProcessDefinition.png[]
+
+When a system executes several process instances, it can have many user task instances waiting for external user action.
+
+.Default task inbox
+image::kogito/configuration/task-assigning-service/TaskListWithClaimAvailableActions.png[]
+
+[id="con-bpm-task-assigning-service_{context}"]
+=== BPM standard Task Assigning
+
+Generally, the runtime engines assign user tasks to a group of users. The target audience is added as part of the user task configuration. In the following example, you can see how *Review Purchase Order* task is configured with the `PurchaseDepartment` group:
+
+.Example user task configuration
+image::kogito/configuration/task-assigning-service/ReviewPurchaseOrderTaskConfiguration.png[]
+
+At runtime, when a new instance of the *Review Purchase Order* task is created, the instance is automatically transitioned to the *Active* phase and assigned to the *PurchaseDepartment* group with the status *Ready*. This makes the *Review Purchase Order* task available in the task inbox for all the users in the *PurchaseDepartment* group. To get ownership of the task, a user must execute the claim operation. The following example shows how a user is claiming `#cbf41` task.
+
+.Example task claim operation
+image::kogito/configuration/task-assigning-service/TaskListWithAvailableActionsForSelectedTask.png[]
+
+When a user claims a task, the status of the task is changed to *Reserved* and the task is assigned to the claiming user. The user becomes the actual owner of the task and the task appears only on the user's Task Inbox. The following example shows the task information and available actions for `#cbf41` task after the execution of the claim operation:
+
+.Example execution of a task claim operation
+image::kogito/configuration/task-assigning-service/TaskListWithAvailableActionsForReservedTaskWithUser1.png[]
+
+[id="con-optaplanner-driven-task-assigning_{context}"]
+=== {PRODUCT_OP} driven task assigning
+
+The Task Assigning Service enables you to assign the user tasks among the users according to an optimal plan, which is calculated by {PRODUCT_OP}. The following example shows the content of Task Inbox for `user1` and `user2` when the Task Assigning Service is running:
+
+.Example tasks assigned by the Task Assigning Service
+image::kogito/configuration/task-assigning-service/TasksAssignedToUser1AndUser2ByTheTaskAssigningService.png[]
+
+The previous example shows that user tasks including `#895c6` and `#cbf41` are assigned to `user1` and user tasks `#5aac` and `#ddc34` are assigned to `user2`. The remaining tasks including `#fdcc0`, `#a93d4`, and `#5be2b` are unassigned tasks and will be analyzed later.
+
+The back-end Task Assigning process for the previous example includes the following steps:
+
+. All the available tasks with *Ready* status are consumed by the Task Assigning Service.
+. `user1` and `user2` are identified as part of the `PurchaseDeparment` group.
+. It is identified that the *Review Purchase Order* task is defined for the `PurchaseDepartment` group.
+. An optimized plan is calculated and all the tasks including unassigned tasks are assigned based on their configuration such as group condition and {PRODUCT_OP} optimization rules. The resulting optimized plan consists of the following statements:
++
+* Tasks `#895ca` and `#cbf41` must be assigned to `user1`
+* Tasks `#5aa2c` and `#ddc34` must be assigned to `user2`
+
+. The Task Assigning Service performs the assignments. Note that the users are not required to execute the `claim` operation. Therefore, the users focus on completing their assigned tasks, and the assignment is performed by {PRODUCT_OP}.
+
+Overall, the Task Assigning Service analyzes the available tasks, calculates an optimized plan using {PRODUCT_OP}, and generates the necessary assignments in the process services. The users rely on the optimized plan and focus on executing their assigned tasks.
+
+[NOTE]
+====
+In the previous example, only user tasks configuration is considered for the assignments calculation by {PRODUCT_OP}. However, the assignment calculation can also include the business information related to the user tasks.
+====
+
+The {PRODUCT} services that are running create many process instances and user tasks, and at the same time the users complete the assigned tasks. This user task creation and completion cycles repeatedly. In this scenario, the Task Assigning Service instructs the {PRODUCT_OP} to re-calculate the plan and generate new assignments to reflect a new optimized plan. {PRODUCT_OP} consists of the ability to react on the changing context. For more information, see the https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+The continuous task reassignments can have negative impact on the user experience. This problem can be managed by combining different repeated and continuous planning techniques. For more information, see the Repeated Planning section of the https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+A simple strategy is to introduce the concept of a planning window, which is a defined subset of the tasks that are available and cannot be changed or reassigned when new plans are calculated. Only the planning window is made available to the users, and the tasks in the planning window are known as published tasks.
+
+The previous example contains a planning window with a size of two. This indicates that only two tasks from the optimized plan are assigned in the processes runtime for each user to focus on. When the users complete the assigned tasks, the Task Assigning Service assigns additional tasks based on the optimized plan. Also, {PRODUCT_OP} maintains information about the best assignments for all the tasks.
+
+In the previous example, the assignments are distributed as follows:
+
+* `user1` is assigned to `#895ca` and `#cbf41` tasks, which belong to the planning window
+* `user2` is assigned to `#5aa2c` and `#ddc34` tasks, which belong to the planning window
+
+The unassigned tasks do not belong to the planning window, therefore, the unassigned tasks are assigned only internally by {PRODUCT_OP} and not in the process runtime.
+
+[id="con-task-assigning-service-kogito-services_{context}"]
+=== Task Assigning Service in {PRODUCT} services
+
+The following figure displays the architecture of a standard {PRODUCT} services installation, in which the Task Assigning Service is optional:
+
+.Task Assigning Service in {PRODUCT} services installation
+image::kogito/configuration/task-assigning-service/TaskAssigningServiceArchitecture.png[Task Assigning Service Architecture]
+
+The Task Assigning Service also interacts with the following {PRODUCT} services:
+
+* Apache Kafka messaging service to consume the CloudEvents that are generated by the user tasks
+* Data Index Query API to load the tasks status information when required
+* {PRODUCT} services runtime API to generate the desired task assignments
+* User Service Connector to connect with external user service and receive user information
+
+[id="proc-using-task-assigning-service_{context}"]
+=== Using the Task Assigning Service
+
+You can use the Task Assigning Service to assign the user tasks that are created by the {PRODUCT} services to users using an optimal solution. The optimal solution is calculated by {PRODUCT_OP}.
+
+.Prerequisites
+
+* https://kafka.apache.org/[Apache Kafka] is installed, including the {PRODUCT} runtimes required topics, and the Kafka messaging server is running. For information about Kafka installation and configuration, see https://kafka.apache.org/documentation/[Apache Kafka documentation].
+* The {PRODUCT} Data Index Service is running. For information about Data Index Service installation and configuration see {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service].
+* {PRODUCT} services are running. The set of {PRODUCT} services with business processes are running and properly configured for generating the user tasks related to CloudEvents and sending them to the Apache Kafka messaging service. For more information about creating and running {PRODUCT} services see {URL_CREATING_RUNNING}#chap-kogito-creating-running[_{CREATING_RUNNING}_].
+
+.Procedure
+
+. Go to the https://repository.jboss.org/org/kie/kogito/task-assigning-service/[`task-assigning-service`] artifacts page, select the latest release of the Task Assigning Service, and download the `task-assigning-service-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `task-assigning-service-__VERSION__-runner.jar` file and enter the following command to run the Task Assigning Service:
++
+.Running the Task Assigning Service
+[source,subs="+quotes"]
+----
+$ java -jar task-assigning-service-__VERSION__-runner.jar
+----
+
+[id="con-task-assigning-service-config_{context}"]
+=== Task Assigning Service configuration
+
+Considering that the Task Assigning Service is a Quarkus application, then all the configuration parameters defined in the next topics can be established by using any of the available Quarkus configuration sources.
+
+For more information about configuring a Quarkus application, see https://quarkus.io/guides/config[Quarkus - Configuring your Application] in the Quarkus documentation.
+
+[NOTE]
+====
+Generally, most of the parameters are pre-configured with appropriate values. However, a configuration file `application.properties` placed in the `$TASK_ASSIGNING_SERVICE_HOME/config` directory, can be used to configure the Task Assigning Service parameters.
+====
+
+[id="ref-global-config-params-task-assigning_{context}"]
+==== Global configuration parameters of Task Assigning Service
+
+The Task Assigning Service contains the following global configuration parameters:
+
+.Global configuration parameters of Task Assigning Service
+[cols="50%,40%,10%", options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `kogito.task-assigning.data-index.server-url`
+| URL of the Data Index Service
+| http://localhost:8180/graphql
+
+| `kogito.task-assigning.data-index.connect-timeout-duration`
+a| Timeout for the established connection when a Data Index Service query is executed
+
+For example, a value of 0 that is `PT0S` represents no timeout. The format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT30S`: configures 30 seconds
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT30S`
+
+| `kogito.task-assigning.data-index.read-timeout-duration`
+a| Timeout for the data reading when a Data Index Service query is executed
+
+The value of this parameter must be adjusted according to the amount of expected data and is typically related with the `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/pageSize` property.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT3M`: configures 3 minutes
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT3M`
+
+| `kogito.task-assigning.process-runtime.connect-timeout-duration`
+a| Timeout for the established connection when a {PRODUCT} runtimes operation is executed
+
+For example, a value of 0 that is `PT0S` represents no timeout. The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT30S`: configures 30 seconds
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT30S`
+
+| `kogito.task-assigning.process-runtime.read-timeout-duration`
+a| Timeout for the data reading when a {PRODUCT} runtimes operation is executed
+
+For example, a value of 0 that is `PT0S` represents no timeout. The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours. For example:
+
+* `PT1M`: configures 1 minute
+* `PT1.500S`: configures 1500 milliseconds
+* `PT0.500S`: configures 500 milliseconds
+
+| `PT1M`
+
+| `kogito.task-assigning.oidc-client`
+| Name of the OidcClient to use when an OpenId Connect compliant authorization server such as Keycloak is being used for securing the access to the Data Index Service and the {PRODUCT} runtimes.
+
+The same OidcClient configuration is used for all the accesses, so you must have the proper permissions for accessing both the Data Index Service and the {PRODUCT} runtimes.
+
+For more information about how to configure this OidcClients, see https://quarkus.io/guides/security-openid-connect-client[Quarkus - Using OpenID Connect Client].
+
+| NA
+
+| `kogito.task-assigning.user`
+| User ID for connecting to the Data Index Service and the {PRODUCT} runtimes when the systems are secured using the Basic Authentication mechanism.
+
+| NA
+
+| `kogito.task-assigning.password`
+| User password for connecting to the Data Index Service and the {PRODUCT} runtimes when the systems are secured using the Basic Authentication mechanism.
+| NA
+
+| `kogito.task-assigning.publish-window-size`
+| Maximum number of tasks for each user that are assigned in {PRODUCT} runtimes when an optimized plan is calculated.
+
+
+The value of this parameter must be low to 2, 3, or 4, as it is expected that the tasks are assigned to the users according to an optimized plan, which changes over the time. The high values for this parameter leads to BPM standard task assigning that can nullify the Task Assigning Service work.
+
+| `2`
+
+| `kogito.task-assigning.wait-for-improved-solution-duration`
+
+| Time interval to improve a solution before the optimized plan is sent to the {PRODUCT} runtimes.
+
+This time interval is applied every time a new set of changes is processed, therefore it must be short. For example, `PT0.500` representing 500 milliseconds.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| `PT0S` (no wait)
+
+| `kogito.task-assigning.improve-solution-on-background-duration`
+
+| Time interval for performing background optimization of the current solution after the optimized plan is sent to the {PRODUCT} runtimes.
+
+In case, no changes are produced in the processes and a better solution is calculated during that period, then a new optimized plan is automatically sent to the {PRODUCT} runtimes.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| `PT1M`
+
+| `kogito.task-assigning.user-service-connector`
+| Name of the User Service Connector for accessing an external user service.
+| `PropertiesConnector`
+
+| `kogito.task-assigning.user-service-sync-interval`
+
+a| Time interval for refreshing the user information from an external user service.
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+* `PT2H`: configures 2 hours
+* `PT30M`: configures 30 minutes
+
+| `PT2H`
+
+| `quarkus.optaplanner.solver-config-xml`
+
+| Path to classpath resource with the solver configuration when a customized configuration is used.
+
+If the resource is not found or the configuration is incorrect, the Task Assigning Service does not start.
+
+| `taskAssigningDefaultSolverConfig.xml`
+
+| `org.kie.kogito.taskassigning.core.model.planningUserId`
+
+a| This parameter configures the user for being assigned with the tasks that no other user in the system can be assigned to.
+
+For example, if a task has a required skill "astronaut" and no other user can be found with this skill, it is assigned to the `planninguser`. However, this parameter is only restricted to skills.
+
+| `planninguser`
+|===
+
+[id="con-task-assigning-kafka-messaging-config_{context}"]
+==== Kafka messaging configuration
+
+The Task Assigning Service reacts upon the CloudEvents that are generated by the user tasks in {PRODUCT} services.
+
+The following table describes the set of parameters that are required to configure Apache Kafka messaging. However, based on the target installation, any configuration parameter of the Quarkus Apache Kafka can be used. For more information, see https://quarkus.io/guides/kafka#configuration[Quarkus Apache Kafka Configuration].
+
+.Kafka messaging configuration parameters
+[cols="30%,50%,20%",options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `kafka.bootstrap.servers`
+| Comma-separated list of `host:port` to establish the initial connection to the Kafka cluster.
+
+For more information about Kafka configuration, see https://quarkus.io/guides/kafka#configuring-the-kafka-connector[Configuring the Kafka connector].
+
+| `localhost:9290`
+
+| `mp.messaging.incoming.kogito-usertaskinstances-events.topic`
+
+| Kafka topic where the CloudEvents are published. The CloudEvents are generated by the user tasks in {PRODUCT} runtimes.
+
+| `kogito-usertaskinstances-events`
+
+| `mp.messaging.incoming.kogito-usertaskinstances-events.group.id`
+
+| Kafka group ID for consumption of the CloudEvents. The CloudEvents are generated by the user tasks in {PRODUCT} runtimes.
+
+Generally, the default value must not be changed unless necessary. If the default value is changed, then the changed value must not be used in the same group ID as another service that consumes the CloudEvents, such as Data Index Service.
+
+| `kogito-task-assigning-service`
+
+|===
+
+==== Solution data loading configuration
+
+When you start the Task Assigning Service, it is required to execute a set of initial data loading queries against the Data Index Service and the configured User System Service.
+
+The following table describes the parameters that are required to configure the data loading:
+
+.Data loading configuration parameters
+[cols="30%,50%,20%", options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/pageSize`
+
+| Page size for the data loading queries of tasks
+| `3000`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/maxRetries`
+
+a| Number of retries to execute when the data loading operation fails. `-1` represents an infinite number of retries.
+
+NOTE: In case the maximum number of configured retries is reached, the Task Assigning Service fails.
+
+| `-1`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/delay`
+
+| Time delay in retries
+
+| `2000`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/delayUnit`
+| Time unit to measure the delay in retries. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MILLIS
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/maxDuration`
+
+a| Maximum amount of time for continuing retrying.
+
+NOTE: In case the maximum duration is reached, the Task Assigning Service fails.
+
+| `15`
+
+| `org.kie.kogito.taskassigning.service.SolutionDataLoader/loadSolutionData/Retry/durationUnit`
+
+| Time unit to measure the max duration. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MINUTES
+
+|===
+
+The data loading configuration parameters conform with the Quarkus fault tolerance mechanisms. For more information about the fault tolerance mechanism, see https://quarkus.io/guides/smallrye-fault-tolerance[Quarkus - Smallrye Fault Tolerance].
+
+==== Users data synchronization configuration
+
+The following table describes the configuration parameters that are applied when the users data is synchronized from an external user service. The users data synchronization is executed on a regular configurable basis.
+
+.Users data synchronization configuration parameters
+[cols="30%,50%,20%", options="header"]
+|===
+|Parameter
+|Description
+|Default value
+
+| `kogito.task-assigning.user-service-sync-interval`
+
+a| Time interval for refreshing the user information using a user service
+
+The format of the value is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+* `PT2H`: configures 2 hours
+* `PT30M`: configures 30 minutes
+
+| `PT2H`
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/maxRetries`
+
+a| Number of retries to execute when the data loading operation fails. The value `-1` represents an infinite number of retries.
+
+NOTE: In case the maximum number of configured retries is reached, the Task Assigning Service fails.
+
+| `-1`
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/delay`
+
+a| Time delay when performing retries.
+
+| 2000
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/delayUnit`
+
+| Time unit to measure the delay when performing retries. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MILLIS
+
+| `org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/maxDuration`
+
+a| Maximum amount of time to continue retrying without success.
+
+NOTE: In case the maximum duration is reached, the Task Assigning Service fails.
+
+| `5`
+
+| org.kie.kogito.taskassigning.service.UserServiceAdapter/loadUsersData/Retry/durationUnit
+
+| Time unit to measure the maximum duration. The valid values are defined by the `java.time.temporal.ChronoUnit` excluding NANOS and MICROS.
+
+| MINUTES
+
+|===
+
+The configuration parameters of users data synchronization conform with the Quarkus fault tolerance mechanisms. For more information about the fault tolerance mechanism, see https://quarkus.io/guides/smallrye-fault-tolerance[Quarkus - Smallrye Fault Tolerance].
+
+[id="con-user-service-connector_{context}"]
+==== User Service Connector
+
+The calculation of an optimal plan for assigning user tasks requires consideration of business information as part of the definitions of the users, for example, using groups, skills related to a user, or affinities in certain topics. For more information about using skills and affinities, see xref:con-skills-affinities_kogito-configuring[].
+
+The business-related information is managed by an external user service and must be provided in each particular installation. The retrieval of this information is delegated to the `UserServiceConnector` component.
+
+A `UserServiceConnector` component must implement the following interface:
+
+.UserServiceConnector API
+[source,java]
+----
+/**
+ * User service connector implementations are loaded by CDI and must be qualified with the
+ * UserServiceConnectorQualifier in order to configure the particular implementation name.
+ * This name is used for configuring the property kogito.task-assigning.user-service-connector
+ * in cases where this connector is to be used.
+ *
+ * e.g.
+ *
+ *
+ *     @ApplicationScoped
+ *     @UserServiceConnectorName("MyUserServiceConnector")
+ *     public class MyUserServiceConnector implements UserServiceConnector {
+ *          ......
+ *     }
+ */
+public interface UserServiceConnector {
+
+    /**
+     * Invoked by the task assigning service as part of the initialization procedure and
+     * before any other method is invoked.
+     */
+    void start();
+
+    /**
+     * @return the list of all users present in the external user service.
+     */
+    List<User> findAllUsers();
+
+    /**
+     * Get the user information corresponding the user identified by the id.
+     *
+     * @param id a user identifier.
+     * @return the User corresponding to the given identifier, null if no user was found.
+     */
+    User findUser(String id);
+
+}
+----
+
+[id="con-user-service-connector-config_{context}"]
+==== User Service Connector configuration
+
+The implementation of User Service Connector is loaded by CDI and must be qualified using the `UserServiceConnectorQualifier` to define a particular name. The defined name can be used for configuring the `kogito.task-assigning.user-service-connector` parameter.
+
+By default, the following configuration is provided:
+
+.Default User Service Connector configuration
+[source,subs="+quotes"]
+----
+kogito.task-assigning.user-service-connector=PropertiesConnector
+----
+
+[id="con-properties-connector_{context}"]
+====  PropertiesConnector
+
+The `PropertiesConnector` is a basic `UserServiceConnector` implementation that loads the user definitions and attributes from the properties encountered on the different configuration sources that can be used for the Task Assigning Service Quarkus application, for example, the `applicaion.properties` file.
+
+For more information about configuring a Quarkus application, see https://quarkus.io/guides/config[Quarkus - Configuring your Application].
+
+You can define the users using the following examples:
+
+.Example for defining users
+[source]
+----
+kogito.task-assigning.properties-connector.user.poul.groups=interns,managers
+kogito.task-assigning.properties-connector.user.poul.attribute.skills=C#,kotlin
+kogito.task-assigning.properties-connector.user.poul.attribute.affinities=sports
+kogito.task-assigning.properties-connector.user.poul.attribute.name=Poul
+kogito.task-assigning.properties-connector.user.poul.attribute.surname=Simon
+----
+
+The previous example defines the following user:
+
+.Example user
+[source]
+----
+User {
+    id = "poul",
+    GroupSet = {"interns", "managers"}
+    AttributeMap = {
+        {"name", "Poul"}
+        {"surname", "Simon"}
+        {"skills", "C#,kotlin"}
+        {"affinities", "sports"}
+}
+----
+
+By using the Quarkus profiles configuration mechanism, you can also define users in a per profile basis, for example:
+
+.Example for defining users in per profile basis
+[source]
+----
+%dev.kogito.task-assigning.properties-connector.user.mary.groups=managers
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.skills=javascript,ada
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.affinities=movies
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.name=Mary
+%dev.kogito.task-assigning.properties-connector.user.mary.attribute.surname=Poppins
+----
+
+In the previous example, user `Mary` is considered only when the `dev` profile is activated. For example, you can use the  Quarkus configuration parameter `-Dquarkus.profile=dev` when the application starts.
+
+[id="ref-default-constraints_{context}"]
+==== Default constraints
+
+The Task Assigning Service uses different constraints to generate an optimized plan. Generally, a large set of use cases is covered and no extensions are required to use the constraints. However, you can work with the customized set of constraints provided by users if required. For more information about using customized constraints, see xref:proc-custom-solver-constraints-config_kogito-configuring[].
+
+To generate the optimized solutions, a `BendableLongScore` with two levels of hard constraints and six levels of soft constraints is used. You can customize these constraints by following a set of restrictions.
+
+.Default constraints for Task Assigning Service
+[cols="30%,15%,55%", options="header"]
+|===
+|Constraint
+|Level
+|Description
+
+| Required Potential Owner
+| Hard constraint 0 (required)
+| Determines whether a task must be assigned to one of its Potential Owners or the Planning User in case no Potential Owner is found.
+
+The customization provided by users must include this constraint as a first-level hard constraint, otherwise, the business process semantics is not considered by the Task Assigning Service. For example, the tasks are assigned to the users who are not Potential Owners.
+
+In case the `Required Potential Owner` constraint is customized, the task must be assigned to the Planning User when no other user is suitable for the customized condition.
+
+| Required Skills
+| Hard constraint 1
+| Determines that a task can only be assigned to a user, who has all the configured skills. For more information about skills, see xref:con-skills-affinities_kogito-configuring[]. In case, no user is found with the configured skills of the task, then the task is assigned to the Planning User. However, if the task does not have configured skills, the constraint contains no effect.
+
+In case the `Required Skills` constraint is customized, the task must be assigned to the Planning User when no other user is suitable for the customized condition.
+
+| `PlanningUser` assignment
+| Soft constraint 0 (required)
+| Penalizes the Planning User assignment. This constraint enforces the minimization of the Planning User assignment and ensures that the Planning User is assigned as the last available option. This constraint cannot be customized.
+
+| High level priority
+| Soft constraint 1
+| Enforces the assignment of higher priority tasks first when possible.
+
+| Desired affinities
+| Soft constraint 2
+| Assigns the tasks according to the configured affinities. For more information about affinities, see xref:con-skills-affinities_kogito-configuring[]. If a task has configured affinities, the task is assigned to the user with most of the related affinities.
+
+In case, a task does not have configured affinities, the constraint does not affect.
+
+| Minimize makespan
+| Soft constraint 3 (required)
+| Reduces the time to complete all the tasks. This constraint must be included.
+
+| Medium level priority
+| Soft constraint 4
+| Ensures that medium level priority tasks are assigned after higher priority tasks when possible.
+
+| Low level priority
+| Soft constraint 5
+| Ensures that low level priority tasks are assigned at last when possible.
+
+|===
+
+[NOTE]
+====
+The `TaskAssigningSolution` is based on the `BendableLongScore` scoring function, therefore any potential user provided set of constraints must be based on the same scoring function. However, the scoring function and the core model classes can be changed in a future release.
+====
+
+The following code shows the implementation of default constraints:
+
+.Default constraints implementation
+[source,java]
+----
+public class DefaultTaskAssigningConstraints {
+
+    public static Constraint requiredPotentialOwner(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> !TaskAssigningConditions.userMeetsPotentialOwnerOrPlanningUserCondition(taskAssignment.getTask(), taskAssignment.getUser()))
+                .penalize("Required Potential Owner", constraintWeight);
+    }
+
+    public static Constraint requiredSkills(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> !TaskAssigningConditions.userMeetsRequiredSkillsOrPlanningUserCondition(taskAssignment.getTask(), taskAssignment.getUser()))
+                .penalize("Required Skills", constraintWeight);
+    }
+
+    public static Constraint planningUserAssignment(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> ModelConstants.IS_PLANNING_USER.test(taskAssignment.getUser().getId()))
+                .penalize("PlanningUser assignment", constraintWeight);
+    }
+
+    public static Constraint highLevelPriority(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> PriorityHelper.isHighLevel(taskAssignment.getTask().getPriority()))
+                .penalize("High level priority",
+                        constraintWeight,
+                        TaskAssignment::getEndTimeInMinutes);
+    }
+
+    public static Constraint desiredAffinities(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> taskAssignment.getUser().isEnabled())
+                .reward("Desired Affinities",
+                        constraintWeight,
+                        taskAssignment -> TaskHelper.countMatchingLabels(taskAssignment.getTask(), taskAssignment.getUser(), DefaultLabels.AFFINITIES.name()));
+    }
+
+    public static Constraint minimizeMakespan(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> taskAssignment.getNextElement() == null)
+                .penalize("Minimize makespan",
+                        constraintWeight,
+                        taskAssignment -> taskAssignment.getEndTimeInMinutes() * taskAssignment.getEndTimeInMinutes());
+    }
+
+    public static Constraint mediumLevelPriority(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> PriorityHelper.isMediumLevel(taskAssignment.getTask().getPriority()))
+                .penalize("Medium level priority",
+                        constraintWeight,
+                        TaskAssignment::getEndTimeInMinutes);
+    }
+
+    public static Constraint lowLevelPriority(ConstraintFactory constraintFactory, Score<?> constraintWeight) {
+        return constraintFactory.from(TaskAssignment.class)
+                .filter(taskAssignment -> PriorityHelper.isLowLevel(taskAssignment.getTask().getPriority()))
+                .penalize("Low level priority",
+                        constraintWeight,
+                        TaskAssignment::getEndTimeInMinutes);
+    }
+
+    public static BendableLongScore hardLevelWeight(int hardLevel, long hardScore) {
+        return BendableLongScore.ofHard(HARD_LEVELS_SIZE, SOFT_LEVELS_SIZE, hardLevel, hardScore);
+    }
+
+    public static BendableLongScore softLevelWeight(int softLevel, long softScore) {
+        return BendableLongScore.ofSoft(HARD_LEVELS_SIZE, SOFT_LEVELS_SIZE, softLevel, softScore);
+    }
+}
+----
+
+The following code shows the implementation of constraint provider used by the default Solver configuration:
+
+.Default constraint provider
+[source,java]
+----
+public class DefaultTaskAssigningConstraintProvider implements ConstraintProvider {
+
+    @Override
+    public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
+        return new Constraint[] {
+                requiredPotentialOwner(constraintFactory),
+                requiredSkills(constraintFactory),
+                planningUserAssignment(constraintFactory),
+                highLevelPriority(constraintFactory),
+                desiredAffinities(constraintFactory),
+                minimizeMakespan(constraintFactory),
+                mediumLevelPriority(constraintFactory),
+                lowLevelPriority(constraintFactory)
+        };
+    }
+
+    protected Constraint requiredPotentialOwner(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.requiredPotentialOwner(constraintFactory, hardLevelWeight(0, 1));
+    }
+
+    protected Constraint requiredSkills(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.requiredSkills(constraintFactory, hardLevelWeight(1, 1));
+    }
+
+    protected Constraint planningUserAssignment(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.planningUserAssignment(constraintFactory, softLevelWeight(0, 1));
+    }
+
+    protected Constraint highLevelPriority(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.highLevelPriority(constraintFactory, softLevelWeight(1, 1));
+    }
+
+    protected Constraint desiredAffinities(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.desiredAffinities(constraintFactory, softLevelWeight(2, 1));
+    }
+
+    protected Constraint minimizeMakespan(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.minimizeMakespan(constraintFactory, softLevelWeight(3, 1));
+    }
+
+    protected Constraint mediumLevelPriority(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.mediumLevelPriority(constraintFactory, softLevelWeight(4, 1));
+    }
+
+    protected Constraint lowLevelPriority(ConstraintFactory constraintFactory) {
+        return DefaultTaskAssigningConstraints.lowLevelPriority(constraintFactory, softLevelWeight(5, 1));
+    }
+}
+----
+
+[NOTE]
+====
+Users providing customization of the Solver configuration can use the `org.kie.kogito.taskassigning.core.model.solver.DefaultTaskAssigningConstraints` and `org.kie.kogito.taskassigning.core.model.solver.DefaultTaskAssigningConstraintProvider` classes as a start point. However, these classes are not part of the public API and therefore, might change in a future release.
+====
+
+For more information about constraints building and configuration see https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+[id="con-skills-affinities_{context}"]
+==== Skills and affinities
+
+The skills and affinities in the Task Assigning Service implement the ability to declare business-related information. The business-related information is considered by the default constraints or the customized set of constraints, and introduce additional decision elements that can be combined with the group-based assignment semantics defined in the business process to assign the user tasks.
+
+Internally, this mechanism is based on the ability to generate calculated attributes that are automatically set to the task and user representations used by OptaPlanner. These attributes are generated by the `TaskAttributesProcessor` and the `UserAttributesProcessor`.
+
+You can link business-related information to a user task using the input configuration of the same user task. The following is an example of input configuration:
+
+.Example skills and affinities configuration.
+image::kogito/configuration/task-assigning-service/SkillsAndAffinitiesConfigurationExample.png[]
+
+In the previous example, a process variable `variableWithTheSkills` is linked with the user task input name `skills`, and the corresponding value is processed using the `DefaultTaskAttributesProcessor` to calculate the `SKILLS` attribute in the internal model, which is managed by {PRODUCT_OP}.
+
+[id="con-task-attributes-processors_{context}"]
+==== Task attributes processors
+
+The task attributes processors generate task attributes in the internal model and execute according to the following procedure:
+
+. A user task is created or modified in the {PRODUCT} services, and the Task Assigning Service detects the change.
+
+. All the configured `TaskAttributesProcessors` are executed for the same task.
+
+. The `TaskAttributesProcessors` can transform the user task information into a task attribute in the internal model.
+
+. The default constraints consider these attributes.
+
+For example, the input data `skills` with the value `"skill1, skill2"` resulted in the attribute `SKILLS` with `{"skill1", "skill2"}` set of values.
+
+.Task attributes processor
+image::kogito/configuration/task-assigning-service/TaskAttributesProcessor.png[]
+
+[id="con-user-attributes-processors_{context}"]
+==== User attributes processors
+
+The user attributes processors generate user attributes in the internal model and execute according to the following procedure:
+
+. The information for a user is retrieved from the external users service, for example, when the Task Assigning Service starts or when the users are synchronized.
+
+. All the configured `UserAttributesProcessors` processors are executed for the same user.
+
+. The `UserAttributesProcessors` can transform the user information into a user attribute in the internal model.
+
+. The default constraints consider these attributes.
+
+For example, an external user attribute `affinities` with the value `"news"` resulted in the attribute `AFFINITIES` with the `{"news"}` values.
+
+.User attributes processor
+image::kogito/configuration/task-assigning-service/UserAttributesProcessor.png[]
+
+[id="ref-default-attributes-processors_{context}"]
+==== Default attributes processors
+
+{PRODUCT} provides the following default attributes processors to manage the `SKILLS` and `AFFINITIES` attributes:
+
+* `DefaultTaskAttributeProcessor`: Processes the user tasks `skills` and `affinities` input values as a string of comma-separated values and creates two Java objects set with tokenized string values for each attribute. The resulting set of values is assigned to the calculated attributes `SKILLS` and `AFFINITIES` respectively.
++
+For example, the input value `"english, finance"` of `skills` is extracted as a set with the `{"english", "finance"}` values and assigned to the `SKILLS` attribute.
++
+You can customize the `DefaultTaskAttributeProcessor` processor using the following configuration parameters:
+
+** `kogito.task-assigning.default-task-attributes-processor.enabled` parameter to enable or disable the processing. The default value of this parameter is `true`.
+** `kogito.task-assigning.default-task-attributes-processor.priority` parameter to configure the execution order for the `DefaultTaskAttributeProcessor` processor. The default value of this parameter is `0`. Lower numbers execute first.
+** `kogito.task-assigning.default-task-attributes-processor.skills` parameter to change the name of the input value of the user task, from which the `SKILLS` attribute is calculated. The default value of this parameter is `skills`.
+** `kogito.task-assigning.default-task-attributes-processor.affinities` parameter to change the name of the input value of the user task, form which the `AFFINITIES` attribute is calculated. The default value of this parameter is `affinities`.
+
+* `DefaultUserAttributesProcessor`: Calculates the `SKILLS` and `AFFINITIES` attributes for a user. You can customize this processor using the following parameters:
+
+** `kogito.task-assigning.default-user-attributes-processor.enabled` parameter is used to enable or disable the processing. The default value of this parameter is `true`.
+** `kogito.task-assigning.default-user-attributes-processor.priority` parameter configures the execution order for the `DefaultUserAttributesProcessor` processor. The default value of this parameter is `0`. Lower numbers execute first.
+** `kogito.task-assigning.default-user-attributes-processor.skills` parameter to change the name of the external user attribute, from which the `SKILLS` attribute is calculated. The default value of this parameter is `skills`.
+** `kogito.task-assigning.default-user-attributes-processor.affinities` parameter to change the name of the external user attribute, from which the `AFFINITIES` attribute is calculated. The default value of this parameter is `affinities`.
+
+[id="con-task-assigning-service-health-checks_{context}"]
+=== Task Assigning Service health checks
+
+The Task Assigning Service implements the https://github.com/eclipse/microprofile-health[MicroProfile Health] compatible readiness and liveness health checks. For more information about adding health checks to your Quarkus application, see https://quarkus.io/guides/smallrye-health[Quarkus SmallRye Health].
+
+Readiness::
+
+The following example shows the results of executing the readiness health check for the Task Assigning Service URL `http://localhost:8280/q/health/ready`:
+
+.Example readiness health check execution
+[source,json]
+----
+{
+  "status": "UP",
+  "checks": [
+    {
+      "name": "Task Assigning Service - readiness check",
+      "status": "UP",
+      "data": {
+        "service-status": "READY"
+      }
+    },
+    {
+      "name": "SmallRye Reactive Messaging - readiness check",
+      "status": "UP",
+      "data": {
+        "kogito-usertaskinstances-events": "[OK]"
+      }
+    }
+  ]
+}
+----
+
+Liveness::
+
+The following example shows the results of executing the liveness health check for the Task Assigning Service URL `http://localhost:8280/q/health/live`:
+
+.Example liveness health check execution
+[source, json]
+----
+{
+  "status": "UP",
+  "checks": [
+    {
+      "name": "SmallRye Reactive Messaging - liveness check",
+      "status": "UP",
+      "data": {
+        "kogito-usertaskinstances-events": "[OK]"
+      }
+    },
+    {
+      "name": "Task Assigning Service - liveness check",
+      "status": "UP",
+      "data": {
+        "service-status": "READY"
+      }
+    }
+  ]
+}
+----
+
+[id="con-extensions-task-assigning_{context}"]
+=== Task Assigning Service extensions in {PRODUCT}
+
+The Task Assigning Service can be extended by using any of the following alternatives:
+
+* Use a customized xref:proc-custom-solver-constraints-config_kogito-configuring[].
+* Add user provided xref:con-user-service-connector_kogito-configuring[].
+* Add user provided xref:proc-create-custom-task-attributes-processors_kogito-configuring[] and xref:proc-create-custom-user-attributes-processors_kogito-configuring[].
+
+==== Using Task Assigning Service extensions
+
+To extend the Task Assigning Service, you can use the following procedure:
+
+.Procedure
+
+. Create a Quarkus application and add the following dependencies to include the Task Assigning Service:
++
+.Dependencies to include the Task Assigning Service
+[source, xml]
+----
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>task-assigning-service-extension-example</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+
+  <properties>
+    <!-- any other Quarkus application properties  -->
+
+    <!-- Kogito version corresponding to the task assigning service base to extend -->
+    <kogito.version>KOGITO-VERSION-OF-YOUR-CHOICE</kogito.version>
+
+    <!-- Quarkus version required by the task assigning service -->
+    <quarkus.platform.version>REQUIRED-QUARKUS-VERSION</quarkus.platform.version>
+
+    <!--
+      If the kogito.version is aligned with the version of the kogito components
+      delivered in the quarkus.platform.version the quarkus-universe-bom can be
+      used, otherwise use the quarkus-bom.
+    -->
+    <!--<quarkus.platform.artifact-id>quarkus-universe-bom</quarkus.platform.artifact-id>-->
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>${quarkus.platform.group-id}</groupId>
+        <artifactId>${quarkus.platform.artifact-id}</artifactId>
+        <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+
+    <!--
+      The assigning service integration api defines the contracts for implementing user
+      customized TaskAttributesProcessor, UserAttributesProcessor and UserServiceConnectors
+    -->
+    <dependency>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>task-assigning-integration-api</artifactId>
+      <version>${kogito.version}</version>
+    </dependency>
+
+    <!-- Incorporates the task assigning service -->
+    <dependency>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>task-assigning-service</artifactId>
+      <version>${kogito.version}</version>
+    </dependency>
+
+    <!-- any other required dependency -->
+
+  </dependencies>
+
+   ...
+
+</project>
+----
++
+For more information about how to create a Quarkus application, see https://quarkus.io/get-started/[Quarkus - Get Started].
+
+. Add the extension components.
++
+For more information about extension components, see xref:proc-custom-solver-constraints-config_kogito-configuring[], xref:con-user-service-connector_kogito-configuring[], xref:proc-create-custom-task-attributes-processors_kogito-configuring[], and xref:proc-create-custom-user-attributes-processors_kogito-configuring[].
+
+. Build and start your Quarkus application.
+
+[NOTE]
+====
+You can add the extensions as part of the existing application or other Maven modules, in which the modules must be added as dependencies.
+====
+
+[id="proc-custom-solver-constraints-config_{context}"]
+==== Configuring custom solver and constraints
+
+You can configure the custom solver and constraints in the Task Assigning Service.
+
+.Procedure
+
+. Create a solver configuration file, such as `myExampleSolverConfig.xml` in the project directory.
++
+.Solver configuration file
+[source,java]
+----
+src/main/resources/META-INF/myExampleSolverConfig.xml
+----
+
+. Create a customized `org.optaplanner.core.api.score.stream.ConstraintProvider` implementation, such as `org.kie.kogito.solver.ExtendedConstraintProvider` and configure the solver as follows:
++
+.Solver configuration
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<solver xmlns="https://www.optaplanner.org/xsd/solver"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
+
+  <!-- the Solver must execute in daemon mode -->
+  <daemon>true</daemon>
+  <moveThreadCount>AUTO</moveThreadCount>
+
+  <!-- the following solution and entities configurations must be used -->
+  <solutionClass>org.kie.kogito.taskassigning.core.model.TaskAssigningSolution</solutionClass>
+  <entityClass>org.kie.kogito.taskassigning.core.model.ChainElement</entityClass>
+  <entityClass>org.kie.kogito.taskassigning.core.model.TaskAssignment</entityClass>
+
+  <scoreDirectorFactory>
+    <!-- configure the customized ConstraintProvider -->
+    <constraintProviderClass>org.kie.kogito.solver.ExtendedConstraintProvider</constraintProviderClass>
+  </scoreDirectorFactory>
+
+  <constructionHeuristic>
+    <changeMoveSelector>
+      <!-- in general it's recommended to keep this ChangeMoveFilter -->
+      <filterClass>org.kie.kogito.taskassigning.core.model.solver.filter.TaskByGroupAndSkillsChangeMoveFilter</filterClass>
+    </changeMoveSelector>
+  </constructionHeuristic>
+
+  <localSearch>
+    <termination>
+      <!-- NOTE: please keep this termination period inside the localSearch configuration. -->
+      <unimprovedSpentLimit>PT2M</unimprovedSpentLimit>
+    </termination>
+  </localSearch>
+</solver>
+----
+
+. To use the solver configuration, set the following parameter in your application `src/resources/META-INF/application.properties` file:
++
+.Example parameter setting in the application file
+[source]
+----
+quarkus.optaplanner.solver-config-xml=myExampleSolverConfig.xml
+----
+
+For more information on writing OptaPlanner solver configurations and `ConstraintProviders`, see https://docs.optaplanner.org/latestFinal/optaplanner-docs/html_single/index.html[{PRODUCT_OP} documentation].
+
+For information about which constraints are mandatory for the Task Assigning Service, see xref:ref-default-constraints_kogito-configuring[].
+
+[id="proc-create-custom-user-service-connector_{context}"]
+==== Creating custom User Service Connector
+
+You can create a custom User Service Connector for the Task Assigning Service.
+
+.Procedure
+
+. To create your custom User Service Connector, implement the `org.kie.kogito.taskassigning.user.service.UserServiceConnector` interface as follows:
++
+.User Service Connector interface implementation
+[source,java]
+----
+/**
+* Give a name to the UserServiceConnector implementation by using the
+* @UserServiceConnectorQualifier annotation.
+* This name is used for configuring the kogito.task-assigning.user-service-connector
+* parameter to use this connector.
+*
+* note: while it is a recommended practice the selected name does not necessary
+* have to be the same as the class name.
+*/
+@ApplicationScoped
+@UserServiceConnectorQualifier("MyExampleUserServiceDBConnector")
+public class MyExampleUserServiceDBConnector implements UserServiceConnector {
+
+    /**
+    * Invoked by the task assigning service as part of the initialization procedure and
+    * before any other method is invoked.
+    */
+    @Override
+    public void start() {
+        // execute any required initialization procedure
+    }
+
+    /**
+    * @return the list of all users present in the external user service.
+    */
+    @Override
+    public List<User> findAllUsers() {
+        // query the DB and return the list of users
+        return Collections.emptyList();
+    }
+
+    /**
+    * Get the user information corresponding to the user identified by the id.
+    * @param userId a user identifier.
+    * @return the user corresponding to the given identifier, null if no user was found.
+    */
+    @Override
+    public User findUser(String userId) {
+        // query the DB and return the user corresponding or null if not found.
+        return null;
+    }
+}
+----
++
+[NOTE]
+====
+The implementations of the User Service Connector are loaded using CDI and configured with the name provided by the `UserServiceConnectorQualifier`. Ensure that your implementation contains the following annotations:
+`@ApplicationScoped`
+`@UserServiceConnectorQualifier("MyExampleUserServiceDBConnector")`
+====
+
+. Set the following parameter in your `application.properties` file:
++
+.Parameter for `application.properties` file
+[source]
+----
+kogito.task-assigning.user-service-connector=MyExampleUserServiceDBConnector
+----
+
+The defined User Service Connector is automatically loaded and available when your application starts.
+
+[id="proc-create-custom-task-attributes-processors_{context}"]
+==== Creating custom task attributes processors
+
+The xref:con-task-attributes-processors_kogito-configuring[] are CDI loaded components, which are invoked when a new user task is created or an existing user task is changed. The task attributes processors define the calculated attributes in an internal task model, which is managed by {PRODUCT_OP}.
+
+The task attributes processors are invoked in the following scenarios:
+
+* When a new user task is created in the {PRODUCT} runtimes, and a corresponding new task is added to the data model, which is managed by {PRODUCT_OP}.
+* When an existing user task is changed and the changes added to the data model are detected.
+
+You can create a custom task attributes processor for the Task Assigning Service.
+
+.Procedure
+
+To create your custom task attributes processor, implement the `org.kie.kogito.taskassigning.model.processing.TaskAttributesProcessor` interface as follows:
+
+.Task attribute processor implementation
+[source,java]
+----
+@ApplicationScoped
+public class MyExampleTaskAttributeProcessor implements TaskAttributesProcessor {
+
+    /**
+     * Indicates the priority of this processor when multiple task attributes processors
+     * are applied, lower numbers executes first.
+     */
+    @Override
+    public int getPriority() {
+        return 50;
+    }
+
+    /**
+     * Indicates if the processor is enabled. Disabled processors are not applied.
+     */
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    /**
+     * Executed when a new human task is created in the Kogito runtimes, or changes
+     * in the TaskInfo information for an existing human task are detected.
+     * The targetAttributes will be assigned to the internal Task counterpart
+     * managed by OptaPlanner.
+     *
+     * @param taskInfo Information about the Kogito runtimes human task that was created
+     * or modified.
+     * @param targetAttributes Attributes to assign to the Task counterpart
+     * managed by OptaPlanner.
+     */
+    @Override
+    public void process(TaskInfo taskInfo, Map<String, Object> targetAttributes) {
+        // custom attribute calculated by using the TaskInfo information or any other procedure.
+        Object myCustomAttributeValue = new Object();
+        targetAttributes.put("myCustomAttribute", myCustomAttributeValue);
+    }
+}
+----
+
+The `org.kie.kogito.taskassigning.model.processing.TaskInfo` interface represents the user task information that is available to the task attributes processor:
+
+.Example `TaskInfo` interface
+[source,java]
+----
+public interface TaskInfo {
+
+    String getTaskId();
+
+    String getName();
+
+    String getDescription();
+
+    String getReferenceName();
+
+    String getPriority();
+
+    String getProcessInstanceId();
+
+    String getProcessId();
+
+    String getRootProcessInstanceId();
+
+    String getRootProcessId();
+
+    Set<String> getPotentialUsers();
+
+    Set<String> getPotentialGroups();
+
+    Set<String> getAdminUsers();
+
+    Set<String> getAdminGroups();
+
+    Set<String> getExcludedUsers();
+
+    ZonedDateTime getStarted();
+
+    Map<String, Object> getInputs();
+
+    String getEndpoint();
+}
+----
+
+The custom task attributes processor is loaded and available when your application starts.
+
+[id="proc-create-custom-user-attributes-processors_{context}"]
+==== Creating custom user attributes processors
+
+The xref:con-user-attributes-processors_kogito-configuring[] are CDI loaded components that are invoked when user information is refreshed using an external user service. The user attributes processors set the calculated attributes in an internal user model, which is managed by {PRODUCT_OP}.
+
+[NOTE]
+====
+You can configure the user information refresh interval using the `kogito.task-assigning.user-service-sync-interval` parameter.
+====
+
+You can create a custom user attributes processor for the Task Assigning Service.
+
+.Procedure
+
+To create your custom user attributes processor, implement the `org.kie.kogito.taskassigning.model.processing.UserAttributesProcessor` interface as follows:
+
+.User attributes processor interface implementation
+[source,java]
+----
+@ApplicationScoped
+public class MyExampleUserAttributesProcessor implements UserAttributesProcessor {
+
+    /**
+     * Indicates the priority of this processor when multiple user attributes processors
+     * are applied, lower numbers executes first.
+     */
+    @Override
+    public int getPriority() {
+        return 30;
+    }
+
+    /**
+     * Indicates if the processor is enabled. Disabled processors are not applied.
+     */
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    /**
+     * Executed when the user information is refreshed from the external user service.
+     *
+     * @param externalUser User instance returned by the external user service query.
+     * @param targetAttributes Attributes to assign to the User counterpart
+     * managed by OptaPlanner.
+     */
+    @Override
+    public void process(User externalUser, Map<String, Object> targetAttributes) {
+        // custom attribute calculated by using the User information or any other procedure.
+        Object myCustomAttributeValue = new Object();
+        targetAttributes.put("myCustomAttribute", myCustomAttributeValue);
+    }
+}
+----
+
+The `org.kie.kogito.taskassigning.user.service.User` interface represents the user information that is returned by the User Service Connector when the user information is refreshed from an external user service.
+
+.Example `org.kie.kogito.taskassigning.user.service.User` interface
+[source,java]
+----
+public interface User {
+
+    String getId();
+
+    Set<Group> getGroups();
+
+    Map<String, Object> getAttributes();
+
+}
+----
+
+The user attributes processors is automatically loaded and available when your application starts.
+
 
 [role="_additional-resources"]
 .Additional resources
