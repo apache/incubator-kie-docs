@@ -1669,6 +1669,8 @@ include::{asciidoc-dir}/configuration/chap-kogito-configuring.adoc[tags=proc-mon
 
 include::{asciidoc-dir}/configuration/chap-kogito-configuring.adoc[tags=proc-kafka-streams-persistence-enabling]
 
+include::{asciidoc-dir}/configuration/chap-kogito-configuring.adoc[tags=proc-postgresql-persistence-enabling]
+
 include::{asciidoc-dir}/configuration/chap-kogito-configuring.adoc[tags=proc-messaging-enabling]
 
 [id="con-knative-eventing_{context}"]
@@ -1731,9 +1733,9 @@ Context Attributes,
 Extensions,
   knativearrivaltime: 2020-08-10T20:52:39.391404032Z
   knativehistory: default-kne-trigger-kn-channel.kogito.svc.cluster.local
-  kogitoprocessid: Travelers
-  kogitoprocessinstanceid: 2f692fd9-fff8-4b0a-bb64-96d1a4772490
-  kogitoprocessinstancestate: 1
+  kogitoprocid: Travelers
+  kogitoprocinstanceid: 2f692fd9-fff8-4b0a-bb64-96d1a4772490
+  kogitoprocist: 1
 Data,
   {"firstName":"Jan","lastName":"Kowalski","email":"jan.kowalski@example.com","nationality":"German","processed":true}
 ----
@@ -1765,22 +1767,14 @@ NOTE: Knative Eventing is currently supported for {PRODUCT} services on Quarkus 
 [source,xml,subs="attributes+,+quotes"]
 ----
 <dependencies>
-  <dependency>
-    <groupId>org.kie.kogito</groupId>
-    <artifactId>knative-eventing-addon</artifactId>
-  </dependency>
-  <dependency>
-    <groupId>org.kie.kogito</groupId>
-    <artifactId>kogito-cloudevents-quarkus-addon</artifactId>
-  </dependency>
-  <dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
-  </dependency>
-  <dependency>
-    <groupId>io.smallrye.reactive</groupId>
-    <artifactId>smallrye-reactive-messaging-http</artifactId>
-  </dependency>
+    <dependency>
+      <groupId>org.kie.kogito</groupId>
+      <artifactId>kogito-addons-quarkus-cloudevents</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-reactive-messaging-http</artifactId>
+    </dependency>
 </dependencies>
 ----
 
@@ -1810,12 +1804,11 @@ image::kogito/bpmn/kogito-knative-set-node-name.png[Image of a message node prop
 .Required application properties for publishing
 [source,subs="attributes+,+quotes"]
 ----
-mp.messaging.incoming.kogito_incoming_stream.connector=smallrye-http
-mp.messaging.outgoing.kogito_outgoing_stream.connector=smallrye-http
+mp.messaging.outgoing.kogito_outgoing_stream.connector=quarkus-http
 mp.messaging.outgoing.kogito_outgoing_stream.url=${K_SINK}
 ----
 
-The `smallrye-http` property defines the HTTP endpoint for the published messages. The `${K_SINK}` property is an environment variable injected by Knative Eventing when you deploy a {PRODUCT} service that references a Knative Eventing https://knative.dev/docs/eventing/samples/sinkbinding/[`SinkBinding`] object.
+The `quarkus-http` property defines the HTTP endpoint for the published messages. The `${K_SINK}` property is an environment variable injected by Knative Eventing when you deploy a {PRODUCT} service that references a Knative Eventing https://knative.dev/docs/eventing/samples/sinkbinding/[`SinkBinding`] object.
 --
 . Build your {PRODUCT} project locally using your usual method, such as `mvn clean package`, and navigate to the `target/generated-sources/kogito` directory in your project and verify the following contents:
 +
@@ -2045,6 +2038,297 @@ You can use the following parameters to provide assignments for authorized users
 |===
 
 NOTE: Authorization is only enforced when the method that calls the work item lifecycle methods uses a security context. This security behavior is dependent on the API that you use.
+
+=== REST endpoints for tasks in {PRODUCT}
+
+When a process execution reaches the associated user task node, the user task enters the `Active` phase and the execution is paused. In the user task active phase, related input properties are passed to the task. After the user task is completed, the generated results are mapped with the process properties and then the process execution resumes.
+
+When a user task is in the `Active` phase, you can change the task phase, update task results, and manage comments and attachments of a task using the following REST endpoints.
+
+For each endpoint, use a REST client, curl utility, or Swagger UI (if configured for the application) to send requests with the following components:
+
+* *Base URL*: `http://__HOST__:__PORT__/{processId}/{processInstanceId}/{taskName}/{taskInstanceId}`
+* *Path parameters*:
+** `{processId}`: The string identifier of the process definition, such as `approval`
+** `{processInstanceId}`: The integer identifier of the process instance, such as `ec44f890-d21d-444f-a4ec-cb88589bd79`
+** `{taskName}`: The string identifier of the task definition, such as `firstLineApproval`
+** `{taskInstanceId}`: The integer identifier of the node instance, such as `7a520588-d5ab-464a-8378-d34fda3ff7e9`
+* *HTTP headers*: For `POST` requests only:
+** `accept`: `application/json`
+** `content-type`: `application/json`
+* *HTTP methods*: `GET`, `POST`, `PUT`, or `DELETE`
+
+==== Task phases
+
+Use the following REST endpoints to change phases for a task:
+
+Change the current phase for a task::
++
+--
+`[POST] /phase/{phaseName}`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/phase/complete`
+
+.Example curl request
+[source]
+----
+curl -X POST http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/phase/complete -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+==== Comments
+
+Use the following endpoints to manage comments for a user task:
+
+Retrieve list of comments related to a task::
++
+--
+`[GET] /comments`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments`
+
+.Example curl request
+[source]
+----
+curl -X GET http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+Create a comment with the text passed in the request body::
++
+--
+`[POST] /comments`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments`
+
+.Example curl request
+[source]
+----
+curl -X POST http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+Update a comment with the text passed in the request body::
++
+--
+`[PUT] /comments/{commentId}`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments/firstComment`
+
+.Example curl request
+[source]
+----
+curl -X PUT http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments/firstComment -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+Delete a comment::
++
+--
+`[DELETE] /comments/{commentId}`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments/firstComment`
+
+.Example curl request
+[source]
+----
+curl -X DELETE http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/comments/firstComment -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+==== Attachments
+
+Use the following REST endpoints to manage attachments for a user task:
+
+Retrieve list of attachments related to a task::
++
+--
+`[GET] /attachments`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments`
+
+.Example curl request
+[source]
+----
+curl -X GET http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+Create an attachment with the URL passed in the request body::
++
+--
+`[POST] /attachments`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments`
+
+.Example curl request
+[source]
+----
+curl -X POST http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+Update an attachment with the URL passed in the request body::
++
+--
+`[PUT] /attachments/{attachmentId}`
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments/firstAttachment`
+
+.Example curl request
+[source]
+----
+curl -X PUT http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments/firstAttachment -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+Delete an attachment::
++
+--
+`[DELETE] /attachments/{attachmentId}``
+
+.Example REST endpoint
+`\http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments/firstAttachment`
+
+.Example curl request
+[source]
+----
+curl -X DELETE http://localhost:8080/approval/ec44f890-d21d-444f-a4ec-cb88589bd79/firstLineApproval/7a520588-d5ab-464a-8378-d34fda3ff7e9/attachments/firstAttachment -H 'content-type: application/json' -H 'accept: application/json'
+----
+--
+
+==== Task management
+
+The REST endpoints for task management in Kogito enable you to manage the predefined information of a task, which cannot be modified using the tasks API endpoints. The predefined information of a task includes Description, Priority, Potential Owners, Administrators, and Input Parameters.
+
+NOTE: The REST API endpoints for task management are accessible to system administrators and users with enough privileges.
+
+The task management REST endpoints support the following HTTP methods:
+
+* `GET` method is used to retrieve information about a task.
+* `PUT` method is used to replace the entire task information, indicating that you need to pass the entire task information. Therefore, if you do not include a field in the request, then that field is set as null.
+* `PATCH` method is used to replace certain task information, indicating that you need to pass only those fields that you want to modify.
+
+The task management REST API base URL is `http://__HOST__:__PORT__/management/processes/approvals`. Use the following REST endpoints to manage a task:
+
+Retrieve a task information::
++
+--
+`[GET] /instances/{processInstanceId}/tasks/{taskId}`
+
+.Example REST endpoint
+`\http://localhost:8080/management/processes/approvals/instances/ec44f890-d21d-444f-a4ec-cb88589bd79/tasks/8B62D3CA-5D03-4B2B-832B-126469288BB4`
+
+.Example curl request
+[source]
+----
+curl -X GET http://localhost:8080/management/processes/approvals/instances/ec44f890-d21d-444f-a4ec-cb88589bd79/tasks/8B62D3CA-5D03-4B2B-832B-126469288BB4 -H 'content-type: application/json' -H 'accept: application/json'
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+  "description": null,
+  "priority": null,
+  "potentialUsers": [
+    "manager"
+  ],
+  "potentialGroups": [
+    "managers"
+  ],
+  "excludedUsers": [],
+  "adminUsers": [],
+  "adminGroups": [],
+  "inputParams": {
+    "TaskName": "firstLineApproval",
+    "NodeName": "First Line Approval",
+    "Skippable": "true",
+    "ActorId": "manager",
+    "traveller": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "jon.doe@example.com",
+      "nationality": "American",
+      "address": {
+        "street": "main street",
+        "city": "Boston",
+        "zipCode": "10005",
+        "country": "US"
+      }
+    },
+    "GroupId": "managers"
+  }
+}
+----
+--
+
+Modify specific fields of a task::
++
+--
+`[PATCH] /instances/{processInstanceId}/tasks/{taskId}`
+
+.Example REST endpoint
+`\http://localhost:8080/management/processes/approvals/instances/ec44f890-d21d-444f-a4ec-cb88589bd79/tasks/8B62D3CA-5D03-4B2B-832B-126469288BB4`
+
+.Example request body (JSON)
+[source,json]
+----
+{
+	"inputParams": {
+		"Skippable": false
+	},
+	"description": " Real Betis Balompie is the best soccer team in the world",
+	"potentialUsers": ["manager", "meganito"]
+}
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+	"description": " Real Betis Balompie is the best soccer team in the world",
+	"priority": null,
+	"potentialUsers": [
+		"manager", "menganito"
+	],
+	"potentialGroups": [
+		"managers"
+	],
+	"excludedUsers": [],
+	"adminUsers": [],
+	"adminGroups": [],
+	"inputParams": {
+		"TaskName": "firstLineApproval",
+		"NodeName": "First Line Approval",
+		"Skippable": false,
+		"ActorId": "manager",
+		"traveller": {
+			"firstName": "John",
+			"lastName": "Doe",
+			"email": "jon.doe@example.com",
+			"nationality": "American",
+			"address": {
+				"street": "main street",
+				"city": "Boston",
+				"zipCode": "10005",
+				"country": "US"
+			}
+		},
+		"GroupId": "managers",
+
+	}
+}
+----
+--
 
 === API interaction with task lifecycle phases
 
@@ -2368,7 +2652,7 @@ After the customer is satisfied with the ticket response and actions, a user cli
 == {PRODUCT} process management add-on
 
 [role="_abstract"]
-{PRODUCT} provides a `process-management-addon` add-on that enables basic REST operations that you can use to manage process instances. These REST operations are supplemental to any other specific REST operations that you have configured in your application.
+{PRODUCT} provides a `kogito-addons-quarkus-process-management` add-on that enables basic REST operations that you can use to manage process instances. These REST operations are supplemental to any other specific REST operations that you have configured in your application.
 
 To configure process management REST capabilities for your {PRODUCT} services, you can add the process management add-on as a dependency in the `pom.xml` file of your {PRODUCT} project:
 
@@ -2377,7 +2661,7 @@ To configure process management REST capabilities for your {PRODUCT} services, y
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>process-management-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-process-management</artifactId>
 </dependency>
 ----
 
@@ -2414,7 +2698,7 @@ HTTP code : 404
 
 === REST endpoints for the process management add-on
 
-After you add the `process-management-addon` dependency to your {PRODUCT} project and run your {PRODUCT} services, you can use the following REST endpoints to manage your process and node instances. These REST operations are supplemental to any other specific REST operations that you have configured in your application.
+After you add the `kogito-addons-quarkus-process-management` dependency to your {PRODUCT} project and run your {PRODUCT} services, you can use the following REST endpoints to manage your process and node instances. These REST operations are supplemental to any other specific REST operations that you have configured in your application.
 
 For each endpoint, use a REST client, curl utility, or Swagger UI (if configured for the application) to send requests with the following components:
 
@@ -2699,18 +2983,32 @@ The VSCode extension enables you to export the process to SVG format:
 .Export process diagram at VSCode
 image::kogito/bpmn/kogito-svg-addon-manually-export.png[Manually export to SVG at VSCode]
 
+[NOTE]
+====
+When you export a process to SVG format, the generated SVG is named to {processFileName}-svg.svg.
+====
+
+The process code generation searches this export and, if this file exists, copies and renames it to `META-INF/processSVG/{processId}.svg allowing the process SVG addon to consume it directly.
+
 To configure process SVG REST capabilities for your {PRODUCT} services, you can add the process SVG add-on as a dependency in the `pom.xml` file of your {PRODUCT} project:
 
-.Project dependency to enable process SVG REST operations
+.Project dependency to enable process SVG REST operations in Quarkus projects
 [source,xml]
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>process-svg-quarkus-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-process-svg</artifactId>
 </dependency>
 ----
 
-NOTE: The process SVG add-on is only available for Quarkus services but is also planned to provide support for the SpringBoot projects.
+.Project dependency to enable process SVG REST operations in Spring Boot projects
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-process-svg</artifactId>
+</dependency>
+----
 
 The process SVG add-on provides the following set of configuration properties:
 
@@ -2757,7 +3055,7 @@ The {PRODUCT} process SVG add-on provides REST support for the following basic o
 
 === REST endpoints for the process SVG add-on
 
-After you add the `process-svg-quarkus-addon` dependency to your {PRODUCT} project, add the recommended configuration properties, and run your {PRODUCT} services. You can use the following REST endpoints to receive the process related SVGs. The REST operations are supplemental to any other specific REST operations that are configured in your application.
+After you add the `kogito-addons-quarkus-process-svg` or `kogito-addons-springboot-process-svg` dependency to your {PRODUCT} project, add the recommended configuration properties, and run your {PRODUCT} services. You can use the following REST endpoints to receive the process related SVGs. The REST operations are supplemental to any other specific REST operations that are configured in your application.
 
 NOTE: These REST operations are supplemental to any other specific REST operations that you have configured in your application.
 
@@ -2792,7 +3090,7 @@ Use the following endpoint from the process SVG add-on to interact with the proc
 Return the process SVG diagram and highlight the executed path::
 +
 --
-`[GET] /svg/processes/{processId}/instances/{processInstanceId}/nodeInstances`
+`[GET] /svg/processes/{processId}/instances/{processInstanceId}`
 
 .Example REST endpoint
 `\http://localhost:8380/svg/processes/travels/instances/2d115b55-ff30-42f0-ab21-e0651abb4d04`
@@ -2803,6 +3101,12 @@ Return the process SVG diagram and highlight the executed path::
 curl -X GET http://localhost:8380/svg/processes/travels/instances/2d115b55-ff30-42f0-ab21-e0651abb4d04 -H 'content-type: application/json' -H 'accept: image/svg+xml'
 ----
 --
+
+This REST endpoint can be used in environments that hold enabled security at the connected Data Index Service. The SVG add-on generates a query on Data Index Service to retrieve the executed nodes and if the Data Index Service contains enabled security, then it needs to pass a valid bearer token to complete the query.
+
+If the SVG add-on detects a known security context enabled, then it retrieves the bearer token, otherwise the add-on reuses the token that is passed directly in the Authorization header.
+
+NOTE: Currently, the process SVG add-on retrieves the token for systems that contain OpenID Connect using Keycloak.
 
 [id="con-management-console_{context}"]
 == {PRODUCT} Management Console
@@ -2839,7 +3143,7 @@ You can use the {PRODUCT} Management Console to view and manage process instance
 ----
 <dependency>
   <groupId>org.kie.kogito</groupId>
-  <artifactId>process-management-addon</artifactId>
+  <artifactId>kogito-addons-quarkus-process-management</artifactId>
 </dependency>
 ----
 * The `application.properties` file of your {PRODUCT} project contains the following system properties for the location where the {PRODUCT} service is deployed, such as `\http://localhost:8080`, and for Quarkus Cross-Origin Resource Sharing (CORS) support. These properties enable the Management Console to generate the URLs to execute the REST operations from the process management add-on.
@@ -2919,7 +3223,7 @@ The *Process Instances* tab displays the list of process instances and enables y
 .Process Instances tab
 image::kogito/bpmn/kogito-management-console-process-instance-section.png[Image of process instance list section]
 
-When you select a process instance on the *Process Instances* page, it redirects you to the *Process Details* page, providing the process instance details including interactions with the process instance. You can access the *Process Details* page from a different {PRODUCT} Management Console tab, displaying the instance related data and enables you to perform the available actions.
+When you select a process instance on the *Process Instances* page, it redirects you to the *Process Details* page, providing the process instance details including interactions with the process instance. You can access the *Process Details* page from a different {PRODUCT} Management Console tab, displaying the instance related data and enables you to perform the available actions. You can also sort the results based on the column headers.
 
 .Process Details page
 image::kogito/bpmn/kogito-management-console-process-diagram.png[Image of Process Instance details in Management Console]
@@ -3053,7 +3357,7 @@ image::kogito/bpmn/kogito-management-console-domain-explorer.png[Image of domain
 When you select a domain, you can use the same domain to set the filters and columns. The filters and columns are used to localize the domain data and access the related process instances.
 
 .VisaApplications domain data
-image::kogito/bpmn/kogito-management-console-domain-explorer-visa-domain-data.png[Image of filters for VisaApplications domain in Management Console]
+image::kogito/bpmn/kogito-management-console-domain-explorer-travels-domain-data.png[Image of filters for VisaApplications domain in Management Console]
 
 In this example, *Manage columns* option can be used to refine the displayed domain data columns based on the attributes, such as `approved`, `country`, or `nationality`.
 
@@ -3063,7 +3367,7 @@ image::kogito/bpmn/kogito-management-console-domain-explorer-visas-attributes.pn
 When the domain specific data is localize, you can view the related process instances by expanding the row.
 
 .Related process instances
-image::kogito/bpmn/kogito-management-console-domain-explorer-visas-sorted-data.png[Image of Domain data expanded, displays the related process instances]
+image::kogito/bpmn/kogito-management-console-domain-explorer-travels-sorted-data.png[Image of Domain data expanded, displays the related process instances]
 
 Once the specific domain is selected, the domain-specific columns are added to the filter generation toolbar, which enables you to filter the displayed data based on the domain, operator, and specific value. You can also sort the results based on the visible columns.
 
