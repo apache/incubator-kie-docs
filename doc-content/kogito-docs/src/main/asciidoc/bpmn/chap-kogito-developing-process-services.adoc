@@ -3208,7 +3208,6 @@ On OpenShift, navigate to the route URL for the Management Console instance.
 {PRODUCT} Management Console consists of the following tabs that allow you to interact with your process instances and data:
 
 * *Process Instances*: Use this tab to find process and subprocess instances by status or business key
-* *Domain Explorer*: Use this tab to explore your process instances in the {PRODUCT} services using specific data of the domain
 * *Jobs*: Use this tab to view a list of available jobs to filter jobs by status and perform actions for individual jobs, such as view details, reschedule, or cancel.
 
 .{PRODUCT} Management Console
@@ -3347,30 +3346,6 @@ image::kogito/bpmn/kogito-management-console-jobs-panel-details.png[Image of job
 You can reschedule or cancel a job that is in scheduled or error state. You can also modify the expiration time for one-time jobs and repeat interval, repeat time, and expiration time for the periodic jobs.
 --
 
-==== Domain explorer
-
-You can use the domain explorer tab to view the data that is generated from the process instances in the {PRODUCT} services or domains, such as travels and visa applications domains.
-
-.Domain explorer with available domains
-image::kogito/bpmn/kogito-management-console-domain-explorer.png[Image of domain explorer in Management Console]
-
-When you select a domain, you can use the same domain to set the filters and columns. The filters and columns are used to localize the domain data and access the related process instances.
-
-.VisaApplications domain data
-image::kogito/bpmn/kogito-management-console-domain-explorer-travels-domain-data.png[Image of filters for VisaApplications domain in Management Console]
-
-In this example, *Manage columns* option can be used to refine the displayed domain data columns based on the attributes, such as `approved`, `country`, or `nationality`.
-
-.Attributes for VisaApplications domain data columns
-image::kogito/bpmn/kogito-management-console-domain-explorer-visas-attributes.png[Image of attributes for VisaApplications domain data in Management Console]
-
-When the domain specific data is localize, you can view the related process instances by expanding the row.
-
-.Related process instances
-image::kogito/bpmn/kogito-management-console-domain-explorer-travels-sorted-data.png[Image of Domain data expanded, displays the related process instances]
-
-Once the specific domain is selected, the domain-specific columns are added to the filter generation toolbar, which enables you to filter the displayed data based on the domain, operator, and specific value. You can also sort the results based on the visible columns.
-
 ==== Jobs management
 
 The *Jobs Management* tab displays the list of existing jobs, which you can filter and perform related management actions such as viewing job details, rescheduling a job, or canceling a job.
@@ -3384,7 +3359,7 @@ You can also cancel the multiple jobs at the same time. To cancel multiple jobs,
 === Enabling {PRODUCT} Management Console security with OpenID Connect
 
 [role="_abstract"]
-For Quarkus-based {PRODUCT} services, you can use the https://quarkus.io/guides/security-openid-connect[Quarkus OpenID Connect adapter] with the {PRODUCT} Management Console to enable the console to interact with the {PRODUCT} Data Index Service using bearer token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
+For {PRODUCT} management console, you can use https://github.com/keycloak/keycloak-documentation/blob/master/securing_apps/topics/oidc/javascript-adapter.adoc[Keycloak-js-adapter] to enable security and interact with the data-index and the runtime using bearer token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
 
 Note that for testing purposes, the {PRODUCT} Management Console also provides a test user system, which is enabled using the `kogito.test.user-system.enabled=true` property.
 
@@ -3392,6 +3367,7 @@ IMPORTANT: This procedure applies only when you are using a locally cloned copy 
 
 .Prerequisites
 * You have cloned the https://github.com/kiegroup/kogito-apps/tree/master/management-console[{PRODUCT} Management Console] repository from GitHub.
+* An instance of Keycloak server running.
 
 .Procedure
 . In a command terminal, navigate to the local clone of the {PRODUCT} Management Console repository and enter the following command to run the application with security enabled:
@@ -3400,12 +3376,12 @@ IMPORTANT: This procedure applies only when you are using a locally cloned copy 
 .Run the Management Console with security enabled
 [source]
 ----
-mvn clean compile quarkus:dev -Dquarkus.profile=keycloak
+mvn clean compile quarkus:dev
 ----
 
 IMPORTANT: Ensure that the service is not started at the same port as the security server. You can change the port by adding `-Dquarkus.http.port=__PORT_NUMBER__` to the start-up properties.
 
-The {PRODUCT} Management Console contains a Quarkus profile to encapsulate the security configuration, so if the service requires security, you can specify the `quarkus.profile=keycloak` property at build time to enable the needed security. If the `keycloak` Quarkus profile is not added, the OpenID Connect extension is disabled.
+The {PRODUCT} Management Console, by default has security enabled.
 --
 . Navigate to the `src/main/resources/application.properties` file of the Management Console project and add the following properties:
 +
@@ -3414,31 +3390,25 @@ The {PRODUCT} Management Console contains a Quarkus profile to encapsulate the s
 [source]
 ----
 # OpenID Connect configurations
-%keycloak.quarkus.oidc.enabled=true
-%keycloak.quarkus.oidc.tenant-enabled=true
-%keycloak.quarkus.oidc.auth-server-url=http://localhost:8280/auth/realms/kogito
-%keycloak.quarkus.oidc.client-id=kogito-console-quarkus
-%keycloak.quarkus.oidc.credentials.secret=secret
-%keycloak.quarkus.oidc.application-type=web-app
-%keycloak.quarkus.oidc.logout.path=/logout
-%keycloak.quarkus.oidc.logout.post-logout-path=/
-
-# HTTP security configurations
-%keycloak.quarkus.http.auth.permission.authenticated.paths=/*
-%keycloak.quarkus.http.auth.permission.authenticated.policy=authenticated
+kogito.consoles.keycloak.config.realm=kogito
+kogito.consoles.keycloak.config.url=http://localhost:8280/auth/
+kogito.consoles.keycloak.config.client-id=kogito-console-quarkus
+kogito.consoles.keycloak.config.health-check-url=http://localhost:8280/auth/realms/kogito/.well-known/openid-configuration
+kogito.consoles.keycloak.config.disable-health-check=false
+kogito.consoles.keycloak.config.update-token-validity=30
 ----
-
-NOTE: The `quarkus.oidc.enabled` property enables or disables security at build time, while the `quarkus.oidc.tenant-enabled` property enables or disables security at runtime.
 
 --
 . Replace any property definitions with those of your specific environment, especially the following properties:
 +
-* `quarkus.oidc.auth-server-url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL. If you work with Keycloak OIDC server, ensure that the base URL is in the following format: `https://__HOST__:__PORT__/auth/realms/__KEYCLOAK_REALM__`.
-* `quarkus.oidc.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
-* `quarkus.oidc.credentials.secret`: The client secret for the application.
+* `kogito.consoles.keycloak.config.url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL.
+* `kogito.consoles.keycloak.config.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
+* `kogito.consoles.keycloak.config.realm`: The realm which has all the sercuity configurations.
+* `kogito.consoles.keycloak.config.health-check-url`: This is the health check URL, which is used to check if the keycloak server is properly started.
+* `kogito.consoles.keycloak.config.disable-health-check`: It is upto the user to decide whether the health check is required. By default, the health check is always enabled.
+* `kogito.consoles.keycloak.config.update-token-validity`: This is the minimum validity in seconds. If the token expires within this time, the token is refreshed.
 . In the same `application.properties` file, also configure the resources to be exposed and the required permissions for accessing the resources.
 +
-NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-enabled` property, the `quarkus.http.auth.permission` path and policy must specify how authentication is applied. By default, if security is enabled, the user must be authenticated to access any path.
 
 . Stop and restart the {PRODUCT} Management Console to ensure that the security changes are applied.
 
@@ -3576,14 +3546,14 @@ image::kogito/bpmn/kogito-task-console-details-expanded.png[Image of task detail
 === Enabling {PRODUCT} Task Console security with OpenID Connect
 
 [role="_abstract"]
-For Quarkus-based {PRODUCT} services, you can use the https://quarkus.io/guides/security-openid-connect[Quarkus OpenID Connect adapter] with the {PRODUCT} Task Console to enable the console to interact with the {PRODUCT} Data Index Service using bearer token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
+For {PRODUCT} task console, you can use https://github.com/keycloak/keycloak-documentation/blob/master/securing_apps/topics/oidc/javascript-adapter.adoc[Keycloak-js-adapter] to enable security and interact with the data-index and the runtime using bearer token authorization. These tokens are issued by OpenID Connect and OAuth 2.0 compliant authorization servers such as https://www.keycloak.org/about.html[Keycloak].
 
-Note that for testing purposes, the {PRODUCT} Task Console also provides a test user system, which is enabled using the `kogito.test.user-system.enabled=true` property.
 
 IMPORTANT: This procedure applies only when you are using a locally cloned copy of the https://github.com/kiegroup/kogito-apps/tree/master/task-console[{PRODUCT} Task Console] repository in GitHub.
 
 .Prerequisites
 * You have cloned the https://github.com/kiegroup/kogito-apps/tree/master/task-console[{PRODUCT} Task Console] repository from GitHub.
+* An instance of Keycloak server running.
 
 .Procedure
 . In a command terminal, navigate to the local clone of the {PRODUCT} Task Console repository and enter the following command to run the application with security enabled:
@@ -3592,12 +3562,12 @@ IMPORTANT: This procedure applies only when you are using a locally cloned copy 
 .Run the Task Console with security enabled
 [source]
 ----
-mvn clean compile quarkus:dev -Dquarkus.profile=keycloak
+mvn clean compile quarkus:dev
 ----
 
 IMPORTANT: Ensure that the service is not started at the same port as the security server. You can change the port by adding `-Dquarkus.http.port=__PORT_NUMBER__` to the start-up properties.
 
-The {PRODUCT} Task Console contains a Quarkus profile to encapsulate the security configuration, so if the service requires security, you can specify the `quarkus.profile=keycloak` property at build time to enable the needed security. If the `keycloak` Quarkus profile is not added, the OpenID Connect extension is disabled.
+The {PRODUCT} Task Console, by default has security enabled.
 --
 . Navigate to the `src/main/resources/application.properties` file of the Task Console project and add the following properties:
 +
@@ -3606,31 +3576,25 @@ The {PRODUCT} Task Console contains a Quarkus profile to encapsulate the securit
 [source]
 ----
 # OpenID Connect configurations
-%keycloak.quarkus.oidc.enabled=true
-%keycloak.quarkus.oidc.tenant-enabled=true
-%keycloak.quarkus.oidc.auth-server-url=http://localhost:8280/auth/realms/kogito
-%keycloak.quarkus.oidc.client-id=kogito-console-quarkus
-%keycloak.quarkus.oidc.credentials.secret=secret
-%keycloak.quarkus.oidc.application-type=web-app
-%keycloak.quarkus.oidc.logout.path=/logout
-%keycloak.quarkus.oidc.logout.post-logout-path=/
-
-# HTTP security configurations
-%keycloak.quarkus.http.auth.permission.authenticated.paths=/*
-%keycloak.quarkus.http.auth.permission.authenticated.policy=authenticated
+kogito.consoles.keycloak.config.realm=kogito
+kogito.consoles.keycloak.config.url=http://localhost:8280/auth/
+kogito.consoles.keycloak.config.client-id=kogito-console-quarkus
+kogito.consoles.keycloak.config.health-check-url=http://localhost:8280/auth/realms/kogito/.well-known/openid-configuration
+kogito.consoles.keycloak.config.disable-health-check=false
+kogito.consoles.keycloak.config.update-token-validity=30
 ----
-
-NOTE: The `quarkus.oidc.enabled` property enables or disables security at build time, while the `quarkus.oidc.tenant-enabled` property enables or disables security at runtime.
 
 --
 . Replace any property definitions with those of your specific environment, especially the following properties:
 +
-* `quarkus.oidc.auth-server-url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL. If you work with Keycloak OIDC server, ensure that the base URL is in the following format: `https://__HOST__:__PORT__/auth/realms/__KEYCLOAK_REALM__`.
-* `quarkus.oidc.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
-* `quarkus.oidc.credentials.secret`: The client secret for the application.
+* `kogito.consoles.keycloak.config.url`: The base URL of the OpenID Connect (OIDC) server, such as `https://localhost:8280/auth`. All other OIDC server page and service URLs are derived from this URL.
+* `kogito.consoles.keycloak.config.client-id`: The client ID of the application. Each application has a client ID that is used to identify the application.
+* `kogito.consoles.keycloak.config.realm`: The realm which has all the sercuity configurations.
+* `kogito.consoles.keycloak.config.health-check-url`: This is the health check URL, which is used to check if the keycloak server is properly started.
+* `kogito.consoles.keycloak.config.disable-health-check`: It is upto the user to decide whether the health check is required. By default, the health check is always enabled.
+* `kogito.consoles.keycloak.config.update-token-validity`: This is the minimum validity in seconds. If the token expires within this time, the token is refreshed.
 . In the same `application.properties` file, also configure the resources to be exposed and the required permissions for accessing the resources.
 +
-NOTE: If you are enabling security at runtime using the `quarkus.oidc.tenant-enabled` property, the `quarkus.http.auth.permission` path and policy must specify how authentication is applied. By default, if security is enabled, the user must be authenticated to access any path.
 
 . Stop and restart the {PRODUCT} Task Console to ensure that the security changes are applied.
 
