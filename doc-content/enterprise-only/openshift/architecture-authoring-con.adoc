@@ -1,10 +1,10 @@
 [id='architecture-authoring-con-{context}']
 = Architecture of an authoring environment
 
-In {PRODUCT}, the {CENTRAL} component provides a web-based interactive user interface for authoring services. The {KIE_SERVER} component runs the services. 
+In {PRODUCT}, the {CENTRAL} component provides a web-based interactive user interface for authoring services. The {KIE_SERVER} component runs the services.
 
 ifdef::PAM[]
-The {KIE_SERVER} uses a database server to store the state of process services. 
+{KIE_SERVER} uses a database server to store the state of process services.
 endif::PAM[]
 
 
@@ -21,9 +21,9 @@ In a single authoring environment, only one instance of {CENTRAL} is running. Mu
 
 {CENTRAL} uses persistent storage for the Maven repository and for the Git repository.
 
-A single authoring environment, by default, includes one {KIE_SERVER}. 
+A single authoring environment, by default, includes one {KIE_SERVER} instance.
 ifdef::PAM[]
-This {KIE_SERVER} uses a built-in H2 database engine to store the state of process services. 
+This {KIE_SERVER} instance uses a built-in H2 database engine to store the state of process services.
 endif::PAM[]
 
 ifeval::["{context}"!="openshift-operator"]
@@ -32,11 +32,11 @@ endif::[]
 ifeval::["{context}"=="openshift-operator"]
 A single authoring environment can use the _controller strategy_.
 endif::[]
-{CENTRAL} includes the _Controller_, a component that can manage {KIE_SERVERS}. When you configure a {KIE_SERVER} to connect to {CENTRAL}, the {KIE_SERVER} uses a REST API to connect to the Controller. This connection opens a persistent WebSocket. In an OpenShift deployment that uses the controller strategy, each {KIE_SERVER} is initially configured to connect to the {CENTRAL} Controller. 
+{CENTRAL} includes the _Controller_, a component that can manage {KIE_SERVERS}. When you configure {KIE_SERVER} to connect to {CENTRAL}, {KIE_SERVER} uses a REST API to connect to the Controller. This connection opens a persistent WebSocket. In an OpenShift deployment that uses the controller strategy, each {KIE_SERVER} instance is initially configured to connect to the {CENTRAL} Controller.
 
-When you use the {CENTRAL} user interface to deploy or manage a service on the {KIE_SERVER}, the {KIE_SERVER} receives the request through the Controller connection WebSocket. To deploy a service, the {KIE_SERVER} requests the necessary artifact from the Maven repository that is a part of {CENTRAL}. 
+When you use the {CENTRAL} user interface to deploy or manage a service on {KIE_SERVER}, {KIE_SERVER} receives the request through the Controller connection WebSocket. To deploy a service, {KIE_SERVER} requests the necessary artifact from the Maven repository that is a part of {CENTRAL}.
 
-Client applications use a REST API to use services that run on the {KIE_SERVER}.
+Client applications use a REST API to use services that run on {KIE_SERVER}.
 
 .Architecture diagram for a single authoring environment
 ifdef::PAM[]
@@ -54,23 +54,23 @@ ifdef::PAM[]
 To scale a {KIE_SERVER}, you must ensure that it uses a database server in a separate pod or an external database server, and not a built-in H2 database engine.
 endif::PAM[]
 
-In a clustered deployment, several instances of the {KIE_SERVER} run the same services. These servers can connect to the {CENTRAL} Controller using the same server ID, so they can receive the same requests from the controller. {OPENSHIFT} provides load-balancing between the servers. 
+In a clustered deployment, several instances of {KIE_SERVER} run the same services. These servers can connect to the {CENTRAL} Controller using the same server ID, so they can receive the same requests from the controller. {OPENSHIFT} provides load-balancing between the servers.
 ifdef::PAM[]
-Decision services and {PLANNER} services that run on a clustered {KIE_SERVER} 
+Decision services and {PLANNER} services that run on a clustered {KIE_SERVER}
 endif::PAM[]
 ifdef::DM[]
 The services that run on a clustered {KIE_SERVER}
 endif::DM[]
-must be stateless, because requests from the same client might be processed by different instances.
+instance must be stateless, because requests from the same client might be processed by different instances.
 
 You can also deploy several independent {KIE_SERVERS} to run different services. In this case, the servers connect to the {CENTRAL} Controller with different server ID values. You can use the {CENTRAL} UI to deploy services to each of the servers.
 
 [float]
 == Smart Router
 
-The optional Smart Router component provides a layer between client applications and {KIE_SERVERS}. It can be useful if you are using several independent {KIE_SERVERS}.
+The optional Smart Router component provides a layer between client applications and {KIE_SERVER} instances. It can be useful if you are using several independent {KIE_SERVER} instances.
 
-The client application can use services running on different {KIE_SERVERS}, but always connects to the Smart Router. The Smart Router automatically passes the request to the {KIE_SERVERS} that runs the required service. The Smart Router also enables management of service versions and provides an additional load-balancing layer.
+The client application can use services running on different {KIE_SERVER} instances, but always connects to the Smart Router. The Smart Router automatically passes the request to the {KIE_SERVER} instances that runs the required service. The Smart Router also enables management of service versions and provides an additional load-balancing layer.
 
 [float]
 == High-availability authoring environment
@@ -87,11 +87,11 @@ The controller strategy is not suitable for clustered deployment. In an OpenShif
 
 Each {KIE_SERVER} deployment (which can be scaled) creates a ConfigMap that reflects its current state. The {CENTRAL} discovers all {KIE_SERVERS} by reading their ConfigMaps.
 
-When the user requests a change in {KIE_SERVER} configuration (for example, deploys or undeploys a service), {CENTRAL} initiates a connection to the {KIE_SERVER} and sends a REST API request. The {KIE_SERVER} changes the ConfigMap to reflect the new configuration state and then triggers its own redeployment, so that all instances are redeployed and reflect the new configuration.
+When the user requests a change in the {KIE_SERVER} configuration (for example, deploys or undeploys a service), {CENTRAL} initiates a connection to {KIE_SERVER} and sends a REST API request. {KIE_SERVER} changes the ConfigMap to reflect the new configuration state and then triggers its own redeployment, so that all instances are redeployed and reflect the new configuration.
 
 You can deploy several independent {KIE_SERVERS} in your OpenShift environment. Each of the {KIE_SERVERS} has a separate ConfigMap with the necessary configuration. You can scale each of the {KIE_SERVERS} separately.
 
-You can include Smart Router in the OpenShift deployment. 
+You can include Smart Router in the OpenShift deployment.
 
 .Architecture diagram for a high-availability authoring environment
 ifdef::PAM[]
