@@ -1,8 +1,10 @@
+
 //:OPTAPLANNER-COMM:
 //Variable for the community version conditional statements.
 :OPTAPLANNER-ENT:
 //Variable for the enterprise version conditional statements.
 
+////
 ifdef::OPTAPLANNER-COMM[]
 [[plannerConfiguration]]
 = OptaPlanner configuration
@@ -12,21 +14,29 @@ ifdef::OPTAPLANNER-COMM[]
 :toc: left
 :icons: font
 :experimental:
-endif::OPTAPLANNER-COMM[]
+
 
 [[plannerConfigurationOverview]]
 == Overview
 endif::OPTAPLANNER-COMM[]
 
+
+
 ifdef::OPTAPLANNER-ENT[]
+
+////
 [id='assembly-planner-configuration_{context}']
-= Configuring {PLANNER}
-endif::OPTAPLANNER-ENT[]
+
+= The {PLANNER} solver
+//endif::OPTAPLANNER-ENT[]
+
+////
+//This module should go after What is OptaPlanner.
 
 Solving a planning problem with OptaPlanner consists of the following steps:
 
-. *Model your planning problem* as a class annotated with the ``@PlanningSolution`` annotation, for example the ``NQueens`` class.
-. **Configure a ``**Solver**``**, for example a First Fit and Tabu Search solver for any `NQueens` instance.
+. *Model your planning problem* as a class annotated with the `@PlanningSolution` annotation, for example the `NQueens` class.
+. *Configure a Solver*, for example a First Fit and Tabu Search solver for any `NQueens` instance.
 . *Load a problem data set* from your data layer, for example a Four Queens instance. That is the planning problem.
 . *Solve it* with `Solver.solve(problem)` which returns the best solution found.
 
@@ -36,32 +46,28 @@ endif::OPTAPLANNER-COMM[]
 ifdef::OPTAPLANNER-ENT[]
 image::optimizer/inputOutputOverview.png[align="center"]
 endif::OPTAPLANNER-ENT[]
+////
 
-[[solverConfiguration]]
-== Solver configuration -Concept
 
+
+
+== Configuring the {PLANNER} solver
+You can use the following methods to configure your OptaPlanner solver:
+
+* Use an XML file
+* Use the `SolverConfig` API
+* Add class annotations and JavaBean property annotations on the domain model.
+* Control the the method that OptaPlanner uses to access your domain
+* Define custom properties
 
 [[solverConfigurationByXML]]
-=== Solver configuration by XML - Procedure
-
-Build a `Solver` instance with the ``SolverFactory``.
-Configure the `SolverFactory` with a solver configuration XML file, provided as a classpath resource (as defined by ``ClassLoader.getResource()``):
-
-[source,java,options="nowrap"]
-----
-       SolverFactory<NQueens> solverFactory = SolverFactory.createFromXmlResource(
-               "org/optaplanner/examples/nqueens/solver/nqueensSolverConfig.xml");
-       Solver<NQueens> solver = solverFactory.buildSolver();
-----
-
-In a typical project (following the Maven directory structure),
-that solverConfig XML file would be located at ``$PROJECT_DIR/src/main/resources/org/optaplanner/examples/nqueens/solver/nqueensSolverConfig.xml``.
-Alternatively, a `SolverFactory` can be created from a ``File`` with ``SolverFactory.createFromXmlFile()``.
+=== Using an XML file to configure the {PLANNER_SHORT} solver
+You can use an XML file to configure the solver. In a typical project that follows the Maven directory structure, the `solverConfig` XML file is located in the ``$PROJECT_DIR/src/main/resources/org/optaplanner/examples/nqueens/solver`` directory. Alternatively, you can create a `SolverFactory` from a ``File`` with ``SolverFactory.createFromXmlFile()``.
 However, for portability reasons, a classpath resource is recommended.
 
 [NOTE]
 ====
-On some environments (<<integrationWithOSGi,OSGi>>, <<integrationWithJBossModules,JBoss modules>>, ...), classpath resources (such as the solver config, score DRLs and domain classes) in your jars might not be available to the default `ClassLoader` of the `optaplanner-core` jar.
+On some environments (OSGi, JBoss modules, ...), classpath resources (such as the solver config, score DRLs and domain classes) in your JAR files might not be available to the default `ClassLoader` of the `optaplanner-core` JAR file.
 In those cases, provide the `ClassLoader` of your classes as a parameter:
 
 [source,java,options="nowrap"]
@@ -71,10 +77,21 @@ In those cases, provide the `ClassLoader` of your classes as a parameter:
 ----
 ====
 
-Both a `Solver` and a `SolverFactory` have a generic type called ``Solution_``, which is the class representing a <<planningProblemAndPlanningSolution,planning problem and solution>>.
+Both a `Solver` and a `SolverFactory` have a generic type called ``Solution_``, which is the class representing a planning problem and solution.
 
-A solver configuration XML file looks like this:
+OptaPlanner makes it relatively easy to switch optimization algorithms by changing the configuration.
+//There is a benchmarker which enables you to test different configurations against each other and report the most appropriate configuration for your use case.
 
+.Procedure
+. Build a `Solver` instance with the ``SolverFactory``.
+
+. Configure the solver configuration XML file:
+.. Define the model.
+.. Define the score function.
+.. Optional: Configure the optimization algorithm.
++
+The following example is a solver XML file for the NQueens problem:
++
 [source,xml,options="nowrap"]
 ----
 <?xml version="1.0" encoding="UTF-8"?>
@@ -102,23 +119,19 @@ A solver configuration XML file looks like this:
 </solver>
 ----
 
-Notice the three parts in it:
-
-* Define the model.
-* Define the score function.
-* Optionally configure the optimization algorithm(s).
-
-These various parts of a configuration are explained further in this manual.
-
-*OptaPlanner makes it relatively easy to switch optimization algorithm(s) just by changing the configuration.* There is even a <<benchmarker,Benchmarker>> which allows you to play out different configurations against each other and report the most appropriate configuration for your use case.
-
+. Configure the `SolverFactory` with a solver configuration XML file, provided as a classpath resource (as defined by ``ClassLoader.getResource()``):
++
+[source,java,options="nowrap"]
+----
+       SolverFasctory<NQueens> solverFactory = SolverFactory.createFromXmlResource(
+               "org/optaplanner/examples/nqueens/solver/nqueensSolverConfig.xml");
+       Solver<NQueens> solver = solverFactory.buildSolver();
+----
 
 [[solverConfigurationByJavaAPI]]
-=== Solver configuration by Java API
+=== Using the Java API  to configure the {PLANNER_SHORT} solver
 
-A solver configuration can also be configured with the `SolverConfig` API.
-This is especially useful to change some values dynamically at runtime.
-For example, to change the running time based on system property, before building the ``Solver``:
+You can configure a solver by using the `SolverConfig` API. This is especially useful to change values dynamically at runtime. The following examples changes the running time based on system property before building the ``Solver`` in the NQueens project:
 
 [source,java,options="nowrap"]
 ----
@@ -131,17 +144,15 @@ For example, to change the running time based on system property, before buildin
         Solver<NQueens> solver = solverFactory.buildSolver();
 ----
 
-Every element in the solver configuration XML is available as a `$$*$$Config` class
-or a property on a `$$*$$Config` class in the package namespace ``org.optaplanner.core.config``.
-These `$$*$$Config` classes are the Java representation of the XML format.
+Every element in the solver configuration XML is available as a `Config` class
+or a property on a `Config` class in the package namespace ``org.optaplanner.core.config``.
+These `Config` classes are the Java representation of the XML format.
 They build the runtime components (of the package namespace ``org.optaplanner.core.impl``)
 and assemble them into an efficient ``Solver``.
 
 [NOTE]
 ====
-To configure a `SolverFactory` dynamically for each user request,
-build a template `SolverConfig` during initialization
-and copy it with the copy constructor for each user request:
+To configure a `SolverFactory` dynamically for each user request, build a template `SolverConfig` during initialization and copy it with the copy constructor for each user request:
 
 [source,java,options="nowrap"]
 ----
@@ -165,39 +176,34 @@ and copy it with the copy constructor for each user request:
 ====
 
 [[annotationAlternatives]]
-=== Annotation alternatives
 
-OptaPlanner needs to be told which classes in your domain model are planning entities, which properties are planning variables, etc.
-There are several ways to deliver this information:
+=== {PLANNER_SHORT} annotation
 
-* Add class annotations and JavaBean property annotations on the domain model (recommended).
-The property annotations must be on the getter method, not on the setter method.
-Such a getter does not need to be public.
-* Add class annotations and field annotations on the domain model.
-Such a field does not need to be public.
-* No annotations: externalize the domain configuration in an XML file.
-This is https://issues.redhat.com/browse/PLANNER-151[not yet supported].
+OptaPlanner needs to know which classes in your domain model are planning entities, which properties are planning variables, and so on. Use one of the following methods to add annotations to your {PLANNER_SHORT} project:
 
-This manual focuses on the first manner, but every feature supports all three manners, even if it's not explicitly mentioned.
+* Add class annotations and JavaBean property annotations on the domain model.  The property annotations must be on the getter method, not on the setter method. Annotated  getter methods do not need to be public.
++
+NOTE: This is the recommended method.
+* Add class annotations and field annotations on the domain model. Annotated fields do not need to be public.
+
 
 [[domainAccess]]
-=== Domain access
+=== Specifying {PLANNER_SHORT} domain access
 
-OptaPlanner by default accesses your domain using reflection, which
-will always work, but is slow compared to direct access. Alternatively, you can configure OptaPlanner to access your domain
-using Gizmo, which will generate bytecode that directly access the
-fields/methods of your domain without reflection. However, it comes with some restrictions:
+By default, OptaPlanner accesses your domain using reflection. Reflection is reliable but slow compared to direct access. Alternatively, you can configure OptaPlanner to access your domain using Gizmo, which will generate bytecode that directly accesses the
+fields and methods of your domain without reflection. However, this method has the following restrictions:
 
 * The planning annotations can only be on public fields and
   public getters.
-* io.quarkus.gizmo:gizmo must be on the classpath.
+* `io.quarkus.gizmo:gizmo` must be on the classpath.
 
-These restrictions do not apply when using OptaPlanner with Quarkus,
+NOTE: These restrictions do not apply when you use OptaPlanner with Quarkus,
 where Gizmo is the default domain access type.
 
+.Procedure
 To use Gizmo outside of Quarkus, set the `domainAccessType` in the
 Solver Configuration:
-
++
 [source,xml,options="nowrap"]
 ----
   <solver>
@@ -206,12 +212,20 @@ Solver Configuration:
 ----
 
 [[customPropertiesConfiguration]]
-=== Custom properties configuration
+=== Configuring custom properties
 
-Solver configuration elements, that instantiate classes and explicitly mention it, support custom properties.
-Custom properties are useful to tweak dynamic values through the <<benchmarker,Benchmarker>>.
-For example, presume your `EasyScoreCalculator` has heavy calculations (which are cached)
-and you want to increase the cache size in one benchmark:
+Solver configuration elements that instantiate classes and explicitly mention it, support custom properties.
+//What does 'explicitly mention it' mean?
+//Custom properties are useful to tweak dynamic values through the Benchmarker.
+
+.Prerequisites
+* You have a solver.
+
+.Procedure
+. Add a custom property.
++
+For example, if your `EasyScoreCalculator` has heavy calculations which are cached
+and you want to increase the cache size in one benchmark add the `myCacheSize` property:
 
 [source,xml,options="nowrap"]
 ----
@@ -223,8 +237,8 @@ and you want to increase the cache size in one benchmark:
   </scoreDirectorFactory>
 ----
 
-Add a public setter for each custom property, which is called when a `Solver` is built.
-
+. Add a public setter for each custom property, which is called when a `Solver` is built.
++
 [source,java,options="nowrap"]
 ----
 public class MyEasyScoreCalculator extends EasyScoreCalculator<MySolution, SimpleScore> {
@@ -239,10 +253,10 @@ public class MyEasyScoreCalculator extends EasyScoreCalculator<MySolution, Simpl
     ...
 }
 ----
++
+Most value types are supported, including `boolean`, `int`, `double`, `BigDecimal`, `String` and `enums`.
 
-Most value types are supported (including `boolean`, `int`, `double`, `BigDecimal`, `String` and enums).
-
-
+////
 [[modelAPlanningProblem]]
 == Model a planning problem
 
@@ -256,7 +270,7 @@ You will recognize domain classes in there, each of which can be categorized as 
 * An unrelated class: not used by any of the score constraints.
 From a planning standpoint, this data is obsolete.
 * A *problem fact* class: used by the score constraints, but does NOT change during planning (as long as the problem stays the same).
-For example: ``Bed``, ``Room``, ``Shift``, ``Employee``, ``Topic``, ``Period``, ... All the properties of a problem fact class are problem properties.
+For example: `Bed`, `Room`, ``Shift``, ``Employee``, ``Topic``, ``Period``, ... All the properties of a problem fact class are problem properties.
 * A *planning entity* class: used by the score constraints and changes during planning.
 For example: ``BedDesignation``, ``ShiftAssignment``, ``Exam``, ... The properties that change during planning are planning variables.
 The other properties are problem properties.
@@ -267,15 +281,15 @@ Most use cases also have only one planning variable per planning entity class.
 
 [NOTE]
 ====
-In <<realTimePlanning,real-time planning>>, even though the problem itself changes, problem facts do not really change during planning, instead they change between planning (because the Solver temporarily stops to apply the problem fact changes).
+In real-time planning, even though the problem itself changes, problem facts do not really change during planning, instead they change between planning (because the Solver temporarily stops to apply the problem fact changes).
 ====
 
-To create a good domain model, read the <<domainModelingGuide,domain modeling guide>>.
+To create a good domain model, read the domain modeling guide.
 
-*In OptaPlanner, all problem facts and planning entities are plain old JavaBeans (POJOs).* Load them from a database, an XML file, a data repository, a REST service, a noSQL cloud, ... (see <<integration,integration>>): it doesn't matter.
+*In OptaPlanner, all problem facts and planning entities are plain old JavaBeans (POJOs).* Load them from a database, an XML file, a data repository, a REST service, a noSQL cloud, ...: it doesn't matter.
 
 [[problemFact]]
-=== Problem fact
+== Problem fact
 
 A problem fact is any JavaBean (POJO) with getters that does not change during planning.
 For example in n queens, the columns and rows are problem facts:
@@ -328,7 +342,7 @@ Generally, better designed domain classes lead to simpler and more efficient sco
 Therefore, when dealing with a messy (denormalized) legacy system, it can sometimes be worthwhile to convert the messy domain model into a OptaPlanner specific model first.
 For example: if your domain model has two `Teacher` instances for the same teacher that teaches at two different departments, it is harder to write a correct score constraint that constrains a teacher's spare time on the original model than on an adjusted model.
 
-Alternatively, you can sometimes also introduce <<cachedProblemFact,_a cached problem fact_>> to enrich the domain model for planning only.
+Alternatively, you can sometimes also introduce a cached problem fact to enrich the domain model for planning only.
 ====
 
 
@@ -345,7 +359,7 @@ But there is usually only one planning entity class, for example the `Queen` cla
 
 A planning entity class needs to be annotated with the `@PlanningEntity` annotation.
 
-Each planning entity class has one or more _planning variables_ (which can be <<planningVariable,genuine>> or <<shadowVariable,shadows>>).
+Each planning entity class has one or more _planning variables_ (which can be genuine or shadows).
 It should also have one or more _defining_ properties.
 For example in n queens, a `Queen` is defined by its `Column` and has a planning variable ``Row``.
 This means that a Queen's column never changes during solving, while its row does change.
@@ -406,7 +420,7 @@ Having multiple planning entity classes directly raises the implementation compl
 _Do not create unnecessary planning entity classes._ This leads to difficult `Move` implementations and slower score calculation.
 
 For example, do not create a planning entity class to hold the total free time of a teacher, which needs to be kept up to date as the `Lecture` planning entities change.
-Instead, calculate the free time in the score constraints (or as a <<shadowVariable,shadow variable>>) and put the result per teacher into a logically inserted score object.
+Instead, calculate the free time in the score constraints (or as a shadow variable) and put the result per teacher into a logically inserted score object.
 
 If historic data needs to be considered too, then create problem fact to hold the total of the historic assignments up to, but __not including__, the planning window (so that it does not change when a planning entity changes) and let the score constraints take it into account.
 ====
@@ -427,7 +441,7 @@ For example: in bin packing bigger items are harder to fit, in course scheduling
 *Do not try to use planning entity difficulty to implement a business
           constraint.* It will not affect the score function: if we have infinite solving time, the returned solution will be the same.
 
-To attain a schedule in which certain entities are scheduled earlier in the schedule, <<formalizeTheBusinessConstraints,add a score constraint>> to change the score function so it prefers such solutions.
+To attain a schedule in which certain entities are scheduled earlier in the schedule, add a score constraint to change the score function so it prefers such solutions.
 Only consider adding planning entity difficulty too if it can make the solver more efficient.
 ====
 
@@ -466,7 +480,7 @@ public class Queen {
 }
 ----
 
-See <<sortedSelection,sorted selection>> for more information.
+//See <<sortedSelection,sorted selection>> for more information.
 
 [IMPORTANT]
 ====
@@ -491,7 +505,7 @@ A planning variable is a JavaBean property (so a getter and setter) on a plannin
 It points to a planning value, which changes during planning.
 For example, a ``Queen``'s `row` property is a genuine planning variable.
 Note that even though a ``Queen``'s `row` property changes to another `Row` during planning, no `Row` instance itself is changed.
-Normally planning variables are genuine, but advanced cases can also have <<shadowVariable,shadows>>.
+Normally planning variables are genuine, but advanced cases can also have shadows.
 
 A genuine planning variable getter needs to be annotated with the `@PlanningVariable` annotation, which needs a non-empty `valueRangeProviderRefs` property.
 
@@ -524,7 +538,7 @@ A @PlanningVariable annotation needs to be on a member in a class with a @Planni
 It is ignored on parent classes or subclasses without that annotation.
 ====
 
-<<annotationAlternatives,Annotating the field>> instead of the property works too:
+Annotating the field instead of the property works too:
 
 [source,java,options="nowrap"]
 ----
@@ -559,7 +573,7 @@ To allow an initialized planning variable to be ``null``, set `nullable` to ``tr
 [NOTE]
 ====
 Constraint Streams filter out planning entities with a `null` planning variable by default.
-Use <<constraintStreamsFrom,fromUnfiltered()>> to avoid such unwanted behaviour.
+Use fromUnfiltered() to avoid such unwanted behaviour.
 ====
 
 OptaPlanner will automatically add the value `null` to the value range.
@@ -572,12 +586,11 @@ Using a nullable planning variable implies that your score calculation is respon
 
 [WARNING]
 ====
-Currently <<chainedPlanningVariable, chained>> planning variables are not compatible with `nullable`.
+Currently chained planning variables are not compatible with `nullable`.
 ====
 
-<<repeatedPlanning,Repeated planning>> (especially <<realTimePlanning,real-time planning>>) does not mix well with a nullable planning variable.
-Every time the Solver starts or a problem fact change is made, the <<constructionHeuristics,Construction Heuristics>>
-will try to initialize all the `null` variables again, which can be a huge waste of time.
+Repeated planning (especially real-time planning) does not mix well with a nullable planning variable.
+Every time the Solver starts or a problem fact change is made, the construction heuristics will try to initialize all the `null` variables again, which can be a huge waste of time.
 One way to deal with this is to filter the entity selector of the placer in the construction heuristic.
 
 [source,xml,options="nowrap"]
@@ -689,10 +702,10 @@ public class NQueens {
 
 [IMPORTANT]
 ====
-That `Collection` (or ``ValueRange``) must not contain the value ``null``, not even for a <<nullablePlanningVariable,nullable planning variable>>.
+That `Collection` (or ``ValueRange``) must not contain the value ``null``, not even for a nullable planning variable.
 ====
 
-<<annotationAlternatives,Annotating the field>> instead of the property works too:
+Annotating the field instead of the property works too:
 
 [source,java,options="nowrap"]
 ----
@@ -750,7 +763,7 @@ A `ValueRangeProvider` on the planning entity consumes more memory than `ValueRa
 
 [WARNING]
 ====
-A `ValueRangeProvider` on the planning entity is not currently compatible with a <<chainedPlanningVariable,chained>> variable.
+A `ValueRangeProvider` on the planning entity is not currently compatible with a chained variable.
 ====
 
 
@@ -829,14 +842,14 @@ Value range providers can be combined, for example:
 
 Some optimization algorithms work a bit more efficiently if they have an estimation of which planning values are stronger, which means they are more likely to satisfy a planning entity.
 For example: in bin packing bigger containers are more likely to fit an item and in course scheduling bigger rooms are less likely to break the student capacity constraint.
-Usually, the efficiency gain of planning value strength is far less than that of <<planningEntityDifficulty,planning entity difficulty>>.
+Usually, the efficiency gain of planning value strength is far less than that of planning entity difficulty.
 
 [NOTE]
 ====
 *Do not try to use planning value strength to implement a business
           constraint.* It will not affect the score function: if we have infinite solving time, the returned solution will be the same.
 
-To affect the score function, <<formalizeTheBusinessConstraints,add a score constraint>>.
+To affect the score function, add a score constraint.
 Only consider adding planning value strength too if it can make the solver more efficient.
 ====
 
@@ -880,7 +893,7 @@ Alternatively, you can also set a `strengthWeightFactoryClass` to the `@Planning
     }
 ----
 
-See <<sortedSelection,sorted selection>> for more information.
+//See <<sortedSelection,sorted selection>> for more information.
 
 [IMPORTANT]
 ====
@@ -1056,6 +1069,7 @@ The solver configuration needs to declare the planning solution class:
 </solver>
 ----
 
+
 [[planningEntitiesOfASolution]]
 ==== Planning entities of a solution (`@PlanningEntityCollectionProperty`)
 
@@ -1090,7 +1104,7 @@ It is ignored on parent classes or subclasses without that annotation.
 
 In rare cases, a planning entity might be a singleton: use `@PlanningEntityProperty` on its getter (or field) instead.
 
-Both annotations can also be <<autoDiscoverSolutionProperties, auto discovered>> if enabled.
+Both annotations can also be auto discovered if enabled.
 
 
 [[scoreOfASolution]]
@@ -1099,7 +1113,7 @@ Both annotations can also be <<autoDiscoverSolutionProperties, auto discovered>>
 A `@PlanningSolution` class requires a score property (or field), which is annotated with a `@PlanningScore` annotation.
 The score property is `null` if the score hasn't been calculated yet.
 The `score` property is typed to the specific `Score` implementation of your use case.
-For example, `NQueens` uses a <<simpleScore,SimpleScore>>:
+For example, `NQueens` uses a SimpleScore:
 
 [source,java,options="nowrap"]
 ----
@@ -1120,7 +1134,7 @@ public class NQueens {
 }
 ----
 
-Most use cases use a <<hardSoftScore,HardSoftScore>> instead:
+Most use cases use a HardSoftScore instead:
 
 [source,java,options="nowrap"]
 ----
@@ -1142,15 +1156,15 @@ public class CloudBalance {
 }
 ----
 
-Some use cases use <<scoreType,other score types>>.
+Some use cases use other score types.
 
-This annotation can also be <<autoDiscoverSolutionProperties, auto discovered>> if enabled.
+This annotation can also be auto discovered if enabled.
 
 
 [[problemFacts]]
 ==== Problem facts of a solution (`@ProblemFactCollectionProperty`)
 
-For <<constraintStreams,constraint streams>> and <<droolsScoreCalculation,Drools score calculation>>,
+For constraint streams and Drools score calculation,
 OptaPlanner needs to extract the problem fact instances from the solution instance.
 It gets those collection(s) by calling every method (or field) that is annotated with ``@ProblemFactCollectionProperty``.
 All objects returned by those methods are available to use by the constraint streams or Drools rules.
@@ -1198,7 +1212,7 @@ It is ignored on parent classes or subclasses without that annotation.
 
 In rare cases, a problem fact might be a singleton: use `@ProblemFactProperty` on its method (or field) instead.
 
-Both annotations can also be <<autoDiscoverSolutionProperties, auto discovered>> if enabled.
+Both annotations can also be auto discovered if enabled.
 
 
 [[cachedProblemFact]]
@@ -1277,7 +1291,7 @@ The automatic annotation is based on the field type (or getter return type):
 * `@PlanningScore`: when it is a `Score` or subclass
 
 These automatic annotation can still be overwritten per field (or getter).
-Specifically, a <<bendableScore, BendableScore>> always needs to override
+Specifically, a BendableScore always needs to override
 with an explicit `@PlanningScore` annotation to define the number of hard and soft levels.
 
 
@@ -1399,7 +1413,7 @@ For example, if you were to clone all `Row` instances, then each `Queen` clone a
 
 [WARNING]
 ====
-Cloning an entity with a <<chainedPlanningVariable,chained>> variable is devious: a variable of an entity A might point to another entity B.
+Cloning an entity with a chained variable is devious: a variable of an entity A might point to another entity B.
 If A is cloned, then its variable must point to the clone of B, not the original B.
 ====
 
@@ -1470,15 +1484,13 @@ Usually, most of this data comes from your data layer, and your solution impleme
         }
 ----
 
-
+////
 [[useTheSolver]]
-== Use the `Solver`
-
-
 [[theSolverInterface]]
-=== The `Solver` interface
 
-A `Solver` solves your planning problem.
+
+== The {PLANNER_SHORT} Solver
+A solver finds the best and optimal solution to your planning problem. A solver can only solve one planning problem instance at a time. Solvers are built with the `SolverFactory` method:
 
 [source,java,options="nowrap"]
 ----
@@ -1490,24 +1502,22 @@ public interface Solver<Solution_> {
 }
 ----
 
-A `Solver` can only solve one planning problem instance at a time.
-It is built with a ``SolverFactory``, there is no need to implement it yourself.
-
-A `Solver` should only be accessed from a single thread, except for the methods that are specifically documented in javadoc as being thread-safe.
-The `solve()` method hogs the current thread.
-This can cause HTTP timeouts for REST services and it requires extra code to solve multiple datasets in parallel.
-To avoid such issues, use a <<solverManager, `SolverManager`>> instead.
+A solver should only be accessed from a single thread, except for the methods that are specifically documented in `javadoc` as being thread-safe. The `solve()` method hogs the current thread. This can cause HTTP timeouts for REST services and it requires extra code to solve multiple data sets in parallel. To avoid such issues, use a `SolverManager` instead.
 
 
 [[solvingAProblem]]
 === Solving a problem
 
-Solving a problem is quite easy once you have:
+You can use the solver to solve a planning problem.
 
+.Prerequisites
 * A `Solver` built from a solver configuration
-* A `@PlanningSolution` that represents the planning problem instance
+* An `@PlanningSolution` annotation that represents the planning problem instance
 
-Just provide the planning problem as argument to the `solve()` method and it will return the best solution found:
+.Procedure
+Provide the planning problem as argument to the `solve()` method. The solver will return the best solution found.
+
+The following example solves the NQueens problem:
 
 [source,java,options="nowrap"]
 ----
@@ -1515,7 +1525,12 @@ Just provide the planning problem as argument to the `solve()` method and it wil
     NQueens bestSolution = solver.solve(problem);
 ----
 
-For example in n queens, the `solve()` method will return an `NQueens` instance with every `Queen` assigned to a ``Row``.
+In this example, the `solve()` method will return an `NQueens` instance with every `Queen` assigned to a ``Row``.
+
+[NOTE]
+====
+The solution instance given to the `solve(Solution)` method does not need to be uninitialized. It can be partially or fully initialized, which is often the case in repeated planning.
+====
 
 .Best Solution for the Four Queens Puzzle in 8ms (Also an Optimal Solution)
 ifdef::OPTAPLANNER-COMM[]
@@ -1526,31 +1541,30 @@ image::optimizer/solvedNQueens04.png[align="left"]
 endif::OPTAPLANNER-ENT[]
 
 
-The `solve(Solution)` method can take a long time (depending on the problem size and the solver configuration). The `Solver` intelligently wades through <<searchSpaceSize,the search space>> of possible solutions and remembers the best solution it encounters during solving.
-Depending on a number of factors (including problem size, how much time the `Solver` has, the solver configuration, ...), <<doesPlannerFindTheOptimalSolution,that best solution might or might not be an optimal solution>>.
+The `solve(Solution)` method can take a long time depending on the problem size and the solver configuration. The `Solver` intelligently works through the search space of possible solutions and remembers the best solution it encounters during solving.
+Depending on a number of factors, including problem size, how much time the `Solver` has, the solver configuration, and so forth, that best solution might or might not be an optimal solution.
 
 [NOTE]
 ====
-The solution instance given to the method `solve(solution)` is changed by the ``Solver``,
-but do not mistake it for the best solution.
+The solution instance given to the method `solve(solution)` is changed by the ``Solver``, but it might not be the best solution.
 
-The solution instance returned by the methods `solve(solution)` or `getBestSolution()` is most likely <<cloningASolution,a planning clone>> of the instance given to the method ``solve(solution)``, which implies it is a different instance.
+The solution instance returned by the methods `solve(solution)` or `getBestSolution()` is most likely a planning clone of the instance given to the method ``solve(solution)``, which implies it is a different instance.
 ====
 
-[NOTE]
-====
-The solution instance given to the `solve(Solution)` method does not need to be uninitialized.
-It can be partially or fully initialized, which is often the case in <<repeatedPlanning,repeated planning>>.
-====
 
 
 [[environmentMode]]
-=== Environment mode: are there bugs in my code?
+=== Solver environment mode
 
 The environment mode allows you to detect common bugs in your implementation.
-It does not affect the <<logging,logging level>>.
+It does not affect the logging level.
 
-You can set the environment mode in the solver configuration XML file:
+A solver has a single `Random` instance. Some solver configurations use the `Random` instance a lot more than others.
+For example, the Simulated Annealing algorithm depends highly on random numbers, while tabu search only depends on it to resolve score ties.
+The environment mode influences the seed of that `Random` instance.
+
+
+You can set the environment mode in the solver configuration XML file. The following example sets the `FAST_ASSERT` mode:
 
 [source,xml,options="nowrap"]
 ----
@@ -1561,114 +1575,72 @@ You can set the environment mode in the solver configuration XML file:
 </solver>
 ----
 
-A solver has a single `Random` instance.
-Some solver configurations use the `Random` instance a lot more than others.
-For example, Simulated Annealing depends highly on random numbers, while Tabu Search only depends on it to deal with score ties.
-The environment mode influences the seed of that `Random` instance.
 
-These are the environment modes:
-
+.Environment modes:
 
 [[environmentModeFullAssert]]
-==== `FULL_ASSERT`
-
-The FULL_ASSERT mode turns on all assertions (such as assert that the incremental score calculation is uncorrupted for each move) to fail-fast on a bug in a Move implementation, a constraint, the engine itself, ...
-
-This mode is reproducible (see the reproducible mode). It is also intrusive because it calls the method `calculateScore()` more frequently than a non-assert mode.
-
-The FULL_ASSERT mode is horribly slow (because it does not rely on incremental score calculation).
-
+* `FULL_ASSERT` mode turns on all assertions (such as assert that the incremental score calculation is uncorrupted for each move) to fail-fast on a bug in a Move implementation, a constraint, the engine itself, and so on.  This mode is reproducible. It is also intrusive because it calls the method `calculateScore()` more frequently than a non-assert mode. The `FULL_ASSERT` mode is very slow because it does not rely on incremental score calculation.
 
 [[environmentModeNonIntrusiveFullAssert]]
-==== `NON_INTRUSIVE_FULL_ASSERT`
-
-The NON_INTRUSIVE_FULL_ASSERT turns on several assertions to fail-fast on a bug in a Move implementation, a constraint, the engine itself, ...
-
-This mode is reproducible (see the reproducible mode). It is non-intrusive because it does not call the method `calculateScore()` more frequently than a non assert mode.
-
-The NON_INTRUSIVE_FULL_ASSERT mode is horribly slow (because it does not rely on incremental score calculation).
-
+* `NON_INTRUSIVE_FULL_ASSERT` mode turns on several assertions to fail-fast on a bug in a Move implementation, a constraint, the engine itself, and so on. This mode is reproducible. It is non-intrusive because it does not call the method `calculateScore()` more frequently than a non assert mode.The `NON_INTRUSIVE_FULL_ASSERT` mode is very slow because it does not rely on incremental score calculation.
 
 [[environmentModeFastAssert]]
-==== `FAST_ASSERT`
-
-The FAST_ASSERT mode turns on most assertions (such as assert that an undoMove's score is the same as before the Move) to fail-fast on a bug in a Move implementation, a constraint, the engine itself, ...
-
-This mode is reproducible (see the reproducible mode). It is also intrusive because it calls the method `calculateScore()` more frequently than a non assert mode.
-
-The FAST_ASSERT mode is slow.
-
-It is recommended to write a test case that does a short run of your planning problem with the FAST_ASSERT mode on.
-
+* `FAST_ASSERT` mode turns on most assertions such as assert that an undoMove's score is the same as before the Move to fail-fast on a bug in a Move implementation, a constraint, the engine itself, and so on. This mode is reproducible. It is also intrusive because it calls the method `calculateScore()` more frequently than a non assert mode. The FAST_ASSERT mode is slow. Write a test case that does a short run of your planning problem with the FAST_ASSERT mode on.
 
 [[environmentModeReproducible]]
-==== `REPRODUCIBLE` (default)
-
-The reproducible mode is the default mode because it is recommended during development.
-In this mode, two runs in the same OptaPlanner version will execute the same code in the same order. **Those two
-        runs will have the same result at every step**, except if the note below applies.
-This enables you to reproduce bugs consistently.
-It also allows you to benchmark certain refactorings (such as a score constraint performance optimization) fairly across runs.
-
-[NOTE]
-====
-Despite the reproducible mode, your application might still not be fully reproducible because of:
-
-* Use of `HashSet` (or another `Collection` which has an inconsistent order between JVM runs) for collections of planning entities or planning values (but not normal problem facts), especially in the solution implementation. Replace it with ``LinkedHashSet``.
-* Combining a time gradient dependent algorithms (most notably Simulated Annealing) together with time spent termination. A sufficiently large difference in allocated CPU time will influence the time gradient values. Replace Simulated Annealing with Late Acceptance. Or instead, replace time spent termination with step count termination.
-
-====
-
-The reproducible mode can be slightly slower than the non-reproducible mode.
-If your production environment can benefit from reproducibility, use this mode in production.
-
-In practice, this mode uses the default, fixed <<randomNumberGenerator,random seed>> if no seed is specified, and it also disables certain concurrency optimizations (such as work stealing).
-
-
-[[environmentModeProduction]]
-==== `NON_REPRODUCIBLE`
-
-The non-reproducible mode can be slightly faster than the reproducible mode.
-Avoid using it during development as it makes debugging and bug fixing painful.
-If your production environment doesn't care about reproducibility, use this mode in production.
-
-In practice, this mode uses no fixed <<randomNumberGenerator,random seed>> if no seed is specified.
-
-
-[[logging]]
-=== Logging level: what is the `Solver` doing?
-
-The best way to illuminate the black box that is a ``Solver``, is to play with the logging level:
-
-* **error**: Log errors, except those that are thrown to the calling code as a ``RuntimeException``.
+* `REPRODUCIBLE` mode is the default mode because it is recommended during development. In this mode, two runs in the same OptaPlanner version execute the same code in the same order. Those two runs have the same result at every step, except if the following note applies. This enables you to reproduce bugs consistently.
+It also allows you to benchmark certain refactorings, such as a score constraint performance optimization, fairly across runs.
 +
 [NOTE]
 ====
-**If an error happens, OptaPlanner normally fails fast**: it throws a subclass of `RuntimeException` with a detailed message to the calling code.
-It does not log it as an error itself to avoid duplicate log messages.
-Except if the calling code explicitly catches and eats that ``RuntimeException``, a ``Thread``'s default `ExceptionHandler` will log it as an error anyway.
-Meanwhile, the code is disrupted from doing further harm or obfuscating the error.
+Despite using `REPRODCIBLE` mode, your application might still not be fully reproducible for the following reasons:
+
+* Use of `HashSet` or another `Collection` which has an inconsistent order between JVM runs for collections of planning entities or planning values (but not normal problem facts), especially in the solution implementation. Replace it with ``LinkedHashSet``.
+* Combining a time gradient dependent algorithm, most notably the Simulated Annealing algorithm, together with time spent termination. A sufficiently large difference in allocated CPU time will influence the time gradient values. Replace the Simulated Annealing algorithms with the Late Acceptance algorithm, or replace time spent termination with step count termination.
 ====
-* **warn**: Log suspicious circumstances.
-* **info**: Log every phase and the solver itself. See <<scopeOverview,scope overview>>.
-* **debug**: Log every step of every phase. See <<scopeOverview,scope overview>>.
-* **trace**: Log every move of every step of every phase. See <<scopeOverview,scope overview>>.
+
+* `REPRODUCIBLE` mode can be slightly slower than  `NON_REPRODUCIBLE` mode.
+If your production environment can benefit from reproducibility, use this mode in production. In practice, `REPRODUCIBLE` mode uses the default, fixed random seed if no seed is specified, and it also disables certain concurrency optimizations such as work stealing.
+
+[[environmentModeProduction]]
+* `NON_REPRODUCIBLE` mode can be slightly faster than `REPRODUCIBLE` mode.
+Avoid using it during development because it makes debugging and bug fixing difficult.
+If reproducibility isn't important in your production environment, use `NON_REPRODUCIBLE` mode in production. In practice, this mode uses no fixed random seed if no seed is specified.
+
+
+[[logging]]
+=== Changing the OptaPlanner Solver logging level
+You can change the logging level in an OptaPlanner solver to review solver activity. The following list describes the different logging levels:
+
+* **error**: Logs errors, except those that are thrown to the calling code as a ``RuntimeException``.
++
+If an error occurs, OptaPlanner normally fails fast. It throws a subclass of `RuntimeException` with a detailed message to the calling code.
+It does not log it as an error to avoid duplicate log messages.
+Unles the calling code explicitly catches and eliminates that ``RuntimeException``, a ``Thread``'s default `ExceptionHandler` will log it as an error anyway.
+Meanwhile, the code is disrupted from doing further harm or obfuscating the error.
+
+* **warn**: Logs suspicious circumstances.
+* **info**: Logs every phase and the solver itself.
+* **debug**: Logs every step of every phase.
+* **trace**: Logs every move of every step of every phase.
 
 [NOTE]
 ====
-Turning on `trace` logging, will slow down performance considerably: it is often four times slower.
-However, it is invaluable during development to discover a bottleneck.
+Turning on `trace` logging will slow down performance considerably. However, `trace` logging is invaluable during development to discover a bottleneck.
 
-Even `debug` logging can slow down performance considerably for fast stepping algorithms (such as Late Acceptance and Simulated Annealing),
-but not for slow stepping algorithms (such as Tabu Search).
+Even `debug` logging can slow down performance considerably for fast stepping algorithms such as Late Acceptance and Simulated Annealing,
+but not for slow stepping algorithms such as Tabu Search.
 
-Both cause congestion in <<multithreadedSolving, multithreaded solving>> with most appenders, see below.
+Both trace` and `debug` logging cause congestion in multithreaded solving with most appenders.
 
-In Eclipse, `debug` logging to the console tends to cause congestion with a score calculation speeds above 10 000 per second.
-Nor IntelliJ, nor the Maven command line suffer from this problem.
+In Eclipse, `debug` logging to the console tends to cause congestion with a score calculation speeds above 10000 per second.
+Neither IntelliJ or the Maven command line suffer from this problem.
 ====
 
-For example, set it to `debug` logging, to see when the phases end and how fast steps are taken:
+. Procedure
+//How do I turn on logging?
+
+For example, set the logging level to `debug` logging to see when the phases end and how fast steps are taken:
 
 [source,options="nowrap"]
 ----
@@ -1687,11 +1659,21 @@ INFO  Solving ended: time spent (24), best score (0), score calculation speed (7
 All time spent values are in milliseconds.
 
 Everything is logged to http://www.slf4j.org/[SLF4J], which is a simple logging facade
-which delegates every log message to Logback, Apache Commons Logging, Log4j or java.util.logging.
+that delegates every log message to Logback, Apache Commons Logging, Log4j, or java.util.logging.
 Add a dependency to the logging adaptor for your logging framework of choice.
 
-If you are not using any logging framework yet, use Logback by adding this Maven dependency (there is no need to add an extra bridge dependency):
+=== Using Logback to log OptaPlanner solver activity
+Logback is the recommended logging frameworkd to use with {PLANNER_SHORT}. Use Logback to log OptaPlanner solver activity.
 
+.Prerequisites
+* You have an OptaPlanner project.
+
+.Procedure
+
+. Add the following Maven dependency to your {PLANNER_SHORT} project's `pom.xml` file:
++
+NOTE: You do not need to add an extra bridge dependency.
++
 [source,xml,options="nowrap"]
 ----
     <dependency>
@@ -1701,59 +1683,21 @@ If you are not using any logging framework yet, use Logback by adding this Maven
     </dependency>
 ----
 
-Configure the logging level on the `org.optaplanner` package in your `logback.xml` file:
-
+. Configure the logging level on the `org.optaplanner` package in your `logback.xml` file as shown in the following example where `_LEVEL_` is a logging level listed in XREF:
++
 [source,xml,options="nowrap"]
 ----
 <configuration>
 
-  <logger name="org.optaplanner" level="debug"/>
+  <logger name="org.optaplanner" level="_LEVEL_"/>
 
   ...
 
 </configuration>
 ----
-
-If it isn't picked up, temporarily add the system property `-Dlogback.debug=true` to figure out why.
-
-[NOTE]
-====
-When running multiple solvers or one <<multithreadedSolving, multithreaded solver>>,
-most appenders (including the console) cause congestion with `debug` and `trace` logging.
-Switch to an async appender to avoid this problem or turn off `debug` logging.
-====
-
-If instead, you are still using Log4J 1.x (and you do not want to switch to its faster successor, Logback), add the bridge dependency:
-
-[source,xml,options="nowrap"]
-----
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>1.x</version>
-    </dependency>
-----
-
-And configure the logging level on the package `org.optaplanner` in your `log4j.xml` file:
-
-[source,xml,options="nowrap"]
-----
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
-
-  <category name="org.optaplanner">
-    <priority value="debug" />
-  </category>
-
-  ...
-
-</log4j:configuration>
-----
-
-[NOTE]
-====
-In a multitenant application, multiple `Solver` instances might be running at the same time.
-To separate their logging into distinct files, surround the `solve()` call with an http://logback.qos.ch/manual/mdc.html[MDC]:
-
+. Optional: If you have a multitenant application where multiple `Solver` instances might be running at the same time, separate the logging of each instance into separate files:
+.. Surround the `solve()` call with  http://logback.qos.ch/manual/mdc.html[Mapped Diagnostic Context] (MDC):
++
 [source,java,options="nowrap"]
 ----
         MDC.put("tenant.name",tenantName);
@@ -1761,9 +1705,9 @@ To separate their logging into distinct files, surround the `solve()` call with 
         MDC.remove("tenant.name");
 ----
 
-Then configure your logger to use different files for each ``${tenant.name}``.
-For example in Logback, use a `SiftingAppender` in ``logback.xml``:
-
+.. Configure your logger to use different files for each ``${tenant.name}``.
+For example, use a `SiftingAppender` in the ``logback.xml`` file:
++
 [source,xml,options="nowrap"]
 ----
   <appender name="fileAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
@@ -1779,16 +1723,97 @@ For example in Logback, use a `SiftingAppender` in ``logback.xml``:
     </sift>
   </appender>
 ----
++
+[NOTE]
 ====
+When running multiple solvers or one multithreaded solve,
+most appenders, including the console, cause congestion with `debug` and `trace` logging.
+Switch to an async appender to avoid this problem or turn off `debug` logging.
+====
+
+. If OptaPlanner doesn't recognize the new level, temporarily add the system property `-Dlogback._LEVEL_=true` to troubleshoot.
+
+
+
+=== Using Log4J to log  OptaPlanner solver activity
+If you are already using Log4J and you do not want to switch to its faster successor, Logback, you can configure your OptaPlanner for Log4J.
+
+.Prerequisites
+* You have an OptaPlanner project
+* You are using the Log4J logging framework
+
+.Procedure
+
+. Add the bridge dependency to the project `pom.xml` file:
++
+[source,xml,options="nowrap"]
+----
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.x</version>
+    </dependency>
+----
+
+. Configure the logging level on the package `org.optaplanner` in your `log4j.xml` file as shown in the following example, where `_LEVEL_` is a logging level listed in XREF:
++
+[source,xml,options="nowrap"]
+----
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+  <category name="org.optaplanner">
+    <priority value="_LEVEL_" />
+  </category>
+
+  ...
+
+</log4j:configuration>
+----
+
+. Optional: If you have a multitenant application where multiple `Solver` instances might be running at the same time, separate the logging of each instance into separate files:
++
+COMMENT: this section is about LOG4J so can we have a LOG4J example here?
++
+.. Surround the `solve()` call with  http://logback.qos.ch/manual/mdc.html[Mapped Diagnostic Context] (MDC):
++
+[source,java,options="nowrap"]
+----
+        MDC.put("tenant.name",tenantName);
+        MySolution bestSolution = solver.solve(problem);
+        MDC.remove("tenant.name");
+----
+
+.. Configure your logger to use different files for each ``${tenant.name}``.
+For example in Logback, use a `SiftingAppender` in ``logback.xml``:
++
+[source,xml,options="nowrap"]
+----
+  <appender name="fileAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
+    <discriminator>
+      <key>tenant.name</key>
+      <defaultValue>unknown</defaultValue>
+    </discriminator>
+    <sift>
+      <appender name="fileAppender.${tenant.name}" class="...FileAppender">
+        <file>local/log/optaplanner-${tenant.name}.log</file>
+        ...
+      </appender>
+    </sift>
+  </appender>
+----
+
 
 
 [[randomNumberGenerator]]
-=== Random number generator
+=== Configuring the random number generator
 
-Many heuristics and metaheuristics depend on a pseudorandom number generator for move selection, to resolve score ties, probability based move acceptance, ... During solving, the same `Random` instance is reused to improve reproducibility, performance and uniform distribution of random values.
+Many heuristics and metaheuristics depend on a pseudorandom number generator for move selection, to resolve score ties, probability based move acceptance, and so on. During solving, the same `Random` instance is reused to improve reproducibility, performance, and uniform distribution of random values.
 
-To change the random seed of that `Random` instance, specify a ``randomSeed``:
+A random seed is a number used to initialize a pseudorandom number generator.
 
+.Procedure
+. Optional: To change the random seed of that `Random` instance, specify a ``randomSeed``:
++
 [source,xml,options="nowrap"]
 ----
 <solver xmlns="https://www.optaplanner.org/xsd/solver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -1798,44 +1823,45 @@ To change the random seed of that `Random` instance, specify a ``randomSeed``:
 </solver>
 ----
 
-To change the pseudorandom number generator implementation, specify a ``randomType``:
-
+. Optional: To change the pseudorandom number generator implementation, specify a value for the ``randomType`` property,where `_RANDOM_NUMBER_GENERATOR_` is a pseudorandom number generator listed below:
++
+COMMENT: Is this the configuration file?
++
 [source,xml,options="nowrap"]
 ----
 <solver xmlns="https://www.optaplanner.org/xsd/solver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
-  <randomType>MERSENNE_TWISTER</randomType>
+  <randomType>_RANDOM_NUMBER_GENERATOR_</randomType>
   ...
 </solver>
 ----
-
-The following types are supported:
++
+The following pseudorandom number generator are supported:
 
 * `JDK` (default): Standard implementation (``java.util.Random``).
 * ``MERSENNE_TWISTER``: Implementation by http://commons.apache.org/proper/commons-math/userguide/random.html[Commons Math].
 * ``WELL512A``, ``WELL1024A``, ``WELL19937A``, ``WELL19937C``, `WELL44497A` and ``WELL44497B``: Implementation by http://commons.apache.org/proper/commons-math/userguide/random.html[Commons Math].
 
-For most use cases, the randomType has no significant impact on the average quality of the best solution on multiple datasets.
-If you want to confirm this on your use case, use the <<benchmarker,benchmarker>>.
+For most use cases, the value of the `randomType` property has no significant impact on the average quality of the best solution on multiple datasets.
+//If you want to confirm this on your use case, use the benchmarker.
 
 
 [[solverManager]]
-== SolverManager
+== The {PLANNER_SHORT} SolverManager
 
 A `SolverManager` is a facade for one or more `Solver` instances
 to simplify solving planning problems in REST and other enterprise services.
-Unlike the `Solver.solve(...)` method:
+Unlike the `Solver.solve(...)` method, a `SolverManager` has the following characteristics:
 
 * *`SolverManager.solve(...)` returns immediately*: it schedules a problem for asynchronous solving without blocking the calling thread.
 This avoids timeout issues of HTTP and other technologies.
-* *`SolverManager.solve(...)` solves multiple planning problems* of the same domain, in parallel.
+* `SolverManager.solve(...)` solves multiple planning problems of the same domain, in parallel.
 
-Internally a `SolverManager` manages a thread pool of solver threads, which call `Solver.solve(...)`,
+Internally, a `SolverManager` manages a thread pool of solver threads, which call `Solver.solve(...)`,
 and a thread pool of consumer threads, which handle best solution changed events.
 
-In <<integrationWithQuarkus,Quarkus>> and <<integrationWithSpringBoot,Spring Boot>>,
-the `SolverManager` instance is automatically injected in your code.
-Otherwise, build a `SolverManager` instance with the `create(...)` method:
+In Quarkus and Spring Boot, the `SolverManager` instance is automatically injected in your code.
+If you are using a platform other than Quarkus or Spring Boot, build a `SolverManager` instance with the `create(...)` method:
 
 [source,java,options="nowrap"]
 ----
@@ -1843,10 +1869,10 @@ SolverConfig solverConfig = SolverConfig.createFromXmlResource(".../cloudBalanci
 SolverManager<CloudBalance, UUID> solverManager = SolverManager.create(solverConfig, new SolverManagerConfig());
 ----
 
-Each problem submitted to the `SolverManager.solve(...)` methods needs a unique problem ID.
+Each problem submitted to the `SolverManager.solve(...)` methods must have a unique problem ID.
 Later calls to `getSolverStatus(problemId)` or `terminateEarly(problemId)` use that problem ID
-to distinguish between the planning problems.
-The problem ID must be an immutable class, such as `Long`, `String` or `java.util.UUID`.
+to distinguish between planning problems.
+The problem ID must be an immutable class, such as `Long`, `String`, or `java.util.UUID`.
 
 The `SolverManagerConfig` class has a `parallelSolverCount` property,
 that controls how many solvers are run in parallel.
@@ -1854,7 +1880,7 @@ For example, if set to `4`, submitting five problems
 has four problems solving immediately, and the fifth one starts when another one ends.
 If those problems solve for 5 minutes each, the fifth problem takes 10 minutes to finish.
 By default, `parallelSolverCount` is set to `AUTO`, which resolves to half the CPU cores,
-regardless of the <<multithreadedSolving,`moveThreadCount`>> of the solvers.
+regardless of the `moveThreadCount` of the solvers.
 
 To retrieve the best solution, after solving terminates normally, use `SolverJob.getFinalBestSolution()`:
 
@@ -1882,17 +1908,19 @@ but future work aims to distribute solver loads across a cloud.
 
 
 [[solverManagerSolveBatch]]
-=== Solve batch problems
+=== Solving batch problems
 
-At night, batch solving is a great approach to deliver solid plans by breakfast, because:
+Batch solving is solving mulitple dataset in parrallel. Batch solving is particularly useful over night:
 
 * There are typically few or no problem changes in the middle of the night.
 Some organizations even enforce a deadline, for example, _submit all day off requests before midnight_.
-* The solvers can run for much longer, often hours, because nobody's waiting for it and CPU resources are often cheaper.
+* The solvers can run for much longer, often hours, because nobody is waiting for the results and CPU resources are often cheaper.
+* Solutions are available when employees arrive at work the next morning.
 
-To solve a multiple datasets in parallel (limited by `parallelSolverCount`),
-call `solve(...)` for each dataset:
-
+.Procedure
+. To solve multiple datasets in parallel (limited by `parallelSolverCount`),
+call `solve(...)` for each dataset create the following class:
++
 [source,java,options="nowrap"]
 ----
 public class TimeTableService {
@@ -1915,20 +1943,20 @@ public class TimeTableService {
 }
 ----
 
-A solid plan delivered by breakfast is great,
-even if you need to react on problem changes during the day.
+
 
 
 [[solverManagerSolveAndListen]]
-=== Solve and listen to show progress to the end-user
+=== Solve and listen to show progress
 
-When a solver is running while an end-user is waiting for that solution,
+When a solver is running while a user is waiting for a solution,
 the user might need to wait for several minutes or hours before receiving a result.
 To assure the user that everything is going well,
 show progress by displaying the best solution and best score attained so far.
 
-To handle intermediate best solutions, use `solveAndListen(...)`:
-
+.Procedure
+. To handle intermediate best solutions, use `solveAndListen(...)`:
++
 [source,java,options="nowrap"]
 ----
 public class TimeTableService {
@@ -1954,9 +1982,12 @@ public class TimeTableService {
 
 }
 ----
-
++
 This implementation is using the database to communicate with the UI, which polls the database.
 More advanced implementations push the best solutions directly to the UI or a messaging queue.
 
-If the user is satisfied with the intermediate best solution
+. When the user is satisfied with the intermediate best solution
 and does not want to wait any longer for a better one, call `SolverManager.terminateEarly(problemId)`.
+
+ifdef::parent-context[:context: {parent-context}]
+ifndef::parent-context[:!context:]
