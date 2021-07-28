@@ -1,5 +1,5 @@
 [id="chap-kogito-deploying-on-openshift"]
-= Deploying {PRODUCT} services on {OPENSHIFT}
+= Deploying {PRODUCT} services on OpenShift
 ifdef::context[:parent-context: {context}]
 :context: kogito-deploying-on-openshift
 
@@ -94,7 +94,7 @@ spec:
       tcpSocket:
         port: 8080
 ----
-
+////
 [id="proc-kogito-deploying-on-ocp-console_{context}"]
 == Deploying {PRODUCT} services on OpenShift using the OpenShift web console
 
@@ -249,9 +249,587 @@ image::kogito/openshift/kogito-ocp-service-route-details.png[Image of Kogito ser
 
 With the application route, you can integrate your {PRODUCT} services with your business automation solutions as needed.
 --
+////
+
+////
+
+[id="con-kogito-operator-installation_{context}"]
+== {PRODUCT} Operator installation
+
+<Start here>
+
+[id="proc-kogito-operator-installation-openshift_{context}"]
+=== Installing the {PRODUCT} Operator on OpenShift
+
+<Start here>
+
+[id="proc-kogito-operator-installation-kubernetes-engine_{context}"]
+=== Installing the {PRODUCT} Operator on OpenShift Kubernetes Engine
+
+<Start here>
+
+[id="proc-kogito-operator-installation-kubernetes_{context}"]
+=== Installing the {PRODUCT} Operator on Kubernetes
+
+<Start here>
+
+[id="proc-kogito-operator-verify-installation_{context}"]
+== Verifying the {PRODUCT} Operator installation
+
+<Start here>
+
+[id="proc-kogito-cli-installation_{context}"]
+== Installing the {PRODUCT} CLI
+
+<Start here>
+
+[id="ref-kogito-cli-installation-troubleshooting_{context}"]
+=== {PRODUCT} CLI installation troubleshooting
+
+<Start here>
+////
+
+[id="ref-kogito-cli-operations_{context}"]
+=== Supported commands and operations in {PRODUCT} CLI
+
+[role="_abstract"]
+The {PRODUCT} command-line interface (CLI) supports the following operations on Linux, Mac, and Windows operating systems. The syntax of some operations might vary for Windows users, such as a backslash (`\`) instead of a forward slash (`/`).
+
+.Supported commands and operations in the {PRODUCT} CLI
+[cols="30%,35%,35%", options="header"]
+|===
+|Operation
+|{PRODUCT} CLI command
+|Example
+
+|Create an OpenShift project for {PRODUCT} services.
+|`{PRODUCT_INIT} new-project __PROJECT_NAME__`
+|`{PRODUCT_INIT} new-project kogito-travel-agency`
+
+|Connect the {PRODUCT} Operator to an existing OpenShift project with {PRODUCT} services.
+|`{PRODUCT_INIT} use-project __PROJECT_NAME__`
+|`{PRODUCT_INIT} use-project kogito-travel-agency`
+
+|Install the Infinispan infrastructure for process data persistence in {PRODUCT} services.
+|`{PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan`
+|`{PRODUCT_INIT} install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan`
+
+|Install the Apache Kafka infrastructure for messaging in {PRODUCT} services.
+|`{PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka`
+|`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka`
+
+|Install the {PRODUCT} Data Index Service for data management in {PRODUCT} services and provision the Data Index Service to connect to the specified Infinispan and Kafka infrastructures.
+|`{PRODUCT_INIT} install data-index --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
+|`{PRODUCT_INIT} install data-index --infra kogito-infinispan-infra --infra kogito-kafka-infra`
+
+|Install the {PRODUCT} Jobs Service for job scheduling in {PRODUCT} services and provision the Jobs Service to connect to the specified Infinispan and Kafka infrastructures.
+|`{PRODUCT_INIT} install jobs-service --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
+|`{PRODUCT_INIT} install jobs-service --infra kogito-infinispan-infra --infra kogito-kafka-infra`
+
+|Install the {PRODUCT} Management Console for managing process instance details in {PRODUCT} services.
+|`{PRODUCT_INIT} install mgmt-console`
+|`{PRODUCT_INIT} install mgmt-console`
+
+|Install the {PRODUCT} Trusty Service to store tracing events and provide advanced analytical capabilities in {PRODUCT} services, and provision the Trusty Service to connect to the specified Infinispan and Kafka infrastructures.
+|`{PRODUCT_INIT} install trusty --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
+|`{PRODUCT_INIT} install trusty --infra kogito-infinispan-infra --infra kogito-kafka-infra`
+
+|Install the {PRODUCT} Explainability Service to analyze decisions made in {PRODUCT} services and provision the Explainability Service to connect to the specified Kafka infrastructure.
+|`{PRODUCT_INIT} install explainability --infra __KAFKA_INFRA_NAME__`
+|`{PRODUCT_INIT} install explainability --infra kogito-kafka-infra`
+
+|Install the {PRODUCT} Task Console for viewing and interacting with user tasks in {PRODUCT} process services.
+|`{PRODUCT_INIT} install task-console`
+|`{PRODUCT_INIT} install task-console`
+
+|Install {PRODUCT} supporting services or infrastructure components for a specified {PRODUCT} project. Use this syntax if you did not use the `new-project` or `use-project` commands to connect the {PRODUCT} Operator to a specified project.
+|`{PRODUCT_INIT} install __KOGITO_SUPPORTING_SERVICE__ --infra __KOGITO_INFRA_NAME__ -p __PROJECT_NAME__`
+
+`{PRODUCT_INIT} install infra __KOGITO_INFRA_NAME__ __KOGITO_INFRA_DETAILS__ -p __PROJECT_NAME__`
+
+|`{PRODUCT_INIT} install data-index --infra kogito-infinispan-infra --infra kogito-kafka-infra -p kogito-travel-agency`
+
+`{PRODUCT_INIT} install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p kogito-travel-agency`
+
+`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p kogito-travel-agency`
+
+|Create a {PRODUCT} service definition from a local source or a Git repository and deploy the service. In a local directory source, if the `pom.xml` file is present, then the entire directory is zipped and uploaded to OCP and the build is initiated. However, if the `pom.xml` is not present, then only supported extension files (including `.dmn`, `.drl`, `.bpmn`, `.bpmn2`, `.properties`, `.sw.json`, and `.sw.yaml`) are uploaded from the directory to initiate the build. In a binary build configuration, this command creates the service definition but does not deploy the service.
+|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__`
+
+`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_REPOSITORY_URL__ --context-dir __PROJECT_DIRECTORY__`
+|`{PRODUCT_INIT} deploy-service travels`
+
+`{PRODUCT_INIT} deploy-service travels \https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels`
+
+|Enable Infinispan persistence and Apache Kafka messaging for a {PRODUCT} service during deployment. Use this command if you installed the relevant infrastructures using the {PRODUCT} Operator. In a binary build configuration, this command creates the service definition but does not deploy the service.
+|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
+
+`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_REPOSITORY_URL__ --context-dir __PROJECT_DIRECTORY__ --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
+|`{PRODUCT_INIT} deploy-service travels --infra kogito-infinispan-infra --infra kogito-kafka-infra`
+
+`{PRODUCT_INIT} deploy-service travels \https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --infra kogito-infinispan-infra --infra kogito-kafka-infra`
+
+|Create a {PRODUCT} service definition from a local or Git source and deploy the service using a native build.
+|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ --native`
+
+`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_REPOSITORY_URL__ --context-dir __PROJECT_DIRECTORY__ --native`
+|`{PRODUCT_INIT} deploy-service travels --native`
+
+`{PRODUCT_INIT} deploy-service travels \https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --native`
+
+|Upload a {PRODUCT} service file, such as a Decision Model and Notation (DMN) or Business Process Model and Notation (BPMN) file, or a file directory with multiple files to an OpenShift Cluster and trigger a new Source-to-Image (S2I) build. For single files, you can specify a local file system path or Git repository URL. For file directories, you can specify a local file system path only.
+|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __PATH_TO_FILE_OR_DIR__`
+
+`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_FILE_URL__`
+
+|`kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2`
+
+`kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels`
+
+`kogito deploy-service travels \https://github.com/kiegroup/kogito-examples/blob/stable/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2`
+
+|Delete a {PRODUCT} service.
+|`{PRODUCT_INIT} delete-service __SERVICE_NAME__`
+|`{PRODUCT_INIT} delete-service travels`
+|===
+
+[id="con-kogito-operator-deployment-options_{context}"]
+== OpenShift build options with the {PRODUCT} Operator and CLI
+
+[role="_abstract"]
+The {PRODUCT} Operator and command-line interface (CLI) support the following options for building and deploying {PRODUCT} services on {OPENSHIFT}:
+
+* Git source build and deployment
+* Binary build and deployment
+* File build and deployment
+ifdef::KOGITO-COMM[]
+* Native build and deployment
+endif::[]
+
+{PRODUCT} provides the relevant Source-to-Image (S2I) build configuration depending the deployment option that you use.
+
+NOTE: For all deployment options, you must be logged in to the relevant OpenShift cluster using the `oc login` command.
+
+=== Git source build and deployment
+
+In most use cases, you can use the standard runtime build and deployment method to deploy {PRODUCT} services on OpenShift from a Git repository source, as shown in the following examples. These examples are based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
+
+.Example {PRODUCT} service deployment from existing namespace
+[source,subs="attributes+,+quotes"]
+----
+// Uses the provisioned namespace in your OpenShift cluster
+$ {PRODUCT_INIT} use-project __PROJECT_NAME__
+
+// Deploys a new {PRODUCT} service from a Git source
+$ {PRODUCT_INIT} deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels
+----
+
+The {PRODUCT} Operator uses the default branch in the specified Git repository, usually `master`.
+
+Alternatively, you can generate a new namespace in your cluster during deployment:
+
+.Example {PRODUCT} service deployment from new namespace
+[source,subs="attributes+,+quotes"]
+----
+// Creates a new namespace in your cluster
+$ {PRODUCT_INIT} new-project __NEW_PROJECT_NAME__
+
+// Deploys a new {PRODUCT} service from a Git source
+$ {PRODUCT_INIT} deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels
+----
+
+NOTE: If you are developing or testing your {PRODUCT} service locally, you can use the binary build or file build option to build and deploy from a local source instead of from a Git repository.
+
+=== Binary build and deployment
+
+OpenShift builds can require extensive amounts of time. As a faster alternative for building and deploying your {PRODUCT} services on OpenShift, you can use a binary build. In a binary build, you build the application locally and push the built application to an OpenShift `BuildConfig` configuration to be packaged into the runtime container image.
+
+The following example creates a {PRODUCT} service from a local directory, builds the project binaries, and deploys the binary build to OpenShift. This example is based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
+
+.Example {PRODUCT} service deployment from binary build
+[source,subs="attributes+,+quotes"]
+----
+// Creates the {PRODUCT} service
+$ cd ~/kogito-travel-agency/extended/travels
+$ kogito deploy-service travels
+
+// Builds the project and generates binary resources in `target` folder
+$ mvn clean package
+
+// Deploys to OpenShift using binary build
+$ oc start-build travels-binary --from-dir=target/
+
+Uploading directory "target/" as binary input for the build ...
+....
+Uploading finished
+build.build.openshift.io/travels-1 started
+----
+
+In this example, the following resources are generated in the `target` folder to prepare for the binary build:
+
+* `quarkus-app/app/travels.jar`: Standard JAR file that contains the classes and resources of the project.
+* `quarkus-app/quarkus`: Contains the generated resources required by the Quarkus application to run.
+* `quarkus-app/lib`: Directory that contains the project dependencies.
+* `quarkus-app/quarkus-run.jar`: Executable JAR file for the project. Note that `quarkus-run.jar` is not an uber-JAR file, and also requires the folders `quarkus-app/app`, `quarkus-app/quarkus`, and `quarkus-app/lib`.
+
+NOTE: The {PRODUCT} images are handling the binary build directly from the `target` folder, and the content of the `target/quarkus-app` folder is copied directly.
+
+After the binary build is complete, the result is pushed to the `travels` Image Stream that was created by the {PRODUCT} Operator and triggers a new deployment.
+
+=== File build and deployment
+
+You can build and deploy your {PRODUCT} services from a single file, such as a Decision Model and Notation (DMN), Business Process Model and Notation (BPMN or BPMN2), Drools Rule Language (DRL), or properties file, or from a directory with multiple files. You can specify a single file from your local file system path or from a Git repository URL, or specify a file directory from a local file system path only. When you upload the file or directory to an OpenShift cluster, a new Source-to-Image (S2I) build is automatically triggered.
+
+NOTE: You cannot upload a file directory from a Git repository. The file directory must be in your local file system. However, you can upload single files from either a Git repository or your local file system.
+
+The following examples upload a single BPMN file from a local directory or Git repository to an OpenShift cluster for an S2I build. These examples are based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
+
+.Example {PRODUCT} service deployment from a local file
+[source,subs="attributes+,+quotes"]
+----
+$ kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2
+
+File found: /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2.
+...
+The requested file(s) was successfully uploaded to OpenShift, a build with this file(s) should now be running. To see the logs, run 'oc logs -f bc/kogito-travel-agency-builder -n kogito'
+----
+
+.Example {PRODUCT} service deployment from a Git repository file
+[source,subs="attributes+,+quotes"]
+----
+$ kogito deploy-service travels https://github.com/kiegroup/kogito-examples/blob/stable/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2
+
+Asset found: travels.bpmn2.
+...
+The requested file(s) was successfully uploaded to OpenShift, a build with this file(s) should now be running. To see the logs, run 'oc logs -f bc/kogito-travel-agency-builder -n kogito'
+----
+
+As instructed in the terminal output, you can run the following command to see the build logs:
+
+.Example build log for BPMN file build
+[source]
+----
+$ oc logs -f bc/kogito-travel-agency-builder -n kogito
+
+Receiving source from STDIN as file travels.bpmn2
+Using docker-registry.default.svc:5000/openshift/kogito-builder as the s2i builder image
+----
+
+The following examples upload multiple files within a local directory to an OpenShift cluster for an S2I build:
+
+.Example {PRODUCT} service deployment from multiple files in a local directory
+[source,subs="attributes+,+quotes"]
+----
+$ kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels
+
+The provided source is a dir, packing files.
+File(s) found: [/tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/flightBooking.bpmn2 /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/hotelBooking.bpmn2 /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2].
+...
+The requested file(s) was successfully uploaded to OpenShift, a build with this file(s) should now be running. To see the logs, run 'oc logs -f bc/travels-builder -n kogito'
+----
+
+For every valid file type (DMN, BPMN, BPMN2, DRL) in the specified directory, the {PRODUCT} CLI compresses the files and uploads them to the OpenShift cluster. Any other unsupported file types are not uploaded. To ensure that other file types are uploaded, consider using a source build or a binary build.
+
+If you need to update an uploaded file or directory after you create the build, you can use the `oc start-build` command to re-upload the file or directory, as shown in the following example. An S2I build cannot identify only changed files in a directory, so you must re-upload the entire directory of files to update the build.
+
+.Example command to re-upload a single local file to update the S2I build
+----
+$ oc start-build kogito-travel-agency-builder --from-file tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2
+----
+
+.Example command to re-upload multiple files from a local directory to update the S2I build
+----
+$ oc start-build kogito-travel-agency-builder --from-dir tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels
+----
+
+If a build fails, use the OpenShift environment variable https://docs.openshift.com/container-platform/4.3/builds/basic-build-operations.html#builds-basic-access-build-verbosity_basic-build-operations[`BUILD_LOGLEVEL`] with the desired level as part of your deployment command, as shown in the following example:
+
+.Example command to troubleshoot failed build from directory
+[source]
+----
+$ kogito --verbose deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels --build-env BUILD_LOGLEVEL=5
+----
+
+ifdef::KOGITO-COMM[]
+=== Native build and deployment
+
+NOTE: Native build and deployment is for Quarkus only and requires GraalVM.
+
+By default, the {PRODUCT} Operator and CLI build services with traditional `java` compilers to save time and resources. The final generated artifact is a JAR file for the relevant runtime (defaults to Quarkus) with dependencies in the image user's home directory, such as `/home/kogito/bin/lib`.
+
+However, for {PRODUCT} services on Quarkus with GraalVM (required), the {PRODUCT} Operator and CLI can build the services in native mode for direct binary execution as native code. Building in native mode uses a very low footprint on the runtime, although many resources are consumed during build time.
+
+For more information about native build performance, see the GraalVM https://www.graalvm.org/docs/examples/java-performance-examples/[Performance examples for Java].
+
+For more information about ahead-of-time (AOT) compilation, see the https://www.graalvm.org/docs/reference-manual/aot-compilation/[GraalVM Native Image] documentation.
+
+The following examples build a {PRODUCT} service on Quarkus in native mode using the `--native` parameter. These examples are based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
+
+.Example {PRODUCT} service native build from a local source directory
+[source,subs="attributes+,+quotes"]
+----
+$ cd ~/kogito-travel-agency/extended/travels
+$ {PRODUCT_INIT} deploy-service travels --native
+----
+
+.Example {PRODUCT} service native build from a Git repository source directory
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --native
+----
+
+In {PRODUCT} Operator tests, native builds take approximately 10 minutes and the build pod can consume up to 10GB of RAM and 1.5 CPU cores.
+
+By default, a {PRODUCT} project does not contain resource requests or limits. As a result, a native build might be terminated due to insufficient memory. To prevent this behavior, you can create a minimum memory request configuration for the {PRODUCT} application build, ensuring that the build pod is allocated on an OpenShift node with enough free memory. The side effect of this configuration is that OpenShift prioritizes the build pod.
+
+For more information about OpenShift pod prioritization based on pod requests and limits, see https://docs.okd.io/3.11/dev_guide/compute_resources.html#quality-of-service-tiers[Quality of Service Tiers] in the OpenShift documentation.
+
+The following example is a memory request configuration for the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application:
+
+.Example memory request configuration for `kogito-travel-agency`
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoBuild
+metadata:
+  name: travels
+  namespace: kogito
+spec:
+  type: RemoteSource
+  gitSource:
+    contextDir: kogito-travel-agency/extended/travels
+    uri: "https://github.com/kiegroup/kogito-examples/"
+  resources:
+    requests:
+        memory: "4Gi"
+----
+
+IMPORTANT: Ensure that you have these resources available on your OpenShift nodes when you run native builds. If the resources are not available, the S2I build fails. You can verify currently allocated and total resources of your nodes by using the command `oc describe nodes` invoked with `admin` permission.
+
+You can limit the maximum heap space for the JVM used for a native build. You can apply the limitation by setting the `quarkus.native.native-image-xmx` property in the `application.properties` file of your {PRODUCT} project. In this case, the build pod requires roughly `-Xmx` plus 2 GB of memory. The `-Xmx` value depends on the complexity of the application. For example, for the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] example application, the `-Xmx` value `2g` is sufficient, resulting in the builder pod consuming up to 4.2 GB of memory.
+
+You can also set resource limits for a native build pod. In the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] application, 80 percent of the memory limit is used for heap space in the JVM responsible for the native build. If the computed heap space limit for the JVM is less than 1024 MB, then all the memory from resource limits is used.
+
+The following example is a memory limit configuration for the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] example application:
+
+.Example memory request configuration for `process-quarkus-example`
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoBuild
+metadata:
+  name: process-quarkus-example
+  namespace: kogito
+spec:
+  type: RemoteSource
+  gitSource:
+    contextDir: process-quarkus-example
+    uri: "https://github.com/kiegroup/kogito-examples/"
+  resources:
+    limits:
+        memory: "4Gi"
+----
+endif::[]
+
+[id="con-kogito-operator-deployment-configs_{context}"]
+== {PRODUCT} service properties configuration
+
+[role="_abstract"]
+When a {PRODUCT} service is deployed, a `configMap` resource is created for the `application.properties` configuration of the {PRODUCT} service.
+
+The name of the `configMap` resource consists of the name of the {PRODUCT} service and the suffix `-properties`, as shown in the following example:
+
+.Example `configMap` resource generated during {PRODUCT} service deployment
+[source,yaml]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kogito-travel-agency-properties
+data:
+  application.properties : |-
+    property1=value1
+    property2=value2
+----
+
+The `application.properties` data of the `configMap` resource is mounted in a volume to the container of the {PRODUCT} service. Any runtime properties that you add to the `application.properties` section override the default application configuration properties of the {PRODUCT} service.
+
+When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the {PRODUCT} service.
+
+////
+[id="con-kogito-services-exposure_{context}"]
+== {PRODUCT} services exposure in Openshift and Kubernetes
+
+<Start here>
+
+[id="proc-kogito-services-exposure-routes_{context}"]
+=== Exposing {PRODUCT} services using routes
+
+<Start here>
+
+[id="proc-kogito-services-exposure-nginx-ingress_{context}"]
+=== Exposing Kogito services using NGINX Ingress
+
+<Start here>
+
+[id="con-custom-kogito-service-deployment-options_{context}"]
+== Custom {PRODUCT} service deployment options with {PRODUCT} Operator and CLI
+
+<Start here>
+
+[id="proc-custom-kogito-service-deployment-kubernetes-openshift-cluster_{context}"]
+=== Deploying a custom {PRODUCT} service in Kubernetes or OpenShift cluster
+
+<Start here>
+
+==== Deploying a custom {PRODUCT} service in a Kubernetes cluster using custom configurations
+
+<Start here>
+////
+
+[id="proc-kogito-service-deployment-openshift-web-console_{context}"]
+=== Deploying a {PRODUCT} service using OpenShift web console
+
+[role="_abstract"]
+After you create your {PRODUCT} services as part of a business application, you can use the {OPENSHIFT} web console to deploy your services. The {PRODUCT} Operator page in the OpenShift web console guides you through the deployment process. The {PRODUCT} Operator is based on the https://sdk.operatorframework.io/[Operator SDK] and automates many of the deployment steps for you. For example, when you give the operator a link to the Git repository that contains your application, the operator can automatically configure the components required to build your project from source and deploy the resulting services.
+
+.Prerequisites
+* The application with your {PRODUCT} services is in a Git repository that is reachable from your OpenShift environment.
+* You have access to the OpenShift web console with `cluster-admin` permissions.
+* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] that are required for Quarkus-based projects on OpenShift or Kubernetes.
++
+.SmallRye Heath dependency for Quarkus applications on OpenShift
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+----
+
+.Procedure
+. In the OpenShift web console, go to *Operators* -> *OperatorHub* in the left menu, search for and select *Kogito*, and follow the on-screen instructions to install the latest operator version.
+. After you install the {PRODUCT} Operator, in the OpenShift web console, go to *Operators* -> *Installed Operators* and select *Kogito*.
+. In the operator page, select the *Kogito Build* tab and click *Create KogitoBuild* to create the {PRODUCT} build definition.
++
+.Create a {PRODUCT} build definition
+image::kogito/openshift/kogito-ocp-create-build.png[Image of Kogito build page in web console]
+. In the application window, use the *Form View* or *YAML View* to configure the build definition.
++
+--
+At a minimum, define the application configurations shown in the following example YAML file:
+
+.Example YAML definition for an application with {PRODUCT} build
+[source,yaml,subs="attributes+"]
+----
+apiVersion: app.kiegroup.org/v1beta1 # {PRODUCT} API for this service
+kind: KogitoBuild  # Application type
+metadata:
+  name: example-quarkus  # Application name
+  namespace: kogito  # OpenShift project namespace
+spec:
+  type: RemoteSource
+  gitSource:
+    uri: 'https://github.com/kiegroup/kogito-examples'  # Git repository containing application (uses default branch)
+    contextDir: process-quarkus-example  # Git folder location of application
+----
+
+[NOTE]
+====
+If you have configured an internal Maven repository, you can use it as a Maven mirror service and specify the Maven mirror URL in your {PRODUCT} build definition to substantially shorten build time:
+
+[source,yaml]
+----
+spec:
+  mavenMirrorURL: http://nexus3-nexus.apps-crc.testing/repository/maven-public/
+----
+
+For more information about internal Maven repositories, see the https://maven.apache.org/guides/introduction/introduction-to-repositories.html[Apache Maven] documentation.
+====
+--
+. After you define your application data, click *Create* to generate the {PRODUCT} build.
++
+--
+Your application is listed in the *{PRODUCT}Builds* page:
+
+.New {PRODUCT} build instance
+image::kogito/openshift/kogito-ocp-create-build-listed.png[Image of Kogito build listed in web console]
+
+You can select the application name to view or modify application settings and YAML details:
+
+.View {PRODUCT} build details
+image::kogito/openshift/kogito-ocp-build-details.png[Image of Kogito service details page in web console]
+
+--
+. In the operator page, select the *Kogito Service* tab and click *Create KogitoRuntime* to create the {PRODUCT} service definition.
++
+.Create a {PRODUCT} service definition
+image::kogito/openshift/kogito-ocp-create-runtime.png[Image of Kogito service page in web console]
+. In the application window, use the *Form View* or *YAML View* to configure the service definition.
++
+--
+At a minimum, define the application configurations shown in the following example YAML file:
+
+.Example YAML definition for an application with {PRODUCT} services
+[source,yaml,subs="attributes+"]
+----
+apiVersion: app.kiegroup.org/v1beta1 # {PRODUCT} API for this service
+kind: KogitoRuntime  # Application type
+metadata:
+  name: example-quarkus  # Application name
+  namespace: kogito  # OpenShift project namespace
+----
+
+--
+. After you define your application data, click *Create* to generate the {PRODUCT} service.
++
+--
+Your application is listed in the {PRODUCT} service page:
+
+.New {PRODUCT} service instance
+image::kogito/openshift/kogito-ocp-create-runtime-listed.png[Image of Kogito service listed in web console]
+
+You can select the application name to view or modify application settings and YAML details:
+
+.View {PRODUCT} service details
+image::kogito/openshift/kogito-ocp-runtime-details.png[Image of Kogito service details page in web console]
+
+--
+. In the left menu of the web console, go to *Builds* -> *Builds* to view the status of your application build.
++
+--
+You can select a specific build to view build details:
+
+.View {PRODUCT} service build details
+image::kogito/openshift/kogito-ocp-app-build-details.png[Image of Kogito service build details page in web console]
+
+[NOTE]
+====
+For every {PRODUCT} service that you create for OpenShift deployment, two builds are generated and listed in the *Builds* page in the web console: a traditional runtime build and a Source-to-Image (S2I) build with the suffix `-builder`. The S2I mechanism builds the application in an OpenShift build and then passes the built application to the next OpenShift build to be packaged into the runtime container image. The {PRODUCT} S2I build configuration also enables you to build the project directly from a Git repository on the OpenShift platform.
+====
+
+--
+. After the application build is complete, go to *Workloads* -> *Deployments* to view the application deployments, pod status, and other details.
++
+--
+You can select the application name to increase or decrease the pod count or modify deployment settings:
+
+.View {PRODUCT} service deployment details
+image::kogito/openshift/kogito-ocp-service-deployment-details.png[Image of Kogito service deployment details page in web console]
+--
+. After your {PRODUCT} service is deployed, in the left menu of the web console, go to *Networking* -> *Routes* to view the access link to the deployed application.
++
+--
+You can select the application name to view or modify route settings:
+
+.View {PRODUCT} service route details
+image::kogito/openshift/kogito-ocp-service-route-details.png[Image of Kogito service route details page in web console]
+
+With the application route, you can integrate your {PRODUCT} services with your business automation solutions as needed.
+--
 
 [id="proc-kogito-deploying-on-ocp-kogito-cli_{context}"]
-== Deploying {PRODUCT} services on OpenShift using the {PRODUCT} CLI
+=== Deploying {PRODUCT} services on OpenShift or Kubernetes using the {PRODUCT} CLI
 
 [role="_abstract"]
 The {PRODUCT} command-line interface (CLI) enables you to interact with the {PRODUCT} Operator for deployment tasks. The {PRODUCT} CLI also enables you to deploy {PRODUCT} services from source instead of relying on custom resources and YAML files. You can use the {PRODUCT} CLI as a command-line alternative for deploying {PRODUCT} services without the {OPENSHIFT} web console.
@@ -265,27 +843,15 @@ ifdef::KOGITO-COMM[]
 https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_cli/getting-started-cli.html[OpenShift documentation].
 endif::[]
 * You have OpenShift permissions to create resources in a specified namespace.
-* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] that are required for Quarkus-based projects on {OPENSHIFT} or Kubernetes.
+* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] that are required for Quarkus-based projects on OpenShift or Kubernetes.
 +
-.SmallRye Heath dependency for Quarkus applications on {OPENSHIFT}
+.SmallRye Heath dependency for Quarkus applications on OpenShift
 [source,xml]
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-smallrye-health</artifactId>
 </dependency>
-----
-* (Spring Boot only) The `pom.xml` file of your {PRODUCT} project contains the following https://docs.spring.io/spring-boot/docs/2.3.0.RELEASE/reference/html/production-ready-features.html[Spring Boot Actuator dependency]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness, readiness, and startup probes] that are required for Spring Boot-based projects on {OPENSHIFT} or Kubernetes.
-+
-.Spring Boot actuator dependency for Spring Boot applications on {OPENSHIFT}
-[source,xml]
-----
-<dependencies>
-  <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-actuator</artifactId>
-  </dependency>
-</dependencies>
 ----
 
 .Procedure
@@ -357,9 +923,598 @@ You can also combine the commands to create the namespace and deploy the service
 $ {PRODUCT_INIT} deploy-service example-quarkus https://github.com/kiegroup/kogito-examples --context-dir process-quarkus-example --project __PROJECT_NAME__
 ----
 --
+////
+[id="ref-kogito-service-deployment-openshift-web-console_{context}"]
+=== Custom {PRODUCT} service deployment troubleshooting
+
+<Start here>
+
+[id="con-custom-kogito-service-integration-options_{context}"]
+== Custom {PRODUCT} service integration options with {PRODUCT} Operator and CLI
+
+<Start here>
+
+[id="proc-custom-kogito-service-integration-infinispan_{context}"]
+=== Integrating a custom {PRODUCT} service with Infinispan
+
+<Start here>
+////
+
+==== Infinispan persistence in {PRODUCT} services
+
+After you install the `KogitoInfra` custom resource to connect with the Infinispan infrastructure, to enable Infinispan persistence for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
+
+.Example {PRODUCT} service deployment with Infinispan persistence enabled using the {PRODUCT} CLI
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} deploy-service travels --infra __INFINISPAN_INFRA_NAME__
+----
+
+.Example {PRODUCT} service custom resource with Infinispan persistence enabled
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: travels
+spec:
+  infra:
+    - INFINISPAN_INFRA_NAME
+----
+
+If you set up a custom Infinispan cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
+
+.Required environment variables for a custom Infinispan cluster
+[source]
+----
+ENABLE_PERSISTENCE=true
+
+# On Quarkus
+QUARKUS_INFINISPAN_CLIENT_AUTH_USERNAME
+QUARKUS_INFINISPAN_CLIENT_AUTH_PASSWORD
+
+# On Spring Boot
+INFINISPAN_REMOTE_AUTH_USERNAME
+INFINISPAN_REMOTE_AUTH_PASSWORD
+----
+
+.Required application properties for a custom Infinispan cluster
+[source]
+----
+# On Quarkus
+quarkus.infinispan-client.server-list=
+quarkus.infinispan-client.use-auth=
+quarkus.infinispan-client.sasl-mechanism=
+quarkus.infinispan-client.auth-realm=
+
+# On Spring Boot
+infinispan.remote.server-list=
+infinispan.remote.use-auth=
+infinispan.remote.sasl-mechanism=
+infinispan.remote.auth-realm=
+----
+
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[Persistence in {PRODUCT}]
+* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
+* https://github.com/infinispan/infinispan-operator/blob/master/README.md[Infinispan Operator]
+
+////
+[id="proc-custom-kogito-service-integration-kafka_{context}"]
+=== Integrating a custom {PRODUCT} service with Apache Kafka
+
+<Start here>
+////
+
+==== Apache Kafka messaging in {PRODUCT} services
+
+After you install the `KogitoInfra` custom resource to connect with the Apache Kafka infrastructure, to enable Kafka messaging for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __KAFKA_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
+
+.Example {PRODUCT} service deployment with Kafka messaging enabled using the {PRODUCT} CLI
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} deploy-service travels --infra __KAFKA_INFRA_NAME__
+----
+
+.Example {PRODUCT} service custom resource with Kafka messaging enabled
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: travels
+spec:
+  infra:
+    - KAFKA_INFRA_NAME
+----
+
+When you enable Kafka messaging, a variable named `KAFKA_BOOTSTRAP_SERVERS` is injected into the service container. On Quarkus, this is the default behavior when you use https://quarkus.io/guides/kafka-streams#topic-configuration[Kafka Client] 1.x or later. On Spring Boot, you might need to use a property substitution in the `application.properties` file, such as the following example:
+
+.Example application property substitution for Kafka on Spring Boot
+[source]
+----
+spring.kafka.bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS}
+----
+
+If the service container has any environment variables with the suffix `_BOOTSTRAP_SERVERS`, the variables are also injected by the value of the `KAFKA_BOOTSTRAP_SERVERS` variable.
+
+For example, when you deploy the following {PRODUCT} service, the variables `MP_MESSAGING_INCOMING_TRAVELLERS_BOOTSTRAP_SERVERS` and `MP_MESSAGING_OUTGOING_PROCESSEDTRAVELLERS_BOOTSTRAP_SERVERS` are injected with the deployed Kafka service URL:
+
+.Example {PRODUCT} service deployment with injected Kafka variable values
+[source]
+----
+$ kogito deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --infra kogito-kafka-infra \
+--build-env MAVEN_ARGS_APPEND="-Pevents" \
+-e MP_MESSAGING_INCOMING_TRAVELLERS_BOOTSTRAP_SERVERS
+-e MP_MESSAGING_OUTGOING_PROCESSEDTRAVELLERS_BOOTSTRAP_SERVERS
+----
+
+If you set up a custom Kafka cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variable and application property:
+
+.Required environment variable for a custom Kafka cluster
+[source]
+----
+ENABLE_EVENTS=true
+----
+
+.Required application property for a custom Kafka cluster
+[source]
+----
+# On Quarkus
+kafka.bootstrap.servers=
+
+# On Spring Boot
+spring.kafka.bootstrap-servers=
+----
+
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#proc-messaging-enabling_kogito-configuring[Enabling messaging for {PRODUCT} services]
+* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
+
+////
+[id="proc-custom-kogito-service-integration-mongodb_{context}"]
+=== Integrating a custom {PRODUCT} service with MongoDB
+
+<Start here>
+////
+
+==== MongoDB persistence in {PRODUCT} services
+
+After you install the `KogitoInfra` custom resource to connect with the MongoDB infrastructure, to enable MongoDB persistence for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __MONGODB_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
+
+.Example {PRODUCT} service deployment with MongoDB persistence enabled using the {PRODUCT} CLI
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} deploy-service travels --infra __MONGODB_INFRA_NAME__
+----
+
+.Example {PRODUCT} service custom resource with MongoDB persistence enabled
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: travels
+spec:
+  infra:
+    - MONGODB_INFRA_NAME
+----
+
+If you set up a custom MongoDB cluster and do not use a `KogitoInfra` resource, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
+
+.Required environment variables for a custom MongoDB cluster
+[source]
+----
+ENABLE_PERSISTENCE=true
+
+# On Quarkus
+QUARKUS_MONGODB_CREDENTIALS_AUTH_SOURCE
+QUARKUS_MONGODB_CREDENTIALS_USERNAME
+QUARKUS_MONGODB_CREDENTIALS_PASSWORD
+QUARKUS_MONGODB_DATABASE
+
+# On Spring Boot
+SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
+SPRING_DATA_MONGODB_USERNAME
+SPRING_DATA_MONGODB_PASSWORD
+SPRING_DATA_MONGODB_DATABASE
+----
+
+.Required application properties for a custom MongoDB cluster
+[source]
+----
+# On Quarkus
+quarkus.mongodb.connection-string=
+
+# On Spring Boot
+spring.data.mongodb.host=
+spring.data.mongodb.port=
+----
+
+On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host, port, and credentials properties (Spring Boot). Also, it is recommended to set the password in Kubernetes.
+
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[Persistence in {PRODUCT}]
+* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
+* https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator]
+
+////
+[id="proc-custom-kogito-service-integration-knative-eventing_{context}"]
+=== Integrating a custom {PRODUCT} service with Knative Eventing
+
+<Start here>
+
+[id="ref-kogito-service-integration-troubleshooting_{context}"]
+=== Custom {PRODUCT} service integration troubleshooting
+
+<Start here>
+
+[id="con-kogito-operator-interaction-data-index-service_{context}"]
+== {PRODUCT} Operator interaction with the {PRODUCT} Data Index Service
+
+<Start here>
+
+[id="proc-kogito-data-index-service-deployment_{context}"]
+=== Deploying a {PRODUCT} Data Index Service
+
+<Start here>
+
+[id="ref-kogito-data-index-service-deployment-troubleshooting_{context}"]
+=== {PRODUCT} Data Index Service deployment troubleshooting
+
+<Start here>
+////
+
+=== {PRODUCT} Data Index Service properties configuration
+
+When the {PRODUCT} Data Index Service is deployed, a `configMap` resource is created for the `application.properties` configuration of the Data Index Service.
+
+The name of the `configMap` resource consists of the name of the Data Index Service and the suffix `-properties`, as shown in the following example:
+
+.Example `configMap` resource generated during {PRODUCT} Data Index Service deployment
+[source,yaml]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: data-index-properties
+data:
+  application.properties : |-
+    property1=value1
+    property2=value2
+----
+
+The `application.properties` data of the `configMap` resource is mounted in a volume to the container of the Data Index Service. Any runtime properties that you add to the `application.properties` section override the default application configuration properties of the Data Index Service.
+
+When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the Data Index Service.
+
+If your {PRODUCT} project uses the `kogito-addons-persistence-infinispan` or the `kogito-addons-persistence-mongodb` add-on to enable Infinispan or MongoDB persistence explicitly, the {PRODUCT} Operator mounts a volume based on a `configMap` resource created for you during the deployment of the service. This `configMap` resource has the `-protobuf-files` suffix and lists the protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) files that your service generated during build time.
+
+.Example `configMap` resource with protobuf files listed
+[source,yaml]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: example-quarkus-protobuf-files
+  labels:
+    kogito-protobuf: true
+data:
+  visaApplications.proto: |-
+    syntax = "proto2";
+    package org.acme.travels.visaApplications;
+    import "kogito-index.proto";
+    import "kogito-types.proto";
+    option kogito_model = "VisaApplications";
+    option kogito_id = "visaApplications";
+    ...
+----
+
+When a new persistent {PRODUCT} service is deployed, a new set of protobuf files is generated and the Data Index Service creates a new `pod` instance that refers to the new volume.
+
+Updated protobuf files are automatically refreshed by Kubernetes volumes, so if you add a new
+property in your domain data, this data is reflected automatically in the Data Index Service without restarts.
+
+If a {PRODUCT} service is removed, the associated protobuf files are also removed and are no longer visible in the Data Index Service, but the data is still persisted in Infinispan or MongoDB.
+
+////
+[id="con-kogito-operator-interaction-jobs-service_{context}"]
+== {PRODUCT} Operator interaction with the {PRODUCT} Jobs Service
+
+<Start here>
+
+[id="proc-kogito-jobs-service-deployment_{context}"]
+=== Deploying {PRODUCT} Jobs Service
+
+<Start here>
+
+[id="ref-kogito-jobs-service-deployment-troubleshooting_{context}"]
+=== {PRODUCT} Jobs Service deployment troubleshooting
+
+<Start here>
+////
+
+=== Infinispan persistence with the {PRODUCT} Jobs Service
+
+To enable Infinispan persistence for the {PRODUCT} Jobs Service, you install the Infinispan infrastructure and then you can use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoSupportingService` custom resource that contains the `JobsService` service type:
+
+.Example Jobs Service deployment with Infinispan persistence enabled
+[source,subs="attributes+,+quotes"]
+----
+$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p __PROJECT_NAME__
+$ {PRODUCT_INIT} install jobs-service --infra __INFINISPAN_INFRA_NAME__
+----
+
+.Example `JobsService` resource with Infinispan persistence enabled
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoSupportingService
+metadata:
+  name: jobs-service
+spec:
+  serviceType: JobsService
+  infra:
+    - kogito-infinispan-infra
+  build:
+    envs:
+    - name: MAVEN_ARGS_APPEND
+      value: -Ppersistence
+----
+
+You can refine the Infinispan integration by setting the `spec.infra` property in the `KogitoSupportingService` custom resource that contains the `JobsService` service type. With this property set, the {PRODUCT} Operator ensures that the Jobs Service has access to the persistence infrastructure configurations.
+
+=== {PRODUCT} Jobs Service properties configuration
+
+When the {PRODUCT} Jobs Service is deployed, a `configMap` resource is created for the `application.properties` configuration of the Jobs Service.
+
+The name of the `configMap` resource consists of the name of the Jobs Service and the suffix `-properties`, as shown in the following example:
+
+.Example `configMap` resource generated during {PRODUCT} Jobs Service deployment
+[source,yaml]
+----
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: jobs-service-properties
+data:
+  application.properties : |-
+    property1=value1
+    property2=value2
+----
+
+The `application.properties` data of the `configMap` resource is mounted in a volume to the container of the Jobs Service. Any runtime properties that you add to the `application.properties` section override the default application configuration properties of the Jobs Service.
+
+When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the Jobs Service.
+
+////
+[id="con-kogito-operator-interaction-management-console_{context}"]
+== {PRODUCT} Operator interaction with the {PRODUCT} Management Console
+
+<Start here>
+
+[id="proc-management-console-deployment_{context}"]
+=== Deploying the {PRODUCT} Management Console
+
+<Start here>
+
+[id="ref-kogito-management-console-deployment-troubleshooting_{context}"]
+=== {PRODUCT} Management Console deployment troubleshooting
+
+<Start here>
+
+[id="con-kogito-operator-interaction-task-console_{context}"]
+== {PRODUCT} Operator interaction with the {PRODUCT} Task Console
+
+<Start here>
+
+[id="proc-task-console-deployment_{context}"]
+=== Deploying the {PRODUCT} Task Console
+
+<Start here>
+
+[id="ref-kogito-task-console-deployment-troubleshooting_{context}"]
+=== {PRODUCT} Task Console deployment troubleshooting
+
+<Start here>
+
+[id="con-kogito-operator-interaction-trusty-service_{context}"]
+== {PRODUCT} Operator interaction with the {PRODUCT} Trusty Service
+
+<Start here>
+
+[id="proc-trusty-service-deployment_{context}"]
+=== Deploying the {PRODUCT} Trusty Service
+
+<Start here>
+
+[id="ref-kogito-trusty-service-deployment-troubleshooting_{context}"]
+=== {PRODUCT} Trusty Service deployment troubleshooting
+
+<Start here>
+
+[id="con-kogito-operator-interaction-explainability-service_{context}"]
+== {PRODUCT} Operator interaction with the {PRODUCT} Explainability Service
+
+<Start here>
+
+[id="proc-explainability-service-deployment_{context}"]
+=== Deploying {PRODUCT} Explainability Service
+
+<Start here>
+
+[id="ref-kogito-trusty-service-deployment-troubleshooting_{context}"]
+=== {PRODUCT} Explainability Service deployment troubleshooting
+
+<Start here>
+////
+
+[id="con-kogito-operator-interaction-prometheus-grafana_{context}"]
+== {PRODUCT} Operator interaction with Prometheus and Grafana
+
+[role="_abstract"]
+{PRODUCT} provides a `monitoring-prometheus-addon` add-on that enables Prometheus metrics monitoring for {PRODUCT} services and generates Grafana dashboards that consume the default metrics exported by the add-on. The {PRODUCT} Operator uses the  https://github.com/coreos/prometheus-operator[Prometheus Operator] to expose the metrics from your {PRODUCT} project for Prometheus to scrape. Due to this dependency, the Prometheus Operator must be installed in the same namespace as your {PRODUCT} project.
+
+When you deploy a {PRODUCT} service that uses the `monitoring-prometheus-addon` add-on and the  Prometheus Operator is installed, the {PRODUCT} Operator creates a `ServiceMonitor` custom resource to expose the metrics for Prometheus, as shown in the following example:
+
+.Example `ServiceMonitor` resource for Prometheus
+[source,yaml]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: onboarding-service
+  name: onboarding-service
+  namespace: kogito
+spec:
+  endpoints:
+  - path: /metrics
+    targetPort: 8080
+    scheme: http
+  namespaceSelector:
+    matchNames:
+    - kogito
+  selector:
+    matchLabels:
+      app: onboarding-service
+----
+
+You must manually configure your `Prometheus` custom resource that is managed by the Prometheus Operator to select the `ServiceMonitor` resource:
+
+.Example `Prometheus` resource
+[source,yaml]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+spec:
+  serviceAccountName: prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      app: onboarding-service
+----
+
+After you configure your Prometheus resource with the `ServiceMonitor` resource, you can see the endpoint being scraped by Prometheus in the *Targets* page in the Prometheus web console:
+
+.Targets page in Prometheus web console
+image::kogito/openshift/kogito-operator-prometheus-targets.png[Image of Kogito service targets view in Prometheus]
+
+The metrics exposed by the {PRODUCT} service appear in the *Graph* view:
+
+.Graph view in Prometheus web console
+image::kogito/openshift/kogito-operator-prometheus-graph.png[Image of Kogito service graph view in Prometheus]
+
+The {PRODUCT} Operator also creates a `GrafanaDashboard` custom resource defined by the https://operatorhub.io/operator/grafana-operator[Grafana Operator] for each of the Grafana dashboards generated by the add-on. The `app` label for the dashboards is the name of the deployed {PRODUCT} service. You must set the `dashboardLabelSelector` property of the `Grafana` custom resource according to the relevant {PRODUCT} service.
+
+.Example `Grafana` resource
+[source,yaml]
+----
+apiVersion: integreatly.org/v1alpha1
+kind: Grafana
+metadata:
+  name: example-grafana
+spec:
+  ingress:
+    enabled: true
+  config:
+    auth:
+      disable_signout_menu: true
+    auth.anonymous:
+      enabled: true
+    log:
+      level: warn
+      mode: console
+    security:
+      admin_password: secret
+      admin_user: root
+  dashboardLabelSelector:
+    - matchExpressions:
+        - key: app
+          operator: In
+          values:
+            - my-kogito-application
+----
+
+[role="_additional-resources"]
+.Additional resources
+* {URL_CONFIGURING_KOGITO}#proc-prometheus-metrics-monitoring_kogito-configuring[Enabling Prometheus metrics monitoring in {PRODUCT}]
+* https://github.com/coreos/prometheus-operator/blob/master/Documentation/user-guides/getting-started.md[Prometheus Operator]
+* https://operatorhub.io/operator/grafana-operator[Grafana Operator]
+
+////
+[id="ref-prometheus-grafana-integration-troubleshooting_{context}"]
+=== Prometheus and Grafana integration troubleshooting
+<Start here>
+////
+
+[id="proc-kogito-custom-truststore_{context}"]
+=== Replacing {PRODUCT} services TrustStores
+
+[role="_abstract"]
+You can replace the default Java TrustStore that comes in {PRODUCT} images. Replacement of Java TrustStore is required when a given {PRODUCT} service makes HTTPS calls to services that require encrypted connections using a private https://dzone.com/articles/understanding-the-role-of-certificate-authorities[Certificate Authority (CA)].
+
+.Prerequisites
+* The Java TrustStore replaces the default one. You must add the trusted certificates to the default JKS. As an alternative, you can create a new TrustStore that consists of the required {PRODUCT} service certificates.
+
+NOTE: Any {PRODUCT} service that is deployed in a given namespace can access the Java TrustStore if required.
+
+To manipulate the Java TrustStore, you can use https://keystore-explorer.org/[KeyExplorer] or https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html[keytool] that consists of JDK.
+
+.Procedure
+. Create a https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-config-file/[Kubernetes Secret] based on the customized Java TrustStore:
++
+--
+.Example Kuberbetes Secret
+[source]
+----
+$ oc create secret generic kogito-truststore --from-file=cacerts=<path to your JKS> --from-literal=keyStorePassword=<TrustStore Password>
+----
+--
++
+You must define the secret keys as shown in the previous command. `cacerts` is used for the TrustStore file and `keyStorePassword` is used for the TrustStore password.
+
+. Deploy the {PRODUCT} service that uses the TrustStore. For example:
++
+--
+.Example {PRODUCT} service deployment
+[source,yaml]
+----
+piVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: my-service
+spec:
+  replicas: 1
+  image: quay.io/my-namespace/my-service:latest
+  trustStoreSecret: kogito-truststore
+----
+--
+
+. Alternatively, you can use {PRODUCT} CLI to deploy the {PRODUCT} service using `truststore-secret` as follows:
++
+--
+.Example {PRODUCT} service deployment using {PRODUCT} CLI
+[source]
+----
+$ kogito deploy my-service https://mygitrepository/my-service.git --truststore-secret kogito-truststore
+----
+--
+
+[id="proc-kogito-deploying-on-kubernetes_{context}"]
+=== Deploying {PRODUCT} services on Kubernetes
+
+[id="con-kogito-operator-examples_{context}"]
+== Examples provided with {PRODUCT} Operator
+
+Several examples are shipped with {KOGITO}. You can review the code for examples and modify it as necessary to suit your needs.
 
 [id="con-kogito-travel-agency_{context}"]
-== Travel agency tutorial for {PRODUCT} services on OpenShift
+=== Travel agency tutorial for {PRODUCT} services on OpenShift
 
 [role="_abstract"]
 The https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application in GitHub contains {PRODUCT} services related to travel booking. The purpose of this example application is to help you get started with deploying {PRODUCT} services on {OPENSHIFT}.
@@ -407,9 +1562,19 @@ endif::[]
 * Git is installed.
 * JDK 11 or later is installed. (https://www.graalvm.org/[GraalVM] is recommended.)
 * Apache Maven 3.6.2 or later is installed.
+* (Quarkus only) The `pom.xml` file of your {PRODUCT} project contains the following dependency for the https://quarkus.io/guides/microprofile-health[Quarkus `smallrye-health` extension]. This extension enables the https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes[liveness and readiness probes] that are required for Quarkus-based projects on OpenShift or Kubernetes.
++
+.SmallRye Heath dependency for Quarkus applications on OpenShift
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-smallrye-health</artifactId>
+</dependency>
+----
 
 [id="proc-kogito-travel-agency-clone-repo_{context}"]
-=== Cloning the {PRODUCT} examples Git repository
+==== Cloning the {PRODUCT} examples Git repository
 
 [role="_abstract"]
 For this travel agency tutorial, you need local access to the example services, so you must first clone the https://github.com/kiegroup/kogito-examples[`{PRODUCT_INIT}-examples`] Git repository to your local system.
@@ -431,7 +1596,7 @@ For this travel agency tutorial, you need the `kogito-travel-agency` extended ex
 * https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended/visas[`visas`]: Service for managing travel visas, if required
 
 [id="proc-kogito-travel-agency-configure-ocp_{context}"]
-=== Configuring access to your OpenShift environment
+==== Configuring access to your OpenShift environment
 
 [role="_abstract"]
 To complete the travel agency tutorial, you must ensure that you have proper access to both the {OPENSHIFT} web console and to the `oc` CLI.
@@ -454,7 +1619,7 @@ If your authentication fails or you do not have `cluster-admin` permissions, con
 --
 
 [id="proc-kogito-travel-agency-create-ocp-project_{context}"]
-=== Creating an OpenShift project and installing the {PRODUCT} Operator using the {PRODUCT} CLI
+==== Creating an OpenShift project and installing the {PRODUCT} Operator using the {PRODUCT} CLI
 
 [role="_abstract"]
 To set up an example application with {PRODUCT} services for deployment on {OPENSHIFT}, you must create a project (namespace) in OpenShift in which you can install the application and the {PRODUCT} Operator. The {PRODUCT} Operator is based on the https://sdk.operatorframework.io/[Operator SDK] and automates many of the deployment steps for you. The first time that you use the {PRODUCT} CLI to interact with a project or service, the {PRODUCT} Operator is automatically installed and used to execute the relevant tasks.
@@ -490,7 +1655,7 @@ After you create the OpenShift project using the {PRODUCT} CLI and install the {
 image::kogito/openshift/kogito-ocp-installed-operators.png[Image of installed operators in web console]
 
 [id="proc-kogito-travel-agency-enable-persistence_{context}"]
-=== Installing the Infinispan persistence infrastructure for {PRODUCT} services on OpenShift
+==== Installing the Infinispan persistence infrastructure for {PRODUCT} services on OpenShift
 
 [role="_abstract"]
 {PRODUCT} supports runtime persistence for process data in your services. {PRODUCT} persistence is based on https://infinispan.org/[Infinispan] and enables you to configure key-value storage definitions to persist data, such as active nodes and process instance variables, so that the data is preserved across application restarts.
@@ -528,7 +1693,7 @@ image::kogito/openshift/kogito-ocp-infinispan-infra.png[Image of Infinispan Clus
 image::kogito/openshift/kogito-ocp-stateful-sets-infinispan.png[Image of Stateful Sets page in web console]
 
 [id="proc-kogito-travel-agency-enable-messaging_{context}"]
-=== Installing the Kafka messaging infrastructure for {PRODUCT} services on OpenShift
+==== Installing the Kafka messaging infrastructure for {PRODUCT} services on OpenShift
 
 [role="_abstract"]
 {PRODUCT} supports the https://github.com/eclipse/microprofile-reactive-messaging[MicroProfile Reactive Messaging] specification for messaging in your services. {PRODUCT} messaging is based on https://kafka.apache.org/[Apache Kafka] and enables you to configure messages as either input or output of business process execution.
@@ -566,7 +1731,7 @@ image::kogito/openshift/kogito-ocp-kafka-infra.png[Image of Kafkas page in web c
 image::kogito/openshift/kogito-ocp-stateful-sets-kafka.png[Image of Stateful Sets page in web console]
 
 [id="proc-kogito-travel-agency-enable-data-index_{context}"]
-=== Installing the {PRODUCT} Data Index Service for {PRODUCT} services on OpenShift
+==== Installing the {PRODUCT} Data Index Service for {PRODUCT} services on OpenShift
 
 [role="_abstract"]
 {PRODUCT} provides a Data Index Service that stores all {PRODUCT} events related to processes, tasks, and domain data. The Data Index Service uses Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then indexes the returned data for future GraphQL queries and stores the data in the Infinispan persistence store. The Data Index Service is at the core of all {PRODUCT} search, insight, and management capabilities.
@@ -620,7 +1785,7 @@ image::kogito/openshift/kogito-ocp-data-index-graphql2.png[Image of Data Index G
 --
 
 [id="proc-kogito-travel-agency-create-services_{context}"]
-=== Creating {PRODUCT} service definitions on OpenShift using the {PRODUCT} CLI
+==== Creating {PRODUCT} service definitions on OpenShift using the {PRODUCT} CLI
 
 [role="_abstract"]
 After you set up the required infrastructures for your application, you can create the {PRODUCT} service definitions and provision the OpenShift resources required for deployment with a binary build. You can create the service definitions using the OpenShift web console or using the {PRODUCT} CLI.
@@ -677,7 +1842,7 @@ The new services are available but not yet deployed on OpenShift until you build
 --
 
 [id="proc-kogito-travel-agency-deploy-binary_{context}"]
-=== Deploying {PRODUCT} services on OpenShift using a binary build
+==== Deploying {PRODUCT} services on OpenShift using a binary build
 
 [role="_abstract"]
 OpenShift builds can require extensive amounts of time. As a faster alternative for building and deploying your {PRODUCT} services on OpenShift, you can use a binary build. In a binary build, you build the application locally and push the built application to an OpenShift `BuildConfig` configuration to be packaged into the runtime container image.
@@ -807,7 +1972,7 @@ image::kogito/openshift/kogito-ocp-visas-app.png[Image of Visas application main
 --
 
 [id="proc-kogito-travel-agency-interacting_{context}"]
-=== Interacting with the deployed travel agency services on OpenShift
+==== Interacting with the deployed travel agency services on OpenShift
 
 [role="_abstract"]
 After you deploy the example travel agency services on {OPENSHIFT}, you can interact with the application interfaces to create a new travel plan.
@@ -1022,22 +2187,22 @@ image::kogito/openshift/kogito-data-index-graphiql-process-instances.png[Image o
 .Example response
 image::kogito/openshift/kogito-data-index-graphiql-usertask-instances.png[Image of GraphQL query and response for user task instances]
 --
+////
+=== {PRODUCT} Github bot with serverless workflow
 
-[id="con-kogito-operator-and-cli_{context}"]
-== {PRODUCT} Operator and CLI
+<Start here>
 
-[role="_abstract"]
-To help you deploy your {PRODUCT} services on {OPENSHIFT} or Kubernetes for cloud implementation, {PRODUCT} provides an operator and a command-line interface (CLI):
+=== {PRODUCT} temperature conversion with serverless workflow
 
-* *{PRODUCT} Operator*: An operator that guides you through the deployment process. The {PRODUCT} Operator is based on the https://sdk.operatorframework.io/[Operator SDK] and automates many of the deployment steps for you. For example, when you give the operator a link to the Git repository that contains your application, the operator can automatically configure the components required to build your project from source and deploy the resulting services.
-* *{PRODUCT} command-line interface (CLI)*: A CLI tool that enables you to interact with the {PRODUCT} Operator for deployment tasks. The {PRODUCT} CLI also enables you to deploy {PRODUCT} services from source instead of relying on custom resources and YAML files. You can use the {PRODUCT} CLI as a command-line alternative for deploying {PRODUCT} services without the {OPENSHIFT} web console.
+<Start here>
 
-ifdef::KOGITO-COMM[]
-For more information about the {PRODUCT} Operator and {PRODUCT} CLI and how to contribute, see the `README` file in the https://github.com/kiegroup/kogito-operator[`{PRODUCT_INIT}-cloud-operator`] repository in GitHub.
-endif::[]
+=== {PRODUCT} onboarding services
+
+<Start here>
+////
 
 [id="con-kogito-operator-architecture_{context}"]
-=== {PRODUCT} Operator architecture
+== {PRODUCT} Operator architecture
 
 [role="_abstract"]
 The {PRODUCT} Operator is written in https://golang.org/[Go] and is built with the https://sdk.operatorframework.io/[Operator SDK]. The {PRODUCT} Operator uses the https://kubernetes.io/docs/concepts/overview/kubernetes-api/[Kubernetes API] for most of the deployment tasks that the operator facilitates and for other internal operations.
@@ -1056,7 +2221,7 @@ The {PRODUCT} Operator uses the following custom resources to deploy {PRODUCT} d
 * https://sdk.operatorframework.io/docs/[Operator SDK documentation]
 * https://github.com/operator-framework/operator-sdk/tree/master/example[Operator SDK examples]
 
-==== {PRODUCT} Operator dependencies on third-party operators
+=== {PRODUCT} Operator dependencies on third-party operators
 
 The {PRODUCT} Operator uses the following third-party operators to auto-configure the {PRODUCT} service infrastructure components:
 
@@ -1144,7 +2309,7 @@ spec:
      - kogito-kafka-infra
 ----
 
-==== {PRODUCT} Operator core package structure
+=== {PRODUCT} Operator core package structure
 
 The {PRODUCT} Operator uses the following core packages. Your understanding of the {PRODUCT} Operator package structure can help you use the operator more effectively or contribute to the development of the operator.
 
@@ -1171,1324 +2336,3 @@ The following list describes the function and interaction of these core packages
 ** `util`: Provides the common https://golang.org/[Go] utilities used across the project
 
 To explore {PRODUCT} Operator packages or contribute to the operator development, see the https://github.com/kiegroup/kogito-operator[{PRODUCT} Operator source] repository in GitHub.
-
-[id="proc-kogito-operator-and-cli-installing_{context}"]
-=== Installing the {PRODUCT} Operator and CLI
-
-[role="_abstract"]
-The {PRODUCT} command-line interface (CLI) enables you to interact with the {PRODUCT} Operator for deployment tasks. After you install the {PRODUCT} CLI, the first time that you use the CLI to interact with a project or service, the {PRODUCT} Operator is automatically installed and used to execute the relevant tasks.
-
-.Procedure
-. Go to the https://github.com/kiegroup/kogito-operator/releases[`{PRODUCT_INIT}-cloud-operator`] releases page in GitHub and download the latest version of the `{PRODUCT_INIT}-cli-_RELEASE_` binary file that is specific to your operating system.
-. Extract the `{PRODUCT_INIT}-cli-_RELEASE_` binary file to a local directory:
-+
---
-* On Linux or Mac: In a command terminal, navigate to the directory where you downloaded the `{PRODUCT_INIT}-cli-_RELEASE_` binary file and enter the following command to extract the contents:
-+
-.Extract the {PRODUCT} CLI distribution
-[source,subs="attributes+,+quotes"]
-----
-tar -xvf {PRODUCT_INIT}-cli-_RELEASE_.tar.gz
-----
-
-* On Windows: In your file browser, navigate to the directory where you downloaded the `{PRODUCT_INIT}-cli-_RELEASE_` binary file and extract the ZIP file.
-
-The `{PRODUCT_INIT}` executable file appears.
---
-. Move the extracted `{PRODUCT_INIT}` file to an existing directory in your `PATH` variable:
-+
---
-* On Linux or Mac: In a command terminal, enter the following command:
-+
-.Move the `{PRODUCT_INIT}` file
-[source,subs="attributes+,+quotes"]
-----
-cp /__PATH_TO_{PRODUCT_INIT_CAP}__ /usr/local/bin
-----
-
-* On Windows: Update the relevant `PATH` environment variables in your system settings to include the path to the {PRODUCT} CLI folder. For example, on Windows 10, go to *Settings* -> *System Info* -> *Advanced System Settings* -> *Advanced* -> *Environment Variables* and in the *User* or *System* variables, add the path for the {PRODUCT} CLI folder to the `PATH` variable. Close and reopen your Windows command prompt to apply the changes.
---
-
-After you install the {PRODUCT} CLI, the first time that you use the CLI to interact with a project or service, such as `{PRODUCT_INIT} use-project __PROJECT_NAME__`, the {PRODUCT} Operator is automatically installed and used to execute the relevant tasks.
-
-To install the {PRODUCT} Operator manually without using the {PRODUCT} CLI, you can use the OpenShift web console and go to *Operators* -> *OperatorHub* in the left menu, search for and select *Kogito*, and follow the on-screen instructions to install the latest operator version.
-
-If the {PRODUCT} Operator is not available in the *OperatorHub* in the OpenShift web console, in a command terminal, enter the following command to add the operator to the Operator Lifecycle Manager (OLM) and try again to install the operator in the OpenShift web console:
-
-.Adding the {PRODUCT} Operator to the OLM
-[source]
-----
-$ oc create -f deploy/olm-catalog/kogito-operator/kogito-operator-operatorsource.yaml
-----
-
-If the OLM is not available in the cluster, you can install the {PRODUCT} Operator manually without the OLM by applying the following YAML files from the operator https://github.com/kiegroup/kogito-operator/tree/master/deploy[`deploy` directory] to the relevant namespace:
-
-.Applying the {PRODUCT} Operator YAML resources manually without the OLM
-[source]
-----
-$ oc apply -f deploy/service_account.yaml
-$ oc apply -f deploy/role.yaml
-$ oc apply -f deploy/role_binding.yaml
-$ oc apply -f deploy/operator.yaml
-----
-
-[id="proc-kogito-operator-installing-in-ocp-console_{context}"]
-=== Installing the {PRODUCT} Operator in the OpenShift web console
-
-[role="_abstract"]
-As an alternative or a supplement to the {PRODUCT} command-line interface (CLI), you can use the {PRODUCT} Operator page in the {OPENSHIFT} web console to define {PRODUCT} infrastructure components and deploy {PRODUCT} services.
-
-.Prerequisites
-* The application with your {PRODUCT} services is in a Git repository that is reachable from your OpenShift environment.
-* You have access to the OpenShift web console with `cluster-admin` permissions.
-
-.Procedure
-. In the OpenShift web console, go to *Operators* -> *OperatorHub* in the left menu, search for and select *Kogito*, and follow the on-screen instructions to install the latest operator version.
-+
---
-If the {PRODUCT} Operator is not available in the *OperatorHub* in the OpenShift web console, in a command terminal, enter the following command to add the operator to the Operator Lifecycle Manager (OLM) and try again to install the operator in the OpenShift web console:
-
-.Adding the {PRODUCT} Operator to the OLM
-[source]
-----
-$ oc create -f deploy/olm-catalog/kogito-operator/kogito-operator-operatorsource.yaml
-----
---
-. After you install the {PRODUCT} Operator, in the OpenShift web console, go to *Operators* -> *Installed Operators* and select *Kogito* to begin defining your {PRODUCT} service components.
-+
---
-Use the upper toolbar options in the {PRODUCT} Operator page as needed to configure *Kogito Infra* components, such as Infinispan persistence and Kafka messaging, to configure *{PRODUCT} Supporting Service* components, such as the {PRODUCT} Data Index Service and Jobs Service, and to create a *{PRODUCT} Service* instance.
-
-.{PRODUCT} Operator page in OpenShift web console with {PRODUCT} services
-image::kogito/openshift/kogito-ocp-create-app-listed-agency.png[Image of travels and visas services listed in web console]
-
-Any {PRODUCT} services and related components that you define using the {PRODUCT} CLI are automatically updated in the OpenShift web console.
---
-
-[id="ref-kogito-cli-operations_{context}"]
-=== Supported operations in the {PRODUCT} CLI
-
-[role="_abstract"]
-The {PRODUCT} command-line interface (CLI) supports the following operations on Linux, Mac, and Windows operating systems. The syntax of some operations might vary for Windows users, such as a backslash (`\`) instead of a forward slash (`/`).
-
-.Supported operations in the {PRODUCT} CLI
-[cols="30%,35%,35%", options="header"]
-|===
-|Operation
-|{PRODUCT} CLI command
-|Example
-
-|Create an OpenShift project for {PRODUCT} services.
-|`{PRODUCT_INIT} new-project __PROJECT_NAME__`
-|`{PRODUCT_INIT} new-project kogito-travel-agency`
-
-|Connect the {PRODUCT} Operator to an existing OpenShift project with {PRODUCT} services.
-|`{PRODUCT_INIT} use-project __PROJECT_NAME__`
-|`{PRODUCT_INIT} use-project kogito-travel-agency`
-
-|Install the Infinispan infrastructure for process data persistence in {PRODUCT} services.
-|`{PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan`
-|`{PRODUCT_INIT} install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan`
-
-|Install the Apache Kafka infrastructure for messaging in {PRODUCT} services.
-|`{PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka`
-|`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka`
-
-|Install the {PRODUCT} Data Index Service for data management in {PRODUCT} services and provision the Data Index Service to connect to the specified Infinispan and Kafka infrastructures.
-|`{PRODUCT_INIT} install data-index --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
-|`{PRODUCT_INIT} install data-index --infra kogito-infinispan-infra --infra kogito-kafka-infra`
-
-|Install the {PRODUCT} Jobs Service for job scheduling in {PRODUCT} services and provision the Jobs Service to connect to the specified Infinispan and Kafka infrastructures.
-|`{PRODUCT_INIT} install jobs-service --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
-|`{PRODUCT_INIT} install jobs-service --infra kogito-infinispan-infra --infra kogito-kafka-infra`
-
-|Install the {PRODUCT} Management Console for managing process instance details in {PRODUCT} services.
-|`{PRODUCT_INIT} install mgmt-console`
-|`{PRODUCT_INIT} install mgmt-console`
-
-|Install the {PRODUCT} Trusty Service to store tracing events and provide advanced analytical capabilities in {PRODUCT} services, and provision the Trusty Service to connect to the specified Infinispan and Kafka infrastructures.
-|`{PRODUCT_INIT} install trusty --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
-|`{PRODUCT_INIT} install trusty --infra kogito-infinispan-infra --infra kogito-kafka-infra`
-
-|Install the {PRODUCT} Explainability Service to analyze decisions made in {PRODUCT} services and provision the Explainability Service to connect to the specified Kafka infrastructure.
-|`{PRODUCT_INIT} install explainability --infra __KAFKA_INFRA_NAME__`
-|`{PRODUCT_INIT} install explainability --infra kogito-kafka-infra`
-
-|Install the {PRODUCT} Task Console for viewing and interacting with user tasks in {PRODUCT} process services.
-|`{PRODUCT_INIT} install task-console`
-|`{PRODUCT_INIT} install task-console`
-
-|Install {PRODUCT} supporting services or infrastructure components for a specified {PRODUCT} project. Use this syntax if you did not use the `new-project` or `use-project` commands to connect the {PRODUCT} Operator to a specified project.
-|`{PRODUCT_INIT} install __KOGITO_SUPPORTING_SERVICE__ --infra __KOGITO_INFRA_NAME__ -p __PROJECT_NAME__`
-
-`{PRODUCT_INIT} install infra __KOGITO_INFRA_NAME__ __KOGITO_INFRA_DETAILS__ -p __PROJECT_NAME__`
-
-|`{PRODUCT_INIT} install data-index --infra kogito-infinispan-infra --infra kogito-kafka-infra -p kogito-travel-agency`
-
-`{PRODUCT_INIT} install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p kogito-travel-agency`
-
-`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p kogito-travel-agency`
-
-|Create a {PRODUCT} service definition from a local source or a Git repository and deploy the service. In a local directory source, if the `pom.xml` file is present, then the entire directory is zipped and uploaded to OCP and the build is initiated. However, if the `pom.xml` is not present, then only supported extension files (including `.dmn`, `.drl`, `.bpmn`, `.bpmn2`, `.properties`, `.sw.json`, and `.sw.yaml`) are uploaded from the directory to initiate the build. In a binary build configuration, this command creates the service definition but does not deploy the service.
-|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__`
-
-`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_REPOSITORY_URL__ --context-dir __PROJECT_DIRECTORY__`
-|`{PRODUCT_INIT} deploy-service travels`
-
-`{PRODUCT_INIT} deploy-service travels \https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels`
-
-|Enable Infinispan persistence and Apache Kafka messaging for a {PRODUCT} service during deployment. Use this command if you installed the relevant infrastructures using the {PRODUCT} Operator. In a binary build configuration, this command creates the service definition but does not deploy the service.
-|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
-
-`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_REPOSITORY_URL__ --context-dir __PROJECT_DIRECTORY__ --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
-|`{PRODUCT_INIT} deploy-service travels --infra kogito-infinispan-infra --infra kogito-kafka-infra`
-
-`{PRODUCT_INIT} deploy-service travels \https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --infra kogito-infinispan-infra --infra kogito-kafka-infra`
-
-|Create a {PRODUCT} service definition from a local or Git source and deploy the service using a native build.
-|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ --native`
-
-`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_REPOSITORY_URL__ --context-dir __PROJECT_DIRECTORY__ --native`
-|`{PRODUCT_INIT} deploy-service travels --native`
-
-`{PRODUCT_INIT} deploy-service travels \https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --native`
-
-|Upload a {PRODUCT} service file, such as a Decision Model and Notation (DMN) or Business Process Model and Notation (BPMN) file, or a file directory with multiple files to an OpenShift Cluster and trigger a new Source-to-Image (S2I) build. For single files, you can specify a local file system path or Git repository URL. For file directories, you can specify a local file system path only.
-|`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __PATH_TO_FILE_OR_DIR__`
-
-`{PRODUCT_INIT} deploy-service __SERVICE_NAME__ __GIT_FILE_URL__`
-
-|`kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2`
-
-`kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels`
-
-`kogito deploy-service travels \https://github.com/kiegroup/kogito-examples/blob/stable/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2`
-
-|Delete a {PRODUCT} service.
-|`{PRODUCT_INIT} delete-service __SERVICE_NAME__`
-|`{PRODUCT_INIT} delete-service travels`
-|===
-
-[id="con-kogito-operator-deployment-options_{context}"]
-=== OpenShift deployment options with the {PRODUCT} Operator and CLI
-
-[role="_abstract"]
-The {PRODUCT} Operator and command-line interface (CLI) support the following options for building and deploying {PRODUCT} services on {OPENSHIFT}:
-
-* Git source build and deployment
-* Binary build and deployment
-* File build and deployment
-ifdef::KOGITO-COMM[]
-* Native build and deployment
-endif::[]
-
-{PRODUCT} provides the relevant Source-to-Image (S2I) build configuration depending the deployment option that you use.
-
-NOTE: For all deployment options, you must be logged in to the relevant OpenShift cluster using the `oc login` command.
-
-==== Git source build and deployment
-
-In most use cases, you can use the standard runtime build and deployment method to deploy {PRODUCT} services on OpenShift from a Git repository source, as shown in the following examples. These examples are based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
-
-.Example {PRODUCT} service deployment from existing namespace
-[source,subs="attributes+,+quotes"]
-----
-// Uses the provisioned namespace in your OpenShift cluster
-$ {PRODUCT_INIT} use-project __PROJECT_NAME__
-
-// Deploys a new {PRODUCT} service from a Git source
-$ {PRODUCT_INIT} deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels
-----
-
-The {PRODUCT} Operator uses the default branch in the specified Git repository, usually `master`.
-
-Alternatively, you can generate a new namespace in your cluster during deployment:
-
-.Example {PRODUCT} service deployment from new namespace
-[source,subs="attributes+,+quotes"]
-----
-// Creates a new namespace in your cluster
-$ {PRODUCT_INIT} new-project __NEW_PROJECT_NAME__
-
-// Deploys a new {PRODUCT} service from a Git source
-$ {PRODUCT_INIT} deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels
-----
-
-NOTE: If you are developing or testing your {PRODUCT} service locally, you can use the binary build or file build option to build and deploy from a local source instead of from a Git repository.
-
-==== Binary build and deployment
-
-OpenShift builds can require extensive amounts of time. As a faster alternative for building and deploying your {PRODUCT} services on OpenShift, you can use a binary build. In a binary build, you build the application locally and push the built application to an OpenShift `BuildConfig` configuration to be packaged into the runtime container image.
-
-The following example creates a {PRODUCT} service from a local directory, builds the project binaries, and deploys the binary build to OpenShift. This example is based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
-
-.Example {PRODUCT} service deployment from binary build
-[source,subs="attributes+,+quotes"]
-----
-// Creates the {PRODUCT} service
-$ cd ~/kogito-travel-agency/extended/travels
-$ kogito deploy-service travels
-
-// Builds the project and generates binary resources in `target` folder
-$ mvn clean package
-
-// Deploys to OpenShift using binary build
-$ oc start-build travels-binary --from-dir=target/
-
-Uploading directory "target/" as binary input for the build ...
-....
-Uploading finished
-build.build.openshift.io/travels-1 started
-----
-
-In this example, the following resources are generated in the `target` folder to prepare for the binary build:
-
-* `quarkus-app/app/travels.jar`: Standard JAR file that contains the classes and resources of the project.
-* `quarkus-app/quarkus`: Contains the generated resources required by the Quarkus application to run.
-* `quarkus-app/lib`: Directory that contains the project dependencies.
-* `quarkus-app/quarkus-run.jar`: Executable JAR file for the project. Note that `quarkus-run.jar` is not an uber-JAR file, and also requires the folders `quarkus-app/app`, `quarkus-app/quarkus`, and `quarkus-app/lib`.
-
-NOTE: The {PRODUCT} images are handling the binary build directly from the `target` folder, and the content of the `target/quarkus-app` folder is copied directly.
-
-After the binary build is complete, the result is pushed to the `travels` Image Stream that was created by the {PRODUCT} Operator and triggers a new deployment.
-
-==== File build and deployment
-
-You can build and deploy your {PRODUCT} services from a single file, such as a Decision Model and Notation (DMN), Business Process Model and Notation (BPMN or BPMN2), Drools Rule Language (DRL), or properties file, or from a directory with multiple files. You can specify a single file from your local file system path or from a Git repository URL, or specify a file directory from a local file system path only. When you upload the file or directory to an OpenShift cluster, a new Source-to-Image (S2I) build is automatically triggered.
-
-NOTE: You cannot upload a file directory from a Git repository. The file directory must be in your local file system. However, you can upload single files from either a Git repository or your local file system.
-
-The following examples upload a single BPMN file from a local directory or Git repository to an OpenShift cluster for an S2I build. These examples are based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
-
-.Example {PRODUCT} service deployment from a local file
-[source,subs="attributes+,+quotes"]
-----
-$ kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2
-
-File found: /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2.
-...
-The requested file(s) was successfully uploaded to OpenShift, a build with this file(s) should now be running. To see the logs, run 'oc logs -f bc/kogito-travel-agency-builder -n kogito'
-----
-
-.Example {PRODUCT} service deployment from a Git repository file
-[source,subs="attributes+,+quotes"]
-----
-$ kogito deploy-service travels https://github.com/kiegroup/kogito-examples/blob/stable/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2
-
-Asset found: travels.bpmn2.
-...
-The requested file(s) was successfully uploaded to OpenShift, a build with this file(s) should now be running. To see the logs, run 'oc logs -f bc/kogito-travel-agency-builder -n kogito'
-----
-
-As instructed in the terminal output, you can run the following command to see the build logs:
-
-.Example build log for BPMN file build
-[source]
-----
-$ oc logs -f bc/kogito-travel-agency-builder -n kogito
-
-Receiving source from STDIN as file travels.bpmn2
-Using docker-registry.default.svc:5000/openshift/kogito-builder as the s2i builder image
-----
-
-The following examples upload multiple files within a local directory to an OpenShift cluster for an S2I build:
-
-.Example {PRODUCT} service deployment from multiple files in a local directory
-[source,subs="attributes+,+quotes"]
-----
-$ kogito deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels
-
-The provided source is a dir, packing files.
-File(s) found: [/tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/flightBooking.bpmn2 /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/hotelBooking.bpmn2 /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2].
-...
-The requested file(s) was successfully uploaded to OpenShift, a build with this file(s) should now be running. To see the logs, run 'oc logs -f bc/travels-builder -n kogito'
-----
-
-For every valid file type (DMN, BPMN, BPMN2, DRL) in the specified directory, the {PRODUCT} CLI compresses the files and uploads them to the OpenShift cluster. Any other unsupported file types are not uploaded. To ensure that other file types are uploaded, consider using a source build or a binary build.
-
-If you need to update an uploaded file or directory after you create the build, you can use the `oc start-build` command to re-upload the file or directory, as shown in the following example. An S2I build cannot identify only changed files in a directory, so you must re-upload the entire directory of files to update the build.
-
-.Example command to re-upload a single local file to update the S2I build
-----
-$ oc start-build kogito-travel-agency-builder --from-file tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels/travels.bpmn2
-----
-
-.Example command to re-upload multiple files from a local directory to update the S2I build
-----
-$ oc start-build kogito-travel-agency-builder --from-dir tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels
-----
-
-If a build fails, use the OpenShift environment variable https://docs.openshift.com/container-platform/4.3/builds/basic-build-operations.html#builds-basic-access-build-verbosity_basic-build-operations[`BUILD_LOGLEVEL`] with the desired level as part of your deployment command, as shown in the following example:
-
-.Example command to troubleshoot failed build from directory
-[source]
-----
-$ kogito --verbose deploy-service travels /tmp/kogito-examples/kogito-travel-agency/extended/travels/src/main/resources/org/acme/travels --build-env BUILD_LOGLEVEL=5
-----
-
-ifdef::KOGITO-COMM[]
-==== Native build and deployment
-
-NOTE: Native build and deployment is for Quarkus only and requires GraalVM.
-
-By default, the {PRODUCT} Operator and CLI build services with traditional `java` compilers to save time and resources. The final generated artifact is a JAR file for the relevant runtime (defaults to Quarkus) with dependencies in the image user's home directory, such as `/home/kogito/bin/lib`.
-
-However, for {PRODUCT} services on Quarkus with GraalVM (required), the {PRODUCT} Operator and CLI can build the services in native mode for direct binary execution as native code. Building in native mode uses a very low footprint on the runtime, although many resources are consumed during build time.
-
-For more information about native build performance, see the GraalVM https://www.graalvm.org/docs/examples/java-performance-examples/[Performance examples for Java].
-
-For more information about ahead-of-time (AOT) compilation, see the https://www.graalvm.org/docs/reference-manual/aot-compilation/[GraalVM Native Image] documentation.
-
-The following examples build a {PRODUCT} service on Quarkus in native mode using the `--native` parameter. These examples are based on the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application.
-
-.Example {PRODUCT} service native build from a local source directory
-[source,subs="attributes+,+quotes"]
-----
-$ cd ~/kogito-travel-agency/extended/travels
-$ {PRODUCT_INIT} deploy-service travels --native
-----
-
-.Example {PRODUCT} service native build from a Git repository source directory
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --native
-----
-
-In {PRODUCT} Operator tests, native builds take approximately 10 minutes and the build pod can consume up to 10GB of RAM and 1.5 CPU cores.
-
-By default, a {PRODUCT} project does not contain resource requests or limits. As a result, a native build might be terminated due to insufficient memory. To prevent this behavior, you can create a minimum memory request configuration for the {PRODUCT} application build, ensuring that the build pod is allocated on an OpenShift node with enough free memory. The side effect of this configuration is that OpenShift prioritizes the build pod.
-
-For more information about OpenShift pod prioritization based on pod requests and limits, see https://docs.okd.io/3.11/dev_guide/compute_resources.html#quality-of-service-tiers[Quality of Service Tiers] in the OpenShift documentation.
-
-The following example is a memory request configuration for the https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended[`kogito-travel-agency`] extended example application:
-
-.Example memory request configuration for `kogito-travel-agency`
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoBuild
-metadata:
-  name: travels
-  namespace: kogito
-spec:
-  type: RemoteSource
-  gitSource:
-    contextDir: kogito-travel-agency/extended/travels
-    uri: "https://github.com/kiegroup/kogito-examples/"
-  resources:
-    requests:
-        memory: "4Gi"
-----
-
-IMPORTANT: Ensure that you have these resources available on your OpenShift nodes when you run native builds. If the resources are not available, the S2I build fails. You can verify currently allocated and total resources of your nodes by using the command `oc describe nodes` invoked with `admin` permission.
-
-You can limit the maximum heap space for the JVM used for a native build. You can apply the limitation by setting the `quarkus.native.native-image-xmx` property in the `application.properties` file of your {PRODUCT} project. In this case, the build pod requires roughly `-Xmx` plus 2 GB of memory. The `-Xmx` value depends on the complexity of the application. For example, for the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] example application, the `-Xmx` value `2g` is sufficient, resulting in the builder pod consuming up to 4.2 GB of memory.
-
-You can also set resource limits for a native build pod. In the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] application, 80 percent of the memory limit is used for heap space in the JVM responsible for the native build. If the computed heap space limit for the JVM is less than 1024 MB, then all the memory from resource limits is used.
-
-The following example is a memory limit configuration for the https://github.com/kiegroup/kogito-examples/tree/stable/process-quarkus-example[`process-quarkus-example`] example application:
-
-.Example memory request configuration for `process-quarkus-example`
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoBuild
-metadata:
-  name: process-quarkus-example
-  namespace: kogito
-spec:
-  type: RemoteSource
-  gitSource:
-    contextDir: process-quarkus-example
-    uri: "https://github.com/kiegroup/kogito-examples/"
-  resources:
-    limits:
-        memory: "4Gi"
-----
-endif::[]
-
-[id="con-kogito-operator-deployment-configs_{context}"]
-==== {PRODUCT} service properties configuration
-
-[role="_abstract"]
-When a {PRODUCT} service is deployed, a `configMap` resource is created for the `application.properties` configuration of the {PRODUCT} service.
-
-The name of the `configMap` resource consists of the name of the {PRODUCT} service and the suffix `-properties`, as shown in the following example:
-
-.Example `configMap` resource generated during {PRODUCT} service deployment
-[source,yaml]
-----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kogito-travel-agency-properties
-data:
-  application.properties : |-
-    property1=value1
-    property2=value2
-----
-
-The `application.properties` data of the `configMap` resource is mounted in a volume to the container of the {PRODUCT} service. Any runtime properties that you add to the `application.properties` section override the default application configuration properties of the {PRODUCT} service.
-
-When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the {PRODUCT} service.
-
-[id="con-kogito-operator-with-infinispan_{context}"]
-=== {PRODUCT} Operator interaction with Infinispan
-
-[role="_abstract"]
-You can configure the Infinispan infrastructure for process data persistence in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
-
-.Enable Infinispan persistence using the {PRODUCT} CLI
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p __PROJECT_NAME__
-----
-
-.Enable Infinispan persistence using a custom resource definition
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoInfra
-metadata:
-  name: INFINISPAN_INFRA_NAME
-spec:
-  resource:
-    apiVersion: infinispan.org/v1
-    kind: Infinispan
-    name: kogito-infinispan
-----
-
-When you install the Infinispan infrastructure for your {PRODUCT} project using the {PRODUCT} CLI, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle Infinispan configuration for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
-
-The `KogitoInfra` resource uses the https://github.com/infinispan/infinispan-operator[Infinispan Operator] to interact with the Infinispan Server instances when needed. The Infinispan Server instances must be already deployed. Due to this dependency, the Infinispan Operator must be installed in the same namespace where you deployed the custom {PRODUCT} service. For information about Infinispan Operator installation, see the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan Operator Guide].
-
-The {PRODUCT} Operator does not manage Infinispan instances, but you can edit and manage Infinispan instances as needed. For example, if you want to scale the Infinispan cluster, you can edit the `replicas` field in the https://github.com/infinispan/infinispan-operator/blob/master/pkg/apis/infinispan/v1/infinispan_types.go[`infinispan_types.go`] custom resource to meet your requirements.
-
-By default, the `KogitoInfra` resource creates a secret that holds the user name and password for Infinispan authentication. To view the credentials, enter the following command:
-
-.View {PRODUCT} Infinispan credentials
-[source]
-----
-$ oc get secret/kogito-infinispan-credential -o yaml
-
-apiVersion: v1
-data:
-  password: VzNCcW9DeXdpMVdXdlZJZQ==
-  username: ZGV2ZWxvcGVy
-kind: Secret
-...
-----
-
-The key values are masked by a Base64 algorithm. To view the password from the previous example output in your terminal, enter the following command:
-
-.Reveal {PRODUCT} Infinispan password
-[source]
-----
-$ echo VzNCcW9DeXdpMVdXdlZJZQ== | base64 -d
-
-W3BqoCywi1WWvVIe
-----
-
-==== Infinispan persistence in {PRODUCT} services
-
-After you install the `KogitoInfra` custom resource to connect with the Infinispan infrastructure, to enable Infinispan persistence for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
-
-.Example {PRODUCT} service deployment with Infinispan persistence enabled using the {PRODUCT} CLI
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} deploy-service travels --infra __INFINISPAN_INFRA_NAME__
-----
-
-.Example {PRODUCT} service custom resource with Infinispan persistence enabled
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoRuntime
-metadata:
-  name: travels
-spec:
-  infra:
-    - INFINISPAN_INFRA_NAME
-----
-
-If you set up a custom Infinispan cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
-
-.Required environment variables for a custom Infinispan cluster
-[source]
-----
-ENABLE_PERSISTENCE=true
-
-# On Quarkus
-QUARKUS_INFINISPAN_CLIENT_AUTH_USERNAME
-QUARKUS_INFINISPAN_CLIENT_AUTH_PASSWORD
-
-# On Spring Boot
-INFINISPAN_REMOTE_AUTH_USERNAME
-INFINISPAN_REMOTE_AUTH_PASSWORD
-----
-
-.Required application properties for a custom Infinispan cluster
-[source]
-----
-# On Quarkus
-quarkus.infinispan-client.server-list=
-quarkus.infinispan-client.use-auth=
-quarkus.infinispan-client.sasl-mechanism=
-quarkus.infinispan-client.auth-realm=
-
-# On Spring Boot
-infinispan.remote.server-list=
-infinispan.remote.use-auth=
-infinispan.remote.sasl-mechanism=
-infinispan.remote.auth-realm=
-----
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[Persistence in {PRODUCT}]
-* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
-* https://github.com/infinispan/infinispan-operator/blob/master/README.md[Infinispan Operator]
-
-[id="con-kogito-operator-with-mongodb_{context}"]
-=== {PRODUCT} Operator interaction with MongoDB
-
-[role="_abstract"]
-{PRODUCT} Operator allows you to link a {PRODUCT} infrastructure to a custom MongoDB instance. You can set up the link for process data persistence in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
-
-.Enable MongoDB persistence using the {PRODUCT} CLI
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __MONGODB_INFRA_NAME__ --kind MongoDB --apiVersion mongodb.com/v1 --resource-name __CUSTOM_MONGODB_INSTANCE_NAME__ --property username=__MONGODB_DATABASE_USER__ --property database=__MONGODB_DATABASE__ -p __PROJECT_NAME__
-----
-
-.Enable MongoDB persistence using a custom resource definition
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoInfra
-metadata:
-  name: __MONGODB_INFRA_NAME__
-spec:
-  resource:
-    apiVersion: mongodb.com/v1
-    kind: MongoDB
-    name: __CUSTOM_MONGODB_INSTANCE_NAME__
-  infraProperties:
-    username: __MONGODB_DATABASE_USER__
-    database: __MONGODB_DATABASE__
-    # password and connection string will be retrieved from MongoDB instance
-----
-
-When you install the MongoDB infrastructure for your {PRODUCT} project using the {PRODUCT} CLI, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle the MongoDB instance.
-
-The `KogitoInfra` resource uses resources from the https://github.com/mongodb/mongodb-kubernetes-operator[MongoDB Operator] to retrieve information from the instances when needed. For information about MongoDB Operator installation and instances creation, see the https://github.com/mongodb/mongodb-kubernetes-operator#documentation[MongoDB Operator Documentation].
-
-The {PRODUCT} Operator does not manage MongoDB instances.
-
-==== MongoDB persistence in {PRODUCT} services
-
-After you install the `KogitoInfra` custom resource to connect with the MongoDB infrastructure, to enable MongoDB persistence for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __MONGODB_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
-
-.Example {PRODUCT} service deployment with MongoDB persistence enabled using the {PRODUCT} CLI
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} deploy-service travels --infra __MONGODB_INFRA_NAME__
-----
-
-.Example {PRODUCT} service custom resource with MongoDB persistence enabled
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoRuntime
-metadata:
-  name: travels
-spec:
-  infra:
-    - MONGODB_INFRA_NAME
-----
-
-If you set up a custom MongoDB cluster and do not use a `KogitoInfra` resource, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
-
-.Required environment variables for a custom MongoDB cluster
-[source]
-----
-ENABLE_PERSISTENCE=true
-
-# On Quarkus
-QUARKUS_MONGODB_CREDENTIALS_AUTH_SOURCE
-QUARKUS_MONGODB_CREDENTIALS_USERNAME
-QUARKUS_MONGODB_CREDENTIALS_PASSWORD
-QUARKUS_MONGODB_DATABASE
-
-# On Spring Boot
-SPRING_DATA_MONGODB_AUTHENTICATION_DATABASE
-SPRING_DATA_MONGODB_USERNAME
-SPRING_DATA_MONGODB_PASSWORD
-SPRING_DATA_MONGODB_DATABASE
-----
-
-.Required application properties for a custom MongoDB cluster
-[source]
-----
-# On Quarkus
-quarkus.mongodb.connection-string=
-
-# On Spring Boot
-spring.data.mongodb.host=
-spring.data.mongodb.port=
-----
-
-On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host, port, and credentials properties (Spring Boot). Also, it is recommended to set the password in Kubernetes.
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[Persistence in {PRODUCT}]
-* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
-* https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator]
-
-[id="con-kogito-operator-with-kafka_{context}"]
-=== {PRODUCT} Operator interaction with Apache Kafka
-
-[role="_abstract"]
-You can install the Apache Kafka infrastructure for messaging in {PRODUCT} services by using the following {PRODUCT} CLI operation or by providing a `KogitoInfra` custom resource definition:
-
-.Enable Kafka messaging using the {PRODUCT} CLI
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p __PROJECT_NAME__
-----
-
-.Enable Kafka messaging using a custom resource definition
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoInfra
-metadata:
-  name: KAFKA_INFRA_NAME
-spec:
-  resource:
-    apiVersion: kafka.strimzi.io/v1beta1
-    kind: Kafka
-    name: kogito-kafka
-----
-
-When you install the Kafka infrastructure for your {PRODUCT} project using the {PRODUCT} CLI, the {PRODUCT} Operator creates a `KogitoInfra` custom resource to handle the Kafka cluster interaction for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
-
-The {PRODUCT} Operator uses the https://strimzi.io/docs/latest/[Strimzi Operator] to interact with a Kafka cluster with Zookeeper to support sending and receiving messages within a process. Due to this dependency, the Strimzi Operator must be installed and a Kafka cluster must be created. For information about Strimzi Operator installation, see the https://strimzi.io/docs/operators/master/quickstart.html[Strimzi Quick Start guide].
-
-After the Strimzi Operator deploys Kafka instances, you can edit the instances to meet your requirements.
-
-==== Apache Kafka messaging in {PRODUCT} services
-
-After you install the `KogitoInfra` custom resource to connect with the Apache Kafka infrastructure, to enable Kafka messaging for a {PRODUCT} service using the {PRODUCT} Operator, use the `--infra __KAFKA_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoRuntime` custom resource:
-
-.Example {PRODUCT} service deployment with Kafka messaging enabled using the {PRODUCT} CLI
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} deploy-service travels --infra __KAFKA_INFRA_NAME__
-----
-
-.Example {PRODUCT} service custom resource with Kafka messaging enabled
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoRuntime
-metadata:
-  name: travels
-spec:
-  infra:
-    - KAFKA_INFRA_NAME
-----
-
-When you enable Kafka messaging, a variable named `KAFKA_BOOTSTRAP_SERVERS` is injected into the service container. On Quarkus, this is the default behavior when you use https://quarkus.io/guides/kafka-streams#topic-configuration[Kafka Client] 1.x or later. On Spring Boot, you might need to use a property substitution in the `application.properties` file, such as the following example:
-
-.Example application property substitution for Kafka on Spring Boot
-[source]
-----
-spring.kafka.bootstrap.servers=${KAFKA_BOOTSTRAP_SERVERS}
-----
-
-If the service container has any environment variables with the suffix `_BOOTSTRAP_SERVERS`, the variables are also injected by the value of the `KAFKA_BOOTSTRAP_SERVERS` variable.
-
-For example, when you deploy the following {PRODUCT} service, the variables `MP_MESSAGING_INCOMING_TRAVELLERS_BOOTSTRAP_SERVERS` and `MP_MESSAGING_OUTGOING_PROCESSEDTRAVELLERS_BOOTSTRAP_SERVERS` are injected with the deployed Kafka service URL:
-
-.Example {PRODUCT} service deployment with injected Kafka variable values
-[source]
-----
-$ kogito deploy-service travels https://github.com/kiegroup/kogito-examples/tree/stable/kogito-travel-agency/extended --context-dir travels --infra kogito-kafka-infra \
---build-env MAVEN_ARGS_APPEND="-Pevents" \
--e MP_MESSAGING_INCOMING_TRAVELLERS_BOOTSTRAP_SERVERS
--e MP_MESSAGING_OUTGOING_PROCESSEDTRAVELLERS_BOOTSTRAP_SERVERS
-----
-
-If you set up a custom Kafka cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variable and application property:
-
-.Required environment variable for a custom Kafka cluster
-[source]
-----
-ENABLE_EVENTS=true
-----
-
-.Required application property for a custom Kafka cluster
-[source]
-----
-# On Quarkus
-kafka.bootstrap.servers=
-
-# On Spring Boot
-spring.kafka.bootstrap-servers=
-----
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#proc-messaging-enabling_kogito-configuring[Enabling messaging for {PRODUCT} services]
-* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
-
-[id="con-kogito-operator-with-data-index-service_{context}"]
-=== {PRODUCT} Operator interaction with the {PRODUCT} Data Index Service
-
-[role="_abstract"]
-{PRODUCT} provides a Data Index Service that stores all {PRODUCT} events related to processes, tasks, and domain data. The Data Index Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then indexes the returned data for future GraphQL queries and stores the data in the Infinispan persistence store. The Data Index Service is at the core of all {PRODUCT} search, insight, and management capabilities.
-
-You can use the following {PRODUCT} command-line interface (CLI) operation to install the {PRODUCT} Data Index Service for data management in {PRODUCT} services:
-
-.Enable Data Index Service
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install data-index --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__ -p __PROJECT_NAME__
-----
-
-Instead of using the default Infinispan-based persistence in the {PRODUCT} Data Index Service, you can use a `KogitoInfra` resource linked to a MongoDB instance.
-
-.Enable Data Index Service with MongoDB connection information
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install data-index --infra __KAFKA_INFRA_NAME__ \
-    --image quay.io/kiegroup/kogito-data-index-mongodb:latest \
-    --infra __MONGODB_INFRA_NAME__ \
-    -p __PROJECT_NAME__
-----
-
-When you enable the Data Index Service for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoSupportingService` custom resource that contains the `DataIndex` service type to handle the Data Index Service deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
-
-If an Infinispan Server instance and an Apache Kafka cluster are not installed in the OpenShift namespace, you must configure these infrastructure components before installing the Data Index Service:
-
-.Enable Infinispan persistence
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p __PROJECT_NAME__
-----
-
-.Enable Kafka messaging
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p __PROJECT_NAME__
-----
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
-
-==== {PRODUCT} Data Index Service properties configuration
-
-When the {PRODUCT} Data Index Service is deployed, a `configMap` resource is created for the `application.properties` configuration of the Data Index Service.
-
-The name of the `configMap` resource consists of the name of the Data Index Service and the suffix `-properties`, as shown in the following example:
-
-.Example `configMap` resource generated during {PRODUCT} Data Index Service deployment
-[source,yaml]
-----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: data-index-properties
-data:
-  application.properties : |-
-    property1=value1
-    property2=value2
-----
-
-The `application.properties` data of the `configMap` resource is mounted in a volume to the container of the Data Index Service. Any runtime properties that you add to the `application.properties` section override the default application configuration properties of the Data Index Service.
-
-When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the Data Index Service.
-
-If your {PRODUCT} project uses the `kogito-addons-persistence-infinispan` or the `kogito-addons-persistence-mongodb` add-on to enable Infinispan or MongoDB persistence explicitly, the {PRODUCT} Operator mounts a volume based on a `configMap` resource created for you during the deployment of the service. This `configMap` resource has the `-protobuf-files` suffix and lists the protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) files that your service generated during build time.
-
-.Example `configMap` resource with protobuf files listed
-[source,yaml]
-----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: example-quarkus-protobuf-files
-  labels:
-    kogito-protobuf: true
-data:
-  visaApplications.proto: |-
-    syntax = "proto2";
-    package org.acme.travels.visaApplications;
-    import "kogito-index.proto";
-    import "kogito-types.proto";
-    option kogito_model = "VisaApplications";
-    option kogito_id = "visaApplications";
-    ...
-----
-
-When a new persistent {PRODUCT} service is deployed, a new set of protobuf files is generated and the Data Index Service creates a new `pod` instance that refers to the new volume.
-
-Updated protobuf files are automatically refreshed by Kubernetes volumes, so if you add a new
-property in your domain data, this data is reflected automatically in the Data Index Service without restarts.
-
-If a {PRODUCT} service is removed, the associated protobuf files are also removed and are no longer visible in the Data Index Service, but the data is still persisted in Infinispan or MongoDB.
-
-[id="con-kogito-operator-with-jobs-service_{context}"]
-=== {PRODUCT} Operator interaction with the {PRODUCT} Jobs Service
-
-[role="_abstract"]
-{PRODUCT} provides a Jobs Service for scheduling Business Process Model and Notation (BPMN) process events that are configured to be executed at a specified time. These time-based events in a process model are known as _jobs_.
-
-By default, {PRODUCT} services use an in-memory timer service to handle jobs defined in your BPMN process models. This default timer service does not cover long time intervals and is only suitable for short delays defined in the process. For advanced use cases where time intervals can be days or weeks or when additional event handling options are required, you can configure your {PRODUCT} project to use the {PRODUCT} Jobs Service as an external timer service.
-
-You can use the following {PRODUCT} command-line interface (CLI) operation to install the {PRODUCT} Jobs Service for job scheduling in {PRODUCT} services:
-
-.Enable Jobs Service
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install jobs-service -p __PROJECT_NAME__
-----
-
-When you enable the Jobs Service for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoSupportingService` custom resource that contains the `JobsService` service type to handle the Jobs Service deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#con-jobs-service_kogito-configuring[{PRODUCT} Jobs Service]
-
-==== Infinispan persistence with the {PRODUCT} Jobs Service
-
-To enable Infinispan persistence for the {PRODUCT} Jobs Service, you install the Infinispan infrastructure and then you can use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoSupportingService` custom resource that contains the `JobsService` service type:
-
-.Example Jobs Service deployment with Infinispan persistence enabled
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p __PROJECT_NAME__
-$ {PRODUCT_INIT} install jobs-service --infra __INFINISPAN_INFRA_NAME__
-----
-
-.Example `JobsService` resource with Infinispan persistence enabled
-[source,yaml]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoSupportingService
-metadata:
-  name: jobs-service
-spec:
-  serviceType: JobsService
-  infra:
-    - kogito-infinispan-infra
-  build:
-    envs:
-    - name: MAVEN_ARGS_APPEND
-      value: -Ppersistence
-----
-
-You can refine the Infinispan integration by setting the `spec.infra` property in the `KogitoSupportingService` custom resource that contains the `JobsService` service type. With this property set, the {PRODUCT} Operator ensures that the Jobs Service has access to the persistence infrastructure configurations.
-
-==== {PRODUCT} Jobs Service properties configuration
-
-When the {PRODUCT} Jobs Service is deployed, a `configMap` resource is created for the `application.properties` configuration of the Jobs Service.
-
-The name of the `configMap` resource consists of the name of the Jobs Service and the suffix `-properties`, as shown in the following example:
-
-.Example `configMap` resource generated during {PRODUCT} Jobs Service deployment
-[source,yaml]
-----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: jobs-service-properties
-data:
-  application.properties : |-
-    property1=value1
-    property2=value2
-----
-
-The `application.properties` data of the `configMap` resource is mounted in a volume to the container of the Jobs Service. Any runtime properties that you add to the `application.properties` section override the default application configuration properties of the Jobs Service.
-
-When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the Jobs Service.
-
-[id="con-kogito-operator-with-trusty-service_{context}"]
-=== {PRODUCT} Operator interaction with the {PRODUCT} Trusty Service
-
-[role="_abstract"]
-{PRODUCT} provides a Trusty Service that stores all {PRODUCT} tracing events related to decisions made in {PRODUCT} services. The Trusty Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from {PRODUCT} services, and then processes the tracing events and stores the data in the Infinispan persistence store.
-
-You can use the following {PRODUCT} command-line interface (CLI) operation to install the {PRODUCT} Trusty Service for auditing purposes in {PRODUCT} services:
-
-.Enable Trusty Service
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install trusty --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__ -p __PROJECT_NAME__
-----
-
-To export tracing events from your {PRODUCT} project, you must additionally add the `tracing-addon` add-on as a dependency to your project.
-
-When you enable the Trusty Service for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoSupportingService` custom resource that contains the `TrustyAI` service type to handle the Trusty Service deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
-
-The {PRODUCT} Operator uses the https://github.com/infinispan/infinispan-operator[Infinispan Operator] for persistence infrastructure and the https://strimzi.io/docs/latest/[Strimzi Operator] for Kafka messaging infrastructure.
-
-If an Infinispan Server instance and an Apache Kafka cluster are not installed in the OpenShift namespace, you must configure these infrastructure components before installing the Trusty Service:
-
-.Enable Infinispan persistence
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __INFINISPAN_INFRA_NAME__ --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p __PROJECT_NAME__
-----
-
-.Enable Kafka messaging
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p __PROJECT_NAME__
-----
-
-If the {PRODUCT} Explainability Service is enabled, then the Trusty Service also stores the explainability results for all the tracing events.
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#con-trusty-service_kogito-configuring[{PRODUCT} Trusty Service and Explainability Service]
-
-[id="con-kogito-operator-with-explainability-service_{context}"]
-=== {PRODUCT} Operator interaction with the {PRODUCT} Explainability Service
-
-[role="_abstract"]
-As an aid to the {PRODUCT} Trusty Service workflow for storing tracing events, {PRODUCT} provides a supplemental Explainability Service that provides an explanation for the decisions made in {PRODUCT} services. The Explainability Service uses Apache Kafka messaging to consume https://cloudevents.io/[CloudEvents] messages from the Trusty Service, and then applies explainability algorithms. Some algorithms require the Explainability Service to interact with the {PRODUCT} service that evaluated the decision. This communication is performed with HTTP `POST` requests.
-
-You can use the following {PRODUCT} command-line interface (CLI) operation to install the {PRODUCT} Explainability Service for auditing purposes in {PRODUCT} services:
-
-.Enable Explainability Service
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install explainability --infra __KAFKA_INFRA_NAME__ -p __PROJECT_NAME__
-----
-
-When you enable the Explainability Service for your {PRODUCT} project, the {PRODUCT} Operator creates a `KogitoSupportingService` custom resource that contains the `Explainability` service type to handle the Explainability Service deployment for you. This resource is added to your {PRODUCT} project and in the {PRODUCT} Operator page of the *Installed Operators* listed in the OpenShift web console, if applicable.
-
-If an Apache Kafka cluster is not installed in the OpenShift namespace, you must configure this infrastructure component before installing the Explainability Service:
-
-.Enable Kafka messaging
-[source,subs="attributes+,+quotes"]
-----
-$ {PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p __PROJECT_NAME__
-----
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#con-trusty-service_kogito-configuring[{PRODUCT} Trusty Service and Explainability Service]
-
-[id="con-kogito-operator-with-prometheus-and-grafana_{context}"]
-=== {PRODUCT} Operator interaction with Prometheus and Grafana
-
-[role="_abstract"]
-{PRODUCT} provides a `monitoring-prometheus-addon` add-on that enables Prometheus metrics monitoring for {PRODUCT} services and generates Grafana dashboards that consume the default metrics exported by the add-on. The {PRODUCT} Operator uses the  https://github.com/coreos/prometheus-operator[Prometheus Operator] to expose the metrics from your {PRODUCT} project for Prometheus to scrape. Due to this dependency, the Prometheus Operator must be installed in the same namespace as your {PRODUCT} project.
-
-When you deploy a {PRODUCT} service that uses the `monitoring-prometheus-addon` add-on and the  Prometheus Operator is installed, the {PRODUCT} Operator creates a `ServiceMonitor` custom resource to expose the metrics for Prometheus, as shown in the following example:
-
-.Example `ServiceMonitor` resource for Prometheus
-[source,yaml]
-----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  labels:
-    app: onboarding-service
-  name: onboarding-service
-  namespace: kogito
-spec:
-  endpoints:
-  - path: /metrics
-    targetPort: 8080
-    scheme: http
-  namespaceSelector:
-    matchNames:
-    - kogito
-  selector:
-    matchLabels:
-      app: onboarding-service
-----
-
-You must manually configure your `Prometheus` custom resource that is managed by the Prometheus Operator to select the `ServiceMonitor` resource:
-
-.Example `Prometheus` resource
-[source,yaml]
-----
-apiVersion: monitoring.coreos.com/v1
-kind: Prometheus
-metadata:
-  name: prometheus
-spec:
-  serviceAccountName: prometheus
-  serviceMonitorSelector:
-    matchLabels:
-      app: onboarding-service
-----
-
-After you configure your Prometheus resource with the `ServiceMonitor` resource, you can see the endpoint being scraped by Prometheus in the *Targets* page in the Prometheus web console:
-
-.Targets page in Prometheus web console
-image::kogito/openshift/kogito-operator-prometheus-targets.png[Image of Kogito service targets view in Prometheus]
-
-The metrics exposed by the {PRODUCT} service appear in the *Graph* view:
-
-.Graph view in Prometheus web console
-image::kogito/openshift/kogito-operator-prometheus-graph.png[Image of Kogito service graph view in Prometheus]
-
-The {PRODUCT} Operator also creates a `GrafanaDashboard` custom resource defined by the https://operatorhub.io/operator/grafana-operator[Grafana Operator] for each of the Grafana dashboards generated by the add-on. The `app` label for the dashboards is the name of the deployed {PRODUCT} service. You must set the `dashboardLabelSelector` property of the `Grafana` custom resource according to the relevant {PRODUCT} service.
-
-.Example `Grafana` resource
-[source,yaml]
-----
-apiVersion: integreatly.org/v1alpha1
-kind: Grafana
-metadata:
-  name: example-grafana
-spec:
-  ingress:
-    enabled: true
-  config:
-    auth:
-      disable_signout_menu: true
-    auth.anonymous:
-      enabled: true
-    log:
-      level: warn
-      mode: console
-    security:
-      admin_password: secret
-      admin_user: root
-  dashboardLabelSelector:
-    - matchExpressions:
-        - key: app
-          operator: In
-          values:
-            - my-kogito-application
-----
-
-[role="_additional-resources"]
-.Additional resources
-* {URL_CONFIGURING_KOGITO}#proc-prometheus-metrics-monitoring_kogito-configuring[Enabling Prometheus metrics monitoring in {PRODUCT}]
-* https://github.com/coreos/prometheus-operator/blob/master/Documentation/user-guides/getting-started.md[Prometheus Operator]
-* https://operatorhub.io/operator/grafana-operator[Grafana Operator]
-
-[id="proc-kogito-custom-truststore_{context}"]
-=== Replacing {PRODUCT} services TrustStores
-
-[role="_abstract"]
-You can replace the default Java TrustStore that comes in {PRODUCT} images. Replacement of Java TrustStore is required when a given {PRODUCT} service makes HTTPS calls to services that require encrypted connections using a private https://dzone.com/articles/understanding-the-role-of-certificate-authorities[Certificate Authority (CA)].
-
-.Prerequisites
-* The Java TrustStore replaces the default one. You must add the trusted certificates to the default JKS. As an alternative, you can create a new TrustStore that consists of the required {PRODUCT} service certificates.
-
-NOTE: Any {PRODUCT} service that is deployed in a given namespace can access the Java TrustStore if required.
-
-To manipulate the Java TrustStore, you can use https://keystore-explorer.org/[KeyExplorer] or https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html[keytool] that consists of JDK.
-
-.Procedure
-. Create a https://kubernetes.io/docs/tasks/configmap-secret/managing-secret-using-config-file/[Kubernetes Secret] based on the customized Java TrustStore:
-+
---
-.Example Kuberbetes Secret
-[source]
-----
-$ oc create secret generic kogito-truststore --from-file=cacerts=<path to your JKS> --from-literal=keyStorePassword=<TrustStore Password>
-----
---
-+
-You must define the secret keys as shown in the previous command. `cacerts` is used for the TrustStore file and `keyStorePassword` is used for the TrustStore password.
-
-. Deploy the {PRODUCT} service that uses the TrustStore. For example:
-+
---
-.Example {PRODUCT} service deployment
-[source,yaml]
-----
-piVersion: app.kiegroup.org/v1beta1
-kind: KogitoRuntime
-metadata:
-  name: my-service
-spec:
-  replicas: 1
-  image: quay.io/my-namespace/my-service:latest
-  trustStoreSecret: kogito-truststore
-----
---
-
-. Alternatively, you can use {PRODUCT} CLI to deploy the {PRODUCT} service using `truststore-secret` as follows:
-+
---
-.Example {PRODUCT} service deployment using {PRODUCT} CLI
-[source]
-----
-$ kogito deploy my-service https://mygitrepository/my-service.git --truststore-secret kogito-truststore
-----
---
-
-[id="proc-kogito-deploying-on-kubernetes_{context}"]
-=== Deploying {PRODUCT} services on Kubernetes
-
-[role="_abstract"]
-Starting with {PRODUCT} 0.11, the {PRODUCT} Operator supports {PRODUCT} service deployment on Kubernetes. After you create your {PRODUCT} services as part of a business application, you can build a container image for your {PRODUCT} project, push the image to an image registry, and then use the {PRODUCT} Operator to deploy your services on Kubernetes from the registered container image.
-
-The {PRODUCT} Operator uses a `KogitoRuntime` custom resource that enables Kubernetes or OpenShift deployment from a registered container image. This resource does not require you to build the images in the cluster. Instead, you can pass the {PRODUCT} service image that you want to deploy and the {PRODUCT} Operator handles the building and deployment for you.
-
-For example {PRODUCT} service configurations for a Kubernetes deployment, see the https://github.com/kiegroup/kogito-operator/tree/master/examples/kubernetes/travel-agency[`travel-agency`] example application for Kubernetes.
-
-.Prerequisites
-* The Kubernetes command-line tool `kubectl` is installed. For installation instructions, see the https://kubernetes.io/docs/tasks/tools/install-kubectl/[Kubernetes documentation].
-* Podman container manager is installed. For installation instructions, see the https://podman.io/getting-started/installation[Podman documentation].
-* The application with your {PRODUCT} services is in a location that is reachable from your Kubernetes environment.
-* You have Kubernetes permissions to create resources in a specified namespace.
-
-.Procedure
-. Go to the https://github.com/kiegroup/kogito-operator/releases[`{PRODUCT_INIT}-cloud-operator`] releases page in GitHub, download the latest version of the {PRODUCT} Operator `Source code` file, and extract the downloaded `kogito-operator-__VERSION__` file to a local directory.
-+
-The {PRODUCT} Operator source code contains resources for installing the operator manually for Kubernetes deployments.
-. In a command terminal, navigate to the root of the extracted `kogito-operator-__VERSION__` folder and enter the following commands to create the Kubernetes namespace (if not created already) and to install the {PRODUCT} Operator in that namespace:
-+
---
-.Installing the {PRODUCT} Operator in a Kubernetes namespace
-[source,subs="attributes+,+quotes"]
-----
-$ cd ~/kogito-operator-__VERSION__
-
-// Creates the Kubernetes namespace (if not created already)
-$ export NAMESPACE=kogito
-$ kubectl create ns $NAMESPACE
-
-// Installs the {PRODUCT} Operator in the namespace
-$ ./hack/install.sh
-----
-
-NOTE: You must be logged in to the relevant Kubernetes cluster using the `kubectl` command. For more information about accessing Kubernetes clusters, see the https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/[Kubernetes documentation].
-
---
-. If your {PRODUCT} project requires Infinispan or MongoDB persistence and Apache Kafka messaging, install the required Infinispan or MongoDB, and Kafka infrastructure components, including the https://github.com/infinispan/infinispan-operator[Infinispan Operator], https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator] and the https://strimzi.io/docs/latest/[Strimzi Operator] (for Kafka cluster deployment with Zookeeper).
-+
---
-The {PRODUCT} Operator cannot automatically install these operators for Infinispan or MongoDB persistence, and Kafka messaging, so you must install the components manually if needed. Also, {PRODUCT} Operator does not create the specific resource therefore, you must create them before deploying the `KogitoInfra` resource.
-
-For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
-
-For information about MongoDB installation and configuration, see the https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator documentation].
-
-For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
-
-For an example script to install these infrastructure components for Kubernetes, see the https://github.com/kiegroup/kogito-operator/blob/master/examples/kubernetes/travel-agency/deploy.sh[`travel-agency`] example application for Kubernetes.
---
-. Add the following `quarkus-jvm.Dockerfile` file or `springboot.Dockerfile` file, depending on your framework, to the root of your {PRODUCT} project to prepare your project for being built and registered as a container image:
-+
---
-.On Quarkus: `quarkus-jvm.Dockerfile`
-[source]
-----
-FROM quay.io/kiegroup/kogito-runtime-jvm:latest
-
-ENV RUNTIME_TYPE quarkus
-
-COPY target/quarkus-app/lib/ $KOGITO_HOME/bin/lib/
-COPY target/quarkus-app/*.jar $KOGITO_HOME/bin
-COPY target/quarkus-app/app/ $KOGITO_HOME/bin/app/
-COPY target/quarkus-app/quarkus/ $KOGITO_HOME/bin/quarkus/
-----
-
-.On Spring Boot: `springboot.Dockerfile`
-[source]
-----
-FROM quay.io/kiegroup/kogito-runtime-jvm:latest
-
-ENV RUNTIME_TYPE springboot
-
-COPY target/*.jar $KOGITO_HOME/bin
-----
---
-. Build your {PRODUCT} project with your preferred method, such as `mvn clean package`.
-. Enter the following commands to build the container image, test the image locally, and push the image to the registry using Podman:
-+
-.Build, test, and push the container image using Podman
-[source,subs="attributes+,+quotes"]
-----
-// Builds the container image
-`podman build --tag quay.io/__NAMESPACE__/__PROJECT_NAME__:latest -f quarkus-jvm.Dockerfile`
-
-// Runs the container image locally for testing
-`podman run --rm -it -p 8080:8080 quay.io/__NAME_SPACE__/__PROJECT_NAME__:latest`
-
-// Pushes the container image to the Quay registry
-`podman push quay.io/__NAME_SPACE__/__PROJECT_NAME__:latest`
-----
-. After you build and push the container image for your {PRODUCT} project, create a {PRODUCT} service definition YAML file as a `KogitoRuntime` custom resource for your {PRODUCT} service, as shown in the following example:
-+
---
-.Example `kogito-travels.yaml` resource for the {PRODUCT} service
-[source,yaml,subs="attributes+,+quotes"]
-----
-apiVersion: app.kiegroup.org/v1beta1
-kind: KogitoRuntime
-metadata:
-  name: kogito-travels
-spec:
-  envs:
-    - name: KOGITO_DATAINDEX_HTTP_URL
-      value: http://data-index.kogito
-    - name: KOGITO_DATAINDEX_WS_URL
-      value: ws://data-index.kogito
-  replicas: 1
-  image: quay.io/kiegroup/kogito-travels:latest
-  infra:
-    - kogito-kafka-infra
-    - kogito-infinispan-infra
-----
-
-This example is based on the https://github.com/kiegroup/kogito-operator/tree/master/examples/kubernetes/travel-agency[`travel-agency`] example application for Kubernetes and includes additional configurations for Infinispan persistence, Kafka messaging, and the {PRODUCT} Data Index Service.
---
-. Enter the following command to deploy your {PRODUCT} service custom resource to your Kubernetes cluster:
-+
-.Deploying the {PRODUCT} service resource to the Kubernetes cluster
-[source]
-----
-kubectl apply -f kogito-travels.yaml
-----
-
-[id="ref-kogito-operator-troubleshooting_{context}"]
-=== {PRODUCT} service deployment troubleshooting
-
-[role="_abstract"]
-Use the following list to troubleshoot issues that you might encounter when using the {PRODUCT} Operator to deploy {PRODUCT} services. This list is updated as new issues and workarounds are discovered.
-
-No builds are running::
-If you do not see any builds running nor any resources created in the relevant namespace, enter the following commands to retrieve running pods and to view the {PRODUCT} Operator log for the pod:
-+
---
-.View {PRODUCT} Operator log for a specified pod
-[source,subs="attributes+,+quotes"]
-----
-// Retrieves running pods
-$ oc get pods
-
-NAME                                     READY   STATUS      RESTARTS   AGE
-kogito-operator-6d7b6d4466-9ng8t   1/1     Running     0          26m
-
-// Opens {PRODUCT} Operator log for the pod
-$ oc logs -f kogito-operator-6d7b6d4466-9ng8t
-----
---
-
-ifdef::KOGITO-ENT[]
-[role="_additional-resources"]
-== Additional resources
-* {URL_CREATING_RUNNING}[_{CREATING_RUNNING}_]
-* {URL_DECISION_SERVICES}[_{DECISION_SERVICES}_]
-* {URL_PROCESS_SERVICES}[_{PROCESS_SERVICES}_]
-* {URL_CONFIGURING_KOGITO}[_{CONFIGURING_KOGITO}_]
-endif::[]
-
-ifdef::parent-context[:context: {parent-context}]
-ifndef::parent-context[:!context:]
