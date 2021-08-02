@@ -1168,6 +1168,96 @@ On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host
 <Start here>
 ////
 
+[id="con-kogito-operator-with-postgresql_{context}"]
+=== Postgresql persistence with {PRODUCT} service
+
+[role="_abstract"]
+The {PRODUCT} Operator does not manage Postgres instances.
+If {PRODUCT} service persistence type is reactive(`kogito.persistence.type=postgresql`), then you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables. Reactive persistence with `kogito.persistence.type=postgresql` only worked with Springboot.
+
+.Required environment variables for a custom Postgresql persistence
+[source]
+----
+# for Spring Boot
+PGUSER
+PGHOST
+PGPASSWORD
+PGDATABASE
+PGPORT
+----
+
+.Example {PRODUCT} service custom resource with reactive Postgresql persistence
+[source]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: process-postgresql-persistence-quarkus
+spec:
+  image: quay.io/kiegroup/process-postgresql-persistence-quarkus:persistence
+  runtime: springboot
+  env:
+    - name: PGUSER
+      value: postgresql
+    - name: PGDATABASE
+      value: runtimeapp
+    - name: PGPASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: kogito-postgresql
+          key: postgresql-password
+    - name: PGHOST
+      value: kogito-postgresql.default.svc.cluster.local
+    - name: PGPORT
+      value: '5432'
+----
+
+or with the connection string
+[source]
+----
+kogito.persistence.postgresql.connection.uri
+----
+
+whereas if the persistence type is jdbc(`kogito.persistence.type=jdbc`), then you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables:
+
+.Required environment variables for a custom Postgresql persistence
+[source]
+----
+# On Quarkus
+QUARKUS_DATASOURCE_DB-KIND
+QUARKUS_DATASOURCE_USERNAME
+QUARKUS_DATASOURCE_PASSWORD
+QUARKUS_DATASOURCE_JDBC_URL
+
+# On Spring Boot
+SPRING_DATASOURCE_USERNAME
+SPRING_DATASOURCE_PASSWORD
+SPRING_DATASOURCE_URL
+----
+
+.Example {PRODUCT} service custom resource with JDBC Postgresql persistence
+[source]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: process-postgresql-persistence-quarkus
+spec:
+  image: quay.io/kiegroup/process-postgresql-persistence-quarkus:jdbc
+  env:
+    - name: QUARKUS_DATASOURCE_DB-KIND
+      value: postgresql
+    - name: QUARKUS_DATASOURCE_USERNAME
+      value: postgres
+    - name: QUARKUS_DATASOURCE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: kogito-postgresql
+          key: postgresql-password
+    - name: QUARKUS_DATASOURCE_JDBC_URL
+      value: jdbc:postgresql://kogito-postgresql.default.svc.cluster.local:5432/runtimeapp
+----
+
 === {PRODUCT} Data Index Service properties configuration
 
 When the {PRODUCT} Data Index Service is deployed, a `configMap` resource is created for the `application.properties` configuration of the Data Index Service.
