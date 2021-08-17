@@ -1169,7 +1169,7 @@ On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host
 ////
 
 [id="con-kogito-operator-with-postgresql_{context}"]
-=== Postgresql persistence with {PRODUCT} service
+==== Postgresql persistence with {PRODUCT} service
 
 [role="_abstract"]
 The {PRODUCT} Operator does not manage Postgres instances.
@@ -1327,6 +1327,39 @@ If a {PRODUCT} service is removed, the associated protobuf files are also remove
 <Start here>
 ////
 
+=== PostgreSQL persistence with the {PRODUCT} Data Index Service
+
+Data Index Service does not initialize its database schema automatically. To initialize the database schema, you need to either enable automatic schema initialization using Hibernate or create the schema using the DDL script.
+
+Automatic schema initialization using Hibernate can be enabled using the `quarkus.hibernate-orm.database.generation` property. For possible values of `quarkus.hibernate-orm.database.generation` property, see https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.database.generation[Quarkus docs for database generation options]. The value can also be set as an environment variable `QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION`.
+
+.Example `DataIndex` resource with PostgreSQL persistence enabled (requires Kafka KogitoInfra to be available):
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoSupportingService
+metadata:
+  name: data-index
+spec:
+  serviceType: DataIndex
+  infra:
+    - kogito-kafka-infra
+  env:
+    - name: QUARKUS_DATASOURCE_DB-KIND
+      value: postgresql
+    - name: QUARKUS_DATASOURCE_USERNAME
+      value: postgres
+    - name: QUARKUS_DATASOURCE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: kogito-postgresql
+          key: postgresql-password
+    - name: QUARKUS_DATASOURCE_JDBC_URL
+      value: jdbc:postgresql://kogito-postgresql.default.svc.cluster.local:5432/kogito
+    - name: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION
+      value: update
+----
+
 === Infinispan persistence with the {PRODUCT} Jobs Service
 
 To enable Infinispan persistence for the {PRODUCT} Jobs Service, you install the Infinispan infrastructure and then you can use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoSupportingService` custom resource that contains the `JobsService` service type:
@@ -1349,10 +1382,6 @@ spec:
   serviceType: JobsService
   infra:
     - kogito-infinispan-infra
-  build:
-    envs:
-    - name: MAVEN_ARGS_APPEND
-      value: -Ppersistence
 ----
 
 You can refine the Infinispan integration by setting the `spec.infra` property in the `KogitoSupportingService` custom resource that contains the `JobsService` service type. With this property set, the {PRODUCT} Operator ensures that the Jobs Service has access to the persistence infrastructure configurations.
