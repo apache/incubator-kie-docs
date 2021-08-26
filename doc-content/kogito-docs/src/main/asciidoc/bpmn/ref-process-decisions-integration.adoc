@@ -414,6 +414,74 @@ Just an example task where it could be performed any action based on the conditi
 ===== Not Suspended Task
 Just an example task where it could be performed any action based on the condition in which the driver is **not** suspended. In the current implementation, it is just logging the information in the console.
 
-## Decisions
+==== Decisions
 
 The decisions defined for the Traffic Process using REST are the same as defined in <<con_process-decisions-decisions-{context}>>.
+
+
+=== Examples Usage
+
+Once the example application is up and running, there should be different processes running under the following URLs:
+
+[horizontal]
+Process using Service Tasks (REST):: `http://localhost:8080/traffic_service`
+Process using REST Work Item (REST):: `http://localhost:8080/traffic_wih`
+Process using Business Rule Task (Embedded):: `http://localhost:8080/traffic`
+
+To make use of this application it is as simple as sending requests to one othe URLs with appropriate contents. See the following examples:
+
+.Request payload example
+[source,json]
+----
+{
+    "driverId": "12345",
+    "violation":{
+        "Type":"speed",
+        "Speed Limit": 100,
+        "Actual Speed":140
+    }
+}
+----
+
+.Request example using CURL
+[source,shell script]
+----
+
+curl -X POST -H 'Content-Type:application/json' -H 'Accept:application/json' -d '{"driverId": "12345","violation":{"Type":"speed","Speed Limit": 100,"Actual Speed":140}}' http://localhost:8080/traffic_service
+----
+
+.Response payload
+[source,json]
+----
+{
+    "id": "e499326d-3bd2-4ddb-93b7-0f68f74a9673",
+    "driverId": "12345",
+    "driver": {
+        "licenseExpiration": "2021-08-12T19:35:48.971+00:00",
+        "validLicense": true,
+        "Name": "Arthur",
+        "State": "SP",
+        "City": "Campinas",
+        "Points": 13,
+        "Age": 30
+    },
+    "trafficViolationResponse": {
+        "Fine": {
+            "Amount": 1000.0,
+            "Points": 7
+        },
+        "Suspended": "Yes"
+    },
+    "violation": {
+        "Code": null,
+        "Date": null,
+        "Type": "speed",
+        "Speed Limit": 100,
+        "Actual Speed": 140
+    }
+}
+----
+
+You can play with different attributes, if the `driverId` is an odd number in this case `12345` the license will be evaluated as valid because the DriverService generates a valid expiration date and DMN is evaluated, you can change the actual speed to `140` or `100` to simulate the driver suspension on the DMN evaluation.
+
+If the `driverId` is an even number like `1234` the license will be evaluated as `expired` and the DMN will not be evaluated, so `Suspended` response attribute should be `null`.
