@@ -315,8 +315,8 @@ The {PRODUCT} command-line interface (CLI) supports the following operations on 
 |`{PRODUCT_INIT} install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan`
 
 |Install the Apache Kafka infrastructure for messaging in {PRODUCT} services.
-|`{PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka`
-|`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka`
+|`{PRODUCT_INIT} install infra __KAFKA_INFRA_NAME__ --kind Kafka --apiVersion kafka.strimzi.io/v1beta2 --resource-name kogito-kafka`
+|`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta2 --resource-name kogito-kafka`
 
 |Install the {PRODUCT} Data Index Service for data management in {PRODUCT} services and provision the Data Index Service to connect to the specified Infinispan and Kafka infrastructures.
 |`{PRODUCT_INIT} install data-index --infra __INFINISPAN_INFRA_NAME__ --infra __KAFKA_INFRA_NAME__`
@@ -351,7 +351,7 @@ The {PRODUCT} command-line interface (CLI) supports the following operations on 
 
 `{PRODUCT_INIT} install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan -p kogito-travel-agency`
 
-`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka -p kogito-travel-agency`
+`{PRODUCT_INIT} install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta2 --resource-name kogito-kafka -p kogito-travel-agency`
 
 |Create a {PRODUCT} service definition from a local source or a Git repository and deploy the service. In a local directory source, if the `pom.xml` file is present, then the entire directory is zipped and uploaded to OCP and the build is initiated. However, if the `pom.xml` is not present, then only supported extension files (including `.dmn`, `.drl`, `.bpmn`, `.bpmn2`, `.properties`, `.sw.json`, and `.sw.yaml`) are uploaded from the directory to initiate the build. In a binary build configuration, this command creates the service definition but does not deploy the service.
 |`{PRODUCT_INIT} deploy-service __SERVICE_NAME__`
@@ -1169,7 +1169,7 @@ On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host
 ////
 
 [id="con-kogito-operator-with-postgresql_{context}"]
-=== Postgresql persistence with {PRODUCT} service
+==== Postgresql persistence with {PRODUCT} service
 
 [role="_abstract"]
 The {PRODUCT} Operator does not manage Postgres instances.
@@ -1327,6 +1327,39 @@ If a {PRODUCT} service is removed, the associated protobuf files are also remove
 <Start here>
 ////
 
+=== PostgreSQL persistence with the {PRODUCT} Data Index Service
+
+Data Index Service does not initialize its database schema automatically. To initialize the database schema, you need to either enable automatic schema initialization using Hibernate or create the schema using the DDL script.
+
+Automatic schema initialization using Hibernate can be enabled using the `quarkus.hibernate-orm.database.generation` property. For possible values of `quarkus.hibernate-orm.database.generation` property, see https://quarkus.io/guides/hibernate-orm#quarkus-hibernate-orm_quarkus.hibernate-orm.database.generation[Quarkus docs for database generation options]. The value can also be set as an environment variable `QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION`.
+
+.Example `DataIndex` resource with PostgreSQL persistence enabled (requires Kafka KogitoInfra to be available):
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoSupportingService
+metadata:
+  name: data-index
+spec:
+  serviceType: DataIndex
+  infra:
+    - kogito-kafka-infra
+  env:
+    - name: QUARKUS_DATASOURCE_DB-KIND
+      value: postgresql
+    - name: QUARKUS_DATASOURCE_USERNAME
+      value: postgres
+    - name: QUARKUS_DATASOURCE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: kogito-postgresql
+          key: postgresql-password
+    - name: QUARKUS_DATASOURCE_JDBC_URL
+      value: jdbc:postgresql://kogito-postgresql.default.svc.cluster.local:5432/kogito
+    - name: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION
+      value: update
+----
+
 === Infinispan persistence with the {PRODUCT} Jobs Service
 
 To enable Infinispan persistence for the {PRODUCT} Jobs Service, you install the Infinispan infrastructure and then you can use the `--infra __INFINISPAN_INFRA_NAME__` flag during deployment in the {PRODUCT} CLI or edit the `spec.infra` configuration in the `KogitoSupportingService` custom resource that contains the `JobsService` service type:
@@ -1349,10 +1382,6 @@ spec:
   serviceType: JobsService
   infra:
     - kogito-infinispan-infra
-  build:
-    envs:
-    - name: MAVEN_ARGS_APPEND
-      value: -Ppersistence
 ----
 
 You can refine the Infinispan integration by setting the `spec.infra` property in the `KogitoSupportingService` custom resource that contains the `JobsService` service type. With this property set, the {PRODUCT} Operator ensures that the Jobs Service has access to the persistence infrastructure configurations.
@@ -1803,7 +1832,7 @@ This example uses the {PRODUCT} CLI to auto-configure an existing Kafka infrastr
 .Installing Kafka infrastructure
 [source]
 ----
-$ kogito install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka
+$ kogito install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta2 --resource-name kogito-kafka
 ----
 . In the OpenShift web console, use the left menu to navigate to the following windows to verify the installed Kafka infrastructure:
 
@@ -1837,7 +1866,7 @@ This example uses the {PRODUCT} CLI to install the Data Index Service and the {P
 [source]
 ----
 $ kogito install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan
-$ kogito install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka
+$ kogito install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta2 --resource-name kogito-kafka
 ----
 
 .Procedure
@@ -1897,7 +1926,7 @@ The travel agency example application includes the following key OpenShift resou
 [source]
 ----
 $ kogito install infra kogito-infinispan-infra --kind Infinispan --apiVersion infinispan.org/v1 --resource-name kogito-infinispan
-$ kogito install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta1 --resource-name kogito-kafka
+$ kogito install infra kogito-kafka-infra --kind Kafka --apiVersion kafka.strimzi.io/v1beta2 --resource-name kogito-kafka
 $ kogito install data-index --infra kogito-infinispan-infra --infra kogito-kafka-infra
 ----
 
@@ -2333,7 +2362,7 @@ metadata:
   name: my-kafka-infra
 spec:
   resource:
-    apiVersion: kafka.strimzi.io/v1beta1
+    apiVersion: kafka.strimzi.io/v1beta2
     kind: Kafka
     name: my-kafka-instance
     namespace: my-namespace
