@@ -2781,7 +2781,7 @@ In the remote method, it is not required for the process and decision services t
 .Process integration with decisions through REST
 image::kogito/bpmn/decisions/process-decisions-rest-integration.png[Image of Process integration with decisions through REST]
 
-You can also see an example that is available for https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-rest-quarkus[Quarkus] and https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-rest-springboot[Spring Boot].
+You can also use the example applications for Quarkus and Spring Boot, such as https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-rest-quarkus[`process-decisions-rest-quarkus`] and https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-rest-springboot[`process-decisions-rest-springboot`].
 
 You can define the decisions in different domains or assets, such as DMN and DRL. Here, we can consider the example of traffic violations, which describes how to integrate decisions in a remote environment using REST endpoints. In the REST endpoints, the decisions are deployed from the process service.
 
@@ -2942,6 +2942,75 @@ image::kogito/bpmn/decisions/traffic-violation-drl-wih.png[Image of Traffic Viol
 image::kogito/bpmn/decisions/traffic-violation-drl-wih-data.png[Image of Traffic Violation REST Work Item data assignmentg in process designer]
 
 In both cases, whether the driver is suspended or not, the related information is logged in the console.
+
+
+==== Examples Usage
+
+Once the example application is up and running, there should be different processes running under the following URLs:
+
+[horizontal]
+Process using Service Tasks (REST):: `http://localhost:8080/traffic_service`
+Process using REST Work Item (REST):: `http://localhost:8080/traffic_wih`
+Process using Business Rule Task (Embedded):: `http://localhost:8080/traffic`
+
+To make use of this application it is as simple as sending requests to one othe URLs with appropriate contents. See the following examples:
+
+.Request payload example
+[source,json]
+----
+{
+    "driverId": "12345",
+    "violation":{
+        "Type":"speed",
+        "Speed Limit": 100,
+        "Actual Speed":140
+    }
+}
+----
+
+.Request example using CURL
+[source,shell script]
+----
+
+curl -X POST -H 'Content-Type:application/json' -H 'Accept:application/json' -d '{"driverId": "12345","violation":{"Type":"speed","Speed Limit": 100,"Actual Speed":140}}' http://localhost:8080/traffic_service
+----
+
+.Response payload
+[source,json]
+----
+{
+    "id": "e499326d-3bd2-4ddb-93b7-0f68f74a9673",
+    "driverId": "12345",
+    "driver": {
+        "licenseExpiration": "2021-08-12T19:35:48.971+00:00",
+        "validLicense": true,
+        "Name": "Arthur",
+        "State": "SP",
+        "City": "Campinas",
+        "Points": 13,
+        "Age": 30
+    },
+    "trafficViolationResponse": {
+        "Fine": {
+            "Amount": 1000.0,
+            "Points": 7
+        },
+        "Suspended": "Yes"
+    },
+    "violation": {
+        "Code": null,
+        "Date": null,
+        "Type": "speed",
+        "Speed Limit": 100,
+        "Actual Speed": 140
+    }
+}
+----
+
+You can play with different attributes, if the `driverId` is an odd number in this case `12345` the license will be evaluated as valid because the DriverService generates a valid expiration date and DMN is evaluated, you can change the actual speed to `140` or `100` to simulate the driver suspension on the DMN evaluation.
+
+If the `driverId` is an even number like `1234` the license will be evaluated as `expired` and the DMN will not be evaluated, so `Suspended` response attribute should be `null`.
+
 
 [id="con-flex-processes_{context}"]
 == Flexible processes for case management in {PRODUCT}
