@@ -85,7 +85,7 @@ Use the `drools-metric` module to identify the obstruction in your rules::
 You can use the `drools-metric` module to identify slow rules especially when you process many rules. The `drools-metric` module can also assist in analyzing the {DECISION_ENGINE} performance. Note that the `drools-metric` module is not for production environment use. However, you can perform the analysis in your test environment.
 
 +
-To analyze the {DECISION_ENGINE} performance using `drools-metric`, add `drools-metric` to your project dependencies and enable trace logging for `org.drools.metric.util.MetricLogUtils` , as shown in the following example:
+To analyze the {DECISION_ENGINE} performance using `drools-metric`, first add `drools-metric` to your project dependencies:
 
 +
 .Example project dependency for `drools-metric`
@@ -98,6 +98,9 @@ To analyze the {DECISION_ENGINE} performance using `drools-metric`, add `drools-
 ----
 
 +
+If you wish `drools-metric` to enable trace logging, configure a logger for `org.drools.metric.util.MetricLogUtils` as shown in the following example:
+
++
 .Example logback.xml configuration file
 [source,xml]
 ----
@@ -108,13 +111,34 @@ To analyze the {DECISION_ENGINE} performance using `drools-metric`, add `drools-
 ----
 
 +
-Also, enable `MetricLogUtils` by setting the system property `drools.metric.logger.enabled` to `true`. Optionally, you can change the microseconds threshold of metric logging by setting the `drools.metric.logger.threshold` system property.
+Alternatively, you may have `drools-metric` expose the data via https://asciidoctor.org[Micrometer]. 
+In order to do that, you need to enable the Micrometer registry of your choice as shown in the following example:
 
 +
-NOTE: Only node executions exceeding the threshold are logged. The default value is `500`.
+.Example project dependency for Micrometer
+[source,xml]
+----
+<dependency>
+  <groupId>io.micrometer</groupId>
+  <artifactId>micrometer-registry-jmx</artifactId> <!-- Discover more registries at micrometer.io. -->
+</dependency>
+----
 
 +
-After you complete the configuration, rule execution produces logs as shown in the following example:
+.Example Java code for Micrometer
+[source,xml]
+----
+  Metrics.addRegitry(new JmxMeterRegistry(s -> null, Clock.SYSTEM));
+----
+
++
+Finally, regardless of whether you want to use logging or Micrometer, you need to enable `MetricLogUtils` by setting the system property `drools.metric.logger.enabled` to `true`. Optionally, you can change the microseconds threshold of metric reporting by setting the `drools.metric.logger.threshold` system property.
+
++
+NOTE: Only node executions exceeding the threshold are reported. The default value is `500`.
+
++
+Assuming you've configured `drools-metric` to use logging, rule execution produces logs as shown in the following example:
 
 +
 .Example rule execution output
@@ -130,8 +154,8 @@ TRACE [EvalConditionNode(9)]: cond=com.sample.Rule_Collect_expensive_orders_comb
 --
 This example includes the following key parameters:
 
-* `evalCount` is the number of constraint evaluations against inserted facts during the node execution.
-* `elapsedMicro` is the elapsed time of the node execution in microseconds.
+* `evalCount` is the number of constraint evaluations against inserted facts during the node execution. When used with Micrometer, a counter with this data is called `org.drools.metric.evaluation.count`.
+* `elapsedMicro` is the elapsed time of the node execution in microseconds. When used with Micrometer, look for a timer called `org.drools.metric.elapsed.time`.
 --
 
 +
