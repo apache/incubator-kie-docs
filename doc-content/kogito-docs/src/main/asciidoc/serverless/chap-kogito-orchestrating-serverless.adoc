@@ -78,7 +78,7 @@ The Serverless Workflow `functions`, `events`, and `states` are the core constru
 
 * `functions`: Function definitions are reusable constructs that you can use to define invocation information about services that need to be invoked during workflow execution. Function definitions can be referenced by workflow `states` (control-logic blocks) whenever a service needs to be invoked.
 * `events`: Event definitions are reusable constructs that you can use to define all consumed and produced events during workflow execution. Serverless Workflow requires https://cloudevents.io/[CloudEvents] format for both consumed and produced events. Event definitions can be referenced by workflow states to determine how a workflow instance is created, what events are needed to continue workflow execution, what events need to be produced during workflow execution, and how multiple events are associated with one another (correlation rules). You can also use event definitions to trigger function or service invocation for services that do not use exposed invocation endpoints and that are only invoked by events.
-* `states`: State definitions enable you to define your workflow states (control-logic blocks) and determine what your workflow should do. State definitions specify details such as how the workflow is started, what data is expected, how the workflow should transition from one state to another given some data or event constraints, and how and when the workflow execution completes.
+* `states`: State definitions enable you to define your workflow states (control-logic blocks) and determine what your workflow should do. State definitions specify details such as how the workflow is started, what data is expected, how the workflow should transition from one state to another given some data or event constraints, error handling, and how and when the workflow execution completes.
 +
 The following diagram illustrates some of the control-flow constructs that you can build with Serverless Workflow state definitions:
 +
@@ -139,7 +139,14 @@ For example, the following Serverless Workflow definition performs a customer cr
       "timeout": "PT15M",
       "transition": {
         "nextState": "EvaluateDecision"
-      }
+      },
+      ,
+      "onErrors": [
+        {
+          "error": "Network Connection",
+          "transition": "Reject Application"
+        }
+      ]
     },
     {
       "name": "EvaluateDecision",
@@ -227,6 +234,10 @@ states:
   timeout: PT15M
   transition:
     nextState: EvaluateDecision
+  onErrors:
+    - error : Network Connection
+      transition:
+        nextState: RejectApplication  
 - name: EvaluateDecision
   type: switch
   dataConditions:
@@ -789,3 +800,96 @@ endif::[]
 
 ifdef::parent-context[:context: {parent-context}]
 ifndef::parent-context[:!context:]
+
+[id="con-serverless-workflow-error-handling_{context}"]
+== Error handling in Serverless Workflow
+
+You can handle the exceptions that are thrown by `operation` nodes as described in the https://github.com/serverlessworkflow/specification/blob/main/specification.md#Workflow-Error-Handling[Serverless Workflow Specification].
+NOTE: You need to specify the qualified name of the exception that might be thrown by the `operation` in the `code` field of the error definition.
+The following is an example that invokes an `EvenService`, which is throwing `IllegalArgumentException` if the number in the workflow model is odd. 
+----
+{
+  "id": "error",
+  "version": "1.0",
+  "name": "Workflow Error example",
+  "description": "An example of how to handle an exception thrown by a service",
+  "start": "checkEven",
+  "functions": [
+    {
+      "name": "isEven",
+      "metadata": {
+        "interface": "org.kie.kogito.examples.EvenService",
+        "operation": "isEven",
+        "type": "service"
+      }
+    },
+    {
+      "name": "printMessage",
+      "metadata": {
+        "type": "sysout"
+      }
+    }
+  ],
+  "states": [
+    {
+      "name": "checkEven",
+      "type": "operation",
+      "actions": [
+        {
+          "name": "checkEvenAction",
+          "functionRef": {
+            "refName": "isEven",
+            "arguments": {
+              "number": "$.number"
+            }
+          }
+        }
+      ],
+      "transition": "even",
+      "onErrors": [
+        {
+          "error": "odd number",
+          "code": "java.lang.IllegalArgumentException",
+          "transition": "odd"
+        }
+      ]
+    },
+    {
+      "name": "even",
+      "type": "inject",
+      "data": {
+        "numberType": "even"
+      },
+      "transition": "finish"
+    },
+    {
+      "name": "odd",
+      "type": "inject",
+      "data": {
+        "numberType": "odd"
+      },
+      "transition": "finish"
+    },
+    {
+      "name": "finish",
+      "type": "operation",
+      "actions": [
+        {
+          "name": "printAction",
+          "functionRef": {
+            "refName": "printMessage",
+            "arguments": {
+              "message": "$.numberType"
+            }
+          }
+        }
+      ],
+      "end": {
+        "terminate": "true"
+      }
+    }
+  ]
+} 
+----
+
+
