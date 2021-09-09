@@ -553,11 +553,11 @@ $ kogito --verbose deploy-service travels /tmp/kogito-examples/kogito-travel-age
 ifdef::KOGITO-COMM[]
 === Native build and deployment
 
-NOTE: Native build and deployment is for Quarkus only and requires GraalVM.
+NOTE: Native build and deployment is for Quarkus only and requires GraalVM or Mandrel.
 
 By default, the {PRODUCT} Operator and CLI build services with traditional `java` compilers to save time and resources. The final generated artifact is a JAR file for the relevant runtime (defaults to Quarkus) with dependencies in the image user's home directory, such as `/home/kogito/bin/lib`.
 
-However, for {PRODUCT} services on Quarkus with GraalVM (required), the {PRODUCT} Operator and CLI can build the services in native mode for direct binary execution as native code. Building in native mode uses a very low footprint on the runtime, although many resources are consumed during build time.
+However, for {PRODUCT} services on Quarkus with GraalVM or Mandrel (required), the {PRODUCT} Operator and CLI can build the services in native mode for direct binary execution as native code. Building in native mode uses a very low footprint on the runtime, although many resources are consumed during build time.
 
 For more information about native build performance, see the GraalVM https://www.graalvm.org/docs/examples/java-performance-examples/[Performance examples for Java].
 
@@ -630,6 +630,95 @@ spec:
         memory: "4Gi"
 ----
 endif::[]
+
+[id="proc-kogito-build-native_{context}"]
+==== Building a native image with {PRODUCT}
+
+[role="_abstract"]
+You can build an application as a native executable in {PRODUCT} using GraalVM or Mandrel.
+
+.Prerequisites
+* JDK 11 or later is installed.
+* Apache Maven 3.6.2 or later is installed.
+* Optional: https://quarkus.io/guides/cli-tooling[Quarkus CLI] is installed.
++
+NOTE: Native build and deployment is Quarkus-only and requires GraalVM or Mandrel.
+
+.Procedure
+. Create a {PRODUCT} project using the Maven plugin or Quarkus CLI.
++
+--
+.Example project creation using Quarkus Maven plugin
+[source,subs="attributes+"]
+----
+mvn io.quarkus:quarkus-maven-plugin:create \
+   -DprojectGroupId=com.company \
+   -DprojectArtifactId=sample-kogito \
+   -Dextensions="kogito"
+----
+
+.Example project creation using Quarkus CLI
+[source,subs="attributes+"]
+----
+quarkus create -x kogito sample-kogito
+----
+
+In the previous example, an application named `sample-kogito` is created. The `sample-kogito` application is pre-configured to support the native executables.
+
+For more information about creating a {PRODUCT} project, see {URL_CREATING_RUNNING}#chap-kogito-creating-running[{CREATING_RUNNING}].
+--
+
+. Build a native image using Maven or Quarkus CLI.
++
+--
+.Example of building a native image using Maven plugin
+[source]
+----
+$ mvn verify -Dnative
+# running
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
+
+.Example of building a native image using the Quarkus CLI
+[source]
+----
+$ quarkus build --native
+# running
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
+--
+
+. Build a native executable using a container image or Mandrel as follows:
++
+--
+* You can build a native executable using a container builder image, in which you do not need to insrall GraalVM. However, a container that contains GraalVM is pulled automatically. Note that the native executable targets a Linux kernel by default. For example:
+
+.Example of building a native image using a container image
+[source]
+----
+$ mvn verify -Dnative -Dquarkus.native.container-build
+# alternatively
+$ quarkus build --native -Dquarkus.native.container-build=true
+----
+
+* Alternatively, run the following command to use Mandrel instead of GraalVM to build a native image using container image:
+
+.Example of building a native image using a container image (Mandrel)
+[source]
+----
+$ mvn verify -Dnative -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:21.1-java11
+# alternatively
+$ quarkus build --native -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:21.1-java11
+----
+
+For more information about building a native image, see https://quarkus.io/guides/building-native-image#container-runtime[Quarkus - Building a Native Executable].
+--
+
+. Create a container image using Quarkus.
++
+For more information about creating a container image using Quarkus, see https://quarkus.io/guides/container-image[extensions for building (and pushing) container images].
+
+. Deploy the container image using `kubctl` or `oc`.
 
 [id="con-kogito-operator-deployment-configs_{context}"]
 == {PRODUCT} service properties configuration
