@@ -723,6 +723,7 @@ In addition, the BPMN2 specification provides the ability to create custom tasks
 * DecisionTask tasks: Used to execute a DMN diagram
 ////
 
+[id="ref-bpmn-businessruletask_{context}"]
 Business rule task::
 +
 --
@@ -2584,6 +2585,410 @@ quarkus.mailer.mock=false
 quarkus.mailer.ssl=false
 quarkus.mailer.start-tls=disabled
 ----
+
+[id="con-process-decisions-integration_{context}"]
+== Processes and decisions integration in {PRODUCT}
+
+[role="_abstract"]
+When you design a business process in {PRODUCT}, you can define decisions as distinct services using DMN and DRL. For more information about defining decision services, see {URL_DECISION_SERVICES}#chap-kogito-using-dmn-models[_{DECISION_SERVICES}_] and {URL_DECISION_SERVICES}#chap-kogito-using-drl-rules[_{DECISION_SERVICES}_].
+
+{PRODUCT} enables the integration of processes and decisions using different ways, including:
+
+* Embedded method
+* Remote method
+
+Based on the use cases, you can either use the embedded or remote method, or you can combine both methods in the same process.
+
+[id="con-process-decisions-integration-embedded_{context}"]
+=== Embedded method to integrate processes and decisions
+
+The embedded method to integrate the processes and decisions uses business rule tasks that use the communication between a local process and decision engine that is running in the same application. The embedded method does not require any remote call but requires the decision services to be deployed in the same application as the process running.
+
+For more information about business rule tasks, see xref:ref-bpmn-tasks_kogito-developing-process-services[].
+
+.Embedded method to integrate a process with decisions
+image::kogito/bpmn/decisions/process-decisions-embedded-integration.png[Image of Embedded process integration with decisions]
+
+For more information, you can see xref:con-process-decisions-integration-traffic-violation-process-embedded_kogito-developing-process-services[].
+
+You can also use the example applications for Quarkus and Spring Boot, such as https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-quarkus[`process-decisions-quarkus`] and https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-springboot[`process-decisions-springboot`].
+
+The example of a traffic violations project describes how to use decisions within the processes and how to integrate decisions in an embedded way using the business rule tasks, which must be deployed with a process in the same application.
+
+In {PRODUCT}, the decisions can be expressed in different domains or assets, such as DMN and DRL. All the assets including BPMN, DMN, and DRL must be placed in the `resources` folder.
+
+When the example application is running, there also must be different running processes, such as a process using a business rule task, containing the URL as `http://localhost:8080/traffic`.
+
+[id="con-process-decisions-integration-traffic-violation-process-embedded_{context}"]
+==== Traffic violations example for embedded method
+
+The traffic violations project is based on the evaluation process of the traffic violations. In the traffic violations example, first, the information of the driver is fetched, and based on the fetched information, it is determined whether the driver has a valid driving license using a RuleUnit in a DRL. After the validation of the driving license, the violation evaluation is executed, which is defined as a DMN decision, and the output provides the information of whether the driver is suspended or not.
+
+.Traffic violations example
+image::kogito/bpmn/decisions/traffic-rules-dmn.png[Image of Traffic Process in process designer]
+
+Processes in traffic violation example::
+
+In the traffic violations project, the interactions with the defined decisions are executed using the decision engine. Also, the information that is required to execute the decision evaluation must be defined in the *Data Assignments* property of the business rule task.
+
+IMPORTANT: The ID property of a process is used in the REST endpoint generation, which refers to the path that is used to interact with the process.
+
+Also, the classes in the process are used to define the Plain Old Java Objects (POJOs) that enable the interaction between the process and decisions. The process classes include `Violation`, `Driver`, `Fine`.
+
+Decisions in traffic violation example::
+
+The traffic violations process contains license validation as a decision that is created using DRL. The license validation consists of rules that are evaluated to verify that the license is expired or not. The result of the license validation is added for the `driver` variable.
+The rule units are declared in the `LicenseValidationService.drl` file and the rule unit data is added to the `LicenseValidationService` class.
+
+.Example `LicenseValidationService.drl` file
+[source]
+----
+unit LicenseValidationService
+
+rule "Is driver license valid"
+when
+    $driver: /driver[licenseExpiration.after(currentTime)]
+then
+    $driver.setValidLicense(true);
+end
+
+rule "Is driver license expired"
+when
+    $driver: /driver[licenseExpiration.before(currentTime)]
+then
+    $driver.setValidLicense(false);
+end
+
+query "validation"
+  $driver : /driver
+end
+----
+
+.Example `LicenseValidationService` class
+[source,java]
+----
+public class LicenseValidationService implements RuleUnitData {
+    private SingletonStore<Driver> driver;
+
+    public LicenseValidationService() {
+        this(DataSource.createSingleton());
+    }
+
+    public LicenseValidationService(SingletonStore<Driver> driver) {
+        this.driver = driver;
+    }
+
+    public void setDriver(SingletonStore<Driver> driver) {
+        this.driver = driver;
+    }
+
+    public SingletonStore<Driver> getDriver() {
+        return driver;
+    }
+
+    public Date getCurrentTime() {
+        return new Date();
+    }
+}
+----
+
+After the license validation task, the traffic violations process contains traffic violation as a decision that is created using DMN. The traffic violation decision verifies whether the driver is suspended or not based on the points in the driver’s license.
+
+The traffic violation decision is declared in the `TrafficViolation.dmn` file.
+
+.Example `TrafficViolation.dmn` file
+image::kogito/bpmn/decisions/traffic-violation-dmn.png[Image of Traffic Violation - DMN in DMN designer]
+
+[id="con-process-decisions-integration-traffic-violation-data-mapping-embedded_{context}"]
+===== Data mapping between a process and decisions
+
+To map the data between a process and decisions, you can align all the attributes names in a Java class, which is used as process variables. If the names of the attributes contain spaces or the names of the attributes are not following Java conventions, then you can use https://github.com/FasterXML/jackson[Jackson] annotations. The Jackson annotations align the process variables with the data types of the DMN model. For example, in the traffic violations project, the `Violation` class is mapped with the `speedLimit` attribute using the `@JsonProperty` annotation. Therefore, the `speedLimit` attribute can be integrated with the `Violation` data type defined in the DMN model.
+
+.Violation class defined in the Traffic Violations example
+[source,java]
+----
+public class Violation {
+
+    @JsonProperty("Code")
+    private String code;
+
+    @JsonProperty("Date")
+    private Date date;
+
+    @JsonProperty("Type")
+    private String type;
+
+    @JsonProperty("Speed Limit")
+    private BigDecimal speedLimit;
+
+    @JsonProperty("Actual Speed")
+    private BigDecimal actualSpeed;
+
+    //Getters / Setters
+}
+----
+
+.Violation data type in DMN
+image::kogito/bpmn/decisions/violation-dmn-data-types.png[Image of Violation Data Type in DMN in DMN designer]
+
+When the driver information is fetched, an external call to a service task is performed to retrieve the driver information from the database. In this case, the service task implementation is performed using the `DriverService` class. In the Data Assignments, `driverId` is defined as an input variable and `driver` is defined as an output variable, consisting of the driver information.
+
+Fetching the driver information leads to the license validation task, which represents the task of calling a DRL service.
+
+.License validation task (DRL)
+image::kogito/bpmn/decisions/license-validation-drl-businessrule.png[Image of License Validation Task in process designer]
+The properties that are required to set for the DRL service task include `Rule Language`, which must be set as `DRL` and the `Rule Flow Group`. You can set the value of `Rule Flow Group` using the following format:
+
+`unit:` + `[the FQCN of the Rule Unit Data class]`
+For example: `unit:org.kie.kogito.traffic.LicenseValidationService`
+
+In this case, the `driver` variable contains the license validation information.
+
+.License validation task data assignments
+image::kogito/bpmn/decisions/license-validation-dmn-businessrule-data.png[Image of License Validation Task data assignment in process designer]
+
+Similar to the license validation task, the traffic violation task represents the task of calling a DMN service.
+
+.Traffic violation task (DMN)
+image::kogito/bpmn/decisions/traffic-violation-dmn-businessrule.png[raffic Violation Task data in process designer]
+
+The properties that are required to set for the DMN service task include `Rule Language`, which must be set as `DMN`. Also, you must set the values for `Namespace`, `Decision Name` and `DMN Model Name` properties as defined in the DMN model, such as `TrafficViolation.dmn`. For example, you can set the following values:
+
+* Rule Language: `DMN`
+* Namespace: `https://github.com/kiegroup/drools/kie-dmn/_A4BCA8B8-CF08-433F-93B2-A2598F19ECFF`
+* Decision Name: `Traffic Violation`
+* DMN Model Name: `Traffic Violation`
+
+The input for the traffic violation task includes `Driver` and `Violation` variables, and the output includes `Suspended` and `Fine` in the Data Assignment property.
+
+.Traffic Violation Task data assignment
+image::kogito/bpmn/decisions/traffic-violation-dmn-businessrule-data.png[Traffic Violation Task data assignment in process designer]
+
+In both cases, whether the driver is suspended or not, the related information is logged in the console.
+
+[id="con-process-decisions-integration-remote_{context}"]
+=== Remote method to integrate processes and decisions
+
+The remote method to integrate the processes and decisions uses REST endpoints from the decision services. In the REST endpoints, the process can use the BPMN to send HTTP requests, such as a service task or a REST work item.
+
+In the remote method, it is not required for the process and decision services to run in the same application, as the communication between the process and decision services is performed using the network.
+
+.Process integration with decisions through REST
+image::kogito/bpmn/decisions/process-decisions-rest-integration.png[Image of Process integration with decisions through REST]
+
+You can also use the example applications for Quarkus and Spring Boot, such as https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-rest-quarkus[`process-decisions-rest-quarkus`] and https://github.com/kiegroup/kogito-examples/tree/main/process-decisions-rest-springboot[`process-decisions-rest-springboot`].
+
+You can define the decisions in different domains or assets, such as DMN and DRL. Here, we can consider the example of traffic violations, which describes how to integrate decisions in a remote environment using REST endpoints. In the REST endpoints, the decisions are deployed from the process service.
+
+For convenience, the decision assets in the traffic violations example are under the same project as the process. The endpoints are generated differently for the process and decisions but under the same application. However, the endpoints can be placed in different applications.
+
+The traffic violations example of the remote method covers the following processes:
+
+* DMN to define a decision service
+* DRL to define rules decision service
+* To integrate the process with decisions using REST endpoints
+* Service task to call an external decision service
+* REST work item to call an external decision service
+
+When the example application is running, there also must be different running processes, such as:
+
+* A process using a service task, containing the URL as `http://HOST:PORT/{serviceTask}`. For example, `http://localhost:8080/traffic_service`.
+* A process using a REST work item, containing the URL as `http://HOST:PORT/{workItem}`. For example, `http://localhost:8080/traffic_wih`.
+
+To use the application, you can send requests to the URL. For example:
+
+.Example JSON request
+[source,json]
+----
+{
+  "driverId": "12345",
+  "violation": {
+    "Type": "speed",
+    "Speed Limit": 100,
+    "Actual Speed": 140
+  }
+}
+----
+
+.Example CURL request
+[source]
+----
+curl -X POST -H 'Content-Type:application/json' -H 'Accept:application/json' -d '{"driverId": "12345","violation":{"Type":"speed","Speed Limit": 100,"Actual Speed":140}}' http://localhost:8080/traffic_service
+----
+
+.Example response
+[source,json]
+----
+{
+  "id": "e499326d-3bd2-4ddb-93b7-0f68f74a9673",
+  "driverId": "12345",
+  "driver": {
+    "licenseExpiration": "2021-08-12T19:35:48.971+00:00",
+    "validLicense": true,
+    "Name": "Arthur",
+    "State": "SP",
+    "City": "Campinas",
+    "Points": 13,
+    "Age": 30
+  },
+  "trafficViolationResponse": {
+    "Fine": {
+      "Amount": 1000,
+      "Points": 7
+    },
+    "Suspended": "Yes"
+  },
+  "violation": {
+    "Code": null,
+    "Date": null,
+    "Type": "speed",
+    "Speed Limit": 100,
+    "Actual Speed": 140
+  }
+}
+----
+
+[id="con-process-decisions-integration-traffic-violation-process-remote_{context}"]
+==== Traffic violations example for remote method
+
+The traffic violations example for remote method is similar to the xref:con-process-decisions-integration-traffic-violation-process-embedded_kogito-developing-process-services[]. However, in the remote method, you need to use different tasks to perform the calls to the decision services.
+
+The traffic violations example is based on the evaluation process of the traffic violations. In the traffic violations example, first, the information of the driver is fetched, and based on the fetched information, it is determined whether the driver has a valid driving license using a RuleUnit in a DRL. After the validation of the driving license, the violation evaluation is executed, which is defined as a DMN decision, and the output provides the information of whether the driver is suspended or not.
+
+IMPORTANT: The ID property of a process is used in the REST endpoint generation, which refers to the path that is used to interact with the process.
+
+.Traffic process variables
+image::kogito/bpmn/decisions/process-variables.png[Image of Traffic Process with service tasks for REST in process designer]
+
+Also, the classes in the process are used to define the Plain Old Java Objects (POJOs) that enable the interaction between the process and decisions. The process classes include  `Violation`, `Driver`, `Fine` and `TrafficViolationResponse`.
+
+Traffic process using service tasks::
+
+When using service tasks for defining a process, it requires coding to provide an implementation in the application that is responsible to execute the task, and in this case a REST or HTTP call.
+
+.Traffic Process with service tasks for REST
+image::kogito/bpmn/decisions/traffic-rules-dmn-service-task.png[Image of Traffic Process with service tasks for REST in process designer]
+
+For more information about implementation, see https://quarkus.io/guides/rest-client[Quarkus REST Client], and for implementation details, see the following `LicenseValidationRestClient` and `TrafficViolationRestClient` classes.
+
+.LicenseValidationRestClient class in traffic violation example
+[source,java]
+----
+@Path("/validation/first")
+@RegisterRestClient
+public interface LicenseValidationRestClient {
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    Driver post(Map<String, Object> parameters);
+
+}
+----
+
+.TrafficViolationRestClient class in traffic violation example
+[source,java]
+----
+@Path("/Traffic%20Violation")
+@RegisterRestClient
+public interface TrafficViolationRestClient {
+
+    @POST
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    TrafficViolationResponse post(Map<String, Object> parameters);
+
+}
+----
+
+The process is declared in the `traffic-rules-dmn-service-task.bpmn` file.
+
+Traffic process using REST work item::
+
+Using the REST work item is a declarative way, which does not require additional implementation. The REST or HTTP call is executed by the decision engine.
+
+.Process using REST work item
+image::kogito/bpmn/decisions/traffic-rules-dmn-wih.png[Image of Traffic Process with service tasks for REST in process designer]
+
+The information that is required to execute the REST call, such as URL and HTTP method must be set in the *Data Assignments* for the REST work item. The process is declared in the `traffic-rules-dmn-wih.bpmn` file.
+
+[id="con-process-decisions-integration-traffic-violation-data-mapping-remote_{context}"]
+===== Data mapping between a process and decisions
+
+Data mapping from a process to decisions in the remote method is similar to the embedded method. For more information, see xref:con-process-decisions-integration-traffic-violation-data-mapping-embedded_kogito-developing-process-services[].
+
+To map the data between a process and decisions, you can align all the attributes names in a Java class, which is used as process variables. If the names of the attributes contain spaces or the names of the attributes are not following Java conventions, then you can use https://github.com/FasterXML/jackson[Jackson] annotations. The Jackson annotations align the process variables with the data types of the DMN model. For example, in the traffic violations project, the `Violation` class is mapped with the `speedLimit` attribute using the `@JsonProperty` annotation. Therefore, the `speedLimit` attribute can be integrated with the `Violation` data type defined in the DMN model.
+
+.Violation class defined in the traffic process
+[source,java]
+----
+public class Violation {
+
+    @JsonProperty("Code")
+    private String code;
+
+    @JsonProperty("Date")
+    private Date date;
+
+    @JsonProperty("Type")
+    private String type;
+
+    @JsonProperty("Speed Limit")
+    private BigDecimal speedLimit;
+
+    @JsonProperty("Actual Speed")
+    private BigDecimal actualSpeed;
+
+    //Getters / Setters
+}
+----
+
+In the traffic violation project, when fetching driver information, an external call to a service task is performed to retrieve the driver information from the database. In this case, the service task implementation is performed using the `DriverService` class. In the Data Assignments, `driverId` is defined as an input variable and `driver` is defined as an output variable, consisting of the driver information.
+
+Fetching the driver information leads to the license validation task, which represents the task of calling a DRL service. The license validation task can be performed using a service task or REST work item:
+
+* When using a service task for the license validation task, the implementation properties must be along with the method. In the implementation properties, it is must to set the Java class to implement the service task that executes the REST call.
++
+.License validation service task
+image::kogito/bpmn/decisions/license-validation-drl-service-task.png[Image of License Validation Service Task in process designer]
++
+The input and output mapping for the license validation service task is the `driver` variable, which contains the validated license information.
++
+.License validation service task data assignment
+image::kogito/bpmn/decisions/license-drl-service-task-data-mapping.png[Image of License Validation Service Task data assignment in process designer]
+
+* When using a REST work item, the input and output mapping for the license validation task includes the `driver` variable that contains the validated license information. Also, the URL and HTTP method is set as input parameters for the process.
++
+.License validation REST work item
+image::kogito/bpmn/decisions/license-validation-drl-wih.png[Image of License Validation Service Task in process designer]
++
+.License validation REST work item data assignment
+image::kogito/bpmn/decisions/license-validation-drl-wih-data-mapping.png[Image of License Validation Service Task data assignment in process designer]
+
+Similar to the license validation task, the traffic violation task represents the task of calling a DMN service using a service task or REST work item:
+
+* When using a service task, the implementation properties must be set along with the method. The implementation properties consist of the Java class that implements the service task.
++
+.Traffic violation service task
+image::kogito/bpmn/decisions/traffic-violation-drl-service-task.png[Image of License Validation Service Task in process designer]
++
+.Traffic violation service task properties
+image::kogito/bpmn/decisions/traffic-violation-drl-service-task-properties.png[Image of Traffic Violation Service Task properties in process designer]
++
+The input for the traffic violation task includes `Driver` and `Violation` variables, and the output includes `Suspended` and `Fine`, which is part of `TrafficViolationResponse`.
++
+.Traffic violation service task data assignment
+image::kogito/bpmn/decisions/traffic-violation-drl-service-task-data.png[Image of Traffic Violation Service Task data assignment in process designer]
+
+* When using a REST work item, the input for the task violation task includes `Driver` and `Violation` variables, and the output includes `Suspended` and `Fine, which is part of `TrafficViolationResponse`. Also, the URL and HTTP method is set as input parameters for the process.
++
+.Traffic violation REST work item
+image::kogito/bpmn/decisions/traffic-violation-drl-wih.png[Image of Traffic Violation REST Work Item in process designer]
++
+.Traffic violation REST work item data assignment
+image::kogito/bpmn/decisions/traffic-violation-drl-wih-data.png[Image of Traffic Violation REST Work Item data assignmentg in process designer]
+
+In both cases, whether the driver is suspended or not, the related information is logged in the console.
 
 [id="con-flex-processes_{context}"]
 == Flexible processes for case management in {PRODUCT}
