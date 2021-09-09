@@ -12,6 +12,100 @@ As a developer of business processes and decisions, you can deploy {PRODUCT} ser
 * The OpenShift project for the deployment is created.
 
 // Modules - concepts, procedures, refs, etc.
+[id="con-kogito-native_{context}"]
+== Building a Native Image with {PRODUCT}
+ifdef::context[:parent-context: {context}]
+:context: kogito-native
+
+// Purpose statement for the assembly
+[role="_abstract"]
+As a developer of business processes, you can build an application as a native executable.
+
+.Prerequisites
+* JDK 11 or later is installed.
+* Apache Maven 3.6.2 or later is installed.
+* Optional: [Quarkus CLI](https://quarkus.io/guides/cli-tooling) is installed
+
+=== Native build using GraalVM or Mandrel
+
+NOTE: Native build and deployment is Quarkus only and requires GraalVM or Mandrel.
+
+You can create a Kogito project by using the Maven plugin or the Quarkus CLI. 
+You can use the following commands to create an application named `sample-kogito` that is preconfigured with all the required configuration flags to support building native executables.
+
+
+.Creating a project using the Quarkus Maven plugin
+[source,subs="attributes+"]
+----
+mvn io.quarkus:quarkus-maven-plugin:create \
+   -DprojectGroupId=com.company \
+   -DprojectArtifactId=sample-kogito \
+   -Dextensions="kogito"
+----
+
+
+.Creating a project using the Quarkus CLI (alternative to Maven plugin)
+[source,subs="attributes+"]
+----
+quarkus create -x kogito sample-kogito
+----
+
+For more information about getting started, see {URL_CREATING_RUNNING}#chap-kogito-creating-running[{CREATING_RUNNING}].
+
+You can now build a native image using Maven or the Quarkus CLI.
+
+.Building a native image using the Maven plugin
+[source]
+----
+$ mvn verify -Dnative
+# running
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
+
+.Building a native image using the Quarkus CLI
+[source]
+----
+$ quarkus build --native
+# running
+$ ./target/sample-kogito-1.0-SNAPSHOT-runner
+----
+
+==== Building a native executable using a container image
+
+Alternatively, you can use a container builder image. You do not need to install GraalVM because a container containing GraalVM is pulled automatically. Note that the executable targets a Linux kernel by default. For example:
+
+.Building a native image using a container image
+[source]
+----
+$ mvn verify -Dnative -Dquarkus.native.container-build
+# alternatively
+$ quarkus build --native -Dquarkus.native.container-build=true
+----
+
+To use Mandrel instead of GraalVM, run the following command:
+
+.Building a native image using a container image (Mandrel)
+[source]
+----
+$ mvn verify -Dnative -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:21.1-java11
+# alternatively
+$ quarkus build --native -Dquarkus.native.container-build -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:21.1-java11
+----
+
+For further information about building a native image, see https://quarkus.io/guides/building-native-image#container-runtime[Quarkus - Building a Native Executable].
+
+==== Creating a Container Image with Quarkus
+
+Quarkus provides [extensions for building (and pushing) container images](https://quarkus.io/guides/container-image). 
+Read the corresponding quarkus guide to build a docker image. If you pick the `jib` extension you will not need a container daemon, such as Docker, to run in the background.
+
+You can push your image to a registry such as DockerHub or Quay.io and pull it from your runtime environment. You can also do this by using Quarkus. For more information, see https://quarkus.io/guides/container-image#pushing[Pushing]
+
+==== Deploying a Container Image 
+
+You can use `kubctl` or `oc` to pull your image from the selected registry.
+
+
 [id="con-kogito-on-ocp_{context}"]
 == {PRODUCT} on {OPENSHIFT}
 
