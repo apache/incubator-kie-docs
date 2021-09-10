@@ -1,0 +1,156 @@
+[id="planner-quarkus-database-proc_{context}"]
+
+= Integrating a database with your Quarkus OptaPlanner school timetable application
+After you create your Quarkus OptaPlanner school timetable application, you can integrate it with a database and create a web-based user interface to display the timetable.
+
+.Prerequisites
+* You have a Quarkus OptaPlanner school timetable application.
+
+.Procedure
+. Use Hibernate and Panache to store `Timeslot`, `Room`, and `Lesson` instances in a database. See https://quarkus.io/guides/hibernate-orm-panache[Simplified Hibernate ORM with Panache] for more information.
+
+. Expose the instances through REST. For information, see https://quarkus.io/guides/rest-json[Writing JSON REST Services].
+
+. Update the `TimeTableResource` class to read and write a `TimeTable` instance in a single transaction:
++
+[source]
+----
+package org.acme.optaplanner.rest;
+
+import javax.inject.Inject;
+import javax.transaction.Transactional;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+
+import io.quarkus.panache.common.Sort;
+import org.acme.optaplanner.domain.Lesson;
+import org.acme.optaplanner.domain.Room;
+import org.acme.optaplanner.domain.TimeTable;
+import org.acme.optaplanner.domain.Timeslot;
+import org.optaplanner.core.api.score.ScoreManager;
+import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
+import org.optaplanner.core.api.solver.SolverManager;
+import org.optaplanner.core.api.solver.SolverStatus;
+
+@Path("/timeTable")
+public class TimeTableResource {
+
+    public static final Long SINGLETON_TIME_TABLE_ID = 1L;
+
+    @Inject
+    SolverManager<TimeTable, Long> solverManager;
+    @Inject
+    ScoreManager<TimeTable, HardSoftScore> scoreManager;
+
+    // To try, open http://localhost:8080/timeTable
+    @GET
+    public TimeTable getTimeTable() {
+        // Get the solver status before loading the solution
+        // to avoid the race condition that the solver terminates between them
+        SolverStatus solverStatus = getSolverStatus();
+        TimeTable solution = findById(SINGLETON_TIME_TABLE_ID);
+        scoreManager.updateScore(solution); // Sets the score
+        solution.setSolverStatus(solverStatus);
+        return solution;
+    }
+
+    @POST
+    @Path("/solve")
+    public void solve() {
+        solverManager.solveAndListen(SINGLETON_TIME_TABLE_ID,
+                this::findById,
+                this::save);
+    }
+
+    public SolverStatus getSolverStatus() {
+        return solverManager.getSolverStatus(SINGLETON_TIME_TABLE_ID);
+    }
+
+    @POST
+    @Path("/stopSolving")
+    public void stopSolving() {
+        solverManager.terminateEarly(SINGLETON_TIME_TABLE_ID);
+    }
+
+    @Transactional
+    protected TimeTable findById(Long id) {
+        if (!SINGLETON_TIME_TABLE_ID.equals(id)) {
+            throw new IllegalStateException("There is no timeTable with id (" + id + ").");
+        }
+        // Occurs in a single transaction, so each initialized lesson references the same timeslot/room instance
+        // that is contained by the timeTable's timeslotList/roomList.
+        return new TimeTable(
+                Timeslot.listAll(Sort.by("dayOfWeek").and("startTime").and("endTime").and("id")),
+                Room.listAll(Sort.by("name").and("id")),
+                Lesson.listAll(Sort.by("subject").and("teacher").and("studentGroup").and("id")));
+    }
+
+    @Transactional
+    protected void save(TimeTable timeTable) {
+        for (Lesson lesson : timeTable.getLessonList()) {
+            // TODO this is awfully naive: optimistic locking causes issues if called by the SolverManager
+            Lesson attachedLesson = Lesson.findById(lesson.getId());
+            attachedLesson.setTimeslot(lesson.getTimeslot());
+            attachedLesson.setRoom(lesson.getRoom());
+        }
+    }
+
+}
+----
++
+This example includes a `TimeTable` instance. However, you can enable multi-tenancy and handle `TimeTable` instances for multiple schools in parallel.
++
+The `getTimeTable()` method returns the latest timetable from the database. It uses the `ScoreManager` method, which is automatically injected, to calculate the score of that timetable and make it available to the UI.
++
+The `solve()` method starts a job to solve the current timetable and stores the time slot and room assignments in the database. It uses the `SolverManager.solveAndListen()` method to listen to intermediate best solutions and update the database accordingly. The UI uses this to show progress while the backend is still solving.
+
+. Update the `TimeTableResourceTest` class to reflect that the `solve()` method returns immediately and to poll for the latest solution until the solver finishes solving:
++
+[source]
+----
+package org.acme.optaplanner.rest;
+
+import javax.inject.Inject;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.acme.optaplanner.domain.Lesson;
+import org.acme.optaplanner.domain.TimeTable;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.optaplanner.core.api.solver.SolverStatus;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@QuarkusTest
+public class TimeTableResourceTest {
+
+    @Inject
+    TimeTableResource timeTableResource;
+
+    @Test
+    @Timeout(600_000)
+    public void solveDemoDataUntilFeasible() throws InterruptedException {
+        timeTableResource.solve();
+        TimeTable timeTable = timeTableResource.getTimeTable();
+        while (timeTable.getSolverStatus() != SolverStatus.NOT_SOLVING) {
+            // Quick polling (not a Test Thread Sleep anti-pattern)
+            // Test is still fast on fast machines and doesn't randomly fail on slow machines.
+            Thread.sleep(20L);
+            timeTable = timeTableResource.getTimeTable();
+        }
+        assertFalse(timeTable.getLessonList().isEmpty());
+        for (Lesson lesson : timeTable.getLessonList()) {
+            assertNotNull(lesson.getTimeslot());
+            assertNotNull(lesson.getRoom());
+        }
+        assertTrue(timeTable.getScore().isFeasible());
+    }
+
+}
+----
+. Build a web UI on top of these REST methods to provide a visual representation of the timetable.
+
+. Review the https://github.com/quarkusio/quarkus-quickstarts/tree/main/optaplanner-quickstart[quickstart source code].
