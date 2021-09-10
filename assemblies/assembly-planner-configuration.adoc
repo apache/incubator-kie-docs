@@ -542,6 +542,144 @@ most appenders, including the console, cause congestion with `debug` and `trace`
 Switch to an async appender to avoid this problem or turn off `debug` logging.
 ====
 
+[[monitoring]]
+[id='monitoring-the-solver-proc_{context}']
+=== Monitoring the solver
+OptaPlanner exposes metrics through https://micrometer.io/[Micrometer], a metrics instrumentation library for Java applications. You can use Micrometer with popular monitoring systems to monitor the OptaPlanner solver.
+
+==== Configuring a Quarkus OptaPlanner application for Micrometer
+To configure your OptaPlanner Quarkus application to use Micrometer and a specified monitoring system, add the Micrometer dependency to the `pom.xml` file.
+
+.Prerequisites
+* You have a Quarkus OptaPlanner application.
+
+.Procedure
+. Add the following dependency to your application's `pom.xml` file where `<MONITORING_SYSTEM>` is a monitoring system supported by Micrometer and Quarkus:
++
+NOTE: Prometheus is currently the only monitoring system supported by Quarkus.
++
+[source]
+----
+<dependency>
+ <groupId>io.quarkus</groupId>
+ <artifactId>quarkus-micrometer-registry-<MONITORING_SYSTEM></artifactId>
+</dependency>
+----
+. To run the application in development mode, enter the following command:
++
+[source]
+----
+mvn compile quarkus:dev
+----
+. To view metrics for your application, enter the following URL in a browser:
++
+[source]
+----
+http://localhost:8080/q/metrics
+----
+
+==== Configuring a Spring Boot OptaPlanner application for Micrometer
+To configure your Spring Boot OptaPlanner  application to use Micrometer and a specified monitoring system, add the Micrometer dependency to the `pom.xml` file.
+
+.Prerequisites
+* You have a Spring Boot OptaPlanner  application.
+
+.Procedure
+. Add the following dependency to your application's `pom.xml` file where `<MONITORING_SYSTEM>` is a monitoring system supported by Micrometer and Spring Boot:
++
+[source]
+----
+<dependency>
+ <groupId>org.springframework.boot</groupId>
+ <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<dependency>
+ <groupId>io.micrometer</groupId>
+ <artifactId>micrometer-registry-<MONITORING_SYSTEM></artifactId>
+</dependency>
+----
+. Add configuration information to the application's `application.properties` file. For information, see the https://micrometer.io[Micrometer] web site.
+
+. To run the application, enter the following command:
++
+[source]
+----
+mvn spring-boot:run
+----
+
+. To view metrics for your application, enter the following URL in a browser:
++
+http://localhost:8080/actuator/metrics
+
++
+NOTE: Use the following URL as the Prometheus scraper path:
+`http://localhost:8080/actuator/prometheus`
+
+==== Configuring a plain Java OptaPlanner application for Micrometer
+To configuring a plain Java OptaPlanner application to use Micrometer, you must add Micrometer dependencies and configuration information for your chosen monitoring system to your project's `POM.XML` file.
+
+
+.Prerequisites
+* You have a plain Java OptaPlanner application.
+
+.Procedure
+. Add the following dependencies to your application's `pom.xml` file where `<MONITORING_SYSTEM>` is a monitoring system that is configured with Micrometer and `<VERSION>` is the version of Micrometer that you are using:
++
+[source]
+----
+<dependency>
+ <groupId>io.micrometer</groupId>
+ <artifactId>micrometer-registry-<MONITORING_SYSTEM></artifactId>
+ <version><VERSION></version>
+</dependency>
+<dependency>
+ <groupId>io.micrometer</groupId>
+ <artifactId>micrometer-core</artifactId>
+ <version>`<VERSION>`</version>
+</dependency>
+----
+. Add Micrometer configuration information for your monitoring system to the beginning of your project's `pom.xml` file. For information, see the https://micrometer.io[Micrometer] web site.
+. Add the following line below the configuration information, where `<MONITORING_SYSTEM>` is the monitoring system that you added:
++
+[source,java,nowrap]
+----
+Metrics.addRegistry(<MONITORING_SYSTEM>);
+----
+The following example shows how to add the Prometheus monitoring system:
++
+[source,java,nowrap]
+----
+PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
+try {
+    HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
+    server.createContext("/prometheus", httpExchange -> {
+        String response = prometheusRegistry.scrape();
+        httpExchange.sendResponseHeaders(200, response.getBytes().length);
+        try (OutputStream os = httpExchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
+    });
+    new Thread(server::start).start();
+} catch (IOException e) {
+    throw new RuntimeException(e);
+}
+Metrics.addRegistry(prometheusRegistry);
+----
+
+. Open your monitoring system to view the metrics for your OptaPlanner project. The following metrics are exposed:
++
+[NOTE]
+====
+The names and format of the metrics vary depending on the registry.
+====
++
+* `optaplanner.solver.errors.total`: the total number of errors that occurred while solving since the start
+of the measuring.
+* `optaplanner.solver.solve-length.active-count`: the number of solvers currently solving.
+* `optaplanner.solver.solve-length.seconds-max`: run time of the
+longest-running currently active solver.
+* `optaplanner.solver.solve-length.seconds-duration-sum`: the sum of each active solver's solve duration. For example, if there are two active solvers, one running for three minutes and the other for one minute, the total solve time is four minutes.
+
 [[randomNumberGenerator]]
 [id='cofiguring-random-number-proc_{context}']
 === Configuring the random number generator
@@ -589,6 +727,7 @@ For most use cases, the value of the `randomType` property has no significant im
 
 A `SolverManager` is a facade for one or more `Solver` instances
 to simplify solving planning problems in REST and other enterprise services.
+
 Unlike the `Solver.solve(...)` method, a `SolverManager` has the following characteristics:
 
 * `SolverManager.solve(...)` returns immediately: it schedules a problem for asynchronous solving without blocking the calling thread.
@@ -650,6 +789,7 @@ Batch solving is solving multiple data sets in parallel. Batch solving is partic
 Some organizations enforce a deadline, for example, _submit all day off requests before midnight_.
 * The solvers can run for much longer, often hours, because nobody is waiting for the results and CPU resources are often cheaper.
 * Solutions are available when employees arrive at work the next working day.
+
 
 .Procedure
 To batch solve problems in parallel, limited by `parallelSolverCount`,
