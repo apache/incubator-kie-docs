@@ -1,11 +1,14 @@
 [id='proc-quarkus-creating-proj_{context}']
 
 
-= Creating the school timetable project
+= Creating an OptaPlanner {QUARKUS} Maven project using the Maven plug-in
 
-The school timetable project lets you get up and running with a {PLANNER} and Quarkus application using Apache Maven and the Quarkus Maven plug-in.
+You can get up and running with a {PLANNER} and Quarkus application using Apache Maven and the Quarkus Maven plug-in.
 
-NOTE: If you prefer, you can create a Quakus OptaPlanner project as described in xref:optaplanner-quarkus-con_getting-started-optaplanner[].
+.Prerequisites
+* OpenJDK {OPTAPLANNER_JDK_VERSION} or later is installed. Red Hat build of Open JDK is available from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required).
+
+* Apache Maven {OPTAPLANNER_MAVEN_VERSION} or higher is installed. Maven is available from the https://maven.apache.org/[Apache Maven Project] website.
 
 .Procedure
 
@@ -18,20 +21,14 @@ mvn --version
 
 . If the preceding command does not return JDK {OPTAPLANNER_JDK_VERSION}, add the path to JDK {OPTAPLANNER_JDK_VERSION} to the PATH environment variable and enter the preceding command again.
 
-. To generate the project, enter one of the following commands:
+. To generate a Quarkus OptaPlanner quickstart project, enter the following command:
 +
-NOTE: Apple macOS and Microsoft Windows are not supported production environments.
-+
-* If you are using Linux or Apple macOS, enter the following command:
-+
-[source,shell,subs=attributes+]
+[source,shell, subs="attributes+"]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{QUARKUS_BOM}:create \
     -DprojectGroupId=com.example \
     -DprojectArtifactId=optaplanner-quickstart  \
     -Dextensions="resteasy,resteasy-jackson,optaplanner-quarkus,optaplanner-quarkus-jackson" \
-    -DplatformGroupId=com.redhat.quarkus \
-    -DplatformVersion={QUARKUS_BOM} \
     -DnoExamples
 ----
 +
@@ -56,77 +53,62 @@ h| Description
 | `extensions`
 | A comma-separated list of Quarkus extensions to use with this project. For a full list of Quarkus extensions, enter `mvn quarkus:list-extensions` on the command line.
 
-| `platformGroupId`
-| The Group ID of the target platform.
-
-| `platformVersion`
-| The version of the platform that you want the project to use.
-
 | `noExamples`
 | Creates a project with the project structure but without tests or classes.
 
 |===
 +
-The values of the `projectGroupID` and the `projectArtifactID` properties are used to generate the project version. The default project version is `1.0.0-SNAPSHOT`. The values of the `platformGroupId` and `platformVersion` properties are used by `quarkus-universe-bom` to manage project dependencies.
+The values of the `projectGroupID` and the `projectArtifactID` properties are used to generate the project version. The default project version is `1.0.0-SNAPSHOT`.
 
-. After the directory structure is created, open the `optaplanner-quickstart/pom.xml` file in a text editor and examine the contents of the file to ensure it contains the following elements:
-//is this the correct path to the BOM?
+. To view your OptaPlanner project, change directory to the OptaPlanner Quickstarts directory:
 +
-[source,xml,subs=attributes+]
+[source]
 ----
-<properties>
-	...
-	<quarkus-plugin.version>{QUARKUS_BOM}</quarkus-plugin.version>
-	<quarkus.platform.artifact-id>quarkus-universe-bom</quarkus.platform.artifact-id>
-	<quarkus.platform.group-id>com.redhat.quarkus</quarkus.platform.group-id>
-	<quarkus.platform.version>{QUARKUS_BOM}.Final-redhat-00001</quarkus.platform.version>
-  </properties>
-  <dependencyManagement>
-	<dependencies>
-  	<dependency>
-    	<groupId>${quarkus.platform.group-id}</groupId>
-    	<artifactId>${quarkus.platform.artifact-id}</artifactId>
-    	<version>${quarkus.platform.version}</version>
-    	<type>pom</type>
-    	<scope>import</scope>
-  	</dependency>
-	</dependencies>
-  </dependencyManagement>
+cd optaplanner-quickstart
+----
+. Review the  `pom.xml` file. The content should be similar to the following example:
++
+[source, subs="attributes+"]
+----
+<dependencyManagement>
   <dependencies>
-	<dependency>
-  	<groupId>org.optaplanner</groupId>
-  	<artifactId>optaplanner-quarkus</artifactId>
-	</dependency>
-	<dependency>
-  	<groupId>org.optaplanner</groupId>
-  	<artifactId>optaplanner-quarkus-jackson</artifactId>
-	</dependency>
-	<dependency>
-  	<groupId>io.quarkus</groupId>
-  	<artifactId>quarkus-resteasy-jackson</artifactId>
-	</dependency>
-	<dependency>
-  	<groupId>io.quarkus</groupId>
-  	<artifactId>quarkus-resteasy</artifactId>
-	</dependency>
-	<dependency>
-  	<groupId>io.quarkus</groupId>
-  	<artifactId>quarkus-arc</artifactId>
-	</dependency>
-	<dependency>
-  	<groupId>io.quarkus</groupId>
-  	<artifactId>quarkus-junit5</artifactId>
-  	<scope>test</scope>
-	</dependency>
-----
-+
-The Quarkus BOM is imported into the `pom.xml` file. Therefore, you do not need to list the versions of individual Quarkus dependencies in the `pom.xml` file.
-. Review the `quarkus-resteasy` dependency in the `pom.xml` file. This dependency enables you to develop REST applications:
-+
-[source,xml]
-----
     <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy</artifactId>
+      <groupId>io.quarkus.platform</groupId>
+      <artifactId>quarkus-bom</artifactId>
+      <version>{QUARKUS_BOM}</version>
+      <type>pom</type>
+      <scope>import</scope>
     </dependency>
+    <dependency>
+      <groupId>io.quarkus.platform</groupId>
+      <artifactId>quarkus-optaplanner-bom</artifactId>
+      <version>{QUARKUS_BOM}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+<dependencies>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.optaplanner</groupId>
+    <artifactId>optaplanner-quarkus</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>org.optaplanner</groupId>
+    <artifactId>optaplanner-quarkus-jackson</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <scope>test</scope>
+  </dependency>
+</dependencies>
 ----
