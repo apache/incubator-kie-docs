@@ -2583,7 +2583,7 @@ ifdef::parent-context[:context: {parent-context}]
 ifndef::parent-context[:!context:]
 
 
-== Creating custom REST endpoint using the Kogito API (Incubation)
+== Creating custom REST endpoints using the Kogito API (Incubation)
 
 [role="_abstract"]
 As a developer of business processes and decisions, you can use {PRODUCT} to develop custom REST endpoints.
@@ -2592,13 +2592,13 @@ As a developer of business processes and decisions, you can use {PRODUCT} to dev
 * JDK 11 or later is installed.
 * Apache Maven is installed.
 
-NOTE: The Kogito API is currently only available for Quarkus and it is in in **incubation** stage. It means that it is experimental, but is made available to early adopters with the goal of gathering feedback and improving the feature.
+NOTE: The Kogito API is only available for Quarkus. The Kogito API is in the incubation stage and experimental. It is made available to early adopters with the goal of gathering feedback and improving the feature.
 
 .Procedure
 . Create a {PRODUCT} project using the Maven plugin or Quarkus CLI.
 +
 --
-.Example project creation using Quarkus Maven plugin
+.Example project creation using the Quarkus Maven plugin
 [source,subs="attributes+"]
 ----
 mvn io.quarkus:quarkus-maven-plugin:create \
@@ -2608,7 +2608,7 @@ mvn io.quarkus:quarkus-maven-plugin:create \
 ----
 --
 
-. Add a business asset to the `resource` folder. In this example we will use a DMN file. To create this example DMN model quickly, you can copy the following `PersonDecisions.dmn` file content:
+. Add a business asset to the `resource` folder such as a DMN file. To create the example DMN model, you can copy the following `PersonDecisions.dmn` file content:
 +
 --
 .Example DMN file
@@ -2708,10 +2708,10 @@ mvn io.quarkus:quarkus-maven-plugin:create \
 </dmn:definitions>
 ----
 --
-This defines a DMN model with namespace `https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1` and name `PersonDecisions`
+This defines a DMN model with namespace `https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1` and name `PersonDecisions`.
 
 
-. Create a source file for your custom REST endpoint:
+. Create a source file for the custom REST endpoint:
 +
 --
 .Example REST endpoint
@@ -2756,16 +2756,14 @@ public class GreetingResource {
 }
 ----
 --
-* In this REST endpoint you are injecting the `AppRoot` object. 
-The `AppRoot` object allows you to create an identifier for 
-a resource that should be evaluated.
-* You are also injecting a `DecisionService`. A `DecisionService` allows you to evaluate a DMN. There are multiple types of Services (detailed below); each service is able to resolve and evaluate one specific type of identifier.
+* In this REST endpoint you are injecting the `AppRoot` object.  You can use the `AppRoot` object to create identifiers for resources that are to be evaluated.
+* The line ` @Inject DecisionService svc` injects the `DecisionService` service that you can use to evaluate a DMN. There are different types of services, and each service resolves and evaluates a specific type of identifier.
 * The REST endpoint expects an arbitrary `Map<String, Object>` of values.
 * In the body of the REST handler, we convert the `Map` into a `DataContext`. Each service expects a `DataContext` to evaluate together with the identifier.
 * The `evaluate(id, ctx)` method returns a `DataContext`. This can be returned directly by the REST handler: the system knows how to handle the response. 
-*
 
-. You can also disable the automated generation of the REST endpoint by putting in your `application.properties`
+
+. Optionally, you can disable automated generation of the REST endpoint by setting `kogito.generate.rest.decisions` to `false` in the `application.properties` file.
 
 +
 --
@@ -2794,7 +2792,7 @@ $ curl -X POST \
     http://localhost:8080/hello
 ----
 --
-The response will look like:
+The response is displayed, for example:
 +
 --
 .Response
@@ -2808,7 +2806,7 @@ The response will look like:
 
 === Further Customization ===
 
-The REST endpoint above can be further simplified and customized. For instance, it is possible to avoid wrapping the `Map`, and instead expect a context in the method signature:
+You can simplify and customize the example REST endpoint further. For example, you can avoid wrapping Map, and instead expect a `DataContext` in the method signature.
 
 --
 .Example REST endpoint
@@ -2827,7 +2825,7 @@ The REST endpoint above can be further simplified and customized. For instance, 
 ----
 --
 
-Further, it is possible to transform the Map data context into a class. The mapping will be made automatically using field naming conventions. For instance:
+In addition, you can transform the Map data context into a class. This mapping is done automatically using field naming conventions, for example:
 
 --
 .Example Java class
@@ -2843,7 +2841,7 @@ public class Person implements DataContext, DefaultCastable {
 ----
 --
 
-The `DataContext` interface will mark your class as a bindable context. You are now able to convert another `DataContext` using the `as(Class<DataContext>)` method:
+The `DataContext` interface marks your class as a bindable context. You are now able to convert another `DataContext` using the `as(Class<DataContext>)` method:
 
 --
 .Example conversion of a MapDataContext into a Person
@@ -2858,7 +2856,7 @@ The `DataContext` interface will mark your class as a bindable context. You are 
 --
 
 
-or even use it directly as an argument
+or use it directly as an argument
 
 --
 .Example REST endpoint using Person as an argument
@@ -2889,9 +2887,9 @@ It is also possible to use custom data contexts in the return type:
 
 === DataContext ===
 
-A `DataContext` is simply a class that implements the `DataContext` interface. 
+A `DataContext` is a class that implements the `DataContext` interface. 
 
-It usually provide a method `<T extends DataContext> T as(Class<T>)` to convert one type of DataContext into another. The `DataContext` root type only provides the `as()` method, as the root type provides no extra behavior of its own.
+It provides a method `<T extends DataContext> T as(Class<T>)` to convert one type of DataContext into another. The `DataContext` root type only provides the `as()` method, as the root type provides no extra behavior of its own.
 
 For instance, in the previous code we converted an "opaque" `DataContext` into a `MapDataContext` and a `Person` object.
 
