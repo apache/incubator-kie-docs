@@ -1,0 +1,45 @@
+[id='using-java-api-proc_{context}']
+= Using the Java API  to configure the {PLANNER_SHORT} solver
+
+You can configure a solver by using the `SolverConfig` API. This is especially useful to change values dynamically at runtime. The following example changes the running time based on system properties before building the `Solver` in the NQueens project:
+
+[source,java,options="nowrap"]
+----
+        SolverConfig solverConfig = SolverConfig.createFromXmlResource(
+                "org/optaplanner/examples/nqueens/solver/nqueensSolverConfig.xml");
+        solverConfig.withTerminationConfig(new TerminationConfig()
+                        .withMinutesSpentLimit(userInput));
+
+        SolverFactory<NQueens> solverFactory = SolverFactory.create(solverConfig);
+        Solver<NQueens> solver = solverFactory.buildSolver();
+----
+
+Every element in the solver configuration XML file is available as a `Config` class
+or a property on a `Config` class in the package namespace `org.optaplanner.core.config`.
+These `Config` classes are the Java representation of the XML format.
+They build the runtime components of the package namespace `org.optaplanner.core.impl` and assemble them into an efficient `Solver`.
+
+[NOTE]
+====
+To configure a `SolverFactory` dynamically for each user request, build a template `SolverConfig` during initialization and copy it with the copy constructor for each user request. The following example shows how to do this with the NQueens problem:
+
+[source,java,options="nowrap"]
+----
+    private SolverConfig template;
+
+    public void init() {
+        template = SolverConfig.createFromXmlResource(
+                "org/optaplanner/examples/nqueens/solver/nqueensSolverConfig.xml");
+        template.setTerminationConfig(new TerminationConfig());
+    }
+
+    // Called concurrently from different threads
+    public void userRequest(..., long userInput) {
+        SolverConfig solverConfig = new SolverConfig(template); // Copy it
+        solverConfig.getTerminationConfig().setMinutesSpentLimit(userInput);
+        SolverFactory<NQueens> solverFactory = SolverFactory.create(solverConfig);
+        Solver<NQueens> solver = solverFactory.buildSolver();
+        ...
+    }
+----
+====
