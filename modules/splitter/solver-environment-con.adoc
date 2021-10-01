@@ -1,0 +1,53 @@
+[id='solver-environment-con_{context}']
+= Solver environment mode
+
+The solver environment mode enables you to detect common bugs in your implementation.
+It does not affect the logging level.
+
+A solver has a single random instance. Some solver configurations use the random instance a lot more than others.
+For example, the Simulated Annealing algorithm depends highly on random numbers, while `Tabu Search` only depends on it to resolve score ties.
+The environment mode influences the seed of that random instance.
+
+
+You can set the environment mode in the solver configuration XML file. The following example sets the `FAST_ASSERT` mode:
+
+[source,xml,options="nowrap"]
+----
+<solver xmlns="https://www.optaplanner.org/xsd/solver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
+  <environmentMode>FAST_ASSERT</environmentMode>
+  ...
+</solver>
+----
+
+
+.The following list describes the environment modes that you can use in the solver configuration file:
+
+//[[environmentModeFullAssert]]
+* `FULL_ASSERT` mode turns on all assertions, for example the assertion that the incremental score calculation is uncorrupted for each move, to fail-fast on a bug in a Move implementation, a constraint, the engine itself, and so on.  This mode is reproducible. It is also intrusive because it calls the method `calculateScore()` more frequently than a non-assert mode. The `FULL_ASSERT` mode is very slow because it does not rely on incremental score calculation.
+
+//[[environmentModeNonIntrusiveFullAssert]]
+* `NON_INTRUSIVE_FULL_ASSERT` mode turns on several assertions to fail-fast on a bug in a Move implementation, a constraint, the engine itself, and so on. This mode is reproducible. It is non-intrusive because it does not call the method `calculateScore()` more frequently than a non assert mode. The `NON_INTRUSIVE_FULL_ASSERT` mode is very slow because it does not rely on incremental score calculation.
+
+//[[environmentModeFastAssert]]
+* `FAST_ASSERT` mode turns on most assertions, such as the assertions that an undoMove's score is the same as before the Move, to fail-fast on a bug in a Move implementation, a constraint, the engine itself, and so on. This mode is reproducible. It is also intrusive because it calls the method `calculateScore()` more frequently than a non-assert mode. The `FAST_ASSERT` mode is slow. Write a test case that does a short run of your planning problem with the `FAST_ASSERT` mode on.
+
+//[[environmentModeReproducible]]
+* `REPRODUCIBLE` mode is the default mode because it is recommended during development. In this mode, two runs in the same OptaPlanner version execute the same code in the same order. Those two runs have the same result at every step, except if the following note applies. This enables you to reproduce bugs consistently.
+It also enables you to benchmark certain refactorings, such as a score constraint performance optimization, fairly across runs.
++
+[NOTE]
+====
+Despite using `REPRODCIBLE` mode, your application might still not be fully reproducible for the following reasons:
+
+* Use of `HashSet` or another `Collection` which has an inconsistent order between JVM runs for collections of planning entities or planning values but not normal problem facts, especially in the solution implementation. Replace it with `LinkedHashSet`.
+* Combining a time gradient dependent algorithm, most notably the Simulated Annealing algorithm, together with time spent termination. A sufficiently large difference in allocated CPU time will influence the time gradient values. Replace the Simulated Annealing algorithms with the Late Acceptance algorithm, or replace time spent termination with step count termination.
+====
+
+* `REPRODUCIBLE` mode can be slightly slower than `NON_REPRODUCIBLE` mode.
+If your production environment can benefit from reproducibility, use this mode in production. In practice, `REPRODUCIBLE` mode uses the default fixed random seed if no seed is specified and it also disables certain concurrency optimizations such as work stealing.
+
+//[[environmentModeProduction]]
+* `NON_REPRODUCIBLE` mode can be slightly faster than `REPRODUCIBLE` mode.
+Avoid using it during development because it makes debugging and bug fixing difficult.
+If reproducibility isn't important in your production environment, use `NON_REPRODUCIBLE` mode in production. In practice, this mode uses no fixed random seed if no seed is specified.
