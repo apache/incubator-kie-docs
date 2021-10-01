@@ -1,0 +1,49 @@
+[id='logging-level-proc_{context}']
+= Changing the OptaPlanner solver logging level
+You can change the logging level in an OptaPlanner solver to review solver activity. The following list describes the different logging levels:
+
+* **error**: Logs errors, except those that are thrown to the calling code as a `RuntimeException`.
++
+If an error occurs, OptaPlanner normally fails fast. It throws a subclass of `RuntimeException` with a detailed message to the calling code. To avoid duplicate log messages, it does not log it as an error. Unless the calling code explicitly catches and eliminates that `RuntimeException`, a `Thread`'s default `ExceptionHandler` will log it as an error anyway. Meanwhile, the code is disrupted from doing further harm or obfuscating the error.
+
+* **warn**: Logs suspicious circumstances
+* **info**: Logs every phase and the solver itself
+* **debug**: Logs every step of every phase
+* **trace**: Logs every move of every step of every phase
+
+[NOTE]
+====
+Specifying `trace` logging will slow down performance considerably. However, `trace` logging is invaluable during development to discover a bottleneck.
+
+Even `debug` logging can slow down performance considerably for fast stepping algorithms such as Late Acceptance and Simulated Annealing,
+but not for slow stepping algorithms such as Tabu Search.
+
+Both trace` and `debug` logging cause congestion in multithreaded solving with most appenders.
+
+In Eclipse, `debug` logging to the console tends to cause congestion with score calculation speeds above 10000 per second. Neither IntelliJ or the Maven command line suffer from this problem.
+====
+
+.Procedure
+
+Set the logging level to `debug` logging to see when the phases end and how fast steps are taken.
+
+The following example shows output from debug logging:
+
+[source,options="nowrap"]
+----
+INFO  Solving started: time spent (3), best score (-4init/0), random (JDK with seed 0).
+DEBUG     CH step (0), time spent (5), score (-3init/0), selected move count (1), picked move (Queen-2 {null -> Row-0}).
+DEBUG     CH step (1), time spent (7), score (-2init/0), selected move count (3), picked move (Queen-1 {null -> Row-2}).
+DEBUG     CH step (2), time spent (10), score (-1init/0), selected move count (4), picked move (Queen-3 {null -> Row-3}).
+DEBUG     CH step (3), time spent (12), score (-1), selected move count (4), picked move (Queen-0 {null -> Row-1}).
+INFO  Construction Heuristic phase (0) ended: time spent (12), best score (-1), score calculation speed (9000/sec), step total (4).
+DEBUG     LS step (0), time spent (19), score (-1),     best score (-1), accepted/selected move count (12/12), picked move (Queen-1 {Row-2 -> Row-3}).
+DEBUG     LS step (1), time spent (24), score (0), new best score (0), accepted/selected move count (9/12), picked move (Queen-3 {Row-3 -> Row-2}).
+INFO  Local Search phase (1) ended: time spent (24), best score (0), score calculation speed (4000/sec), step total (2).
+INFO  Solving ended: time spent (24), best score (0), score calculation speed (7000/sec), phase total (2), environment mode (REPRODUCIBLE).
+----
+
+All time spent values are in milliseconds.
+
+Everything is logged to http://www.slf4j.org/[SLF4J], which is a simple logging facade
+that delegates every log message to Logback, Apache Commons Logging, Log4j, or java.util.logging. Add a dependency to the logging adaptor for your logging framework of choice.
