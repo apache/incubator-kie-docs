@@ -547,36 +547,35 @@ For example {PRODUCT} services with Kafka messaging, see the following example a
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-quickstart-springboot[`process-kafka-quickstart-springboot`]: Example on Spring Boot
 // end::proc-messaging-enabling[]
 
-// tag::proc-events-mongodb-debezium[]
 [id="proc-events-mongodb-debezium_{context}"]
-=== Enabling Strong Consistency for Process Data and {PRODUCT} Events with MongoDB and Debezium
+=== Enabling consistency in process data and {PRODUCT} events using MongoDB and Debezium
 
 [role="_abstract"]
-In order to avoid potential data inconsistencies, {PRODUCT} services should atomically update process data and publish events within a unit of work. However, Apache Kafka doesn't support distributed transactions.
+To avoid the data inconsistencies in process services, the {PRODUCT} services must update the process data and publish events within a unit of work. However, Apache Kafka does not support distributed transactions. Therefore, in order to resolve this problem, you can use an outbox table in the database of the {PRODUCT} service.
 
-A https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[solution] to this problem is to have an `outbox` table in the {PROJECT} service’s database. When storing process data in a unit of work, also insert the records representing the events to be sent into that `outbox` table in the same transaction. Then a separate Message Relay process publishes the events inserted into the `outbox` table to Kafka broker asynchronously.
+When you store the data of a process service in a unit of work, you can also add the records that represent the events to be sent into the outbox table related to the same transaction. After the transaction, a separate message relay process publishes the events that are added into the outbox table to Kafka broker asynchronously. For more information about the outbox table, see https://debezium.io/blog/2019/02/19/reliable-microservices-data-exchange-with-the-outbox-pattern/[Debezium blog].
 
-{PROJECT} supports storing process data and events of the same unit of work in the same transaction with MongoDB.
+https://debezium.io/[Debezium] is useful for message relay, which comes with `Change Data Capture` connectors for various databases, such as MongoDB. It captures new entries in MongoDB collections and stream those entries to Apache Kafka.
 
-https://debezium.io/[Debezium] is a good fit for the Message Relay, which comes with `Change Data Capture` connectors for several databases such as MongoDB. It supports capturing new entries in MongoDB collections and streaming them to Apache Kafka.
+{PRODUCT} enables you to store the data of a process and events of the same unit in a single transaction using MongoDB.
 
-For this procedure, the {PROJECT} service is configured to store process data and events in the same transaction to MongoDB collections. A Debezium MongoDB connector is configured and started to stream {PROJECT} events from MongoDB collections to Kafka topics.
+For this procedure, a {PRODUCT] service is configured to store the process data and events in a single transaction using MongoDB collection. Also, a Debezium MongoDB connector is configured and started to stream the events from MongoDB collection to Apache Kafka topics.
 
 .Prerequisites
-* https://kafka.apache.org/[Apache Kafka] is installed and includes any required topics. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
-* https://www.mongodb.com/[MongoDB] version 4.4 or later is installed, started and with `oplog` enabled (e.g. setting up replica set). For information about MongoDB setting up for Debezium, see the https://debezium.io/documentation/reference/connectors/mongodb.html#setting-up-mongodb[MongoDB connector documentation].
+* https://kafka.apache.org/[Apache Kafka] is installed and includes required topics. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
+* https://www.mongodb.com/[MongoDB] version 4.4 or later is installed, started, and enabled using `oplog`. For information about MongoDB setting up for Debezium, see the https://debezium.io/documentation/reference/connectors/mongodb.html#setting-up-mongodb[MongoDB connector documentation].
 * https://debezium.io/[Debezium] version 1.7 or later is installed and started. For information about Debezium installation and configuration, see the https://debezium.io/documentation/reference/[Debezium documentation].
 
 .Procedure
-. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project to enable storing {PRODUCT} events to MongoDB:
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project to store {PRODUCT} events to MongoDB:
 +
 --
 .On Quarkus
 [source, xml]
 ----
 <dependency>
-    <groupId>org.kie.kogito</groupId>
-    <artifactId>kogito-addons-quarkus-events-mongodb</artifactId>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-addons-quarkus-events-mongodb</artifactId>
 </dependency>
 ----
 
@@ -584,16 +583,18 @@ For this procedure, the {PROJECT} service is configured to store process data an
 [source,xml]
 ----
 <dependency>
-    <groupId>org.kie.kogito</groupId>
-    <artifactId>kogito-addons-springboot-events-mongodb</artifactId>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>kogito-addons-springboot-events-mongodb</artifactId>
 </dependency>
 ----
 --
 
-. Configure the MongoDB database and collections for storing {PRODUCT} events:
+. Configure the MongoDB database and collections to store the {PRODUCT} events:
 +
 --
-Add properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the MongoDB database and collections, for example:
+Add properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure the MongoDB database and collections as shown in the following example:
+
+.Properties to configure MongoDB database
 [source]
 ----
 kogito.events.database=kogito
@@ -603,14 +604,19 @@ kogito.events.variables.collection=kogitovariablesevents
 ----
 --
 
-. Follow xref:proc-mongodb-persistence-enabling_kogito-configuring[instructions] to use MongoDB as runtime persistence, then build your {PRODUCT} project and start the {PRODUCT} service:
+. Enable MongoDB persistence for {PRODUCT} services to use MongoDB as a runtime persistence. For more information, see xref:proc-mongodb-persistence-enabling_kogito-configuring[].
+
+. Build your {PRODUCT} project and start the {PRODUCT} service.
 +
 --
-Make sure to enable MongoDB transaction by adding the following property to the `src/main/resources/application.properties` file in your {PRODUCT} project, so that process data and {PRODUCT} events generated in the same unit of work will be stored to MongoDB in the same transaction, which avoids potential data inconsistencies:
+NOTE: Ensure that you enable MongoDB transaction by adding the following property to the `src/main/resources/application.properties` file in your {PRODUCT} project:
+
+.Dependency to enable MongoDB transaction
 [source]
 ----
 kogito.persistence.transaction.enabled=true
 ----
+When you add the previous property to your {PRODUCT} project, the process data and events are generated in the same unit of work and is stored to MongoDB in the same transaction, which avoids potential inconsistencies.
 --
 
 . Start Debezium MongoDB connector to stream {PRODUCT} events from MongoDB collections to Kafka topics:
@@ -618,49 +624,49 @@ kogito.persistence.transaction.enabled=true
 --
 Follow the https://debezium.io/documentation/reference/connectors/mongodb.html#mongodb-deploying-a-connector[Debezium MongoDB connector deployment instructions] to install the Debezium MongoDB connector, configure the connector, and start the connector.
 
-Use the example configuration below to configure the Debezium MongoDB connector which will capture the {PRODUCT} events from MongoDB collections and stream the events to kafka topics:
-
-Replace the server host, port, replica set, database and collections information according to your MongoDB, kafka installation and {PRODUCT} project configuration.
+You can also use the following example configuration to configure the Debezium MongoDB connector, which captures the events from MongoDB collection and stream the events to Kafka topics:
+.Example configuration for Debezium MongoDB connector
 [source]
 ----
 {
-  "name": "kogito-connector",
-  "config": {
-    "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
-    "tasks.max" : "1",
-    "mongodb.hosts" : "rs0/mongodb:27017",
-    "mongodb.name" : "dbserver1",
-    "mongodb.user" : "debezium",
-    "mongodb.password" : "dbz",
-    "database.include" : "kogito",
-    "database.history.kafka.bootstrap.servers" : "kafka:9092",
-    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "key.converter.schemas.enable": "false",
-    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
-    "value.converter.schemas.enable": "false",
-    "collection.include.list": "kogito.kogitoprocessinstancesevents,kogito.kogitousertaskinstancesevents,kogito.kogitovariablesevents",
-    "transforms": "unwrap,reroute",
-    "transforms.unwrap.type": "io.debezium.connector.mongodb.transforms.ExtractNewDocumentState",
-    "transforms.unwrap.array.encoding": "array",
-    "transforms.unwrap.drop.tombstones": "false",
-    "transforms.unwrap.delete.handling.mode": "drop",
-    "transforms.unwrap.operation.header": "false",
-    "transforms.reroute.type": "io.debezium.transforms.ByLogicalTableRouter",
-    "transforms.reroute.topic.regex": "(.*)kogito(.*)events(.*)",
-    "transforms.reroute.topic.replacement": "kogito-$2-events",
-    "transforms.reroute.key.enforce.uniqueness": "false",
-    "skipped.operations": "u,d",
-    "tombstones.on.delete": "false"
-  }
+  "name": "kogito-connector",
+  "config": {
+    "connector.class" : "io.debezium.connector.mongodb.MongoDbConnector",
+    "tasks.max" : "1",
+    "mongodb.hosts" : "rs0/mongodb:27017",
+    "mongodb.name" : "dbserver1",
+    "mongodb.user" : "debezium",
+    "mongodb.password" : "dbz",
+    "database.include" : "kogito",
+    "database.history.kafka.bootstrap.servers" : "kafka:9092",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "collection.include.list": "kogito.kogitoprocessinstancesevents,kogito.kogitousertaskinstancesevents,kogito.kogitovariablesevents",
+    "transforms": "unwrap,reroute",
+    "transforms.unwrap.type": "io.debezium.connector.mongodb.transforms.ExtractNewDocumentState",
+    "transforms.unwrap.array.encoding": "array",
+    "transforms.unwrap.drop.tombstones": "false",
+    "transforms.unwrap.delete.handling.mode": "drop",
+    "transforms.unwrap.operation.header": "false",
+    "transforms.reroute.type": "io.debezium.transforms.ByLogicalTableRouter",
+    "transforms.reroute.topic.regex": "(.*)kogito(.*)events(.*)",
+    "transforms.reroute.topic.replacement": "kogito-$2-events",
+    "transforms.reroute.key.enforce.uniqueness": "false",
+    "skipped.operations": "u,d",
+    "tombstones.on.delete": "false"
+  }
 }
 ----
+
+In the previous example configuration, replace the server host, port, replica set, database, and collections information according to your MongoDB, Kafka installation, and {PRODUCT} project configuration.
 --
 
-For example {PRODUCT} strong consistency with MongoDB and Debezium, see the following example applications in GitHub:
+You can also use the following example application for consistency in a {PRODUCT} service using MongoDB and Debezium:
 
 * https://github.com/kiegroup/kogito-examples/tree/main/process-outbox-mongodb-quarkus[`process-outbox-mongodb-quarkus`]: Example on Quarkus
 * https://github.com/kiegroup/kogito-examples/tree/main/process-outbox-mongodb-springboot[`process-outbox-mongodb-springboot`]: Example on Spring Boot
-// end::proc-events-mongodb-debezium[]
 
 [id="proc-event-listeners-registering_{context}"]
 === Registering event listeners
