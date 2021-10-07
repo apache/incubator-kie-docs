@@ -213,6 +213,20 @@ a|Disables the REST endpoints generation for a specific resource.
 
 Example: In your project, which contains `.dmn` and `.bpmn` files, you can disable only the decision REST endpoints using `kogito.generate.decisions=false` property .
 
+|Data Index service protobuf generation
+|`kogito.persistence.data-index.proto.generation`
+a|Disables the generation of protobuf files used by Data Index service. The protobuf files are used for domain-specific queries when the storage supports, such as Infinispan and MongoDB. In other cases, the protobuf files are not necessary and can be skipped. The default value of this property is `true`.
+
+Example: `kogito.persistence.data-index.proto.generation=false` to disable the generation of a protobuf file.
+
+|{PRODUCT} runtime protobuf marshaller generation
+|`kogito.persistence.proto.marshaller`
+a|Disables the generation of domain-specific protobuf marshaller to serialize process variables. When setting this property to `false`, {PRODUCT} leverages Java serialization to persist process variables. The default value of this property is `true`.
+
+NOTE: The types of process variables must implement `java.io.Serializable` when protobuf marshaller generation is disabled.
+
+Example: `kogito.persistence.data-index.proto.generation=false` to disable the generation of a protobuf file.
+
 |===
 
 [id="con-kogito-runtime-events_{context}"]
@@ -1578,7 +1592,7 @@ You can enable PostgreSQL persistence for your {PRODUCT} services using reactive
 
 .On Quarkus
 
-Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
+Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
 
 --
 .Project dependency to enable PostgreSQL persistence
@@ -1588,6 +1602,10 @@ Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
   <groupId>org.kie.kogito</groupId>
   <artifactId>kogito-addons-quarkus-persistence-postgresql</artifactId>
   <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-reactive-pg-client</artifactId>
 </dependency>
 ----
 --
@@ -2516,6 +2534,88 @@ Cancels a job using the `id` passed as a parameter.
 mutation{
   JobCancel(
     id: "9674e3ed-8c13-4c3f-870e-7465d9ca7ca7")
+}
+----
+--
+
+Retrieve the user task schema::
++
+--
+Retrieves the schema of the user task instance using the `taskId`. The call allows you to pass the `user` and `groups` parameters even if the parameters are mandatory. If `user` and `groups` parameters are used to run the call to runtimes. When the `schema` field of a user task instance is queried, a call to a specific {PRODUCT} service is
+generated to retrieve the requested task schema.
+
+.Example query for task instance schema
+[source]
+----
+{UserTaskInstances (where: {id: {equal: "b356d136-e601-43ee-9c2d-ee47198b9303"}}) {
+  schema(user:"jdoe" groups:["managers"])
+}}
+----
+--
+
+Update a user task instance::
++
+--
+Updates the data of a user task instance using the `taskId` and the information passed in the parameters. The parameters passed is only affected with this operation. The call allows you to pass the `user` and `groups` parameters even if the parameters are mandatory. If `user` and `groups` parameters are used to run the call to runtimes.
+
+.Example mutation to update a task instance
+[source]
+----
+mutation{
+    UserTaskInstanceUpdate (
+        taskId:"b356d136-e601-43ee-9c2d-ee47198b9303",
+        user: "jdoe",
+        groups: ["managers", "users", "IT"],
+        description: "New task description"
+        priority: "High"
+        actualOwner: "jdoe"
+        adminGroups: ["managers","IT"]
+        adminUsers: ["admin"]
+        excludedUsers: ["katy"]
+        potentialGroups: ["users"]
+        potentialUsers: ["alice"]
+        inputParams: "{\"it_approval\":true,\"candidate\":{\"name\":\"Joe\",\"email\":\"jdoe@ts.com\",\"salary\":30000,\"skills\":\"java\"},\"hr_approval\":true}"
+    )
+}
+----
+--
+
+Add a comment to a user task instance::
++
+--
+Adds a new comment to the user task instance using the `taskId` and the information passed in the `comment` parameter. The call allows you to pass the `user` and `groups` parameters even if the parameters are mandatory. If `user` and `groups` parameters are used to run the call to runtimes.
+
+.Example mutation to add a new comment to a user task instance
+[source]
+----
+mutation{
+    UserTaskInstanceCommentCreate(
+        taskId:"b356d136-e601-43ee-9c2d-ee47198b9303",
+        user: "jdoe",
+        groups: ["managers", "users", "IT"],
+        comment: "New Comment to add"
+    )
+}
+----
+--
+
+
+Add an attachment to a user task instance::
++
+--
+Adds a new attachment to the user task instance using the `taskId` and the information passed in the `name` and `uri` parameter. The call allows you to pass the `user` and `groups` parameters even if the parameters are mandatory. If `user` and `groups` parameters are used to run the call to runtimes.
+
+.Example mutation to add a new attachment to a user task instance
+[source]
+----
+mutation{
+    UserTaskInstanceAttachmentCreate(
+        taskId:"b356d136-e601-43ee-9c2d-ee47198b9303",
+        user: "jdoe",
+        groups: ["managers", "users", "IT"],
+        name:"Attachment name"
+        uri:"https://drive.google.com/file/d/1Z_Lipg2jzY9TNewTaskAttachmentUri"
+    )
 }
 ----
 --

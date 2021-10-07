@@ -109,16 +109,20 @@ Decision services::
 * `dmn-quarkus-example` and `dmn-springboot-example`: A decision service (on Quarkus or Spring Boot) that uses DMN to determine driver penalty and suspension based on traffic violations.
 * `rules-quarkus-helloworld`: A Hello World decision service on Quarkus with a single DRL rule unit.
 * `ruleunit-quarkus-example` and `ruleunit-springboot-example`: A decision service (on Quarkus or Spring Boot) that uses DRL with rule units to validate a loan application and that exposes REST operations to view application status.
+* `dmn-event-driven-quarkus` and `dmn-event-driven-springboot`: A DMN decision service on Quarkus and Spring Boot that demonstrates the capability of the {PRODUCT} Event-Driven decisions add-on.
 
 Decision services that use the {PRODUCT} Trusty Service and Explainability Service::
 * `dmn-tracing-quarkus`: A DMN decision service on Quarkus that uses the `kogito-addons-quarkus-tracing-decision` add-on to generate tracing events that the {PRODUCT} Trusty Service and Explainability Service can consume and expose.
 * `trusty-demonstration`: A tutorial for deploying the `dmn-tracing-quarkus` example application on Kubernetes as a demonstration of {PRODUCT} Trusty Service and Explainability Service capabilities in a cloud environment.
+* `dmn-tracing-quarkus`: A DMN service on Quarkus to evaluate a loan approval and generate tracing events that might be consumed by the Trusty service.
 
 Process services::
 * `process-quarkus-example` and `process-springboot-example`: A process service (on Quarkus or Spring Boot) for ordering items and that exposes REST operations to create new orders or to list and delete active orders.
 * `onboarding-example`: A combination of a process service and two decision services that use DMN and DRL for onboarding new employees.
 * `flexible-process-quarkus` and `flexible-process-springboot`: A process service (on Quarkus or Spring Boot) that uses flexible processes for case management in {PRODUCT}.
 * `process-usertasks-quarkus-with-console` and `process-usertasks-springboot-with-console`: A process service with user tasks (on Quarkus or Spring Boot), displaying the entire user task lifecycle using the {PRODUCT} Management and Task Console.
+* `process-springboot-example`: A process service on Spring Boot for ordering items using add-ons.
+* `process-usertasks-with-security-oidc-quarkus-with-console`: A quickstart project using add-ons to show typical user task orchestration.
 
 Process services that use Decision services::
 * `process-decision-quarkus`: A process service integrated with decisions services, using an embedded method, in which business rule tasks are used for communication. The decisions are declared with DMN and DRL.
@@ -134,6 +138,10 @@ Serverless Workflow services::
 * `serverless-workflow-greeting-quarkus` and `serverless-workflow-greeting-springboot`: A Serverless Workflow greeting service with both JSON and YAML workflow definitions.
 * `serverless-workflow-service-calls-quarkus` and `serverless-workflow-service-calls-springboot`: A Serverless Workflow service for returning country information.
 * `serverless-workflow-events-quarkus`: A Serverless Workflow service for processing job applicant approvals and that showcases event-driven services.
+
+Process services that use MongoDB::
+* `process-mongodb-persistence-quarkus` and `process-mongodb-persistence-springboot`: A quickstart project on (Quarkus and Spring Boot) using add-ons that process deals for travelers using MongoDB. 
+
 // end::ref-kogito-app-examples[]
 
 [id="proc-kogito-app-examples-running_{context}"]
@@ -945,6 +953,314 @@ public class PersonsValidationServiceResource {
 * {URL_PROCESS_SERVICES}#con-bpmn-variables_kogito-developing-process-services[Variables in {PRODUCT} processes]
 * xref:proc-kogito-designing-app-rule-units_kogito-creating-running[]
 
+[id="proc-kogito-custom-rest-endpoint-api_{context}"]
+== Creating custom REST endpoints using {PRODUCT} API
+
+{PRODUCT} enables you to create custom REST endpoints using {PRODUCT} API.
+
+.Prerequisites
+* JDK 11 or later is installed.
+* Apache Maven is installed.
+
+NOTE: The {PRODUCT} API is only available for Quarkus and is currently experimental. This feature is available to the adopters to collect feedback and modify in a future release.
+
+.Procedure
+. Create a {PRODUCT} project using the Maven plugin or Quarkus CLI.
++
+--
+.Example project using the Quarkus Maven plugin
+[source,subs="attributes+"]
+----
+mvn io.quarkus:quarkus-maven-plugin:create \
+   -DprojectGroupId=com.company \
+   -DprojectArtifactId=sample-kogito \
+   -Dextensions="kogito"
+----
+--
+
+. Add a business asset to the `resource` folder such as a DMN file. To create the example DMN model, copy the following `PersonDecisions.dmn` file content:
++
+--
+.Example `PersonDecisions.dmn` file
+[source,xml]
+----
+<dmn:definitions xmlns:dmn="http://www.omg.org/spec/DMN/20180521/MODEL/" xmlns="https://kiegroup.org/dmn/rest-example" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="http://www.drools.org/kie/dmn/1.2" xmlns:dmndi="http://www.omg.org/spec/DMN/20180521/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:feel="http://www.omg.org/spec/DMN/20180521/FEEL/" id="_84B432F5-87E7-43B1-9101-1BAFE3D18FC5" name="PersonDecisions" typeLanguage="http://www.omg.org/spec/DMN/20180521/FEEL/" namespace="https://kiegroup.org/dmn/rest-example">
+  <dmn:extensionElements/>
+  <dmn:inputData id="_F9685B74-0C69-4982-B3B6-B04A14D79EDB" name="age">
+    <dmn:extensionElements/>
+    <dmn:variable id="_0E345A3C-BB1F-4FB2-B00F-C5691FD1D36C" name="age" typeRef="number"/>
+  </dmn:inputData>
+  <dmn:decision id="_0D2BD7A9-ACA1-49BE-97AD-19699E0C9852" name="adult">
+    <dmn:extensionElements/>
+    <dmn:variable id="_54CD509F-452F-40E5-941C-AFB2667D4D45" name="adult" typeRef="boolean"/>
+    <dmn:informationRequirement id="_2F819B03-36B7-4DEB-AED6-2B46AE3ADB75">
+      <dmn:requiredInput href="#_F9685B74-0C69-4982-B3B6-B04A14D79EDB"/>
+    </dmn:informationRequirement>
+    <dmn:decisionTable id="_58370567-05DE-4EC0-AC2D-A23803C1EAAE" hitPolicy="UNIQUE" preferredOrientation="Rule-as-Row">
+      <dmn:input id="_ADEF36CD-286A-454A-ABD8-9CF96014021B">
+        <dmn:inputExpression id="_4930C2E5-7401-46DD-8329-EAC523BFA492" typeRef="number">
+          <dmn:text>age</dmn:text>
+        </dmn:inputExpression>
+      </dmn:input>
+      <dmn:output id="_9867E9A3-CBF6-4D66-9804-D2206F6B4F86"/>
+      <dmn:annotation name=""/>
+      <dmn:rule id="_59D6BFF0-35B4-4B7E-8D7B-E31CB0DB8242">
+        <dmn:inputEntry id="_7DC55D63-234F-497B-A12A-93DA358C0136">
+          <dmn:text>&gt; 18</dmn:text>
+        </dmn:inputEntry>
+        <dmn:outputEntry id="_B3BB5B97-05B9-464A-AB39-58A33A9C7C00">
+          <dmn:text>true</dmn:text>
+        </dmn:outputEntry>
+        <dmn:annotationEntry>
+          <dmn:text/>
+        </dmn:annotationEntry>
+      </dmn:rule>
+      <dmn:rule id="_8FCD63FE-8AD8-4F56-AD12-923E87AFD1B1">
+        <dmn:inputEntry id="_B4EF7F13-E486-46CB-B14E-1D21647258D9">
+          <dmn:text>&lt;= 18</dmn:text>
+        </dmn:inputEntry>
+        <dmn:outputEntry id="_F3A9EC8E-A96B-42A0-BF87-9FB1F2FDB15A">
+          <dmn:text>false</dmn:text>
+        </dmn:outputEntry>
+        <dmn:annotationEntry>
+          <dmn:text/>
+        </dmn:annotationEntry>
+      </dmn:rule>
+    </dmn:decisionTable>
+  </dmn:decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_8D228582-6DE6-4164-B7E9-52E249EB7F9F" name="DRG">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_58370567-05DE-4EC0-AC2D-A23803C1EAAE">
+            <kie:width>50</kie:width>
+            <kie:width>100</kie:width>
+            <kie:width>100</kie:width>
+            <kie:width>100</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="dmnshape-drg-_F9685B74-0C69-4982-B3B6-B04A14D79EDB" dmnElementRef="_F9685B74-0C69-4982-B3B6-B04A14D79EDB" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="404" y="464" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="dmnshape-drg-_0D2BD7A9-ACA1-49BE-97AD-19699E0C9852" dmnElementRef="_0D2BD7A9-ACA1-49BE-97AD-19699E0C9852" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="613" y="324" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="dmnedge-drg-_2F819B03-36B7-4DEB-AED6-2B46AE3ADB75" dmnElementRef="_2F819B03-36B7-4DEB-AED6-2B46AE3ADB75">
+        <di:waypoint x="504" y="489"/>
+        <di:waypoint x="613" y="349"/>
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</dmn:definitions>
+----
+
+The `PersonDecisions.dmn` file defines a DMN model with `https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1` namespace and `PersonDecisions` name.
+--
+
+. Create a source file for the custom REST endpoint:
++
+--
+.Example REST endpoint
+[source,java]
+----
+package org.acme;
+
+import java.util.Map;
+
+import javax.inject.Inject;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+import org.kie.kogito.incubation.application.AppRoot;
+import org.kie.kogito.incubation.common.DataContext;
+import org.kie.kogito.incubation.common.MapDataContext;
+import org.kie.kogito.incubation.decisions.DecisionIds;
+import org.kie.kogito.incubation.decisions.services.DecisionService;
+
+@Path("/hello")
+public class GreetingResource {
+
+    // Inject the application root
+    @Inject AppRoot appRoot;
+    // Inject a decision service
+    @Inject DecisionService svc;
+
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public DataContext hello(Map<String, Object> payload) {
+        var id = appRoot
+                .get(DecisionIds.class)
+                .get("https://kiegroup.org/dmn/_52CEF9FD-9943-4A89-96D5-6F66810CA4C1",
+                        "PersonDecisions");
+        var ctx = MapDataContext.from(payload);
+        return svc.evaluate(id, ctx);
+    }
+}
+----
+
+The previous example of REST endpoints contains the following aspects:
+
+* The `AppRoot` object is injected that is used to create identifiers for resources to be evaluated.
+* The `@Inject DecisionService svc` injects the `DecisionService`, which is used to evaluate a DMN model. The following list describes different types of services:
+
+** `StraightThroughProcessService` for BPMN processes that terminate immediately and do not suspend into intermediate states
+** `DecisionService` for DMN decision models
+** `PredictionService` for PMML predictive models
+** `RuleUnitService` for Rule Unit evaluation
++
+Each service can be injected (`@inject`) and provides an `evaluate(Id, DataContext)` method. For more information about how to invoke the services, you can see `dmn-incubation-api-quarkus`, `pmml-incubation-api-quarkus`, `process-incubation-api-quarkus`, and `rules-incubation-api-quarkus` example applications.
+
+* The REST endpoint expects an arbitrary `Map<String, Object>` of values.
+* In the body of the REST handler, the `Map` is converted into a `DataContext`. Each service expects a `DataContext` to evaluate together with the identifier.
+* The `evaluate(id, ctx)` method returns a `DataContext`. The `DataContext` be returned directly by the REST handler: the system knows how to handle the response.
+
+A `DataContext` is a class that implements the `DataContext` interface. `DataContext` provides  `<T extends DataContext> T as(Class<T>)` method to convert a type of data context to another. The root type of data context provides the `as()` method only, because the root type does not contain additional behavior.
+
+In the previous example, `DataContext` is converted into a `MapDataContext` and `Person` object. The following is an example of using a `DataContext`:
+
+.Example of using a `DataContext`
+[source,java]
+----
+DataContext ctx = ...;
+MapDataContext mctx = ctx.as(MapDataContext.class);
+Person person = mctx.as(Person.class);
+----
+
+In the previous example, `MapDataContext` is a type of built-in data context (`Map<String, Object>`) and provides `get()` and `set()` methods to access the data. The `get()` method pulls the entered data by performing an internal conversion if applicable.
+
+.Example of using `MapDataContext`
+[source,java]
+----
+DataContext ctx = ...;
+MapDataContext mctx = ctx.as(MapDataContext.class);
+ctx.set("Paul", new Person("Paul", 79));
+Object o = ctx.get("Paul");
+Person p = ctx.get("Paul", Paul.class);
+----
+
+Also, you can customize the example REST endpoint further by expecting a `DataContext` in the method signature:
+
+.Example REST endpoint
+[source,java]
+----
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public DataContext hello(MapDataContext ctx) { // use ctx here
+        var id = appRoot
+                .get(DecisionIds.class)
+                .get("https://kiegroup.org/dmn/rest-example",
+                        "PersonDecisions");
+        return svc.evaluate(id, ctx);
+    }
+----
+
+In addition, you can transform the Map data context into a Java class. This mapping is performed automatically using field naming conventions as shown in the following example:
+
+.Example Java class
+[source,java]
+----
+import org.kie.kogito.incubation.common.*;
+public class Person implements DataContext, DefaultCastable {
+    String name;
+    int age;
+    // constructors...
+    // getters and setters...
+}
+----
+
+The `DataContext` interface marks the Java class as a bindable context, enabling you to convert another `DataContext` using the `as(Class<DataContext>)` method:
+
+.Example conversion of a `MapDataContext` into a `Person`
+[source,java]
+----
+    public DataContext hello(MapDataContext ctx) {
+        ...
+        Person person = ctx.as(Person.class);
+        return svc.evaluate(id, person);
+    }
+----
+
+Also, you can use the converted `DataContext` directly as an argument. In the following example, the `Person` is used as an argument:
+
+.Example REST endpoint using `Person` as an argument
+[source,java]
+----
+    public DataContext hello(Person person) {
+        ...
+        return svc.evaluate(id, ctx);
+    }
+----
+
+The custom data contexts can also be used in the return type as shown in the following example:
+
+.Example REST endpoint using `Person` as an argument and a custom return type
+[source,java]
+----
+    class MyCustomDataContext implements DataContext, DefaultCastable {...}
+    public MyCustomDataContext hello(Person person) {
+        ...
+        DataContext result = svc.evaluate(id, ctx);
+        MyCustomDataContext typedResult = result.as(MyCustomDataContext.class)
+        return result;
+    }
+----
+--
+
+. Optionally, you can disable automated generation of the REST endpoint by setting `kogito.generate.rest.decisions` property to `false` in the `application.properties` file:
++
+--
+.`application.properties` file
+[source,subs="attributes+"]
+----
+kogito.generate.rest.decisions=false
+----
+--
+
+. Test the created custom REST endpoint:
++
+--
+.Example of invoking a REST endpoint
+[source,subs="attributes+"]
+----
+# starts the application in devmode
+$ mvn quarkus:dev
+# invoke the REST service
+$ curl -X POST \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -d '{"name": "Paul" , "age" : 79}' \
+    http://localhost:8080/hello
+----
+
+.Example response
+[source,json,subs="attributes+"]
+----
+{
+  "name":"Paul",
+  "adult":true,
+  "age":79
+}
+----
+--
+
 [id="con-kogito-spring-boot-starters_{context}"]
 == Spring Boot Starters for your {PRODUCT} project
 
@@ -1040,6 +1356,510 @@ Starter for the Serverless Workflow support for your {PRODUCT} Spring Boot proje
 ----
 
 NOTE: The {PRODUCT} Serverless Workflow Spring Boot starter includes the https://github.com/kiegroup/kogito-runtimes/tree/main/springboot/addons/cloudevents[CloudEvents] and https://github.com/kiegroup/kogito-runtimes/tree/main/springboot/addons/events/kafka[Kafka] add-ons to the project for https://github.com/serverlessworkflow/specification/blob/0.6.x/specification.md#Event-Definition[eventing processing].
+
+// Add-Ons
+
+[id="ref-kogito-add-ons_{context}"]
+== {PRODUCT} add-ons
+
+[role="_abstract"]
+You can extend {PRODUCT} core capabilities by using add-ons modules. The add-on modules extend persistence, monitoring, messaging, and other features of {PRODUCT} services.
+
+The following tables list all the supported add-ons:
+
+.{PRODUCT} add-ons for Quarkus
+[cols="20%,50%,20%"]
+|===
+|Name                     |Artifact Id                                          |Since
+
+|Messaging                | kogito-addons-quarkus-messaging                     |1.0.0
+|Events Decisions         | kogito-addons-quarkus-events-decisions              |1.2.0
+|Events Process           | kogito-addons-quarkus-events-process                |0.3.0
+|Explainability           | kogito-addons-quarkus-explainability                |0.15.0
+|Jobs Management          | kogito-addons-quarkus-jobs-management               |0.6.0
+|Knative Eventing         | kogito-addons-quarkus-knative-eventing              |1.10.0
+|Mail                     | kogito-addons-quarkus-mail                          |1.6.0
+|Elastic Monitoring       | kogito-addons-quarkus-monitoring-elastic            |1.2.0
+|Prometheus Monitoring    | kogito-addons-quarkus-monitoring-prometheus         |0.1.0
+|Persistence ISPN Health  | kogito-addons-quarkus-persistence-infinispan-health |0.8.0
+|Persistence Kafka        | kogito-addons-quarkus-persistence-kafka             |1.4.0
+|Process Management       | kogito-addons-quarkus-process-management            |0.3.0
+|Process SVG              | kogito-addons-quarkus-process-svg                   |1.0.0
+|Task Management          | kogito-addons-quarkus-task-management               |1.4.0
+|Task Notification        | kogito-addons-quarkus-task-notification             |1.6.0
+|Tracing Decision         | kogito-addons-quarkus-tracing-decision              |0.11.0
+|Events MongoDB           | kogito-addons-quarkus-events-mongodb                |1.11.0
+|===
+
+.{PRODUCT} add-ons for Spring Boot
+[cols="20%,50%,20%"]
+|===
+|Name                 |Artifact Id                                    |Since
+
+|Messaging            |kogito-addons-springboot-messaging             |1.0.0
+|Events Decisions     |kogito-addons-springboot-events-decisions      |1.2.0
+|Events Kafka         |kogito-addons-springboot-events-kafka          |0.3.0
+|Explainability       |kogito-addons-springboot-explainability        |0.15.0
+|Jobs Management      |kogito-addons-springboot-jobs-management       |0.6.0
+|Mail                 |kogito-addons-springboot-mail                  |1.6.0
+|Elastic Monitoring   |kogito-addons-springboot-monitoring-elastic    |1.2.0
+|Prometheus Monitoring|kogito-addons-springboot-monitoring-prometheus |0.1.0
+|Process Management   |kogito-addons-springboot-process-management    |0.3.0
+|Process SVG          |kogito-addons-springboot-process-svg           |1.0.0
+|Task Management      |kogito-addons-springboot-task-management       |1.4.0
+|Task Notification    |kogito-addons-springboot-task-notification     |1.6.0
+|Tracing Decision     |kogito-addons-springboot-tracing-decision      |0.11.0
+|Events MongoDB       |kogito-addons-springboot-events-mongodb        |1.11.0
+
+|===
+
+
+=== Messaging add-on in {PRODUCT}
+
+The messaging add-on uses events in the {PRODUCT} projects. For more information, see the following sections:
+
+* xref:con-kogito-runtime-events_kogito-configuring[{PRODUCT} runtime events]
+* xref:con-kogito-travel-agency_kogito-deploying-on-openshift[Travel agency tutorial for {PRODUCT} services on OpenShift]
+* xref:con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
+* xref:con-trusty-service_kogito-configuring[{PRODUCT} Trusty Service and Explainability Service]
+
+To use the messaging add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-messaging</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-messaging</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Decision Model and Notation (DMN) event-driven add-on in {PRODUCT}
+
+.Quarkus
+To use the DMN event-driven add-on, add the following code to the `pom.xml` file of your project:
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-events-decisions</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-events-decisions</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Explainability add-on in {PRODUCT}
+
+The Explainability add-on in {PRODUCT} provides integration with Explainability and Trusty Services. You can also use https://github.com/kiegroup/kogito-examples/tree/stable/trusty-demonstration[`trusty-demonstration`] example application.
+
+For more information, see the xref:con-trusty-service_kogito-configuring[].
+
+To use the explainability add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-explainability</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-explainability</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Jobs Management add-on in {PRODUCT}
+
+The Jobs Management add-on provides integration and configuration for a project using the supporting services related to Jobs. For more information, see the xref:con-jobs-service_kogito-configuring[documentation].
+
+To use the Jobs Management add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-jobs-management</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-jobs-management</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Knative Eventing add-on in {PRODUCT}
+
+The Knative Eventing add-on is used in the {PRODUCT} project for messaging. The https://github.com/kiegroup/kogito-runtimes/tree/main/addons/common/knative/eventing[{PRODUCT} Knative Eventing] add-on enables your project to connect to a https://knative.dev/docs/developer/eventing/sinks/[sink].
+
+The add-on processes the https://knative.dev/development/developer/eventing/sources/sinkbinding/[`K_SINK`] and https://knative.dev/development/developer/eventing/sources/sinkbinding/reference/#cloudevent-overrides[`K_CE_OVERRIDES`] environment variables injected by Knative Eventing controllers.
+
+The service requires the https://github.com/kiegroup/kogito-runtimes/tree/main/addons/common/messaging[{PRODUCT} Messaging] and https://quarkus.io/guides/reactive-messaging-http.html[Quarkus HTTP connector] libraries to wire the {PRODUCT} service with a given sink. The {PRODUCT} Messaging and Quarkus HTTP connector perform as dependencies for the Knative Eventing add-on.
+
+NOTE: Spring Boot does not support Knative Eventing currently.
+
+For more information, see xref:con-knative-eventing_kogito-developing-process-services[].
+
+To use the Knative Eventing add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-knative-eventing</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Mail add-on in {PRODUCT}
+
+The mail add-on is used to send emails in a process project. To use the mail add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-mail</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-mail</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Events add-on in {PRODUCT}
+
+The events add-on provides a default implementation in supported target platforms for EventEmitter and EventReceiver interfaces. You can use EventEmitter and EventReceiver interfaces to enable messaging by process, serverless workflow events, and event decision handling. For more information, see xref:con-knative-eventing_kogito-developing-process-services[], xref:con-serverless-workflow-definitions_kogito-orchestrating-serverless[], and xref:proc-messaging-enabling_kogito-configuring[].
+
+// include::../addons/proc-kogito-implement-message-payload-decorator.adoc[leveloffset=+1]
+
+==== Implementing message payload decorator
+Any dependant add-on can implement the https://github.com/kiegroup/kogito-runtimes/blob/main/addons/common/messaging/common/src/main/java/org/kie/kogito/addon/cloudevents/message/MessagePayloadDecorator.java[MessagePayloadDecorator].
+
+.Prerequisites
+
+* You have installed the Events add-on in {PRODUCT}.
+
+.Procedure
+. Create a file named `META-INF/services/org.kie.kogito.add-on.cloudevents.message.MessagePayloadDecorator` in your class path.
+. Open the file.
+. Enter the full name of your implementation class in the file.
+. Save the file.
+
+The `MessagePayloadDecoratorProvider` loads the file upon application startup and adds the file to the decoration chain. When {PRODUCT} calls the https://github.com/kiegroup/kogito-runtimes/blob/main/addons/common/messaging/common/src/main/java/org/kie/kogito/addon/cloudevents/message/MessagePayloadDecoratorProvider.java[MessagePayloadDecoratorProvider#decorate], your implementation is part of the decoration algorithm.
+
+To use the events add-on, add the following code to the `pom.xml` file of your project:
+
+.Events smallrye add-on for Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-events-smallrye</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Events decisions add-on for Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-events-decisions</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Events Kafka add-on for Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-events-kafka</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Events decisions add-on for Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-events-decisions</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Monitoring add-on in {PRODUCT}
+
+The monitoring add-on provides monitoring capabilities in the {PRODUCT} project. For more information, see xref:_metrics_monitoring_in_kogito_services[Metrics monitoring in {PRODUCT}].
+
+To use the monitoring add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus dependency for elastic search
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-monitoring-elastic</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Quarkus dependency for Prometheus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-monitoring-prometheus</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for elastic search
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-monitoring-elastic</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for Prometheus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-monitoring-prometheus</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Persistence add-on in {PRODUCT}
+
+The persistence add-on provides persistence capability in your {PRODUCT} project. For more information, xref:con-persistence_kogito-developing-process-services[].
+
+To use the Persistence add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus dependency for persistence filesystem
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-filesystem</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for persistence filesystem
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-filesystem</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Quarkus dependency for persistence Infinispan
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-infinispan</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for persistence Infinispan
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-infinispan</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Quarkus dependency for persistence JDBC
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-jdbc</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for persistence JDBC
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-jdbc</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Quarkus dependency for persistence MongoDB
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-mongodb</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for persistence MongoDB
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-mongodb</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Quarkus dependency for persistence PostgreSQL
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-postgresql</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for persistence PostgreSQL
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-postgresql</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Quarkus dependency for persistence Kafka
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-kafka</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot dependency for persistence Kafka
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-kafka</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+include::../bpmn/chap-kogito-developing-process-services.adoc[tag=process-man-add-on,leveloffset=+1]
+
+include::../bpmn/chap-kogito-developing-process-services.adoc[tag=process-svg-add-on,leveloffset=+1]
+
+=== Task Management add-on in {PRODUCT}
+
+The Task Management add-on provides integration with the https://github.com/kiegroup/kogito-apps/tree/master/task-console[Task Console]. For more information, see xref:con-task-console_kogito-developing-process-services[{PRODUCT} Task Console].
+
+To use the Task Management add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-task-management</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring Boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-task-management</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+=== Tracing add-on in {PRODUCT}
+
+The Tracing add-on provides Decision model and notation (DMN) services tracing capability. For more information, see the https://docs.jboss.org/kogito/release/latest/html_single/#con-trusty-service_kogito-configuring [documentation].
+
+To use the Tracing add-on, add the following code to the `pom.xml` file of your project:
+
+.Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-tracing-decision</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
+
+.Spring boot
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-springboot-tracing-decision</artifactId>
+  <version>{PRODUCT_VERSION}</version>
+</dependency>
+----
 
 [id="proc-kogito-designing-app_{context}"]
 == Designing the application logic for a {PRODUCT} service using DMN and BPMN
