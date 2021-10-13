@@ -1,0 +1,42 @@
+[id='execution-errors-con_{context}']
+= Execution errors in the {PROCESS_ENGINE}
+
+Any part of {PROCESS_ENGINE} execution, including the task service, can throw an exception. An exception can be any class that extends `java.lang.Throwable`.
+
+Some exceptions are handled at the process level. Notably, a work item handler can throw a custom exception that specifies a subprocess for error handling.
+ifdef::PAM,DM[]
+For information about developing work item handlers, see {URL_DEVELOPING_PROCESS_SERVICES}#custom-tasks-work-item-handler-project-customization-con-custom-tasks[_{CUSTOM_TASKS_AND_HANDLERS}_].
+endif::PAM,DM[]
+
+If an exception is not handled and reaches the {PROCESS_ENGINE}, it becomes an _execution error_. When an execution error happens, the {PROCESS_ENGINE} rolls back the current transaction and leaves the process in the previous stable state. After that, the {PROCESS_ENGINE} continues the execution of the process from that point.
+
+Execution errors are visible to the caller that sent the request to the {PROCESS_ENGINE}. The {PROCESS_ENGINE} also includes an extendable mechanism for handling execution errors and storing information about them. This mechanism consists of the following components:
+
+* `ExecutionErrorManager`: The entry point for error handling. This class is integrated with `RuntimeManager`, which is responsible for providing it to the underlying `KieSession` and `TaskService`. `ExecutionErrorManager` provides access to other classes in the execution error handling mechanism.
++
+When the {PROCESS_ENGINE} creates a `RuntimeManager` instance, it also creates a corresponding `ExecutionErrorManager` instance.
++
+* `ExecutionErrorHandler`: The primary class for error handling. This class is implemented in the {PROCESS_ENGINE} and you normally do not need to customize or extend it directly. `ExecutionErrorHandler` calls error filters to process particular errors and calls `ExecutionErrorStorage` to store error information.
++
+The `ExecutionErrorHandler` is bound to the life cycle of `RuntimeEngine`; it is created when a new runtime engine is created and is destroyed when `RuntimeEngine` is disposed. A single instance of the `ExecutionErrorHandler` is used within a given execution context or transaction. Both `KieSession` and `TaskService` use that instance to inform the error handling about processed nodes or tasks. `ExecutionErrorHandler` is informed about the following events:
++
+** Starting of processing of a node instance
+** Completion of processing of a node instance
+** Starting of processing of a task instance
+** Completion of processing of a task instance
++
+The `ExecutionErrorHandler` uses this information to record the context for errors, especially if the error itself does not provide process context information. For example, database exceptions do not carry any process information.
++
+* `ExecutionErrorStorage`: The pluggable storage class for execution error information.
++
+When the {PROCESS_ENGINE} creates a `RuntimeManager` instance, it also creates a corresponding `ExecutionErrorStorage` instance. Then the `ExecutionErrorHandler` class calls this `ExecutionErrorStorage` instance to store information abiout every execution error.
++
+The default storage implementation uses a database table to store all the available information for every error. Different detail levels might be available for different error types, as some errors might not permit extraction of detailed information.
++
+* A number of _filters_ that process particular types of execution errors. You can add custom filters.
+
+By default, every execution error is recorded as _unacknowledged_. You can use {CENTRAL} to view all recorded execution errors and to acknowledge them. You can also create jobs that automatically acknowledge all or some execution errors.
+
+ifdef::PAM,DM[]
+For information about using {CENTRAL} to view execution errors and to create jobs that acknowledge the errors automatically, see {URL_DEVELOPING_PROCESS_SERVICES}#execution-error-management-con_managing-and-monitoring-processes[_{MANAGING_PROCESSES}_].
+endif::PAM,DM[]
