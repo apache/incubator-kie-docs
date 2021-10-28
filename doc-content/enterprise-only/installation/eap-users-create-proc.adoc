@@ -26,13 +26,13 @@ In the following command, replace `<USERNAME>` and  `<PASSWORD>` with the user n
 ifdef::PAM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME> --password <PASSWORD> --role admin,rest-all,kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["admin","rest-all","kie-server"])"
 ----
 endif::[]
 ifdef::DM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME>  --password <PASSWORD> --role admin,rest-all,kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["admin","rest-all","kie-server"])"
 ----
 endif::[]
 +
@@ -47,13 +47,13 @@ The password must have at least eight characters and must contain at least one n
 ifdef::PAM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME> --password <PASSWORD> --role kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["kie-server"])"
 ----
 endif::[]
 ifdef::DM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME>  --password <PASSWORD> --role kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["kie-server"])"
 ----
 endif::[]
 . Make a note of your user names and passwords.
@@ -63,7 +63,32 @@ endif::[]
 If you installed {CENTRAL} and {KIE_SERVER} in the same server instance, you can create a single user that has both of these roles:
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME>  --password <PASSWORD> --role admin,rest-all,kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["admin","rest-all","kie-server"])"
 ----
 You should install {CENTRAL} and {KIE_SERVER} on different servers in production environments.
+====
++
+[NOTE]
+====
+You can create several users at once using a single file containing the data for all the users.
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --file=users.cli
+----
+
+where the users.cli file contains user data such as in the following example:
+
+[source,bash]
+----
+embed-server --std-out=echo
+
+# first user
+/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>)
+/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"})
+/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["admin","role","group"])
+
+# second user
+...
+----
 ====
