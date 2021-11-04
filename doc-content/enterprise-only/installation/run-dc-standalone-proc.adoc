@@ -16,58 +16,40 @@ This JAR file is supported only when it is run on Red Hat Enterprise Linux.
 . Extract the downloaded `{PRODUCT_FILE}-addons.zip` to a temporary directory. This archive includes the `{PRODUCT_FILE}-standalone-sample-configuration.zip` file.
 . Extract the `{PRODUCT_FILE}-standalone-sample-configuration.zip` file to the directory that contains the `{PRODUCT_FILE}-{URL_COMPONENT_CENTRAL}-standalone.jar` file. The `{PRODUCT_FILE}-standalone-sample-configuration.zip` file contains the following sample configuration files:
 +
-* `application-roles.properties`
-* `application-users.properties`
-* `sample-standalone-config.yml`
+* `application-script.cli` - Sample script for adding a user and kie server system properties
+* `kie-fs-realm-users` - Sample user data
 +
 You can run the `{PRODUCT_FILE}-{URL_COMPONENT_CENTRAL}-standalone.jar` files with the sample data provided in the configuration files or you can customize the data for your requirements.
 . To customize the configuration data, complete the following steps:
-.. Edit the `application-users.properties` file. Include an administrative user and if this {CENTRAL} instance will be a {CONTROLLER} for {KIE_SERVER}, include a {CONTROLLER} user, for example:
+.. Edit the `application-script.cli` file to include an administrative user with `admin`, `user`, `rest-all`, `rest-client` and `kie-server` roles. In the following example, replace `<USERNAME>` and  `<PASSWORD>` with your username and password of the user you want to create.
 +
 [source]
 ----
-ifdef::PAM[]
-rhpamAdmin=password1
-endif::PAM[]
-ifdef::DM[]
-rhdmAdmin=password1
-endif::DM[]
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=KieRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=KieRealm:set-password(identity=<USERNAME>, clear={password="<PASSWORD>"}),/subsystem=elytron/filesystem-realm=KieRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=["admin","user","rest-all","rest-client","kie-server"])
 ----
-.. Edit the `application-roles.properties` file to assign roles to the users that you included in the `application-users.properties` file, for example:
-+
-[source]
-----
-ifdef::PAM[]
-rhpamAdmin=admin
-endif::PAM[]
-ifdef::DM[]
-rhdmAdmin=admin
-endif::DM[]
-controllerUser=kie-server
-----
-+
-For more information, see xref:roles-users-con_{context}[].
-.. Review the contents of the `sample-standalone-config.yml` configuration file and update as required.
+// Where does the kie-fs-realm-users file come in.
 . To run the {CENTRAL} standalone JAR file, enter the following command:
 +
 [source,subs="attributes+"]
 ----
-java -jar {PRODUCT_FILE}-{URL_COMPONENT_CENTRAL}-standalone.jar -s sample-standalone-config.yml
+java -jar business-central-webapp-bootable.jar --cli-script=application-script.cli
 ----
 . To set application properties when you run the JAR file, include the  `-D<PROPERTY>=<VALUE>` parameter in the command, where `<PROPERTY>` is the name of a supported application property and `<VALUE>` is the property value:
 +
 [source,subs="attributes+"]
 ----
-java -jar {PRODUCT_FILE}-{URL_COMPONENT_CENTRAL}-standalone.jar -s sample-standalone-config.yml -D<PROPERTY>=<VALUE> -D<PROPERTY>=<VALUE>
+java -jar {PRODUCT_FILE}-{URL_COMPONENT_CENTRAL}-standalone.jar  --cli-script=application-script.cli -D<PROPERTY>=<VALUE> -D<PROPERTY>=<VALUE>
 ----
+// Where do controllerUser1234 & controllerUser come from?
+// What are <PROPERTY> & <VALUE> ?
 +
 For example, to run {CENTRAL} and connect to {KIE_SERVER} as the user `controllerUser`, enter:
 +
 [source,xml,subs="attributes+"]
 ----
 java -jar {PRODUCT_FILE}-{URL_COMPONENT_CENTRAL}-standalone.jar \
--s sample-standalone-config.yml \
--Dorg.kie.server.user=controllerUser
+ --cli-script=application-script.cli \
+-Dorg.kie.server.user=controllerUser \
 -Dorg.kie.server.pwd=controllerUser1234
 ----
 +
