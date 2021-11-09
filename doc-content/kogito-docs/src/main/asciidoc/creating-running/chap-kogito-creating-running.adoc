@@ -1414,18 +1414,18 @@ The following tables list all the supported add-ons:
 |===
 
 
-=== Messaging add-on in {PRODUCT}
+=== {PRODUCT} messaging add-on
 
-The messaging add-on uses events in the {PRODUCT} projects. For more information, see the following sections:
+{PRODUCT} provides a messaging add-on, enabling a process to register an event listener. The messaging add-on uses events in the {PRODUCT} projects. For more information, see the following sections:
 
 * xref:con-kogito-runtime-events_kogito-configuring[{PRODUCT} runtime events]
 * xref:con-kogito-travel-agency_kogito-deploying-on-openshift[Travel agency tutorial for {PRODUCT} services on OpenShift]
 * xref:con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
 * xref:con-trusty-service_kogito-configuring[{PRODUCT} Trusty Service and Explainability Service]
 
-To use the messaging add-on, add the following code to the `pom.xml` file of your project:
+To configure messaging capabilities for your Kogito services, you can add the messaging add-on as a dependency in the pom.xml file of your Kogito project:
 
-.Quarkus
+.Project dependency to enable messaging operations in Quarkus projects
 [source,xml,subs="attributes+"]
 ----
 <dependency>
@@ -1435,7 +1435,7 @@ To use the messaging add-on, add the following code to the `pom.xml` file of you
 </dependency>
 ----
 
-.Spring Boot
+.Project dependency to enable messaging operations in Spring Boot projects
 [source,xml,subs="attributes+"]
 ----
 <dependency>
@@ -1445,7 +1445,48 @@ To use the messaging add-on, add the following code to the `pom.xml` file of you
 </dependency>
 ----
 
-=== Decision Model and Notation (DMN) event-driven add-on in {PRODUCT}
+The {PRODUCT} process event add-on implementation is based on https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2/connectors/connectors.html[Smallrye Messaging] library, which provides a set of connectors for event brokers, such as JMS, AMQP, and Kafka. Therefore, the {PRODUCT} process event add-on is not specifically combined with any event broker, but also requires additional configuration to use a suitable Smallrye connector.
+
+For example, to use Kafka as an event broker, you can add the following dependency in the `pom.xml` file of your {PRODUCT} project:
+
+.Project dependency to enable event broker in Quarkus
+[source,xml,subs="attributes+"]
+----
+<dependency>
+   <groupId>io.quarkus</groupId>
+   <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+</dependency>
+----
+
+Optionally, for Kafka connector, you can define the Kafka topic to be used for that channel using the following form:
+
+`mp.messaging.[incoming|outgoing].<channel name>.topic = <topic name>`
+
+NOTE: If defined property is not found, then the topic name is considered to be the same as Kafka name.
+
+You can also set up a channel property using the following form:
+
+`mp.messaging.[incoming|outgoing].<channel name>.<property name>= <property value>`
+
+When Smallrye identifies a property starting with `mp.messaging.[incoming|outgoing].<channel name>`, it creates a channel. You can use the following approaches to define channels in your application:
+
+* Define one incoming channel to receive all the incoming messages and one outgoing channel to store all the published messages.
+* Define a channel for each message name so that every message type has a dedicated channel.
+* Define incoming channel, outgoing channel, and a channel for each message name. In this case, each channel can be used for its message. However, if a message name does not have a channel, then the message can be stored in the incoming or outgoing channel.
+
+In the {PRODUCT} messaging add-on, you can map the topics to messages using the message name and you can define the default topics to be used for all the unmapped message names. To map a message name to a particular topic, define the related property in the following form:
+
+`kogito.addon.cloudevents.kafka.[kogito_incoming_stream|kogito_outgoing_stream].<message name> = <topic name>.`
+
+In case the property is not found, the default topic name is used. You can change the default incoming and outgoing topic name as follows:
+
+[source]
+----
+kogito.addon.cloudevents.kafka.kogito_incoming_stream=<default topic name>
+kogito.addon.cloudevents.kafka.kogito_outgoing_stream=<default topic name>
+----
+
+=== {PRODUCT} Decision Model and Notation (DMN) event-driven add-on
 
 .Quarkus
 To use the DMN event-driven add-on, add the following code to the `pom.xml` file of your project:
@@ -1468,7 +1509,7 @@ To use the DMN event-driven add-on, add the following code to the `pom.xml` file
 </dependency>
 ----
 
-=== Explainability add-on in {PRODUCT}
+=== {PRODUCT} explainability add-on
 
 The Explainability add-on in {PRODUCT} provides integration with Explainability and Trusty Services. You can also use https://github.com/kiegroup/kogito-examples/tree/stable/trusty-demonstration[`trusty-demonstration`] example application.
 
@@ -1496,7 +1537,7 @@ To use the explainability add-on, add the following code to the `pom.xml` file o
 </dependency>
 ----
 
-=== Jobs Management add-on in {PRODUCT}
+=== {PRODUCT} jobs management add-on
 
 The Jobs Management add-on provides integration and configuration for a project using the supporting services related to Jobs. For more information, see the xref:con-jobs-service_kogito-configuring[documentation].
 
@@ -1522,7 +1563,7 @@ To use the Jobs Management add-on, add the following code to the `pom.xml` file 
 </dependency>
 ----
 
-=== Knative Eventing add-on in {PRODUCT}
+=== {PRODUCT} Knative Eventing add-on
 
 The Knative Eventing add-on is used in the {PRODUCT} project for messaging. The https://github.com/kiegroup/kogito-runtimes/tree/main/addons/common/knative/eventing[{PRODUCT} Knative Eventing] add-on enables your project to connect to a https://knative.dev/docs/developer/eventing/sinks/[sink].
 
@@ -1546,7 +1587,7 @@ To use the Knative Eventing add-on, add the following code to the `pom.xml` file
 </dependency>
 ----
 
-=== Mail add-on in {PRODUCT}
+=== {PRODUCT} mail add-on
 
 The mail add-on is used to send emails in a process project. To use the mail add-on, add the following code to the `pom.xml` file of your project:
 
@@ -1570,7 +1611,7 @@ The mail add-on is used to send emails in a process project. To use the mail add
 </dependency>
 ----
 
-=== Events add-on in {PRODUCT}
+=== {PRODUCT} events add-on
 
 The events add-on provides a default implementation in supported target platforms for EventEmitter and EventReceiver interfaces. You can use EventEmitter and EventReceiver interfaces to enable messaging by process, serverless workflow events, and event decision handling. For more information, see xref:con-knative-eventing_kogito-developing-process-services[], xref:con-serverless-workflow-definitions_kogito-orchestrating-serverless[], and xref:proc-messaging-enabling_kogito-configuring[].
 
@@ -1631,7 +1672,7 @@ To use the events add-on, add the following code to the `pom.xml` file of your p
 </dependency>
 ----
 
-=== Monitoring add-on in {PRODUCT}
+=== {PRODUCT} monitoring add-on
 
 The monitoring add-on provides monitoring capabilities in the {PRODUCT} project. For more information, see xref:_metrics_monitoring_in_kogito_services[Metrics monitoring in {PRODUCT}].
 
@@ -1677,7 +1718,7 @@ To use the monitoring add-on, add the following code to the `pom.xml` file of yo
 </dependency>
 ----
 
-=== Persistence add-on in {PRODUCT}
+=== {PRODUCT} persistence add-on
 
 The persistence add-on provides persistence capability in your {PRODUCT} project. For more information, xref:con-persistence_kogito-developing-process-services[].
 
@@ -1805,8 +1846,9 @@ To use the Persistence add-on, add the following code to the `pom.xml` file of y
 
 include::{asciidoc-dir}/bpmn/chap-kogito-developing-process-services.adoc[tags=con-bpmn-process-management-addon,leveloffset=+1]
 include::{asciidoc-dir}/bpmn/chap-kogito-developing-process-services.adoc[tags=con-bpmn-process-svg-addon,leveloffset=+1]
+include::{asciidoc-dir}/bpmn/chap-kogito-developing-process-services.adoc[tags=con-bpmn-process-event-addon,leveloffset=+1]
 
-=== Task Management add-on in {PRODUCT}
+=== {PRODUCT} task management add-on
 
 The Task Management add-on provides integration with the https://github.com/kiegroup/kogito-apps/tree/master/task-console[Task Console]. For more information, see xref:con-task-console_kogito-developing-process-services[{PRODUCT} Task Console].
 
@@ -1832,7 +1874,7 @@ To use the Task Management add-on, add the following code to the `pom.xml` file 
 </dependency>
 ----
 
-=== Tracing add-on in {PRODUCT}
+=== {PRODUCT} tracing add-on
 
 The Tracing add-on provides Decision model and notation (DMN) services tracing capability. For more information, see the https://docs.jboss.org/kogito/release/latest/html_single/#con-trusty-service_kogito-configuring [documentation].
 
