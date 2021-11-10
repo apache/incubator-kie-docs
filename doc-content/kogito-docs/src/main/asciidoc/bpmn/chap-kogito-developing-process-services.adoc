@@ -3606,7 +3606,99 @@ This REST endpoint can be used in environments that hold enabled security at the
 If the SVG add-on detects a known security context enabled, then it retrieves the bearer token, otherwise the add-on reuses the token that is passed directly in the Authorization header.
 
 NOTE: Currently, the process SVG add-on retrieves the token for systems that contain OpenID Connect using Keycloak.
-# end::process-svg-add-on[]
+
+// tag::con-bpmn-process-event-addon[]
+[id="con-bpmn-process-event-addon_{context}"]
+== {PRODUCT} process event add-on
+
+{PRODUCT} provides a process event add-on, which you can use to send processes, tasks, and variable events to an external event listener. In this case, the processes, tasks, and variable events are generated as a result of the execution of an operation, which modifies a process state; such events are known as runtime events.
+
+In {PRODUCT}, every modifying operation is executed within an abstraction called a unit of work. Examples of such operations include creating a process instance, transitioning a task, and modifying a variable. A runtime event is published when a unit of work is completed.
+
+You can use the {PRODUCT} process event add-on to build a historical representation of all process instance executions. Also, you can use this add-on with process REST API to build a custom graphical user interface to handle the user tasks.
+
+By default, the event format follows https://cloudevents.io/[CloudEvent] specification. The CloudEvent specification allows sending information using the data field, which contains a JSON of one of the following types:
+
+* https://github.com/kiegroup/kogito-runtimes/blob/main/api/kogito-services/src/main/java/org/kie/kogito/services/event/impl/ProcessInstanceEventBody.java[ProcessInstanceEvent]: This event is published when a process instance is created, modified, or completed.
+* https://github.com/kiegroup/kogito-runtimes/blob/main/api/kogito-services/src/main/java/org/kie/kogito/services/event/impl/UserTaskInstanceEventBody.java[UserTaskInstanceEvent]: This event is published when a change occurs on a user task.
+* https://github.com/kiegroup/kogito-runtimes/blob/main/api/kogito-services/src/main/java/org/kie/kogito/services/event/impl/VariableInstanceEventBody.java[VariableInstanceEvent]: This event is published when a variable is created, modified, or removed.
+
+To configure process event capabilities for your {PRODUCT} services, you can add the process event add-on as a dependency in the `pom.xml` file of your {PRODUCT} project:
+
+.Project dependency to enable process event operations in Quarkus projects
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-events-process</artifactId>
+</dependency>
+----
+
+.Project dependency to enable process event operations in Spring Boot projects
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  	<groupId>org.kie.kogito</groupId>
+  	<artifactId>kogito-addons-springboot-events-process-kafka</artifactId>
+</dependency>
+----
+
+NOTE: The {PRODUCT} process event add-on for Spring Boot is specific to Kafka. Therefore, you do not need to add additional dependencies to your `pom.xml` file to use an event broker.
+
+For Quarkus, the {PRODUCT} process event add-on implementation is based on https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/2/connectors/connectors.html[Smallrye Messaging] library, which provides a set of connectors for event brokers, such as JMS, AMQP, and Kafka. Therefore, the {PRODUCT} process event add-on is not specifically combined with any event broker in Quarkus, but requires additional configuration to use a suitable Smallrye connector.
+
+For example, to use Kafka as an event broker in Quarkus, you can add the following dependency in the `pom.xml` file of your {PRODUCT} project:
+
+.Project dependency to enable Kafka event broker in Quarkus
+[source,xml,subs="attributes+"]
+----
+ <dependency>
+  	<groupId>io.quarkus</groupId>
+  	<artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+</dependency>
+----
+
+Smallrye defines an abstraction named channel to enable multi-broker support. For every channel that you define in your {PRODUCT} application, you can specify the connector to use for that channel using the following form:
+
+`mp.messaging.[incoming|outgoing].<channel name>.connector = <connector name>`
+
+Optionally, for Kafka connector, you can define the Kafka topic to be used for that channel using the following form:
+
+`mp.messaging.[incoming|outgoing].<channel name>.topic = <topic name>`
+
+You can also set up a channel property using the following form:
+
+`mp.messaging.[incoming|outgoing].<channel name>.<property name>= <property value>`
+
+IMPORTANT: If the defined property is not found, then the topic name is considered to be the same as Kafka name.
+
+The {PRODUCT} process event add-on defines a channel for each event type, such as `kogito-processinstances-events`, `kogito-usertaskinstances-events`, and `kogito-variables-events`. Therefore, when the process event add-on is enabled, you must add the event types to your `application.properties` file using the following properties:
+
+.Properties to define event types in `application.properties` file
+[source]
+----
+mp.messaging.outgoing.kogito-processinstances-events.connector=smallrye-kafka
+mp.messaging.outgoing.kogito-processinstances-events.topic=kogito-processinstances-events
+mp.messaging.outgoing.kogito-processinstances-events.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+
+mp.messaging.outgoing.kogito-usertaskinstances-events.connector=smallrye-kafka
+mp.messaging.outgoing.kogito-usertaskinstances-events.topic=kogito-usertaskinstances-events
+mp.messaging.outgoing.kogito-usertaskinstances-events.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+
+mp.messaging.outgoing.kogito-variables-events.connector=smallrye-kafka
+mp.messaging.outgoing.kogito-variables-events.topic=kogito-variables-events
+mp.messaging.outgoing.kogito-variables-events.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+----
+
+Additionally, you can disable the publishing on any channel by setting the related property to false as shown in the following example:
+
+.Example properties to disable publishing
+[source]
+----
+kogito.events.usertasks.enabled=false
+kogito.events.variables.enabled=false
+----
+// end::con-bpmn-process-event-addon[]
 
 [id="con-management-console_{context}"]
 == {PRODUCT} Management Console
