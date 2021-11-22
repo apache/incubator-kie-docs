@@ -11,10 +11,10 @@ After you install RH-SSO, you must install the RH-SSO client adapter for {EAP} a
 .Procedure
 . Navigate to the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Software Downloads] page in the Red Hat Customer Portal (login required), and select the product and version from the drop-down options:
 
-* *Product:* Red Hat Single Sign-On
+* *Product:* {RH-SSO}
 * *Version:* {RH-SSO_VERSION}
 . Select the *Patches* tab.
-. Download *Red Hat Single Sign-on {RH-SSO_VERSION} Client Adapter for EAP 7* (`rh-sso-{RH-SSO_VERSION_LONG}-eap7-adapter.zip` or the latest version).
+. Download *{RH-SSO} {RH-SSO_VERSION} Client Adapter for EAP 7* (`rh-sso-{RH-SSO_VERSION_LONG}-eap7-adapter.zip` or the latest version).
 . Extract and install the adapter zip file. For installation instructions, see the "JBoss EAP Adapter" section of the https://access.redhat.com/documentation/en-us/red_hat_single_sign-on/{RH-SSO_VERSION}/html-single/securing_applications_and_services_guide[_Red Hat Single Sign On Securing Applications and Services Guide_].
 +
 NOTE: Install the adapter with the `-Dserver.config=standalone-full.xml` property.
@@ -99,9 +99,9 @@ If you want to use client roles, also add the following setting under `<secure-d
 --
 [source]
 ----
-/subsystem=elytron/policy=jacc:add(jacc-policy={})
-/subsystem=undertow/application-security-domain=other:remove
-/subsystem=undertow/application-security-domain=other:add(http-authentication-factory=keycloak-http-authentication,enable-jacc=true)
+/subsystem=undertow/application-security-domain=other:remove()
+/subsystem=undertow/application-security-domain=other:add(http-authentication-factory="keycloak-http-authentication")
+/subsystem=ejb3/application-security-domain=other:write-attribute(name=security-domain, value=KeycloakDomain)
 ----
 --
 +
@@ -113,20 +113,20 @@ For more information about the {EAP} management CLI, see the https://access.redh
 --
 [source,xml,subs="attributes+"]
 ----
-<subsystem xmlns="urn:wildfly:elytron:4.0" ...>
-......
- <policy name="jacc"><jacc-policy/></policy>
-</subsystem>
+<subsystem xmlns="urn:jboss:domain:undertow:12.0" ... >
+...
+  <application-security-domains>
+    <application-security-domain name="other" http-authentication-factory="keycloak-http-authentication"/>
+  </application-security-domains>
 ----
 
 [source,xml,subs="attributes+"]
 ----
-<subsystem xmlns="urn:jboss:domain:undertow:7.0" ...>
-......
- <application-security-domains>
-    <application-security-domain name="other" http-authentication-factory="keycloak-http-authentication" enable-jacc="true"/>
- </application-security-domains>
-</subsystem>
+<subsystem xmlns="urn:jboss:domain:ejb3:9.0">
+...
+  <application-security-domains>
+      <application-security-domain name="other" security-domain="KeycloakDomain"/>
+  </application-security-domains>
 ----
 
 [NOTE]
