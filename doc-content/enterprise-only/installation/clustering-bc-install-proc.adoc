@@ -1,0 +1,75 @@
+[id='clustering-bc-install-proc_{context}']
+= Starting the cluster and distributing {CENTRAL}
+
+After you have configured a {EAP} cluster and repackaged {CENTRAL}, you must start the cluster and distribute the repackaged `{URL_COMPONENT_CENTRAL}.war` file.
+
+.Prerequisites
+* {DATAGRID} {DATAGRID_VERSION} is installed and running on one node of the cluster.
+* A {EAP} {EAP_VERSION} cluster is available and the `domain.xml`, `host.xml`, and `host-slave.xml` files are configured.
+* The repackaged `{URL_COMPONENT_CENTRAL}.war` file is available.
+
+.Procedure
+. Add {EAP} management users to the master node of the cluster (where you configured the `domain.xml` file) as described in the https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/{EAP_VERSION}/html-single/configuration_guide/[_Red Hat JBoss EAP 7.3 Configuration Guide_].
+. On each node of the cluster, add the following users:
+.. Add {CENTRAL} administration users as described in {URL_INSTALLING_AND_CONFIGURING}#assembly-install-on-eap[_{INSTALLING_ON_EAP}_].
+.. Add the JMS user, where `<JMS_USER>` and `<JMS_PWD>` are the JMS user and password that you added to the `domain.xml` file:
++
+[source]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<JMS_USER>, clear={password='<JMS_PWD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['admin'])"
+
+----
+. Start the cluster by starting the master node first, and then start each of the slave nodes.
+..  To start the master node, enter one of the following commands:
++
+* On Linux or UNIX-based systems, enter:
++
+[source]
+----
+<EAP_HOME>/bin/domain.sh
+----
++
+* On Windows, enter:
++
+[source]
+----
+<EAP_HOME>/bin/domain.bat
+----
+
+.. To start the slave nodes, on each of the slave nodes enter one of the following commands, where `<MASTER_NODE_IP>` is the IP address of the master node (where the domain controller is configured):
++
+* On Linux or UNIX-based systems, enter:
++
+[source]
+----
+<EAP_HOME>/bin/domain.sh --host-config=host-slave.xml -Djboss.domain.master.address=<MASTER_NODE_IP>
+----
++
+* On Windows, enter:
++
+[source]
+----
+<EAP_HOME>/bin/domain.bat --host-config=host-slave.xml -Djboss.domain.master.address=<MASTER_NODE_IP>
+----
++
+For more information, see the following sections of the _Red Hat JBoss EAP 7.3 Configuration Guide_:
+
+* https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/{EAP_VERSION}/html/configuration_guide/starting_and_stopping_jboss_eap#starting_jboss_eap["Starting JBoss EAP"]
+* https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/{EAP_VERSION}/html/configuration_guide/jboss_eap_management#managed_domain_configuration_files["Managed Domain Configuration Files"]
+. On each node of the cluster, review the `_EAP_HOME_/domain/servers/SERVER_NAME/log/server.log` file to verify that the nodes are available.
+. To deploy the `{URL_COMPONENT_CENTRAL}.war` file into the server group, complete the following steps:
+.. On the master node, log in to the {EAP} `Administration` console as a `management` user.
+.. Click *Deployments -> Server Groups-> main-server-group* and click *Add*.
+.. In the dialog box, click *Upload a new deployment* and click *Next*.
+.. In the *Upload Deployments* dialog box, click *Browse*, select the `{URL_COMPONENT_CENTRAL}.war` file, and click *Next*.
+.. Click *Enable* and click *Next*. When the deployment is complete, {CENTRAL} starts automatically on each node.
++
+[NOTE]
+====
+Make sure to check deployment unit readiness with every cluster member.
+
+When a deployment unit is created on a cluster node, it takes some time before it is distributed among all cluster members. You can check the deployment status using the server Administration console or REST API. However, if the query is sent to the node where the deployment was originally issued, the query will return a value of `deployed`. If the query is sent to a node where the deployment has not yet been distributed, the query returns `DeploymentNotFoundException`.
+====
+
+
+For more information about installing {CENTRAL}, see  {URL_INSTALLING_AND_CONFIGURING}#assembly-install-on-eap[_{INSTALLING_ON_EAP}_].

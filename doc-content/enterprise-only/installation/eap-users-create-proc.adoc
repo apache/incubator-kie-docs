@@ -3,7 +3,19 @@
 = Creating users
 If you used the deployable ZIP files to install {PRODUCT}, before you can log in to {CENTRAL} or {KIE_SERVER}, you must create users. This section shows you how to create a {CENTRAL} user with the `admin`, `rest-all`, and `kie-server` roles and a {KIE_SERVER} user that has the `kie-server` role. For information about roles, see xref:roles-users-con_install-on-eap[].
 
-NOTE: If you used the installer to install {PRODUCT}, you created at least one user during that process. The `EAP_HOME/standalone/configuration/application-users.properties` file contains application users and their passwords.
+[NOTE]
+====
+{PRODUCT} stores user data as a set of properties or as a set of files. File-based storage provides several extra features, such as SSH login and a user maintenance UI. 
+
+The user script examples in this documentation use the file-based user script, `jboss-cli.sh`, instead of the property-based user script, `add-users.sh`.
+
+To change {PRODUCT} from using property-based user storage to file-based user storage, navigate to the `__EAP_HOME__` directory and run the following command:
+
+[source,bash]
+----
+$ ./bin/elytron-tool.sh filesystem-realm --users-file application-users.properties --roles-file application-roles.properties --output-location kie-fs-realm-users
+----
+====
 
 .Prerequisites
 * {PRODUCT} is installed in the base directory of the {EAP} installation (`_EAP_HOME_`).
@@ -26,13 +38,13 @@ In the following command, replace `<USERNAME>` and  `<PASSWORD>` with the user n
 ifdef::PAM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME> --password <PASSWORD> --role admin,rest-all,kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['admin','rest-all','kie-server'])"
 ----
 endif::[]
 ifdef::DM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME>  --password <PASSWORD> --role admin,rest-all,kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['admin','rest-all','kie-server'])"
 ----
 endif::[]
 +
@@ -47,23 +59,49 @@ The password must have at least eight characters and must contain at least one n
 ifdef::PAM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME> --password <PASSWORD> --role kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['kie-server'])"
 ----
 endif::[]
 ifdef::DM[]
 [source,bash]
 ----
-$ ./add-user.sh -a --user <USERNAME>  --password <PASSWORD> --role kie-server
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['kie-server'])"
 ----
 endif::[]
 . Make a note of your user names and passwords.
+
+. Optional:
+If you installed {CENTRAL} and {KIE_SERVER} in the same server instance, you can create a single user that has both of these roles:
++
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['admin','rest-all','kie-server'])"
+----
 +
 [NOTE]
 ====
-If you installed {CENTRAL} and {KIE_SERVER} in the same server instance, you can create a single user that has both of these roles:
-[source,bash]
-----
-$ ./add-user.sh -a --user <USERNAME>  --password <PASSWORD> --role admin,rest-all,kie-server
-----
 You should install {CENTRAL} and {KIE_SERVER} on different servers in production environments.
 ====
++
+. Optional:
+To create several users at one time, create a file that contains the user data and run the following command, where `<USER_DATA>.cli` is the file that contains the user data:
++
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --file=<USER_DATA>.cli
+----
++
+The `<USER_DATA>.cli` file should contain data similar to the following example:
++
+[source,bash]
+----
+embed-server --std-out=echo
+
+# first user
+/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>)
+/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'})
+/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['admin','role','group'])
+
+# second user
+...
+----
