@@ -889,6 +889,107 @@ image::kogito/configuration/grafana-domain-dashboard.png[Generated domain specif
 
 NOTE: Generated dashboards for BPMN resources are currently not supported.
 
+[id="con-grafana-dashboards-selective-metrics-monitoring_{context}"]
+==== Selectively exclude grafana dashboard generation in {PRODUCT}
+
+[role="_abstract"]
+It is also possible to disable generation of some of the default dashboards.
+
+Two properties are available for that:
+
+[source]
+----
+kogito.grafana.disabled.operational.dashboards
+kogito.grafana.disabled.domain.dashboards
+----
+
+Both of them accept a comma-separated list of dashboard identifiers. The first one is used to disable generation of `operational` dashboard(s), and the second one is used to disable generation of `domain` ones.
+
+Let's take as example a projects containing the following resources:
+[source]
+----
+Hello.drl
+LoanEligibility.dmn
+Traffic Violation.dmn
+----
+With the default configuration, the following dashboards would be generated:
+
+.Default generated dashboards in {PRODUCT}
+[cols="50%,50%"]
+|===
+|Type |Name
+
+.6+|Operational
+|`Hello`
+a|Operational dashboard for `Hello` rules
+|`LoanEligibility`
+a|Operational dashboard for `LoanEligibility` decisions
+|`Traffic Violation`
+a|Operational dashboard for `Traffic Violation` decisions
+.6+|Domain
+|`Hello`
+a|Domain dashboard for `Hello` rules
+|`LoanEligibility`
+a|Domain dashboard for `LoanEligibility` decisions
+|`Traffic Violation`
+a|Domain dashboard for `Traffic Violation` decisions
+|===
+
+The following configuration in `application.properties` will avoid the generation of `Hello` and `Traffic Violation` operational dashboards, as well as the generation of `LoanEligibility` domain one:
+
+----
+kogito.grafana.disabled.operational.dashboards=Hello,Traffic Violation
+kogito.grafana.disabled.domain.dashboards=LoanEligibility
+----
+
+.Customized generation of dashboards in {PRODUCT}
+[cols="50%,50%"]
+|===
+|Type |Name
+
+.2+|Operational
+|`LoanEligibility`
+a|Operational dashboard for `LoanEligibility` decisions
+.4+|Domain
+|`Hello`
+a|Domain dashboard for `Hello` rules
+|`Traffic Violation`
+a|Domain dashboard for `Traffic Violation` decisions
+|===
+
+Please note that spaces between dashboard identifiers are trimmed out, e.g. :
+
+[source]
+----
+Hello, Traffic Violation, LoanEligibility
+----
+
+will resolve to
+
+[source]
+----
+"Hello"
+"Traffic Violation"
+"LoanEligibility"
+----
+
+while spaces inside dashboard identifiers are preserved, e.g. :
+
+[source]
+----
+Traffic Violation, Traffic    Violation, Tra ffic Violation
+----
+
+will resolve to
+
+[source]
+----
+"Traffic Violation"
+"Traffic    Violation"
+"Tra ffic Violation"
+----
+
+
 [id="proc-elastic-metrics-monitoring_{context}"]
 === Enabling Elasticsearch metrics monitoring in {PRODUCT}
 
