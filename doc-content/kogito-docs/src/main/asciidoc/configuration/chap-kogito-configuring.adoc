@@ -889,54 +889,67 @@ image::kogito/configuration/grafana-domain-dashboard.png[Generated domain specif
 
 NOTE: Generated dashboards for BPMN resources are currently not supported.
 
-[id="con-grafana-dashboards-selective-metrics-monitoring_{context}"]
-==== Selectively exclude grafana dashboard generation in {PRODUCT}
+[id="con-disable-dashboards-metrics-monitoring_{context}"]
+==== Disabling Grafana dashboards generation in {PRODUCT}
 
 [role="_abstract"]
-It is also possible to disable generation of some of the default dashboards.
+You can disable the generation of some default dashboards in Prometheus metrics monitoring using the following properties:
 
-Two properties are available for that:
-
+.Properties to disable default dashboards
 [source]
 ----
 kogito.grafana.disabled.operational.dashboards
 kogito.grafana.disabled.domain.dashboards
 ----
 
-Both of them accept a comma-separated list of dashboard identifiers. The first one is used to disable generation of `operational` dashboard(s), and the second one is used to disable generation of `domain` ones.
+.Prerequisites
+* Prometheus is installed. For information about downloading and using Prometheus, see the https://prometheus.io/docs/introduction/overview/[Prometheus documentation page].
 
-Let's take as example a projects containing the following resources:
+.Procedure
+
+. To disable a Grafana dashboard, add the comma-separated list of dashboard identifiers to the following properties:
++
+--
+.Properties for disabling the Grafana dashboard
+[source]
+----
+kogito.grafana.disabled.operational.dashboards
+kogito.grafana.disabled.domain.dashboards
+----
+
+The `kogito.grafana.disabled.operational.dashboards` property disables the generation of operational dashboards and `kogito.grafana.disabled.domain.dashboards` property disables the generation of domain dashboards.
+
+For example, a project containing the following resources uses the default configuration and generates the default dashboards:
+
+.Example project resources
 [source]
 ----
 Hello.drl
 LoanEligibility.dmn
 Traffic Violation.dmn
 ----
-With the default configuration, the following dashboards would be generated:
 
-.Default generated dashboards in {PRODUCT}
-[cols="50%,50%"]
+The following are the default generated dashboards in {PRODUCT}:
+
+.Example default generated dashboards for a project
+[cols="50%,50%", options="header"]
 |===
-|Type |Name
+|Dashboard type |Dashboard name
 
-.6+|Operational
+.3+|Operational
 |`Hello`
-a|Operational dashboard for `Hello` rules
 |`LoanEligibility`
-a|Operational dashboard for `LoanEligibility` decisions
 |`Traffic Violation`
-a|Operational dashboard for `Traffic Violation` decisions
-.6+|Domain
+
+.3+|Domain
 |`Hello`
-a|Domain dashboard for `Hello` rules
 |`LoanEligibility`
-a|Domain dashboard for `LoanEligibility` decisions
 |`Traffic Violation`
-a|Domain dashboard for `Traffic Violation` decisions
 |===
 
-The following configuration in `application.properties` will avoid the generation of `Hello` and `Traffic Violation` operational dashboards, as well as the generation of `LoanEligibility` domain one:
+If you use the following configuration in the `application.properties` file, the generation of `Hello` and `Traffic Violation` operational dashboards, and `LoanEligibility` domain dashboard is avoided.
 
+.Configuration for disabling specific dashboards
 ----
 kogito.grafana.disabled.operational.dashboards=Hello,Traffic Violation
 kogito.grafana.disabled.domain.dashboards=LoanEligibility
@@ -945,27 +958,26 @@ kogito.grafana.disabled.domain.dashboards=LoanEligibility
 .Customized generation of dashboards in {PRODUCT}
 [cols="50%,50%"]
 |===
-|Type |Name
+|Dashboard type |Dashboard name
 
-.2+|Operational
+.1+|Operational
 |`LoanEligibility`
-a|Operational dashboard for `LoanEligibility` decisions
-.4+|Domain
+.2+|Domain
 |`Hello`
-a|Domain dashboard for `Hello` rules
 |`Traffic Violation`
-a|Domain dashboard for `Traffic Violation` decisions
 |===
 
-Please note that spaces between dashboard identifiers are trimmed out, e.g. :
+[NOTE]
+====
+If you add spaces between the dashboard identifiers are eliminated as follows:
 
+.Example dashboard identifiers with spaces
 [source]
 ----
 Hello, Traffic Violation, LoanEligibility
 ----
 
-will resolve to
-
+.Example dashboard identifiers without spaces
 [source]
 ----
 "Hello"
@@ -973,21 +985,24 @@ will resolve to
 "LoanEligibility"
 ----
 
-while spaces inside dashboard identifiers are preserved, e.g. :
+However, the spaces within a dashboard identifier are maintained as follows:
 
+.Example dashboard identifiers with spaces
 [source]
 ----
 Traffic Violation, Traffic    Violation, Tra ffic Violation
 ----
 
-will resolve to
-
+.Example dashboard identifiers without spaces
 [source]
 ----
 "Traffic Violation"
 "Traffic    Violation"
 "Tra ffic Violation"
 ----
+====
+
+--
 
 
 [id="proc-elastic-metrics-monitoring_{context}"]
