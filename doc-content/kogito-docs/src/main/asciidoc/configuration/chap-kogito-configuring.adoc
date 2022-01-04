@@ -1262,7 +1262,7 @@ Below are the databases that support optimistic locking
 You can enable persistence for your {PRODUCT} services using https://infinispan.org/[Infinispan] to persist data, such as active process nodes and process instance variables, so that the data is preserved across application restarts. For {PRODUCT} persistence with Infinispan, you must have a an Infinispan Server installed and running in order to enable persistence.
 
 .Prerequisites
-* https://infinispan.org/[Infinispan Server] 12.1.7 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://infinispan.org/[Infinispan Server] 13.0.2 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 
 .Procedure
 . Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
@@ -1843,7 +1843,7 @@ NOTE: The Data Index PostgreSQL persistence provider does not support indexing f
 You can use the {PRODUCT} Data Index Service to index, store, and query process data in your {PRODUCT} services.
 
 .Prerequisites
-* https://infinispan.org/[Infinispan Server] 12.1.7 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
+* https://infinispan.org/[Infinispan Server] 13.0.2 or later is installed and running. For information about Infinispan installation and configuration, see the https://infinispan.org/documentation/[Infinispan documentation].
 * https://kafka.apache.org/[Apache Kafka] is installed, including required topics, and the Kafka messaging server is running. For information about Kafka installation and configuration, see the https://kafka.apache.org/documentation/[Apache Kafka documentation].
 +
 --
@@ -2109,6 +2109,7 @@ You can use the `pagination` parameter to specify a `limit` and `offset` for que
 ----
 --
 
+[id="con-data-index-service-queries_{context}"]
 ==== GraphQL queries for process instances, user task instances, and jobs
 
 Use the following GraphQL queries to retrieve data about process instances, user task instances, and jobs.
@@ -2853,6 +2854,50 @@ For more information about PostgreSQL configuration on Quarkus, see https://quar
 . After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
 
 NOTE: Data Index Service with PostgreSQL does not support indexing domain-specific data. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`, and `Jobs`.
+
+[id="con-data-index-dev-service_{context}"]
+=== Quarkus Dev Service for {PRODUCT} Data Index Service
+
+When you use the {PRODUCT} Process Quarkus extension, a temporary Data Index Service is automatically provisioned while the Quarkus application is running in development mode. When you use one of the following Quarkus extensions, the Dev Service is set up for immediate use:
+
+.Quarkus extension in {PRODUCT}
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-quarkus</artifactId>
+</dependency>
+----
+
+.Quarkus extension in {PRODUCT}
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-quarkus-processes</artifactId>
+</dependency>
+----
+
+When you start your Quarkus project in development mode, an in-memory instance of the Data Index Service is automatically started in the background. This feature is enabled by https://quarkus.io/guides/dev-services[Quarkus Dev Services], and leverages https://www.testcontainers.org/[Testcontainers] to start an image of the Data Index Service.
+
+The {PRODUCT} Process Quarkus extension sets up your Quarkus application to automatically replicate any {PRODUCT} messaging events related to process instances and user tasks into the provisioned Data Index instance.
+
+Once the service is up and running, you can query the GraphQL interface directly using `http://localhost:8180/graphql` or using the Quarkus Dev UI console `http://localhost:8080/q/dev`.
+
+The Data Index GraphQL endpoint can query for `ProcessInstances` and `UserTaskInstances`. For more information about operations and attributes to query, see {URL_CONFIGURING_KOGITO}#con-data-index-service-queries_kogito-configuring[_{PRODUCT} Data Index GraphQL queries_].
+
+NOTE: Quarkus Dev Service for the {PRODUCT} Data Index Service does not support indexing for custom types. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`.
+
+You can share the same Data Index instance across multiple {PRODUCT} services during development. Sharing Data Index instances is enabled by default, therefore, only one Data Index instance is started. This behaviour can be adjusted to start multiple instances using the `quarkus.kogito.devservices.shared` property.
+
+The Quarkus Dev Service also allows further configuration options including:
+
+* To disable Data Index Dev Service, use the `quarkus.kogito.devservices.enabled=false` property.
+* To change the port where the Data Index Service runs, use the `quarkus.kogito.devservices.port=8180` property.
+* To adjust the provisioned image, use `quarkus.kogito.devservices.imageName=quay.io/kiegroup/kogito-data-index-ephemeral` property.
+* To disable sharing the Data Index instance across multiple Quarkus applications, use `quarkus.kogito.devservices.shared=false` property.
+
+For more information about Quarkus Dev Services, see https://quarkus.io/guides/dev-services[Dev Services guide].
 
 [role="_additional-resources"]
 .Additional resources
