@@ -1587,11 +1587,11 @@ To use the Knative Eventing add-on, add the following code to the `pom.xml` file
 </dependency>
 ----
 
-==== Auto-generate Knative Resources
+==== Auto-generated Knative resources
 
-The Knative Eventing add-on is also capable to generate Knative Eventing resources by inspecting either your BPMN or Serverless Workflow files for event definitions. Please see the section [Knative Eventing in Kogito services] <!-- TODO: asciidoc link needed --> to understand how to create BPMN files with message trigger events. To know more about Serverless Workflows events, see the section [Orchestrating microservices with Serverless Workflow in Kogito] <!-- TODO: asciidoc link needed -->.
+The Knative Eventing add-on can generate Knative Eventing resources by inspecting your BPMN or Serverless Workflow files for event definitions. For more information about creating BPMN files using message trigger events, see {URL_PROCESS_SERVICES}#con-knative-eventing_kogito-developing-process-services[_Knative Eventing in {PRODUCT} services_]. You can also see {URL_ORCHESTRATING_SERVICES}#chap-kogito-orchestrating-serverless[_{ORCHESTRATING_SERVICES}_] to know more about the Serverless Workflow events.
 
-To activate this feature, add the following dependency to your project:
+To enable the auto-generation of Knative resources, add the following dependency to your project:
 
 [source,xml,subs="attributes+"]
 ----
@@ -1601,9 +1601,9 @@ To activate this feature, add the following dependency to your project:
 </dependency>
 ----
 
-After having this dependency added to the project, the add-on will generate Knative Eventing resources to handle the events produced or consumed by your BPMN or Serverless Workflow resources on Knative Eventing platform.
+After adding the previous dependency, the add-on generates Knative Eventing resources to handle the events that are produced or consumed by your BPMN or Serverless Workflow resources on Knative Eventing platform.
 
-For each consumed event, the add-on will generate a https://knative.dev/docs/eventing/broker/triggers/[Knative Eventing Trigger], for example:
+For each consumed event, the add-on generates a https://knative.dev/docs/eventing/broker/triggers/[Knative Eventing Trigger] as shown in the following example:
 
 .Example Knative `Trigger` custom resource for a {PRODUCT} service with `Broker` binding
 [source,yaml]
@@ -1624,11 +1624,11 @@ spec:
       name: process-knative-quickstart-quarkus
 ----
 
-This `Trigger` requires a subscriber, which is the current {PRODUCT} service to receive the event routed by the `Broker`. In this case, the add-on will use the {PRODUCT} Service target deployment configured by the Quarkus Kubernetes to be the subscriber. 
+The `Trigger` resource requires a subscriber to receive the events that are routed by the `Broker`. In this case, the current {PRODUCT} service work as a subscriber, and the Knative Eventing add-on uses the {PRODUCT} service deployment, which is configured by Quarkus Kubernetes.
 
-If a `Broker` is not specified, the add-on will generate a default, in-memory, one:
+If a `Broker` is not specified, the Knative Eventing add-on generates a default `InMemoryChannel` as follows:
 
-.Example `Broker` custom resource for Knative Eventing with default InMemoryChannel
+.Example `Broker` custom resource for Knative Eventing with default `InMemoryChannel`
 [source,yaml]
 ----
 apiVersion: eventing.knative.dev/v1
@@ -1637,9 +1637,10 @@ metadata:
   name: default
 ----
 
-If you have a `Broker` already configured in the target namespace, you can specify it via application properties. For example: `org.kie.kogito.addons.knative.eventing.broker=myKafkaBroker`.
+If a `Broker` is configured in the target namespace, you can specify the `Broker` using the following property:
+`org.kie.kogito.addons.knative.eventing.broker=myKafkaBroker`.
 
-If your {PRODUCT} Service has any produced event definitions, the add-on will generate a https://knative.dev/development/eventing/custom-event-source/sinkbinding/[Knative Eventing `SinkBinding`], or a https://github.com/knative-sandbox/eventing-kogito#kogito-source[Knative Eventing `KogitoSource`]. By default, the `SinkBinding` is generated, but you can change this behavior by setting the property `org.kie.kogito.addons.knative.eventing.generate-kogito-source` to `true`.
+If the {PRODUCT} service contains any produced event definitions, the Knative Eventing add-on generates a https://knative.dev/development/eventing/custom-event-source/sinkbinding/[Knative Eventing `SinkBinding`], or a https://github.com/knative-sandbox/eventing-kogito#kogito-source[Knative Eventing `KogitoSource`]. By default, the `SinkBinding` is generated, but you can change this behavior by setting `org.kie.kogito.addons.knative.eventing.generate-kogito-source` property to `true`.
 
 .Example `SinkBinding` custom resource for Knative Eventing
 [source,yaml]
@@ -1680,30 +1681,50 @@ spec:
     name: process-knative-quickstart-quarkus
 ----
 
-Either for `SinkBinding` and `KogitoSource`, the subject will be the {PRODUCT} target deployment as defined in the Quarkus Kubernetes plugin.
+The target deployment defined in the Quarkus Kubernetes plugin work as the subject for `SinkBinding` and `KogitoSource`. You can configure the `sink` using the application properties. By default, the generated `Broker` is defined as the `sink`.
 
-You can configure the `sink` used by the generated resources using the application properties. By default, the generated default `Broker` is defined as the `sink`. 
-
-The following table lists all the available properties for this add-on.
+The following table lists all the available properties for the Knative Eventing add-on:
 
 .{PRODUCT} Knative Eventing Add-on  properties
-[cols="50%,20%,20%"]
+[cols="50%,20%,20%", options="header"]
 |===
-|Property                                                |Description                                                  |Example
+|Property
+|Description
+|Example value
 
-|org.kie.kogito.addons.knative.eventing.sink.namespace   |The Sink Namespace                                           |default
-|org.kie.kogito.addons.knative.eventing.sink.name        |The Sink Name                                                |my-sink
-|org.kie.kogito.addons.knative.eventing.sink.api-version |The Kubernetes API Versionn of the Sink                      |eventing.knative.dev/v1
-|org.kie.kogito.addons.knative.eventing.sink.kind        |The Kubernetes Resource Kind of the Sink                     |Broker
-|org.kie.kogito.addons.knative.eventing.broker           |Name of the predefined Broker                                |myKafkaBroker
-|org.kie.kogito.addons.knative.eventing.generate-kogito-source |Wheter to generate KogitoSource instead of SinkBinding |`false`
-|org.kie.kogito.addons.knative.eventing.auto-generate-broker   |Wheter to generate the default, in-memory Broker       |`true`
+|`org.kie.kogito.addons.knative.eventing.sink.namespace`
+|Property for set sink namespace
+|`default`
+
+|`org.kie.kogito.addons.knative.eventing.sink.name`
+|Property to set sink name
+|`my-sink`
+
+|`org.kie.kogito.addons.knative.eventing.sink.api-version`
+|Property to set Kubernetes API version of the sink
+|`eventing.knative.dev/v1`
+
+|`org.kie.kogito.addons.knative.eventing.sink.kind`
+|Property to set Kubernetes resource kind of the sink
+|`Broker`
+
+|`org.kie.kogito.addons.knative.eventing.broker`
+|Property to set name of the pre-defined Broker
+|`myKafkaBroker`
+
+|`org.kie.kogito.addons.knative.eventing.generate-kogito-source`
+|Property to enable the generation of `KogitoSource` instead of `SinkBinding`
+|`false`
+
+|`org.kie.kogito.addons.knative.eventing.auto-generate-broker`
+|Property to enable the generation of default in-memory Broker
+|`true`
 |===
 
-See the following examples to see the add-on used in context:
+For more information about the Knative Eventing add-on, see the following example applications:
 
--   https://github.com/kiegroup/kogito-examples/tree/main/serverless-workflow-order-processing[Serverless Workflow Order Processing]
-- https://github.com/kiegroup/kogito-examples/tree/main/process-knative-quickstart-quarkus[Process Knative Eventing]
+* https://github.com/kiegroup/kogito-examples/tree/main/serverless-workflow-order-processing[Serverless Workflow Order Processing]
+* https://github.com/kiegroup/kogito-examples/tree/main/process-knative-quickstart-quarkus[Process Knative Eventing]
 
 === {PRODUCT} mail add-on
 
