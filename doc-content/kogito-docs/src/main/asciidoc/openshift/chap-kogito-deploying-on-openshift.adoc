@@ -251,17 +251,162 @@ With the application route, you can integrate your {PRODUCT} services with your 
 --
 ////
 
-////
+
 
 [id="con-kogito-operator-installation_{context}"]
 == {PRODUCT} Operator installation
 
-<Start here>
+This section describes different ways of installing {PRODUCT} Operator on various platforms. You can install the {PRODUCT} Operator on OpenShift or on Kubernetes.
 
 [id="proc-kogito-operator-installation-openshift_{context}"]
 === Installing the {PRODUCT} Operator on OpenShift
 
-<Start here>
+You can install the {PRODUCT} Operator on OpenShift using different ways, including:
+
+* Installing {PRODUCT} Operator using Operator Hub and OpenShift Web Console
+* Installing {PRODUCT} Operator using OC CLI
+* Installing {PRODUCT} Operator using OC CLI and Operator Lifecycle Manager (OLM)
+
+This section describes different ways of installing {PRODUCT} Operator on OpenShift.
+
+==== Installing {PRODUCT} Operator using Operator Hub and OpenShift Web Console
+
+To install the {PRODUCT} Operator on OpenShift, you can use the {PRODUCT} Operator from Operator Hub and OpenShift Web Console.
+
+.Prerequisites
+* OpenShift cluster is started and running.
+* You have access to the OpenShift web console with `cluster-admin` permissions.
++
+NOTE: You can use the Red Hat CodeReady containers for development and testing purposes.
+
+* https://kubernetes.io/docs/reference/kubectl/overview/[kubectl] and Red Hat OpenShift Container platform (https://access.redhat.com/downloads/content/290/ver=4.9/rhel---8/4.9.7/x86_64/product-software[oc]) is installed on your local machine.
+* Operator Lifecycle Manager (OLM) is running on the OpenShift Cluster. For more information about OLM, see https://docs.openshift.com/container-platform/4.9/operators/understanding/olm/olm-understanding-olm.html[Operator Lifecycle Manager concepts and resources].
+
+.Procedure
+. Navigate to your OpenShift console and open the *Operator Hub*.
+. Enter _kogito_ in the text box under the *All Items* label.
+. Click on the operator containing the Community label.
+. Click *Continue*.
++
+A window appears consisting of the information related to the {PRODUCT} Operator.
+
+. Click *Install*.
+. Keep the default options as-is and click *Install*.
++
+The message as *Installed operator - ready for use* indicates that {PRODUCT} Operator is installed and ready for use.
+
+. To verify that {PRODUCT} Operator is installed, click on *View Operator* and scroll down.
+. Review the conditions and search for *InstallSucceeded*.
+
+==== Installing {PRODUCT} Operator using oc CLI
+
+You can install the {PRODUCT} Operator using oc CLI.
+
+.Prerequisites
+* OpenShift cluster is started and running.
+* https://kubernetes.io/docs/reference/kubectl/overview/[kubectl] and Red Hat OpenShift Container platform (https://access.redhat.com/downloads/content/290/ver=4.9/rhel---8/4.9.7/x86_64/product-software[oc]) is installed on your local machine.
+
+.Procedure
+. Create a project or namespace in OpenShift using oc CLI.
+. Open a terminal and run the following command:
++
+--
+[source]
+----
+$ oc new-project kogito-operator-system --display-name="Kogito Operator" --description="Kogito Operator Project"
+----
+
+NOTE: Ensure that oc CLI is connected to your OpenShift cluster.
+--
+
+. Replace the `current_operator_version` with the latest {PRODUCT} Operator version and run the following command:
++
+--
+[source]
+----
+$ export NAMESPACE=kogito-operator-system
+$ export VERSION=<current_operator_version>
+$ oc apply -n "${NAMESPACE}" -f "https://github.com/kiegroup/kogito-operator/releases/download/${VERSION}/kogito-operator.yaml"
+----
+--
+
+. To verify the {PRODUCT} Operator installation, execute the following command and ensure that `kogito-operator-controller-manager` is running:
++
+--
+[source]
+----
+$ oc get pods -n kogito-operator-system
+NAME                                                  READY   STATUS    RESTARTS   AGE
+kogito-operator-controller-manager-aaaaa-bbbbb   2/2     Running   0          2m2
+----
+--
+
+. Review the logs to ensure that there is no issue with the {PRODUCT} Operator installation:
++
+--
+[source]
+----
+$  oc logs kogito-operator-controller-manager-aaaaa-bbbbb -c manager -n kogito-operator-system
+
+$ oc logs kogito-operator-controller-manager-aaaaa-bbbbb -c kube-rbac-proxy -n kogito-operator-system
+----
+
+If you do not see any issues, that means the installation is successful and {PRODUCT} Operator is ready for use.
+--
+
+==== Installing {PRODUCT} Operator using oc CLI and Operator Lifecycle Manager (OLM)
+
+You can also use the Operator Lifecycle Manager (OLM) to install the {PRODUCT} Operator on OpenShift.
+
+.Prerequisites
+* OpenShift cluster is started and running.
+* https://kubernetes.io/docs/reference/kubectl/overview/[kubectl] and Red Hat OpenShift Container platform (https://access.redhat.com/downloads/content/290/ver=4.9/rhel---8/4.9.7/x86_64/product-software[oc]) is installed on your local machine.
+* Operator Lifecycle Manager (OLM) is running on the OpenShift Cluster. For more information about OLM, see https://docs.openshift.com/container-platform/4.9/operators/understanding/olm/olm-understanding-olm.html[Operator Lifecycle Manager concepts and resources].
+
+.Procedure
+. Create a *Subscription* object and update `startingCSV` with the {PRODUCT} Operator version that you want to install using oc CLI:
++
+--
+.Example of creating a Subscrition object
+[source]
+----
+kogito-subscription.yml
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: kogito-operator
+  namespace: openshift-operators
+spec:
+  channel: 1.x
+  installPlanApproval: Automatic
+  name: kogito-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: kogito-operator.v1.13.0
+
+$ oc create -f kogito-subscription.yml
+----
+
+This makes the {PRODUCT} Operator globally available in the OpenShift cluster.
+--
+
+. Run the following command to verify the health of installed operator:
++
+--
+[source]
+----
+$ oc describe sub kogito-operator -n openshift-operators
+----
+
+In the command output, check the *Conditions* section to verify the status of Operator subscription condition types. The `CatalogSourcesUnhealthy` condition type contains the status as `false` since all available catalog sources are healthy.
+
+If you do not see any issues, that means the installation is successful and {PRODUCT} Operator is ready for use.
+--
+
+
+
+////
 
 [id="proc-kogito-operator-installation-kubernetes-engine_{context}"]
 === Installing the {PRODUCT} Operator on OpenShift Kubernetes Engine
