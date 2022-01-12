@@ -5,394 +5,19 @@ ifdef::context[:parent-context: {context}]
 
 // Purpose statement for the assembly
 [role="_abstract"]
-As a microservices developer or architect, you can use the https://github.com/serverlessworkflow/specification[Serverless Workflow specification] to orchestrate application services in your {PRODUCT} project. The Serverless Workflow specification enables you to define declarative workflow models that orchestrate event-driven, serverless applications. The specification is hosted by the https://www.cncf.io/[Cloud Native Computing Foundation (CNCF)] and is currently a CNCF https://www.cncf.io/sandbox-projects/[Sandbox project] that is progressing to become an https://www.cncf.io/projects/[Incubating project].
-
-For more information about Serverless Workflow, see the https://serverlessworkflow.github.io/[Serverless Workflow] website.
-
-// Modules - concepts, procedures, refs, etc.
-[id="con-serverless-workflow_{context}"]
-== Serverless Workflow orchestration
-
-[role="_abstract"]
-https://github.com/serverlessworkflow/specification/blob/master/specification.md[Serverless Workflow] is a specification for defining declarative workflow models that orchestrate event-driven, serverless applications. The main benefit of a Serverless Workflow strategy is that it provides a clear separation of business logic and orchestration logic in your serverless applications. Developers can focus on solving business logic inside functions and use workflows to define function invocations, specify event behavior, and provide data management for different microservices.
-
-The https://github.com/serverlessworkflow/specification[Serverless Workflow specification] defines a vendor-neutral, platform-independent, and declarative workflow model that you can use across multiple cloud or container platforms. This portability enables you to move your workflow definitions from one cloud or container platform to another with the same execution results.
-
-The specification is hosted by the https://www.cncf.io/[Cloud Native Computing Foundation (CNCF)] and is currently a CNCF https://www.cncf.io/sandbox-projects/[Sandbox project] that is progressing to become an https://www.cncf.io/projects/[Incubating project]. The specification has been created by CNCF community members and individuals from different companies and is a fully open source project (Apache 2.0 license).
+As a microservices developer or architect, you can use the {SERVERLESS_WORKFLOW_REPO_URL_BASE}[Serverless Workflow specification] to orchestrate application services in your {PRODUCT} project. The Serverless Workflow specification enables you to define declarative workflow models that orchestrate event-driven, serverless applications. The specification is hosted by the https://www.cncf.io/[Cloud Native Computing Foundation (CNCF)] and is currently a CNCF https://www.cncf.io/sandbox-projects/[Sandbox project] that is progressing to become an https://www.cncf.io/projects/[Incubating project].
 
 The target users of Serverless Workflow orchestration are mostly developers and architects who want to define logical steps of execution declaratively (no code) for cloud-native services. Although you can orchestrate your services using process diagrams in https://www.omg.org/spec/BPMN/2.0/About-BPMN[Business Process Model and Notation (BPMN)], the Serverless Workflow has less focus on business definition and more focus on function-level steps of execution. Serverless Workflow is also designed specifically for microservice orchestration and therefore has a smaller scope than BPMN. Serverless Workflow also enables you to write workflows in formats (JSON or YAML) that might be better suited for developing and deploying serverless applications in cloud or container environments.
 
 Ultimately, the choice of which specification to use for orchestrating event-driven microservices depends on your environment needs, development goals, and personal preference.
 
-=== Serverless Workflow architecture
+For more information about Serverless Workflow, see the https://serverlessworkflow.github.io/[Serverless Workflow] website.
 
-The https://github.com/serverlessworkflow/specification[Serverless Workflow specification] provides a https://github.com/serverlessworkflow/specification/blob/master/schema/workflow.json[JSON schema] that defines the structure of JSON or YAML workflow definitions. The specification also provides a set of SDKs for https://github.com/serverlessworkflow/sdk-java[Java] and https://github.com/serverlessworkflow/sdk-go[Go] that can help developers get started with the specification to create workflows. The specification provides a set of https://github.com/serverlessworkflow/specification/blob/master/extensions/README.md[workflow extensions], such as key performance indicators (KPIs), that you can use to enhance workflow definitions with additional information. This information can then be used during execution of the workflows to provide additional data, such as metrics for improving workflow performance.
-
-The following diagram illustrates a general Serverless Workflow architecture:
-
-.General Serverless Workflow architecture
-image::kogito/serverless/serverless-workflow-spec-overview.png[Image of Serverless Workflow architecture]
-
-Serverless Workflow focuses on orchestration of event-driven microservices. Although the specification provides a generic markup that you can use for general workflow or pipeline (CI/CD) definitions, its declarative nature is designed for microservice orchestration.
-
-Similar to other specification-based standards for business automation, Serverless Workflow provides a unified core definition for workflows. For example, the following diagram illustrates a single Serverless Workflow definition that is executed on multiple runtime services. Each of these services can then be deployed onto various cloud or container platforms with the same execution results.
-
-.Example Serverless Workflow implementation
-image::kogito/serverless/serverless-workflow-example-implementation.png[Image of example Serverless Workflow implementation ,95%]
-
-[id="con-serverless-workflow-definitions_{context}"]
-=== Serverless Workflow definitions
-
-[role="_abstract"]
-In the https://github.com/serverlessworkflow/specification[Serverless Workflow specification], Serverless Workflow definitions are JSON or YAML files with the extension `.sw.json` or `.sw.yaml` that provide the orchestration details for the relevant application services.
-
-A Serverless Workflow definition file consists of the following basic components:
-
-.Serverless Workflow definition format in JSON
-[source,json]
-----
-{
-  "id": "sampleWorkflow",
-  "version": "1.0",
-  "name": "Sample Workflow",
-  "description": "Sample Workflow",
-  "functions": [],
-  "events": [],
-  "states": []
-}
-----
-
-.Serverless Workflow definition format in YAML
-[source,yaml]
-----
-id: sampleWorkflow
-version: '1.0'
-name: Sample Workflow
-description: Sample Workflow
-functions: []
-events: []
-states: []
-----
-
-The Serverless Workflow `functions`, `events`, and `states` are the core constructs for defining the orchestration behavior for your services. You can use one or all of these three constructs in your workflow definitions.
-
-* `functions`: Function definitions are reusable constructs that you can use to define invocation information about services that need to be invoked during workflow execution. Function definitions can be referenced by workflow `states` (control-logic blocks) whenever a service needs to be invoked.
-* `events`: Event definitions are reusable constructs that you can use to define all consumed and produced events during workflow execution. Serverless Workflow requires https://cloudevents.io/[CloudEvents] format for both consumed and produced events. Event definitions can be referenced by workflow states to determine how a workflow instance is created, what events are needed to continue workflow execution, what events need to be produced during workflow execution, and how multiple events are associated with one another (correlation rules). You can also use event definitions to trigger function or service invocation for services that do not use exposed invocation endpoints and that are only invoked by events.
-* `states`: State definitions enable you to define your workflow states (control-logic blocks) and determine what your workflow should do. State definitions specify details such as how the workflow is started, what data is expected, how the workflow should transition from one state to another given some data or event constraints, error handling, and how and when the workflow execution completes.
-+
-The following diagram illustrates some of the control-flow constructs that you can build with Serverless Workflow state definitions:
-+
-.Example control-flow constructs from state definitions
-image::kogito/serverless/serverless-workflow-states.png[Image of example control-flow constructs from state definitions]
-+
-For more information about supported workflow states, see the https://github.com/serverlessworkflow/specification/blob/master/specification.md#state-definition[Serverless Workflow specification].
-
-For example, the following Serverless Workflow definition performs a customer credit check in a loan application service. In this example, the Serverless Workflow integrates with an external microservice to assess customer credit and approve or deny the customer loan application. After this decision is made, the service emits a CloudEvents message that includes the decision information as part of the payload. The workflow receives this callback event and triggers workflow transitions based on the credit check decision results.
-
-.Example Serverless Workflow definition for credit check (JSON)
-[source,json]
-----
-{
-  "id": "customercreditcheck",
-  "version": "1.0",
-  "name": "Customer Credit Check Workflow",
-  "description": "Perform Customer Credit Check",
-  "functions": [
-    {
-      "name": "callCreditCheckMicroservice",
-      "resource": "creditCheckResource",
-      "type": "service"
-    },
-    {
-      "name": "sendRejectionEmailFunction",
-      "resource": "rejectEmailResource"
-    }
-  ],
-  "events": [
-    {
-      "name": "CreditCheckCompletedEvent",
-      "type": "creditCheckCompleteType",
-      "source": "creditCheckSource",
-      "correlation": [
-        {
-          "contextAttributeName": "customerId"
-        }
-      ]
-    }
-  ],
-  "states": [
-    {
-      "name": "CheckCredit",
-      "type": "callback",
-      "start": {
-        "kind": "default"
-      },
-      "action": {
-        "functionRef": {
-          "refName": "callCreditCheckMicroservice",
-          "parameters": {
-            "customer": "{{ $.customer }}"
-          }
-        }
-      },
-      "eventRef": "CreditCheckCompletedEvent",
-      "timeout": "PT15M",
-      "transition": {
-        "nextState": "EvaluateDecision"
-      },
-      ,
-      "onErrors": [
-        {
-          "error": "Network Connection",
-          "transition": "Reject Application"
-        }
-      ]
-    },
-    {
-      "name": "EvaluateDecision",
-      "type": "switch",
-      "dataConditions": [
-        {
-          "condition": "{{ $.creditCheck[?(@.decision == 'Approved')] }}",
-          "transition": {
-            "nextState": "StartApplication"
-          }
-        },
-        {
-          "condition": "{{ $.creditCheck[?(@.decision == 'Denied')] }}",
-          "transition": {
-            "nextState": "RejectApplication"
-          }
-        }
-      ],
-      "default": {
-        "transition": {
-          "nextState": "RejectApplication"
-        }
-      }
-    },
-    {
-      "name": "StartApplication",
-      "type": "subflow",
-      "workflowId": "startApplicationWorkflowId",
-      "end": {
-        "kind": "default"
-      }
-    },
-    {
-      "name": "RejectApplication",
-      "type": "operation",
-      "actionMode": "sequential",
-      "actions": [
-        {
-          "functionRef": {
-            "refName": "sendRejectionEmailFunction",
-            "parameters": {
-              "applicant": "{{ $.customer }}"
-            }
-          }
-        }
-      ],
-      "end": {
-        "kind": "default"
-      }
-    }
-  ]
-}
-----
-
-.Example Serverless Workflow definition for credit check (YAML)
-[source,yaml]
-----
-id: customercreditcheck
-version: '1.0'
-name: Customer Credit Check Workflow
-description: Perform Customer Credit Check
-functions:
-- name: callCreditCheckMicroservice
-  resource: creditCheckResource
-  type: microservice
-- name: sendRejectionEmailFunction
-  resource: rejectEmailResource
-events:
-- name: CreditCheckCompletedEvent
-  type: creditCheckCompleteType
-  source: creditCheckSource
-  correlation:
-  - contextAttributeName: customerId
-states:
-- name: CheckCredit
-  type: callback
-  start:
-    kind: default
-  action:
-    functionRef:
-      refName: callCreditCheckMicroservice
-      parameters:
-        customer: "{{ $.customer }}"
-  eventRef: CreditCheckCompletedEvent
-  timeout: PT15M
-  transition:
-    nextState: EvaluateDecision
-  onErrors:
-    - error : Network Connection
-      transition:
-        nextState: RejectApplication  
-- name: EvaluateDecision
-  type: switch
-  dataConditions:
-  - condition: "{{ $.creditCheck[?(@.decision == 'Approved')] }}"
-    transition:
-      nextState: StartApplication
-  - condition: "{{ $.creditCheck[?(@.decision == 'Denied')] }}"
-    transition:
-      nextState: RejectApplication
-  default:
-    transition:
-      nextState: RejectApplication
-- name: StartApplication
-  type: subflow
-  workflowId: startApplicationWorkflowId
-  end:
-    kind: default
-- name: RejectApplication
-  type: operation
-  actionMode: sequential
-  actions:
-  - functionRef:
-      refName: sendRejectionEmailFunction
-      parameters:
-        applicant: "{{ $.customer }}"
-  end:
-    kind: default
-----
-
-In this example, the workflow uses the following data input:
-
-.Example data input
-[source,json]
-----
-{
-  "customer": {
-    "id": "customer123",
-    "name": "John Doe",
-    "SSN": 123456,
-    "yearlyIncome": 50000,
-    "address": "123 MyLane, MyCity, MyCountry",
-    "employer": "MyCompany"
-  }
-}
-----
-
-The example workflow receives the following callback events:
-
-.Example callback event for approved credit check
-[source,json]
-----
-{
-  "specversion" : "1.0",
-  "type" : "creditCheckCompleteType",
-  "datacontenttype" : "application/json",
-  ...
-  "data": {
-    "creditCheck": [
-        {
-          "id": "customer123",
-          "score": 700,
-          "decision": "Approved",
-          "reason": "Good credit score"
-        }
-      ]
-  }
-}
-----
-
-.Example callback event for denied credit check
-[source,json]
-----
-{
-  "specversion" : "1.0",
-  "type" : "creditCheckCompleteType",
-  "datacontenttype" : "application/json",
-  ...
-  "data": {
-    "creditCheck": [
-        {
-          "id": "customer123",
-          "score": 580,
-          "decision": "Denied",
-          "reason": "Low credit score. Recent late payments"
-        }
-      ]
-  }
-}
-----
-
-For more Serverless Workflow definition examples, see the https://github.com/serverlessworkflow/specification/blob/master/examples/examples.md[Serverless Workflow specification].
-
-[id="ref-serverless-workflow-use-cases_{context}"]
-=== Serverless Workflow use cases
-
-[role="_abstract"]
-Use cases for the https://github.com/serverlessworkflow/specification[Serverless Workflow specification] vary widely and depend on the reference implementations and the ecosystem available during workflow execution, such as available functions, services, and events.
-
-The following scenarios illustrate example use cases for Serverless Workflow orchestration with microservices. For more Serverless Workflow use cases, see the https://github.com/serverlessworkflow/specification/tree/master/usecases[Serverless Workflow specification].
-
-Payment processing::
-+
---
-Servlerless Workflow is ideal for coordinating session-based applications, such as e-commerce sites. You can
-use Serverless Workflow to coordinate all steps of the checkout process, and even enable users to take a photo of their credit card instead of having to type in the numbers and information.
-
-.Serverless Workflow orchestration for payment processing
-image::kogito/serverless/serverless-workflow-usecase-app-payment.png[Image of Serverless Workflow orchestration for payment processing]
---
-
-Online vehicle auction::
-+
---
-You can use Serverless Workflow to coordinate all steps of an online vehicle auction, such as the following aspects of the orchestration:
-
-* Authentication of users making bids
-* Communication with bidding and inventory services
-* Decisions to start and end the auction under certain conditions
-
-.Serverless Workflow orchestration for online vehicle auction
-image::kogito/serverless/serverless-workflow-usecase-vehicle-auction.png[Image of Serverless Workflow orchestration for online vehicle auction]
---
-
-Data analysis::
-+
---
-You can use Serverless Workflow to coordinate data analysis, such as for marketing and sales information. Analysis can be scheduled on a timely basis to trigger workflow coordination of different extract, transform, load (ETL) services.
-
-.Serverless Workflow orchestration for data analysis
-image::kogito/serverless/serverless-workflow-usecase-data-analysis.png[Image of Serverless Workflow orchestration for data analysis]
---
-
-Error notifications::
-+
---
-You can design Serverless Workflow definitions that trigger notifications about the success or failure of the workflow orchestration. In conjunction with available messaging services, you can notify developers on different platforms of any failures, including error information and the exact point in the execution where the failure occurred. You can also log the workflow execution status to cloud storage services for further analysis.
-
-.Serverless Workflow orchestration for error notifications
-image::kogito/serverless/serverless-workflow-usecase-error-notifications.png[Image of Serverless Workflow orchestration for error notifications]
---
-
-Continuous integration and continuous deployment (CI/CD)::
-+
---
-Serverless Workflow can help you build efficient continuous integration and continuous deployment (CI/CD) solutions. Code check-ins can trigger website builds and automatic redeploys. Pull requests can trigger automated tests that ensure the code is well-tested before human reviews.
-
-.Serverless Workflow orchestration for CI/CD
-image::kogito/serverless/serverless-workflow-usecase-continuous-integration.png[Image of Serverless Workflow orchestration for CI/CD]
---
+NOTE: {PRODUCT} {PRODUCT_VERSION} implements version {SERVERLESS_WORKFLOW_REPO_URL_VERSION}/specification.md[{SERVERLESS_WORKFLOW_VERSION}] of the Serverless Workflow specification.
+You can find the current implementation status https://github.com/kiegroup/kogito-runtimes/tree/{PRODUCT_VERSION}.x/kogito-serverless-workflow#current-status[here].
 
 [id="con-serverless-workflow-in-kogito_{context}"]
 == Serverless Workflow orchestration in {PRODUCT}
-
-[role="_abstract"]
-{PRODUCT} provides the runtime implementation that supports Serverless Workflow, including both JSON and YAML formats, in compliance with the https://github.com/serverlessworkflow/specification[Serverless Workflow specification].
 
 You can use Serverless Workflow definition files in your {PRODUCT} project to define your domain-specific orchestration services. Your Serverless Workflow files can be in JSON or YAML format with the extension `.sw.json` or `.sw.yaml`.
 
@@ -401,7 +26,7 @@ The following diagram illustrates Serverless Workflow orchestration in {PRODUCT}
 .Serverless Workflow orchestration in {PRODUCT}
 image::kogito/serverless/serverless-workflow-kogito.png[Image of Serverless Workflow orchestration in Kogito]
 
-=== Serverless Workflow example in {PRODUCT}
+== Serverless Workflow example in {PRODUCT}
 
 The following example is a real-world Serverless Workflow scenario in {PRODUCT} that demonstrates how you can use Serverless Workflow definitions to orchestrate your {PRODUCT} services. In this scenario, an order service uses Serverless Workflow to process orders from multiple sources and approve or deny orders.
 
@@ -559,13 +184,13 @@ For more {PRODUCT} examples that use Serverless Workflow, see the following exam
 * https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-events-quarkus[`serverless-workflow-events-quarkus`]: A Serverless Workflow service for processing job applicant approvals and that showcases event-driven services
 * https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-greeting-quarkus[`serverless-workflow-greeting-quarkus`] and https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-greeting-springboot[`serverless-workflow-greeting-springboot`]: A Serverless Workflow greeting service with both JSON and YAML workflow definitions
 * https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-service-calls-quarkus[`serverless-workflow-service-calls-quarkus`] and https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-service-calls-springboot[`serverless-workflow-service-calls-springboot`]: A Serverless Workflow service for returning country information
-* https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-github-showcase[`serverless-workflow-github-showcase`]: In this example, a Github bot application is deployed, which reacts upon a new PR being opened in a given GitHub project. The bot is implemented using a service and event orchestration approach with {PRODUCT} implementation of the Serverless Workflow specification.
+* https://github.com/kiegroup/kogito-examples/tree/stable/serverless-workflow-github-showcase[`serverless-workflow-github-showcase`]: In this example, a GitHub bot application is deployed, which reacts upon a new PR being opened in a given GitHub project. The bot is implemented using a service and event orchestration approach with {PRODUCT} implementation of the Serverless Workflow specification.
 
 [id="proc-serverless-workflow-definitions_{context}"]
-== Creating and editing Serverless Workflow definitions in {PRODUCT}
+=== Creating and editing Serverless Workflow definitions in {PRODUCT}
 
 [role="_abstract"]
-You can use https://github.com/serverlessworkflow/specification/blob/master/specification.md[Serverless Workflow] definition files in your {PRODUCT} project to define your domain-specific orchestration services. Your Serverless Workflow definition files can be in JSON or YAML format with the extension `.sw.json` or `.sw.yaml`.
+You can use {SERVERLESS_WORKFLOW_REPO_URL_BASE}/blob/master/specification.md[Serverless Workflow] definition files in your {PRODUCT} project to define your domain-specific orchestration services. Your Serverless Workflow definition files can be in JSON or YAML format with the extension `.sw.json` or `.sw.yaml`.
 
 .Prerequisites
 * You have created a {PRODUCT} project and have included any Java objects or other business assets required for your Serverless Workflow service. For information about creating a project, see {URL_CREATING_RUNNING}#chap-kogito-creating-running[_{CREATING_RUNNING}_].
@@ -605,9 +230,7 @@ states: []
 
 The Serverless Workflow `functions`, `events`, and `states` are the core constructs for defining the orchestration behavior for your services. You can use one or all of these three constructs in your workflow definitions.
 
-* `functions`: Function definitions are reusable constructs that you can use to define invocation information about services that need to be invoked during workflow execution. Function definitions can be referenced by workflow `states` (control-logic blocks) whenever a service needs to be invoked.
-* `events`: Event definitions are reusable constructs that you can use to define all consumed and produced events during workflow execution. Serverless Workflow requires https://cloudevents.io/[CloudEvents] format for both consumed and produced events. Event definitions can be referenced by workflow states to determine how a workflow instance is created, what events are needed to continue workflow execution, what events need to be produced during workflow execution, and how multiple events are associated with one another (correlation rules). You can also use event definitions to trigger function or service invocation for services that do not use exposed invocation endpoints and that are only invoked by events.
-* `states`: State definitions enable you to define your workflow states (control-logic blocks) and determine what your workflow should do. State definitions specify details such as how the workflow is started, what data is expected, how the workflow should transition from one state to another given some data or event constraints, and how and when the workflow execution completes.
+NOTE: You can find more information about each of these constructs in the {SERVERLESS_WORKFLOW_REPO_URL_BASE}/blob/{SERVERLESS_WORKFLOW_VERSION_IN_REPO_URL}/specification.md#workflow-model[Workflow Model] section of the specification.
 
 For example, the following Serverless Workflow definition performs a customer credit check in a loan application service to approve or deny the customer loan application:
 
@@ -778,7 +401,7 @@ states:
     kind: default
 ----
 
-For more Serverless Workflow definition examples in {PRODUCT}, see xref:con-serverless-workflow-in-kogito_kogito-orchestrating-serverless[].
+For more Serverless Workflow definition examples in {PRODUCT}, see the https://github.com/kiegroup/kogito-examples[kogito-examples] repository in GitHub.
 --
 . Continue adding and defining any remaining components for your workflow definition files and save the completed files.
 
@@ -805,11 +428,12 @@ ifndef::parent-context[:!context:]
 [id="con-serverless-workflow-error-handling_{context}"]
 == Error handling in Serverless Workflow
 
-You can handle the exceptions that are thrown by `operation` nodes as described in the https://github.com/serverlessworkflow/specification/blob/main/specification.md#Workflow-Error-Handling[Serverless Workflow Specification].
+You can handle the exceptions that are thrown by `operation` nodes as described in the {SERVERLESS_WORKFLOW_REPO_URL_BASE}/blob/{SERVERLESS_WORKFLOW_VERSION_IN_REPO_URL}/specification.md#Workflow-Error-Handling[Serverless Workflow Specification].
 
 NOTE: You need to specify the qualified name of the exception that might be thrown by the `operation` in the `code` field of the error definition.
 
 The following is an example that invokes an `EvenService`, which is throwing `IllegalArgumentException` if the number in the workflow model is odd.
+[source,json]
 ----
 {
   "id": "error",
