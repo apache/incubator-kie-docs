@@ -1257,6 +1257,7 @@ For {PRODUCT} persistence, you can use one of the following supported persistenc
 * https://www.mongodb.com/[*MongoDB*]: Persists data using a document-based format
 * https://kafka.apache.org/documentation/streams/[*Kafka Streams*]: (Quarkus only) Persists data in Kafka clusters
 * https://www.postgresql.org/[*PostgreSQL*]: Persists data in PostgreSQL
+* https://www.oracle.com/database/[*Oracle*]: Persists data in Oracle
 
 Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
 
@@ -1868,7 +1869,7 @@ You can enable PostgreSQL persistence for your {PRODUCT} services using JDBC dri
 . Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
 +
 --
-Replace the server host, port, and database information according to your MongoDB Server installation. By default, the database is named `kogito`.
+Replace the server host, port, and database information according to your PostgreSQL Server installation. By default, the database is named `kogito`.
 
 .On Quarkus
 [source]
@@ -1896,6 +1897,88 @@ For an example {PRODUCT} service with PostgreSQL persistence using reactive and 
 * https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-springboot[`process-postgresql-persistence-springboot`]: Example on SpringBoot
 
 // end::proc-postgresql-persistence-enabling[]
+
+// tag::proc-oracle-persistence-enabling[]
+[id="proc-oracle-persistence-enabling_{context}"]
+=== Oracle persistence for {PRODUCT} services
+
+[role="_abstract"]
+As an alternative to using Infinispan, MongoDB or PostgreSQL for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.oracle.com/database/[Oracle Database].
+For {PRODUCT} persistence with Oracle, you must have Oracle Database installed and running to enable persistence.
+
+==== Enabling Oracle persistence using JDBC driver for {PRODUCT} services
+
+You can enable Oracle persistence for your {PRODUCT} services using JDBC driver.
+
+.Prerequisites
+* https://www.oracle.com/database/[Oracle Database] installed.
+
+.Procedure
+. Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
++
+--
+.On Quarkus
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-persistence-jdbc</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jdbc-oracle</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-agroal</artifactId>
+</dependency>
+----
+
+.On Spring Boot
+[source,xml,subs="attributes+,+quotes"]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-persistence-jdbc</artifactId>
+  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
+</dependency>
+<dependency>
+  <groupId>com.oracle.database.jdbc</groupId>
+  <artifactId>ojdbc8</artifactId>
+</dependency>
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-jdbc</artifactId>
+</dependency>
+----
+--
+. Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure and to connect to the Oracle database.
++
+--
+Replace the server host, port, and database information according to your Oracle Server installation. By default, the database is named `kogito`.
+
+.On Quarkus
+[source]
+------
+kogito.persistence.type=oracle
+quarkus.datasource.db-kind=oracle
+quarkus.datasource.username=kogito
+quarkus.datasource.password=kogito
+quarkus.datasource.jdbc.url=jdbc:oracle://oracle:1521/kogito
+------
+
+.On Spring Boot
+[source]
+------
+kogito.persistence.type=oracle
+spring.datasource.username=kogito
+spring.datasource.password=kogito
+spring.datasource.url=jdbc:oracle://oracle:1521/kogito
+------
+--
+
+// end::proc-oracle-persistence-enabling[]
 
 [id="con-data-index-service_{context}"]
 == {PRODUCT} Data Index Service
@@ -1935,6 +2018,7 @@ The indexing functionality in the Data Index Service is provided by choosing one
 * https://infinispan.org/[Infinispan]
 * https://www.mongodb.com/[MongoDB]
 * https://www.postgresql.org/[PostgreSQL]
+* https://www.oracle.com/database/[Oracle]
 
 When using Infinispan, https://lucene.apache.org/[Apache Lucene] provides indexing and a protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema and generated marshallers manage the communication between the Data Index Service and Infinispan.
 
@@ -2985,6 +3069,38 @@ For more information about PostgreSQL configuration on Quarkus, see https://quar
 . After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
 
 NOTE: Data Index Service with PostgreSQL does not support indexing domain-specific data. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`, and `Jobs`.
+
+[id="proc-data-index-service-oracle_{context}"]
+=== Enabling Oracle persistence for the {PRODUCT} Data Index Service
+
+[role="_abstract"]
+You can configure the {PRODUCT} Data Index Service to use https://www.oracle.com/database/[Oracle] persistence storage if needed.
+
+.Prerequisites
+* Oracle Database (?? or later) is installed and running.
+
+.Procedure
+. Go to the https://repository.jboss.org/org/kie/kogito/data-index-service-oracle/[`data-index-service-oracle`] artifacts page, select the latest release of the Data Index Service, and download the `data-index-service-oracle-__VERSION__-runner.jar` file to a local directory.
+. In a command terminal, navigate to the directory location of the downloaded `data-index-service-oracle-__VERSION__-runner.jar` file and enter the following command to run the Data Index Service with the required Oracle connection information:
++
+--
+.Running the Data Index Service with Oracle connection information
+[source,subs="+quotes"]
+----
+$ java  \
+  -Dquarkus.datasource.db-kind=oracle
+  -Dquarkus.datasource.jdbc.url=__ORACLE_SERVER_JDBC_URL__ \
+  -Dquarkus.datasource.username=__ORACLE_USERNAME__ \
+  -Dquarkus.datasource.password=__ORACLE_PASSWORD__ \
+  -jar data-index-service-oracle-__VERSION__-runner.jar
+----
+
+For more information about Oracle configuration on Quarkus, see https://quarkus.io/guides/datasource#jdbc-configuration[JDBC Configuration Reference] in the Quarkus documentation.
+--
+. After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
+
+NOTE: Data Index Service with Oracle does not support indexing domain-specific data. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`, and `Jobs`.
+
 
 [id="con-data-index-dev-service_{context}"]
 === Quarkus Dev Service for {PRODUCT} Data Index Service
