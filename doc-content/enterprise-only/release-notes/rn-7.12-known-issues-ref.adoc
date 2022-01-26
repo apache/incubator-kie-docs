@@ -37,6 +37,8 @@ Workaround: None.
 
 endif::PAM[]
 
+////
+
 == {KOGITO}
 
 .Unable to run the tests for {KOGITO} examples with scenario simulations [https://issues.redhat.com/browse/RHPAM-4068[RHPAM-4068]]
@@ -57,6 +59,7 @@ Steps to reproduce:
 
 Workaround: Override the transitive JUnit dependency of `kogito-scenario-simulation` file and use the version `4.13.1.redhat-00001`.
 
+////
 
 == {KIE_SERVER}
 
@@ -67,7 +70,7 @@ Issue: When you use the {KIE_SERVER} Swagger extension on WebSphere, {KIE_SERVER
 Steps to reproduce:
 
 . Start {KIE_SERVER} with basic configuration on WebSphere.
-. Try to access the `http://localhost:9080/kie-server/services/rest/server` URL.
+. Try to access the `\http://localhost:9080/kie-server/services/rest/server` URL.
 +
 You receive the HTTP 500 error.
 
@@ -81,7 +84,7 @@ Issue: You can adjust the DMN connections shape by adding control point to it. H
 
 Steps to reproduce for {KOGITO}:
 
-. Enter https://sandbox.kie.org/#/ in a browser.
+. Enter `\http://sandbox.kie.org/#/` in a browser.
 . Import the `association.dmn` file attached in the [https://issues.redhat.com/browse/RHDM-1856[RHDM-1856]] issue.
 . In the *Import* field, upload the `association.dmn` file.
 . Run the project.
@@ -91,5 +94,49 @@ Steps to reproduce for {CENTRAL}:
 . Open an existing project or create a new one.
 . Import the `association.dmn` file attached in the [https://issues.redhat.com/browse/RHDM-1856[RHDM-1856]] issue.
 . Build the project and observe the results.
+
+Workaround: None.
+
+== {OPENSHIFT}
+
+.When you set the default role variable as `AUTH_LDAP_DEFAULT_ROLE`, {OPENSHIFT} images ignore the LDAP roles [https://issues.redhat.com/browse/RHPAM-4132[RHPAM-4132]]
+
+Issue: For {OPENSHIFT} images, when you set the LDAP default roles as `AUTH_LDAP_DEFAULT_ROLE`, all the roles from LDAP are ignored and you can not log in to the {CENTRAL} application. But when you do not set the default roles, all the roles from the LDAP are used correctly and you can log in to the {CENTRAL} application.
+
+Steps to reproduce for operator on {OPENSHIFT} 4.x:
+
+. Create a KieApp application and set the default role as follows:
++
+[source]
+----
+spec:
+  auth:
+    ldap:
+      ...
+      defaultRole: guest
+  ...
+----
+. Log in to the {CENTRAL}.
+
+Steps to reproduce for templates on {OPENSHIFT} 3.11:
+
+. Create a template.
+. Set the `AUTH_LDAP_DEFAULT_ROLE` environment variable as `AUTH_LDAP_DEFAULT_ROLE = "guest"`.
+. Log in to the {CENTRAL}.
+
+Workaround for operator on {OPENSHIFT} 4.x: Remove the set `defaultRole: guest` from your KieApp application.
+
+Workaround for templates on {OPENSHIFT} 3.11: Do not set the environment variable as `AUTH_LDAP_DEFAULT_ROLE = "guest"`.
+
+.When the KieApp instance containing one server configuration to pull the image from a given registry, the operator fails to deploy the server and you receive errors [https://issues.redhat.com/browse/RHPAM-3787[RHPAM-3787]]
+
+Issue: When deploying {PRODUCT} on {OPENSHIFT} using the operator, you can not use a docker image for the {KIE_SERVER} by enabling the *Set KIE Server Image* option and setting the *Kind* value to `DockerImage`. To use a docker image for the {KIE_SERVER}, you must set the image Context, name, and image tag fields from the from the custom registry.
+
+Steps to reproduce:
+
+. Install the operator on {OPENSHIFT} platform.
+. Configure one KieApp instance using `DockerImage` image as *Kind* value and provide the image name including the registry name.
+. Click *Set KIE Server image*.
+. Change the *Kind* value to `DockerImage`, and then provide the image name including the registry name, but without the version tag
 
 Workaround: None.
