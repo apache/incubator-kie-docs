@@ -136,7 +136,7 @@ To orchestrate these services in this way, the example uses the following `order
           }
         }
       ],
-      "default": {
+      "defaultCondition": {
         "nextState": "OrderManagerApproval"
       }
     },
@@ -289,7 +289,6 @@ For example, the following Serverless Workflow definition performs a customer cr
         }
       },
       "eventRef": "CreditCheckCompletedEvent",
-      "timeout": "PT15M",
       "transition": {
         "nextState": "EvaluateDecision"
       }
@@ -311,7 +310,7 @@ For example, the following Serverless Workflow definition performs a customer cr
           }
         }
       ],
-      "default": {
+      "defaultCondition": {
         "transition": {
           "nextState": "RejectApplication"
         }
@@ -319,8 +318,12 @@ For example, the following Serverless Workflow definition performs a customer cr
     },
     {
       "name": "StartApplication",
-      "type": "subflow",
-      "workflowId": "startApplicationWorkflowId",
+      "type": "operation",
+      "actions": [
+        {
+          "subFlowRef": "startApplicationWorkflowId"
+        }
+      ],
       "end": {
         "kind": "default"
       }
@@ -377,7 +380,6 @@ states:
       parameters:
         customer: "{{ $.customer }}"
   eventRef: CreditCheckCompletedEvent
-  timeout: PT15M
   transition:
     nextState: EvaluateDecision
 - name: EvaluateDecision
@@ -389,12 +391,13 @@ states:
   - condition: "{{ $.creditCheck[?(@.decision == 'Denied')] }}"
     transition:
       nextState: RejectApplication
-  default:
+  defaultCondition:
     transition:
       nextState: RejectApplication
 - name: StartApplication
-  type: subflow
-  workflowId: startApplicationWorkflowId
+  type: operation
+  actions:
+    - subFlowRef: startApplicationWorkflowId
   end:
     kind: default
 - name: RejectApplication
@@ -440,89 +443,4 @@ You can handle the exceptions that are thrown by `operation` nodes as described 
 
 NOTE: You need to specify the qualified name of the exception that might be thrown by the `operation` in the `code` field of the error definition.
 
-The following is an example that invokes an `EvenService`, which is throwing `IllegalArgumentException` if the number in the workflow model is odd.
-[source,json]
-----
-{
-  "id": "error",
-  "version": "1.0",
-  "name": "Workflow Error example",
-  "description": "An example of how to handle an exception thrown by a service",
-  "start": "checkEven",
-  "functions": [
-    {
-      "name": "isEven",
-      "metadata": {
-        "interface": "org.kie.kogito.examples.EvenService",
-        "operation": "isEven",
-        "type": "service"
-      }
-    },
-    {
-      "name": "printMessage",
-      "metadata": {
-        "type": "sysout"
-      }
-    }
-  ],
-  "states": [
-    {
-      "name": "checkEven",
-      "type": "operation",
-      "actions": [
-        {
-          "name": "checkEvenAction",
-          "functionRef": {
-            "refName": "isEven",
-            "arguments": {
-              "number": "$.number"
-            }
-          }
-        }
-      ],
-      "transition": "even",
-      "onErrors": [
-        {
-          "error": "odd number",
-          "code": "java.lang.IllegalArgumentException",
-          "transition": "odd"
-        }
-      ]
-    },
-    {
-      "name": "even",
-      "type": "inject",
-      "data": {
-        "numberType": "even"
-      },
-      "transition": "finish"
-    },
-    {
-      "name": "odd",
-      "type": "inject",
-      "data": {
-        "numberType": "odd"
-      },
-      "transition": "finish"
-    },
-    {
-      "name": "finish",
-      "type": "operation",
-      "actions": [
-        {
-          "name": "printAction",
-          "functionRef": {
-            "refName": "printMessage",
-            "arguments": {
-              "message": "$.numberType"
-            }
-          }
-        }
-      ],
-      "end": {
-        "terminate": "true"
-      }
-    }
-  ]
-}
-----
+https://github.com/kiegroup/kogito-examples/tree/stable/kogito-quarkus-examples/serverless-workflow-error-quarkus[serverless-workflow-error-quarkus] is an example application that invokes an `EvenService`, which is throwing `IllegalArgumentException` if the number in the workflow model is odd.
