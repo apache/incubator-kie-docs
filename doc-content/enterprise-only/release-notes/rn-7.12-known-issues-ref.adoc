@@ -37,7 +37,7 @@ Workaround: None.
 
 endif::PAM[]
 
-////
+
 
 == {KOGITO}
 
@@ -59,7 +59,7 @@ Steps to reproduce:
 
 Workaround: Override the transitive JUnit dependency of `kogito-scenario-simulation` file and use the version `4.13.1.redhat-00001`.
 
-////
+
 
 == {KIE_SERVER}
 
@@ -140,3 +140,66 @@ Steps to reproduce:
 . Change the *Kind* value to `DockerImage`, and then provide the image name including the registry name, but without the version tag
 
 Workaround: None.
+
+.Authorization fails while using the role mapping [https://issues.redhat.com/browse/RHPAM-4146[RHPAM-4146]]
+
+Issue: When you set the `roleMapper`, authorization fails and it is not specified in the `KIELdapSecurityDomain` security-domain.
+
+Workaround:
+
+. Create the `workaround.cli` script as follows:
++
+[source]
+----
+embed-server --std-out=echo --server-config=standalone-openshift.xml
+batch
+
+/subsystem=elytron/security-domain=KIELdapSecurityDomain:write-attribute(name=realms[0].role-mapper, value=kie-custom-role-mapper)
+
+run-batch
+quit
+----
+
+. Create a empty file as `delayedpostconfigure.sh`.
+. Create the `postconfigure.sh` file and add the following content:
++
+[source]
+----
+echo "trying to execute /opt/eap/bin/jboss-cli.sh --file=/opt/eap/extensions/workaround.cli "
+/opt/eap/bin/jboss-cli.sh --file=/opt/eap/extensions/workaround.cli
+echo "END - cli script executed"
+----
+
+. Create the `config-map` and add the following content:
++
+[source]
+----
+oc create configmap postconfigure \
+  --from-file=workaround.cli=workaround.cli \
+  --from-file=delayedpostconfigure.sh=delayedpostconfigure.sh \
+  --from-file=postconfigure.sh=postconfigure.sh
+----
+
+. To mount the `config-map`, follow the steps mentioned in https://github.com/jboss-container-images/rhpam-7-openshift-image/tree/main/quickstarts/post-configure-example#operator-method[Operator method].
+
+You will receive the following message in the logs during {EAP} startup:
+
+[source]
+----
+trying to execute /opt/eap/bin/jboss-cli.sh --file=/opt/eap/extensions/workaround.cli
+19:15:55,744 INFO  [org.jboss.modules] (CLI command executor) JBoss Modules version 1.11.0.Final-redhat-00001
+...
+The batch executed successfully
+process-state: reload-required
+19:16:04,757 INFO  [org.jboss.as] (MSC service thread 1-1) WFLYSRV0050: JBoss EAP 7.4.1.GA (WildFly Core 15.0.4.Final-redhat-00001) stopped in 18ms
+END - cli script executed
+----
+
+The security domain is also updated as follows:
+
+[source]
+----
+<security-domain name="KIELdapSecurityDomain" default-realm="KIELdapRealm" permission-mapper="default-permission-mapper">
+          <realm name="KIELdapRealm" role-decoder="from-roles-attribute" role-mapper="kie-custom-role-mapper"/>
+        </security-domain>
+----
