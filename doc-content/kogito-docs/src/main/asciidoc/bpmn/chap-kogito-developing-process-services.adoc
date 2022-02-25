@@ -3775,9 +3775,75 @@ $ java  \
 In an OpenShift environment, you can use the {PRODUCT} command-line interface (CLI) or the OpenShift web console to add the Management Console to your {PRODUCT} infrastructure:
 
 .Adding the Management Console to your OpenShift infrastructure using the {PRODUCT} CLI
+
+The Management Console is requiring a Keycloak instance for the authentication. If you need to setup a Keycloak instance in your OpenShift cluster you can use to https://www.keycloak.org/getting-started/getting-started-operator-openshift[Keycloak Operator].
+
+After this you have to configure on your Keycloak realm for the Management Console. You can refer to https://raw.githubusercontent.com/kiegroup/kogito-examples/398b48244cffcec7f93bf029974ddeae025640a5/kogito-quarkus-examples/process-usertasks-quarkus-with-console/docker-compose/keycloak/kogito-realm.json[this example] if you don't know how to do it.
+
+Then you need to:
+
+- Create a KogitoInfra resource for the Keycloak configuration based on:
+
 [source,subs="+quotes"]
 ----
-$ kogito install mgmt-console -p __PROJECT_NAME__
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoInfra
+metadata:
+ name: kogito-keycloak-infra
+spec:
+ resource:
+  envs:
+   - name: -Dkogito.consoles.keycloak.config.realm
+     value: <keycloak_realm>
+   - name: -Dkogito.consoles.keycloak.config.url
+     value: <keycloak_url>
+   - name: -Dkogito.consoles.keycloak.config.client-id
+     value: <keyloak_console_client_id>
+   - name: -Dkogito.consoles.keycloak.config.health-check-url
+     value: <keycloak_health_check_url>
+   - name: -Dkogito.consoles.keycloak.config.disable-health-check
+     value: <keyloak_disable_health_check_flag>
+   - name: -Dkogito.consoles.keycloak.config.update-token-validity
+     value: <keycloak_update_token_validity>
+   - name: -Dkogito.svg.folder.path
+     value: /home/kogito/data/svg
+
+----
+
+Please remember to replace the placeholders in the above example (i.e. __keycloak_realm__, __keycloak_url__, __keyloak_console_client_id__, __keycloak_health_check_url__, __keyloak_disable_health_check_flag__ and __keycloak_update_token_validity__) with the right values based on your Keycloak setup (https://docs.jboss.org/kogito/release/latest/html_single/#proc-task-console-security_kogito-developing-process-services[here] you can find the meaning of each Keycloak property and its default value!).
+
+[source,subs="+quotes"]
+----
+$ oc apply -f kogito-keycloak-infra.yaml -p __PROJECT_NAME__
+----
+
+- Install the Management Console KogitoSupportingService with this command with the Kogito CLI:
+
+[source,subs="+quotes"]
+----
+$ kogito install mgmt-console -p __PROJECT_NAME__ --infra kogito-keycloak-infra
+----
+
+or if you don't want to use the Kogito CLI you can use this resource:
+
+[source,subs="+quotes"]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoSupportingService
+metadata:
+ name: management-console
+spec:
+ serviceType: MgmtConsole
+ replicas: 1
+ infra:
+  - kogito-keycloak-infra
+----
+
+that you have to apply using the command:
+
+[source,subs="+quotes"]
+----
+$ oc apply -f management-console-supportingservice.yaml -p __PROJECT_NAME__
 ----
 
 .{PRODUCT} Management Console instance on OpenShift web console
