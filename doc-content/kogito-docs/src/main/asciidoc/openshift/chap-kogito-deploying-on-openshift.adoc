@@ -1230,12 +1230,178 @@ On Spring Boot, `spring.data.mongodb.uri` does not work simultaneously with host
 * {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
 * https://github.com/mongodb/mongodb-kubernetes-operator/blob/master/README.md[MongoDB Operator]
 
-////
+
 [id="proc-custom-kogito-service-integration-knative-eventing_{context}"]
 === Integrating a custom {PRODUCT} service with Knative Eventing
 
-<Start here>
+Knative Eventing is a serverless platform you can use to create event producers and consumers for your applications. For more information about Knative Eventing, see https://knative.dev/docs/eventing/[Knative Eventing] and the https://github.com/knative/docs[Knative docs repository] on GitHub.
 
+When you integrate a custom {PRODUCT} service with Knative Eventing you can create a Knative broker, bind that Knative broker with the {PRODUCT} Operator, and include a cross-reference link for Knative Eventing.
+
+Knative events conform to the CloudEvents specification. For more information, see https://cloudevents.io/[CloudEvents].
+
+You can use the Knative Eventing add-on to include your {PRODUCT} Services in the Knative Eventing platform. For more information about the Knative Eventing add-on, see https://github.com/kiegroup/kogito-runtimes/tree/main/addons/common/knative/eventing[Knative Eventing add-on] on GitHub.
+
+To use all features, in addition to those available as part of the {PRODUCT} Knative Eventing Source Operator, you must integrate the custom {PRODUCT} service with Knative Eventing.
+
+==== Creating a Knative Broker
+
+Knative brokers and triggers provide an "event mesh" model that enables an event producer to deliver events to a broker. The broker then uniformly distributes the events to consumers by using triggers. For more information about brokers, see https://knative.dev/docs/eventing/broker/[Broker - Knative]. For more information about triggers, see https://knative.dev/docs/eventing/broker/triggers/[Triggers - Knative].
+
+Consumers can register different types of events without needing to negotiate directly with event producers. You can use specific filter conditions to optimize event routing on the underlying platform.
+
+To integrate your custom {PRODUCT} Service with Knative Eventing you need at least one broker that collects the events produced by your custom {PRODUCT} Service. You can create a broker by applying a YAML file by using `kubectl`.
+
+.Prerequisites
+
+* Administrative privileges are available in the target cluster.
+* Knative Eventing is installed or the {OPENSHIFT} Serverless Platform is available.
++
+For more information about installing Knative Eventing, see https://knative.dev/docs/install/[About installing Knative]. For more information about {OPENSHIFT} Serverless, see https://www.openshift.com/learn/topics/serverless[{OPENSHIFT} Serverless]
+
+.Procedure
+
+. Create a `<filename.yaml>` YAML file containing the following template:
++
+[source]
+----
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: <broker-name>
+----
++
+The YAML file creates a broker with the desired name in the current namespace. For more information about configuring broker options using YAML, see https://knative.dev/docs/eventing/broker/example-mtbroker/[Broker configuration example - Knative].
+
+. To apply the YAML file, enter the following command:
++
+[source]
+----
+kubectl apply -f <filename>.yaml>
+----
++
+Where `<filename>` is the name of the file you created in the previous step.
+
+. Optional: To verify that the broker is working correctly, enter the following command:
++
+[source]
+----
+kubectl -n <namespace> get broker <broker-name>
+----
++
+The information about your broker is displayed:
++
+If the broker is working correctly, it shows a *READY* status of `True`, for example:
++
+[cols="15%,15%,15%,40%,15%", options="header"]
+|===
+|NAME
+|READY
+|REASON
+|URL
+|AGE
+
+|<broker-name>
+|True
+|
+|http://broker-ingress.knative-eventing.svc.cluster.local/event-example/<broker-name>
+|1m
+|===
++
+If the *READY* status is `False`, wait a few moments and then run the command again.
+
+==== Binding Knative Broker with {PRODUCT} operator
+
+. Create your {PRODUCT} project locally. For more information about Serverless Workflow, see https://docs.jboss.org/kogito/release/latest/html_single/#chap-kogito-orchestrating-serverless[Orchestrating microservices with Serverless Workflow in Kogito].
+. Build the image with your project. For an example project, see https://github.com/kiegroup/kogito-examples/tree/stable/kogito-quarkus-examples/process-knative-quickstart-quarkus[Process with Knative Eventing] on GitHub.
+. Deploy the project as either a Knative Service or a regular deployment.
+. Create the {PRODUCT} source CR, for example:
++
+[source]
+----
+apiVersion: kogito.knative.dev/v1alpha1
+kind: KogitoSource
+metadata:
+  name: my-kogito-source
+spec:
+  subject:
+    apiVesion: serving.knative.dev/v1
+    kind: Service
+    # Put the name of your custom Kogito Service [3]
+    name: my-kogito-service
+  sink:
+    ref:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      name: <broker-name>
+----
+. To deploy your source, enter the following command:
++
+[source]
+----
+kubectl apply -f <path to the source>.yaml
+----
+
+The custom {KOGITO} Service is now configured to produce cloud events that will be collected by the broker.
+
+If you want the custom {KOGITO} Service to consume Knative Events you can use Knative triggers. For more information, see https://docs.jboss.org/kogito/release/latest/html_single/#con-knative-eventing_kogito-developing-process-services[Knative Eventing in Kogito Services].
+
+==== Using the {KOGITO} Knative add-on
+
+You can use the {PRODUCT} add-on instead of manually configuring definitions of the YAML file descriptors for your custom {PRODUCT} service.
+
+To use the {PRODUCT} Knative add-on to generate the needed YAML files for your custom {PRODUCT} service, you add the YAML file to your `pom.xml` configuration file and compile your project using the Knative profile.
+
+https://github.com/kiegroup/kogito-examples/blob/main/kogito-quarkus-examples/serverless-workflow-order-processing/pom.xml#L105-L127[Example ]
+
+.Procedure
+
+. Add the the following example to your `pom.xml` file:
++
+[source]
+----
+<profile>
+  <id>knative</id>
+  <properties>
+    <!-- Shortcuts -->
+    <namespace>default</namespace>
+    <deploy>false</deploy>
+    <!-- Quarkus Knative integration to build and deploy -->
+    <quarkus.kubernetes.namespace>${namespace}</quarkus.kubernetes.namespace>
+    <quarkus.kubernetes.deploy>${deploy}</quarkus.kubernetes.deploy>
+    <quarkus.container-image.build>true</quarkus.container-image.build>
+    <quarkus.profile>knative</quarkus.profile>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-kubernetes</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-container-image-jib</artifactId>
+    </dependency>
+  </dependencies>
+</profile>
+----
++
+For more information, see https://github.com/kiegroup/kogito-examples/blob/main/kogito-quarkus-examples/serverless-workflow-order-processing/pom.xml#L105-L127[pom.xml example] in the _{PRODUCT} examples_ on GitHub.
+
+. To create the `knative.yml` and `kogito.yml` YAML files, enter the following:
++
+[source]
+----
+mvn clean install -Pknative -Dnamespace=<your namespace>
+----
+
+. To deploy the objects from the `knative.yml` and `kogito.yml` YAML files, enter the following command:
++
+[source]
+----
+kubectl apply -f target/kubernetes/knative.yml,target/kubernetes/kogito.yml
+----
+
+////
 [id="ref-kogito-service-integration-troubleshooting_{context}"]
 === Custom {PRODUCT} service integration troubleshooting
 
@@ -1370,7 +1536,7 @@ The `application.properties` data of the `configMap` resource is mounted in a vo
 
 When the `application.properties` data of the `configMap` is changed, a rolling update modifies the deployment and configuration of the Data Index Service.
 
-If your {PRODUCT} project uses the Infinispan or MongoDB Persistence {PRODUCT} Add-On to enable Infinispan or MongoDB persistence explicitly, the {PRODUCT} Operator mounts a volume based on a `configMap` resource created for you during the deployment of the service. This `configMap` resource has the `-protobuf-files` suffix and lists the protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) files that your service generated during build time.
+If your {PRODUCT} project uses the Infinispan or MongoDB Persistence {PRODUCT} add-on to enable Infinispan or MongoDB persistence explicitly, the {PRODUCT} Operator mounts a volume based on a `configMap` resource created for you during the deployment of the service. This `configMap` resource has the `-protobuf-files` suffix and lists the protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) files that your service generated during build time.
 
 .Example `configMap` resource with protobuf files listed
 [source,yaml]
