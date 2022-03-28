@@ -1022,12 +1022,112 @@ $ {PRODUCT_INIT} deploy-service example-quarkus https://github.com/kiegroup/kogi
 == Custom {PRODUCT} service integration options with {PRODUCT} Operator and CLI
 
 <Start here>
+////
 
 [id="proc-custom-kogito-service-integration-infinispan_{context}"]
 === Integrating a custom {PRODUCT} service with Infinispan
 
-<Start here>
-////
+You can integrate a custom {PRODUCT} service with the Infinispan cluster using the following configuration modes:
+
+* Automatic configuration
+* Manual configuration
+
+==== Integrating a custom {PRODUCT} service with Infinispan using automatic configuration mode
+
+In automatic configuration mode the {PRODUCT} operator automatically fetches the relevant Infinispan connection details from the Infinispan custom resource and provides it to the custom {PRODUCT} service.
+
+The Infinispan operator provides operational intelligence and reduces management complexity for deploying Infinispan on Kubernetes and {OPENSHIFT}.
+
+For more information about installing the Infinispan operator and setting up the Infinispan cluster, see the https://infinispan.org/docs/infinispan-operator/main/operator.html[Infinispan operator 2.2 Guide].
+
+KogitoInfra defines the relevant infrastructure component or the third-party operator for the {PRODUCT} service, such as Infinispan and MongoDB for persistence or Apache Kafka for messaging.
+
+.Prerequisites
+
+* Infinispan cluster is configured by using the Infinispan operator.
+
+.Procedure
+
+. Install a KogitoInfra custom resource instance with `spec.resource.name` and `spec.resource.namespace` configurations.
++
+`spec.resource.name` refers to the Infinispan custom resource name and `spec.resource.namespace` refers to the Infinispan custom resource namespace.
++
+.Example {PRODUCT} infrastructure resource for Infinispan persistence
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoInfra
+metadata:
+  name: kogito-infinispan-infra
+spec:
+  resource:
+    apiVersion: infinispan.org/v1
+    kind: Infinispan
+    name: kogito-infinispan
+    namespace: infinispan-cluster-namespace
+----
+
+. To enable Infinispan persistence, bind KogitoInfra with the {PRODUCT} service by performing one of the following tasks:
++
+* Use the `--infra INFINISPAN_INFRA_NAME` flag during deployment using the {PRODUCT} CLI, for example:
++
+[source,subs="attributes+,+quotes"]
+----
+$ kogito deploy-service travels --infra kogito-infinispan-infra
+----
+
+* Edit the `spec.infra` configuration in the {PRODUCT} Runtime custom resource, for example:
++
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: travels
+spec:
+  infra:
+    - kogito-infinispan-infra
+----
+
+==== Integrating a custom {PRODUCT} service with Infinispan using manual configurations
+
+If you set up a custom Infinispan cluster, you can refer to it in the {PRODUCT} runtime custom resource by configuring the following environment variables and application properties:
+
+.Example {PRODUCT} service deployment with Infinispan persistence enabled using the {PRODUCT} CLI
+[source,subs="attributes+,+quotes"]
+----
+$ kogito deploy-service
+----
+
+.Required environment variables for a custom Infinispan cluster
+[source,yaml]
+----
+ENABLE_PERSISTENCE=true
+
+# On Quarkus
+`QUARKUS_INFINISPAN_CLIENT_AUTH_USERNAME`
+`QUARKUS_INFINISPAN_CLIENT_AUTH_PASSWORD`
+
+# On Spring Boot
+`INFINISPAN_REMOTE_AUTH_USERNAME`
+`INFINISPAN_REMOTE_AUTH_PASSWORD`
+----
+
+.Required application properties for a custom Infinispan cluster
+[source,yaml]
+----
+# On Quarkus
+quarkus.infinispan-client.server-list=
+quarkus.infinispan-client.use-auth=
+quarkus.infinispan-client.sasl-mechanism=
+quarkus.infinispan-client.auth-realm=
+
+# On Spring Boot
+infinispan.remote.server-list=
+infinispan.remote.use-auth=
+infinispan.remote.sasl-mechanism=
+infinispan.remote.auth-realm=
+----
 
 ==== Infinispan persistence in {PRODUCT} services
 
@@ -1054,7 +1154,7 @@ spec:
 If you set up a custom Infinispan cluster, you can refer to it in the `KogitoRuntime` custom resource by configuring the following environment variables and application properties:
 
 .Required environment variables for a custom Infinispan cluster
-[source]
+[source,yaml]
 ----
 ENABLE_PERSISTENCE=true
 
@@ -1068,7 +1168,7 @@ INFINISPAN_REMOTE_AUTH_PASSWORD
 ----
 
 .Required application properties for a custom Infinispan cluster
-[source]
+[source,yaml]
 ----
 # On Quarkus
 quarkus.infinispan-client.server-list=
@@ -1087,7 +1187,7 @@ infinispan.remote.auth-realm=
 .Additional resources
 * {URL_CONFIGURING_KOGITO}#con-persistence_kogito-configuring[Persistence in {PRODUCT}]
 * {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
-* https://github.com/infinispan/infinispan-operator/blob/master/README.md[Infinispan Operator]
+* https://github.com/infinispan/infinispan-operator/blob/master/README.md[Infinispan operator]
 
 ////
 [id="proc-custom-kogito-service-integration-kafka_{context}"]
@@ -1855,7 +1955,7 @@ Project set to 'kogito-travel-agency'
 
 The `kogito new-project` and `kogito use-project` commands automatically install the *{PRODUCT} Operator* if it is not installed already.
 
-If your {PRODUCT} project requires persistence and messaging infrastructures, you can use the left menu of the OpenShift web console to navigate to *Operators* -> *OperatorHub* and install the https://github.com/infinispan/infinispan-operator[Infinispan Operator] for persistence and the https://strimzi.io/docs/latest/[Strimzi Operator] for Apache Kafka clusters and messaging. You can also install these operators manually using the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan Operator Guide] or the https://strimzi.io/docs/operators/master/quickstart.html[Strimzi Quick Start guide]. The {PRODUCT} Operator uses these operators to create the needed persistence and messaging infrastructures.
+If your {PRODUCT} project requires persistence and messaging infrastructures, you can use the left menu of the OpenShift web console to navigate to *Operators* -> *OperatorHub* and install the https://github.com/infinispan/infinispan-operator[Infinispan operator] for persistence and the https://strimzi.io/docs/latest/[Strimzi Operator] for Apache Kafka clusters and messaging. You can also install these operators manually using the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan operator Guide] or the https://strimzi.io/docs/operators/master/quickstart.html[Strimzi Quick Start guide]. The {PRODUCT} Operator uses these operators to create the needed persistence and messaging infrastructures.
 
 After you create the OpenShift project using the {PRODUCT} CLI and install the {PRODUCT} Operator, the operator is listed with any other installed operators in the OpenShift web console in *Operators* -> *Installed Operators*:
 
@@ -1868,14 +1968,14 @@ image::kogito/openshift/kogito-ocp-installed-operators.png[Image of installed op
 [role="_abstract"]
 {PRODUCT} supports runtime persistence for process data in your services. {PRODUCT} persistence is based on https://infinispan.org/[Infinispan] and enables you to configure key-value storage definitions to persist data, such as active nodes and process instance variables, so that the data is preserved across application restarts.
 
-The {PRODUCT} Operator uses the https://github.com/infinispan/infinispan-operator[Infinispan Operator] to deploy the Infinispan infrastructure in a {PRODUCT} project. For optimal {PRODUCT} deployment on OpenShift, install the Infinispan Operator and enable Infinispan persistence for your {PRODUCT} services. You can install the Infinispan infrastructure using the {PRODUCT} Operator page in the OpenShift web console or using the {PRODUCT} CLI.
+The {PRODUCT} Operator uses the https://github.com/infinispan/infinispan-operator[Infinispan operator] to deploy the Infinispan infrastructure in a {PRODUCT} project. For optimal {PRODUCT} deployment on OpenShift, install the Infinispan operator and enable Infinispan persistence for your {PRODUCT} services. You can install the Infinispan infrastructure using the {PRODUCT} Operator page in the OpenShift web console or using the {PRODUCT} CLI.
 
 This example uses the {PRODUCT} CLI to install the Infinispan infrastructure and the {PRODUCT} Operator page in the web console to verify that the infrastructure is enabled.
 
 .Prerequisites
-* The https://github.com/infinispan/infinispan-operator[Infinispan Operator] is installed in the same OpenShift namespace as your {PRODUCT} project. You can install the Infinispan Operator using the *Operators* -> *OperatorHub* page in the OpenShift web console or manually as described in the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan Operator Guide].
+* The https://github.com/infinispan/infinispan-operator[Infinispan operator] is installed in the same OpenShift namespace as your {PRODUCT} project. You can install the Infinispan operator using the *Operators* -> *OperatorHub* page in the OpenShift web console or manually as described in the https://infinispan.org/infinispan-operator/master/operator.html[Infinispan operator Guide].
 
-* https://infinispan.org/infinispan-operator/master/operator.html#minimal_crd-start[An Infinispan Server resource] is deployed in the same OpenShift namespace as your {PRODUCT} project. You can try one of the examples as described in the https://infinispan.org/infinispan-operator/master/operator.html#creating_minimal_clusters-start[Infinispan Operator Guide]. For this procedure, set `kogito-infinispan` as the name of the Infinispan Server resource.
+* https://infinispan.org/infinispan-operator/master/operator.html#minimal_crd-start[An Infinispan Server resource] is deployed in the same OpenShift namespace as your {PRODUCT} project. You can try one of the examples as described in the https://infinispan.org/infinispan-operator/master/operator.html#creating_minimal_clusters-start[Infinispan operator Guide]. For this procedure, set `kogito-infinispan` as the name of the Infinispan Server resource.
 
 .Procedure
 . In a command terminal, enter the following command to install the Infinispan infrastructure for the {PRODUCT} services:
@@ -2035,7 +2135,7 @@ $ kogito deploy-service travels --infra kogito-infinispan-infra --infra kogito-k
 $ kogito deploy-service visas --infra kogito-infinispan-infra --infra kogito-kafka-infra
 ----
 
-When the deployment configuration of this service is generated, the {PRODUCT} Operator automatically configures the environment variables to point to the location of the Kafka and Infinispan environments that you deployed previously. For Kafka messaging, the operator sets the incoming and outgoing messaging channels and properties as needed. For Infinispan persistence, the operator sets the authorization configuration based on the credentials generated by the Infinispan Operator.
+When the deployment configuration of this service is generated, the {PRODUCT} Operator automatically configures the environment variables to point to the location of the Kafka and Infinispan environments that you deployed previously. For Kafka messaging, the operator sets the incoming and outgoing messaging channels and properties as needed. For Infinispan persistence, the operator sets the authorization configuration based on the credentials generated by the Infinispan operator.
 
 NOTE: You can also provide a Git repository location to create your services remotely instead of creating your services from a local source. However, this example uses local applications to demonstrate how to prepare the {PRODUCT} project on a development machine for a direct push to the cloud.
 
@@ -2433,7 +2533,7 @@ The {PRODUCT} Operator uses the following custom resources to deploy {PRODUCT} d
 
 The {PRODUCT} Operator uses the following third-party operators to auto-configure the {PRODUCT} service infrastructure components:
 
-* *https://github.com/infinispan/infinispan-operator[Infinispan Operator]*: Used to interact with Infinispan Server instances for process data persistence in the {PRODUCT} services
+* *https://github.com/infinispan/infinispan-operator[Infinispan operator]*: Used to interact with Infinispan Server instances for process data persistence in the {PRODUCT} services
 * *https://github.com/strimzi/strimzi-kafka-operator[Strimzi Operator]*: Used to interact with Apache Kafka clusters with Zookeeper for messaging in {PRODUCT} services
 * *https://github.com/keycloak/keycloak-operator[Keycloak Operator]*: Used to interact with Keycloak server instances for security and single sign-on capabilities in {PRODUCT} services
 * *https://github.com/mongodb/mongodb-kubernetes-operator[MongoDB Operator]*: Used to interact with MongoDB instances for process data persistence in {PRODUCT} services
