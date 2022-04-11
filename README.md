@@ -63,9 +63,9 @@ To work with the `kie-docs` documentation source, you need the following softwar
 
   For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Maven documentation](http://maven.apache.org/).
 
-# File system layout of the `master-kogito` branch
+# File system layout of the `main-kogito` branch
 
-The files in the `master-kogito` branch of the `kie-docs` repository are organized in the following general structure:
+The files in the `main-kogito` branch of the `kie-docs` repository are organized in the following general structure:
 
 ```
 ├── _artifacts
