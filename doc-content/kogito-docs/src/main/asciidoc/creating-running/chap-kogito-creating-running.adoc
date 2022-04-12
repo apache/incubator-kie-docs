@@ -1388,6 +1388,7 @@ The following tables list all the supported add-ons:
 |Task Notification        | kogito-addons-quarkus-task-notification             |1.6.0
 |Tracing Decision         | kogito-addons-quarkus-tracing-decision              |0.11.0
 |Events MongoDB           | kogito-addons-quarkus-events-mongodb                |1.11.0
+|Source Files             | kogito-addons-quarkus-source-files                  |1.20.0
 |===
 
 .{PRODUCT} add-ons for Spring Boot
@@ -2056,6 +2057,136 @@ To use the Tracing add-on, add the following code to the `pom.xml` file of your 
   <artifactId>kogito-addons-springboot-tracing-decision</artifactId>
   <version>{PRODUCT_VERSION}</version>
 </dependency>
+----
+
+=== {PRODUCT} source files add-on
+
+The {PRODUCT} Source Files Add-on adds the capability of listing and downloading source files to {PRODUCT} projects.
+
+To add the endpoints to download your services' source files, you can add the source files add-on as a dependency in your `pom.xml` file.
+
+.Project dependency to enable source files endpoints
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-source-files</artifactId>
+</dependency>
+----
+
+The above dependency provides REST support for the following operations:
+
+==== List all the source files for the current project
+
+* GET: `/management/process/sources`
+
+.Example: to list all the source files for the current project, use the following command:
+
+[source,bash]
+----
+$ curl -X 'GET' \
+  'http://localhost:8080/management/process/sources' \
+  -H 'accept: application/json'
+----
+
+.Output
+
+[source,json]
+----
+{
+  "demo.orders": [
+    {
+      "uri": "org/kie/kogito/examples/orders.bpmn2"
+    }
+  ],
+  "ymlgreet": [
+    {
+      "uri": "org/kie/kogito/examples/ymlgreet.sw.yml"
+    }
+  ],
+  "petstore": [
+    {
+      "uri": "petstore.json"
+    },
+    {
+      "uri": "org/kie/kogito/examples/petstore.sw.json"
+    }
+  ],
+  "jsongreet": [
+    {
+      "uri": "org/kie/kogito/examples/jsongreet.sw.json"
+    }
+  ],
+  "approvals": [
+    {
+      "uri": "org/kie/kogito/examples/approval.bpmn"
+    }
+  ],
+  "petstore_http": [
+    {
+      "uri": "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v2.0/json/petstore-simple.json"
+    },
+    {
+      "uri": "org/kie/kogito/examples/petstore_http.sw.json"
+    }
+  ],
+  "yamlgreet": [
+    {
+      "uri": "org/kie/kogito/examples/yamlgreet.sw.yaml"
+    }
+  ],
+  "demo.orderItems": [
+    {
+      "uri": "org/kie/kogito/examples/orderItems.bpmn2"
+    }
+  ]
+}
+----
+
+==== Download the specified source file
+
+* GET: `/management/process/sources/download`
+** parameters:
+*** name: fileName
+**** in: query
+
+.Example: to download the source file located at `org/kie/kogito/examples/ymlgreet.sw.yml`, you can use the following command:
+
+[source,bash]
+----
+$ curl -X 'GET' \
+  'http://localhost:8080/management/process/sources/download?fileName=org%2Fkie%2Fkogito%2Fexamples%2Fymlgreet.sw.yml' \
+  -H 'accept: */*'
+----
+
+==== List all the source files for the specified process
+
+* GET: `/management/process/{id}/sources`
+** parameters:
+*** name: id
+**** in: path
+
+.Example: to list the source files for the process with id `petstore_http`, you can use the following command:
+
+[source,bash]
+----
+$ curl -X 'GET' \
+  'http://localhost:8080/management/process/petstore_http/sources' \
+  -H 'accept: application/json'
+----
+
+.Output
+
+[source,json]
+----
+[
+  {
+    "uri": "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v2.0/json/petstore-simple.json"
+  },
+  {
+    "uri": "org/kie/kogito/examples/petstore_http.sw.json"
+  }
+]
 ----
 
 [id="proc-kogito-designing-app_{context}"]
