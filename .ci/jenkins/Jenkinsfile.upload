@@ -1,0 +1,196 @@
+@Library('jenkins-pipeline-shared-libraries')_
+import org.kie.jenkins.MavenCommand
+
+AGENT_LABEL="kie-rhel7 && kie-mem8g"
+MVN_TOOL="kie-maven-3.8.1"
+JDK_TOOL="kie-jdk11"
+REPO="kie-docs"
+ORGANIZATION="kiegroup"
+TARGET_BRANCH="main-kogito"
+COMMIT_MSG="bumped up kogito-docs to ${env.currentKogitoDocsVersion}"
+PR_BRANCH="bump_up_kogito_docs_${env.currentKogitoDocsVersion}"
+PR_BODY="Please review and merge"
+CURRENT_KIE_SNAPSHOT="${env.currentKieSnapshot}"
+NEXT_KIE_SNAPSHOT="${env.nextKieSnapshot}"
+CURRENT_DOCS_VERSION="${env.currentKogitoDocsVersion}"
+CURRENT_DOCS_SNAPSHOT="${env.currentKogitoDocsSnaphot}"
+NEXT_DOCS_SNAPSHOT="${env.nextKogitoDocsSnapshot}"
+TAG_NAME="${env.currentKogitoDocsTagName}"
+SSH_KOGITO_DOCS_PATH="${env.SSH_KOGITO_DOCS_PATH}"
+LATEST_LINKS_PATH="${env.LATEST_LINKS_PATH}"
+RSYNC_KOGITO_DOCS_PATH="${env.RSYNC_KOGITO_DOCS_PATH}"
+
+pipeline {
+    agent {
+        label "$AGENT_LABEL"
+    }
+    options{
+        timestamps()
+    }
+    tools {
+        maven "$MVN_TOOL"
+        jdk "$JDK_TOOL"
+    }
+    stages {
+        stage('CleanWorkspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('clone kie-docs') {
+            steps {
+                script {
+                    checkoutKieDocs()
+                }
+            }
+        }
+        stage('create branch for PR'){
+            steps{
+                dir("${WORKSPACE}/${REPO}"){
+                    script{
+                        githubscm.createBranch(PR_BRANCH)
+                    }
+                }
+            }
+        }
+        stage('replace versions of org.kie.kogito:kogito-docs') {
+            steps {
+                dir("${WORKSPACE}/${REPO}/doc-content/kogito-docs") {
+                    sh """sed -i "s/<version>${CURRENT_DOCS_SNAPSHOT}</<version>${CURRENT_DOCS_VERSION}</" pom.xml
+                       git add .
+                       git commit -m "upgraded to ${CURRENT_DOCS_VERSION} for tagging"
+                       git log -1 --pretty=oneline"""
+                }
+            }
+        }
+        stage('build kogito-docs') {
+            steps {
+                configFileProvider([configFile(fileId: '771ff52a-a8b4-40e6-9b22-d54c7314aa1e', targetLocation: 'jenkins-settings.xml', variable: 'SETTINGS_XML_FILE')]) {
+                    dir("${WORKSPACE}/${REPO}/doc-content/kogito-docs") {
+                        sh """mvn clean install -Dfull -s $SETTINGS_XML_FILE -Dkie.maven.settings.custom=$SETTINGS_XML_FILE -Dmaven.test.redirectTestOutputToFile=true -Dmaven.test.failure.ignore=true
+                           # clean files created by the build
+                           git clean -d -f """
+                    }
+                }
+            }
+        }
+        stage('upload of kogito-docs to filemgmt-prod.jboss.org ') {
+            steps {
+                sshagent(credentials: ['KogitoDocsUpload']) {
+                    dir("${WORKSPACE}/${REPO}/doc-content/kogito-docs") {
+                        sh """touch upload_version
+                            echo "mkdir ${CURRENT_DOCS_VERSION} > upload_version
+                            chmod +x upload_version
+                            cat upload_version
+                            # upload version to filemgmt-prod.jboss.org for creating a release directory
+                            sftp -b upload_version ${SSH_KOGITO_DOCS_PATH}
+                            # upload of the kogito-docs to filemgmt-prod-sync.jboss.org
+                            rsync -Pavqr -e "ssh -p 2222" --protocol=28 --delete-after target/generated-docs/html_single ${RSYNC_KOGITO_DOCS_PATH}
+                            rm upload_version
+                            # upload latest links
+                            mkdir filemgmt_link
+                            cd filemgmt_link
+                            touch ${CURRENT_DOCS_VERSION}
+                            ln -s ${CURRENT_DOCS_VERSION} latest
+                            rsync -a -e "ssh -p 2222" --protocol=28 latest ${LATEST_LINKS_PATH}
+                            echo "symbolic links uploaded"
+                            cd ..
+                            rm -rf filemgmt_link"""
+                    }
+                }
+            }
+        }
+        stage('create tag') {
+            steps {
+                dir("${WORKSPACE}/${REPO}") {
+                    script {
+                        githubscm.tagRepository(TAG_NAME)
+                    }
+                }
+            }
+        }
+        stage('push tag'){
+            steps{
+                dir("${WORKSPACE}/${REPO}"){
+                    script{
+                        githubscm.pushRemoteTag('origin', TAG_NAME)
+                    }
+                }
+            }
+        }
+        stage('bump up KIE and kogito-docs') {
+            steps {
+                dir("${WORKSPACE}/${REPO}") {
+                    sh """sed -i "s/<version>${CURRENT_KIE_SNAPSHOT}</<version>${NEXT_KIE_SNAPSHOT}</" pom.xml
+                       sed -i "s/<version>${CURRENT_KIE_SNAPSHOT}</<version>${NEXT_KIE_SNAPSHOT}</" doc-content/pom.xml
+                       sed -i "s/<version>${CURRENT_KIE_SNAPSHOT}</<version>${NEXT_KIE_SNAPSHOT}</" doc-content/kogito-docs/pom.xml
+                       sed -i "s/<version>${CURRENT_DOCS_VERSION}</<version>${NEXT_DOCS_SNAPSHOT}</" doc-content/kogito-docs/pom.xml """
+                }
+            }
+        }
+        stage('add and commit latest changes'){
+            steps{
+                dir("${WORKSPACE}/${REPO}"){
+                    script{
+                        githubscm.commitChanges(COMMIT_MSG)
+                    }
+                }
+            }
+        }
+        stage('push pullrequest branch'){
+            steps{
+                 dir("${WORKSPACE}/${REPO}"){
+                     script {
+                        githubscm.pushObject('origin', PR_BRANCH)
+                     }
+                 }
+            }
+        }
+        stage('create pullrequest'){
+            steps{
+                dir("${WORKSPACE}/${REPO}"){
+                    script {
+                        githubscm.createPR(COMMIT_MSG,PR_BODY,TARGET_BRANCH)
+                   }
+                }
+            }
+        }
+    }
+    post {
+        failure{
+            emailext body: 'Build log: ${BUILD_URL}consoleText\n' +
+                           'Failed tests (${TEST_COUNTS,var="fail"}): ${BUILD_URL}testReport\n' +
+                           '(IMPORTANT: For visiting the links you need to have access to Red Hat VPN. In case you do not have access to RedHat VPN please download and decompress attached file.)',
+                     subject: 'Build #${BUILD_NUMBER} of kogito docs-upload FAILED',
+                     to: 'kaldesai@redhat.com, mbiarnes@redhat.com'
+            cleanWs()
+        }
+        unstable{
+            emailext body: 'Build log: ${BUILD_URL}consoleText\n' +
+                           'Failed tests (${TEST_COUNTS,var="fail"}): ${BUILD_URL}testReport\n' +
+                           '***********************************************************************************************************************************************************\n' +
+                           '${FAILED_TESTS}',
+                     subject: 'Build #${BUILD_NUMBER} of kogito docs-upload branch was UNSTABLE',
+                     to: 'kaldesai@redhat.com, mbiarnes@redhat.com'
+            cleanWs()
+        }
+        fixed {
+            emailext body: '',
+                 subject: 'Build #${BUILD_NUMBER} of kogito docs-upload was fixed and is SUCCESSFUL',
+                 to: 'kaldesai@redhat.com, mbiarnes@redhat.com'
+            cleanWs()
+        }
+        success{
+            emailext body: 'Everything worked fine',
+                 subject: 'Build #${BUILD_NUMBER} of kogito docs-upload was SUCCESSFUL',
+                 to: 'kaldesai@redhat.com, mbiarnes@redhat.com'
+            cleanWs()
+        }
+    }
+}
+
+void checkoutKieDocs() {
+    dir(REPO) {
+        checkout(githubscm.resolveRepository(REPO, ORGANIZATION, TARGET_BRANCH, false))
+    }
+}
