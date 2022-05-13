@@ -1388,6 +1388,7 @@ The following tables list all the supported add-ons:
 |Task Notification        | kogito-addons-quarkus-task-notification             |1.6.0
 |Tracing Decision         | kogito-addons-quarkus-tracing-decision              |0.11.0
 |Events MongoDB           | kogito-addons-quarkus-events-mongodb                |1.11.0
+|Source Files             | kogito-addons-quarkus-source-files                  |1.20.0
 |===
 
 .{PRODUCT} add-ons for Spring Boot
@@ -2056,6 +2057,95 @@ To use the Tracing add-on, add the following code to the `pom.xml` file of your 
   <artifactId>kogito-addons-springboot-tracing-decision</artifactId>
   <version>{PRODUCT_VERSION}</version>
 </dependency>
+----
+
+[#source-files-add-on]
+=== {PRODUCT} source files add-on
+
+The {PRODUCT} Source Files Add-on adds the capability of listing and downloading source files to {PRODUCT} projects.
+
+> **⚠️**
+This add-on isn't supposed to be used by end-users, if not needed for internal integrations, since it can be a potential security breach for some users' use cases.
+
+To add the endpoints to download your services' source files, you can add the source files add-on as a dependency in your `pom.xml` file.
+
+.Project dependency to enable source files endpoints
+[source,xml]
+----
+<dependency>
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-addons-quarkus-source-files</artifactId>
+</dependency>
+----
+
+Access to all the endpoints is granted to the role `source-files-client`.
+To define basic authentication, you can add the following code to your `application.properties` file:
+
+.Example of credentials for the user `scott` and password `jb0ss`
+[source,properties]
+----
+quarkus.security.users.embedded.enabled=true
+quarkus.security.users.embedded.plain-text=true
+quarkus.security.users.embedded.users.scott=jb0ss
+quarkus.security.users.embedded.roles.scott=source-files-client
+----
+
+You can also disable plain-text passwords by setting the `quarkus.security.users.embedded.plain-text` property to
+`false` or just removing it from the configuration. In this case, the passwords are encrypted using MD5.
+
+.Example of credentials for the user `scott` and password `jb0ss` encrypted using MD5
+[source,properties]
+----
+quarkus.security.users.embedded.enabled=true
+quarkus.security.users.embedded.users.scott=4960d03c13b5aff4ca6886758a8be019
+quarkus.security.users.embedded.roles.scott=source-files-client
+----
+
+To define a more robust authentication mechanism, you can refer to the https://quarkus.io/guides/security[Quarkus documentation].
+
+The Source Files Add-on provides REST support for the following operation:
+
+==== List all the source files for the specified process
+
+* GET: `/management/process/{id}/sources`
+** parameters:
+*** name: id
+**** in: path
+
+.Example: to list the source files for the process with id `petstore_http`, you can use the following command:
+
+[source,bash]
+----
+$ curl -X 'GET' \
+  'http://localhost:8080/management/process/petstore_http/sources' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic c2NvdHQ6amIwc3M='
+----
+
+.Output
+
+[source,json]
+----
+[
+  {
+    "uri": "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v2.0/json/petstore-simple.json"
+  },
+  {
+    "uri": "/sources/org/kie/kogito/examples/petstore_http.sw.json"
+  }
+]
+----
+
+==== Download the specified source file
+
+.Example: to download the source file located at `/sources/org/kie/kogito/examples/petstore_http.sw.json`, you can use the following command:
+
+[source,bash]
+----
+$ curl -X 'GET' \
+  'http://localhost:8080/sources/org/kie/kogito/examples/petstore_http.sw.json' \
+  -H 'accept: */*' \
+  -H 'Authorization: Basic c2NvdHQ6amIwc3M='
 ----
 
 [id="proc-kogito-designing-app_{context}"]
