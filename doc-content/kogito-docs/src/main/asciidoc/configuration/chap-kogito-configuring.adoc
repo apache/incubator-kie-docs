@@ -439,7 +439,7 @@ You can also take advantage of lifecycle method like `@PostConstruct` and `@PreD
 
 // tag::proc-messaging-enabling[]
 [id="proc-messaging-enabling_{context}"]
-=== Enabling Kafka messaging for {PRODUCT} services
+== Enabling Kafka messaging for {PRODUCT} services
 
 [role="_abstract"]
 {PRODUCT} supports the https://github.com/eclipse/microprofile-reactive-messaging[MicroProfile Reactive Messaging] specification for messaging in your services. You can enable messaging to configure message events as either input or output of business process execution.
@@ -1256,8 +1256,8 @@ For {PRODUCT} persistence, you can use one of the following supported persistenc
 * https://infinispan.org/[*Infinispan*]: (Default) Persists data using configured key-value storage definitions
 * https://www.mongodb.com/[*MongoDB*]: Persists data using a document-based format
 * https://kafka.apache.org/documentation/streams/[*Kafka Streams*]: (Quarkus only) Persists data in Kafka clusters
-* https://www.postgresql.org/[*PostgreSQL*]: Persists data in PostgreSQL
-* https://www.oracle.com/database/[*Oracle*]: Persists data in Oracle
+* *JDBC*: Persists data to different relational databases such as https://www.postgresql.org/[PostgreSQL] and https://www.oracle.com/database/[Oracle] using JDBC driver.
+* *File system*: Persists data to files in the file system.
 
 Runtime persistence is intended primarily for storing data that is required to resume workflow execution for a particular process instance. Persistence applies to both public and private processes that are not yet complete. Once a process completes, persistence is no longer applied. This persistence behavior means that only the information that is required to resume execution is persisted.
 
@@ -1277,15 +1277,22 @@ For example, when a process reaches a user task or a catching signal event, the 
 
 Process instance metadata is persisted with a predefined protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) schema that is aware of the metadata and supports node instances that are in wait states.
 
-Process instance and node instance variables are persisted based on the generated protobuf schema and generated marshallers. Custom data types are also persisted during execution.
-
 For straight-through process instances that do not trigger any activity, persistence is not invoked and no data is stored.
 
-Each process definition has its own cache for storing runtime information. The cache is based on the process definition ID and is named in the Infinispan Server or in the MongoDB Server. If no process cache exists, cache is automatically created in Infinispan or in MongoDB. This setup facilitates maintenance of process instance data and reduces concurrency on the cache instances.
+Each persistence provider stores data according to their underlying mechanism.
+For instance, when using Infinispan, each process definition has its own cache for storing runtime information. The cache is based on the process definition ID and is named in the Infinispan Server.
+MongoDB creates a separated document collection per process definition whereas JDBC provider will use a single table for all processes but include the process definition ID in order to isolate operations.
+This setup facilitates maintenance of process instance data and reduces concurrency on the cache instances.
 
 === Persisted process instance variables and data types
 
-Persisted process variables, local variables, and other process data are stored with the process instance. The stored data is marshalled into bytes format so it can be transferred and persisted into the key-value storage definition for Infinispan or into document-based format for MongoDB. The marshalling and unmarshalling is implemented based on protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]) and requires a schema and marshallers for handling a specified type of data.
+Persisted process variables, local variables, and other process data are stored with the process instance. The stored data is marshalled into bytes format so it can be transferred and persisted into one of the supported persistence providers.
+The marshalling and unmarshalling is implemented based on protobuf (https://developers.google.com/protocol-buffers/[protocol buffers]).
+
+{PRODUCT} will persist all process instance variables defined in the process model once the execution reaches a wait state.
+Once the wait state is reached, marshalling will take place in order to transform all process variables into bytes, which can be accomplished using one of the following methods:
+
+==== Persistence using Protobuf marshalling
 
 {PRODUCT} generates both the protobuf schema (as PROTO files) and marshallers for persisting variables. The {PRODUCT} marshallers are based on the https://github.com/infinispan/protostream[ProtoStream] subproject of Infinispan.
 
@@ -1331,6 +1338,22 @@ NOTE: Each PROTO file imports `kogito-types.proto` and `kogito-index.proto` file
 
 Based on the PROTO files, marshallers are also generated and configured in the application so that whenever a particular data type is used in a process instance, the data is successfully marshalled and unmarshalled.
 
+==== Persistence using Java serialization
+
+To enable Java serialization, you should make sure all data types can be serialized. This means that classes should implement `java.io.Serializable` as well as have an empty constructor. It is also necessary to set `kogito.persistence.proto.marshaller=false` in your application.properties file.
+
+In case you would like to use Quarkus native compilation, it is also necessary to follow the instructions so your data types can be serialized in native mode.
+For more details, visit (https://quarkus.io/guides/writing-native-applications-tips#registering-for-reflection[Quarkus registering for reflection])
+
+The following annotation is usually required for Quarkus native mode:
+```java
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection(serialization = true)
+public class MyPojo implements Serializable {
+}
+```
+
 === Supported data types for persisted variables
 
 For optimal persistence with process data and variables, use Java objects as data types that represent your process variables. If you use other formats for data types, your data might not be persisted or your {PRODUCT} project might fail to compile.
@@ -1360,16 +1383,17 @@ For optimal persistence with process data and variables, use Java objects as dat
 |`java.util.Date`
 |Basic date type
 
-|Java object
-|Custom data type built with multiple simple types
+|`java.lang.Boolean`
+|Basic boolean type
 
-|Java object with a Java object
-|Custom data type built with multiple simple types and includes another Java object
-
-|Java object with a list of Java objects
-|Custom data type built with multiple simple types and a list of Java objects, and can also contain another Java object
+|`java.io.Serializable`
+|Custom data types and other Java types such as Collections and Enums
 |===
 
+// end::con-persistence[]
+
+// tag::proc-locking-persistence-enabling[]
+[id="proc-locking-persistence-enabling_{context}"]
 === Enabling optimistic locking with persistence
 
 {PRODUCT} runtimes need to safely handle concurrent requests to shared instances such as process instances or tasks. {PRODUCT} handles these requests using persistence enabled optimistic locking for concurrency control with the version on record (using the version field in the database or the metadata version in the case of Infinispan). This feature is optional and can be activated only with persistence by adding the following properties to the src/main/resources/application.properties file in your {PRODUCT} project,
@@ -1378,13 +1402,13 @@ For optimal persistence with process data and variables, use Java objects as dat
 kogito.persistence.optimistic.lock=true
 ------
 
-Below are the databases that support optimistic locking
+Below are the persistence providers that support optimistic locking
 
 * Infinispan
 * MongoDB
-* PostgreSQL (Reactive and JDBC options)
+* JDBC
 
-// end::con-persistence[]
+// end::proc-locking-persistence-enabling[]
 
 // tag::proc-infinispan-persistence-enabling[]
 [id="proc-infinispan-persistence-enabling_{context}"]
@@ -1447,8 +1471,8 @@ NOTE: As an alternative to enabling Infinispan persistence explicitly in {PRODUC
 
 For example {PRODUCT} services with Infinispan persistence, see the following example applications in GitHub:
 
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-infinispan-persistence-quarkus[`process-infinispan-persistence-quarkus`]: Example on Quarkus
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-infinispan-persistence-springboot[`process-infinispan-persistence-springboot`]: Example on Spring Boot
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-quarkus-examples/process-infinispan-persistence-quarkus[`process-infinispan-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-springboot-examples/process-infinispan-persistence-springboot[`process-infinispan-persistence-springboot`]: Example on Spring Boot
 // end::proc-infinispan-persistence-enabling[]
 
 // tag::proc-mongodb-persistence-enabling[]
@@ -1459,7 +1483,7 @@ For example {PRODUCT} services with Infinispan persistence, see the following ex
 As an alternative to using Infinispan for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.mongodb.com/[MongoDB]. MongoDB is a general purpose, document-based database that enables you to store data in JSON-like documents instead of key-value storage definitions in Infinispan-based persistence storage. For {PRODUCT} persistence with MongoDB, you must have a MongoDB Server installed and running in order to enable persistence.
 
 .Prerequisites
-* https://www.mongodb.com/try/download[MongoDB Server] 3.6 or later is installed and running. For information about MongoDB installation and configuration, see the https://docs.mongodb.com/manual/installation/[MongoDB documentation].
+* https://www.mongodb.com/try/download[MongoDB Server] 4.4 or later is installed and running. For information about MongoDB installation and configuration, see the https://docs.mongodb.com/manual/installation/[MongoDB documentation].
 
 .Procedure
 . Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
@@ -1518,162 +1542,10 @@ kogito.persistence.transaction.enabled=true
 ------
 --
 
-After you enable MongoDB persistence for your {PRODUCT} services, you can use MongoDB tools such as https://www.mongodb.com/try/download/compass[MongoDB Compass] to query and review the process instance information and model variables from the database, as shown in the following example:
-
-.Example persisted process instance
-[source,json]
-----
-{
-  "_id": {
-    "$oid": "60d0dd7130a5c559252bbef2"
-  },
-  "processType": "RuleFlow",
-  "processId": "dealreviews",
-  "id": "4c0ba244-d99e-46e7-8404-51970bf47a40",
-  "parentProcessInstanceId": "b4e666dc-7f61-4e09-9eb3-2e10bf1abc00",
-  "description": "Deal Review",
-  "state": 1,
-  "startDate": "1624300913211",
-  "signalCompletion": true,
-  "rootProcessInstanceId": "b4e666dc-7f61-4e09-9eb3-2e10bf1abc00",
-  "rootProcessId": "deals",
-  "sla": {
-    "slaCompliance": 0
-  },
-  "context": {
-    "variable": [
-      {
-        "name": "deal",
-        "dataType": "java.lang.String",
-        "value": {
-          "@type": "type.googleapis.com/google.protobuf.StringValue",
-          "value": "my fancy deal"
-        }
-      },
-      {
-        "name": "traveller",
-        "dataType": "org.acme.deals.Traveller",
-        "value": {
-          "@type": "org.kie.kogito/org.kie.kogito.app.Traveller",
-          "address": {
-            "city": "Boston",
-            "country": "US",
-            "street": "main street",
-            "zipCode": "10005"
-          },
-          "email": "jon.doe@example.com",
-          "firstName": "John",
-          "lastName": "Doe",
-          "nationality": "American"
-        }
-      }
-    ],
-    "nodeInstance": [
-      {
-        "id": "c3549554-9787-42d5-82d0-decff6a17930",
-        "nodeId": "2",
-        "content": {
-          "@type": "type.googleapis.com/org.kie.kogito.serialization.process.protobuf.WorkItemNodeInstanceContent",
-          "workItemId": "b87e9296-92c6-4e83-8dcf-6e62882e418b",
-          "variable": [
-            {
-              "name": "ActorId",
-              "dataType": "java.lang.String",
-              "value": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
-                "value": "john"
-              }
-            },
-            {
-              "name": "NodeName",
-              "dataType": "java.lang.String",
-              "value": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
-                "value": "Review the deal"
-              }
-            },
-            {
-              "name": "Skippable",
-              "dataType": "java.lang.String",
-              "value": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
-                "value": "true"
-              }
-            },
-            {
-              "name": "TaskName",
-              "dataType": "java.lang.String",
-              "value": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
-                "value": "review"
-              }
-            },
-            {
-              "name": "deal",
-              "dataType": "java.lang.String",
-              "value": {
-                "@type": "type.googleapis.com/google.protobuf.StringValue",
-                "value": "my fancy deal"
-              }
-            },
-            {
-              "name": "traveller",
-              "dataType": "org.acme.deals.Traveller",
-              "value": {
-                "@type": "org.kie.kogito/org.kie.kogito.app.Traveller",
-                "address": {
-                  "city": "Boston",
-                  "country": "US",
-                  "street": "main street",
-                  "zipCode": "10005"
-                },
-                "email": "jon.doe@example.com",
-                "firstName": "John",
-                "lastName": "Doe",
-                "nationality": "American"
-              }
-            }
-          ],
-          "phaseId": "active",
-          "phaseStatus": "Ready",
-          "name": "Human Task",
-          "startDate": "1624300913214",
-          "workItemData": {
-            "@type": "type.googleapis.com/org.kie.kogito.serialization.process.protobuf.HumanTaskWorkItemData",
-            "taskName": "review",
-            "potUsers": [
-              "john"
-            ],
-            "taskReferenceName": "Review the deal"
-          }
-        },
-        "level": 1,
-        "triggerDate": "1624300913213",
-        "sla": {
-          "slaCompliance": 0
-        }
-      }
-    ],
-    "iterationLevels": [
-      {
-        "id": "_3597E33A-1C00-41B3-924E-09EA47F79D93",
-        "level": 1
-      }
-    ]
-  },
-  "completedNodeIds": [
-    "_7E3D27D0-6644-4E55-8E41-9F68BD0D1327"
-  ],
-  "version": {
-    "$numberLong": "1"
-  }
-}
-----
-
 For example {PRODUCT} services with MongoDB persistence, see the following example applications in GitHub:
 
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-mongodb-persistence-quarkus[`process-mongodb-persistence-quarkus`]: Example on Quarkus
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-mongodb-persistence-springboot[`process-mongodb-persistence-springboot`]: Example on Spring Boot
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-quarkus-examples/process-mongodb-persistence-quarkus[`process-mongodb-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-springboot-examples/process-mongodb-persistence-springboot[`process-mongodb-persistence-springboot`]: Example on Spring Boot
 // end::proc-mongodb-persistence-enabling[]
 
 // tag::proc-kafka-streams-persistence-enabling[]
@@ -1681,7 +1553,8 @@ For example {PRODUCT} services with MongoDB persistence, see the following examp
 === Enabling Kafka Streams persistence for {PRODUCT} services
 
 [role="_abstract"]
-For Quarkus-based {PRODUCT} services, as an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence using https://kafka.apache.org/documentation/streams/[Kafka Streams]. Kafka Streams is a client library for building applications and microservices, where the input and output data are stored in Kafka clusters. For {PRODUCT} persistence with Kafka Streams, you must have Kafka installed and running in order to enable persistence.
+For Quarkus-based {PRODUCT} services, as an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence using https://kafka.apache.org/documentation/streams/[Kafka Streams]. Kafka Streams is a client library for building applications and microservices, where the input and output data are stored in Kafka topics.
+For {PRODUCT} persistence with Kafka Streams, you must have Kafka installed and running in order to enable persistence.
 
 NOTE: Kafka Streams persistence is supported for only Quarkus-based {PRODUCT} services.
 
@@ -1717,107 +1590,109 @@ kafka.bootstrap.servers=localhost:9092
 
 For an example {PRODUCT} service with Kafka persistence, see the following example application in GitHub:
 
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-kafka-persistence-quarkus[`process-kafka-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-quarkus-examples/process-kafka-persistence-quarkus[`process-kafka-persistence-quarkus`]: Example on Quarkus
 // end::proc-kafka-streams-persistence-enabling[]
 
-// tag::proc-postgresql-persistence-enabling[]
-[id="proc-postgresql-persistence-enabling_{context}"]
-=== PostgreSQL persistence for {PRODUCT} services
+// tag::proc-jdbc-persistence-enabling[]
+[id="proc-jdbc-persistence-enabling_{context}"]
+=== Enabling JDBC persistence for {PRODUCT} services
 
 [role="_abstract"]
-As an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.postgresql.org/[PostgreSQL]. PostgreSQL is a powerful, open source object-relational database system that uses and extends SQL language. Also, PostgreSQL is recognized and provided as a service (SAAS) by different cloud providers. For {PRODUCT} persistence with PostgreSQL, you must have PostgreSQL installed and running to enable persistence.
+As an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using JDBC.
+JDBC allows {PRODUCT} to persist data using different relational databases. We recommend using https://www.postgresql.org/[PostgreSQL].
+The complete list of supported databases is dependent on the target runtime you use, for instance, Quarkus supports the following https://quarkus.io/guides/datasource#jdbc-datasource[JDBC datasources].
 
-==== Enabling PostgreSQL persistence using reactive driver for {PRODUCT} services
+Please check examples below on how to enable different databases using JDBC data sources.
 
-You can enable PostgreSQL persistence for your {PRODUCT} services using reactive driver.
-
-.Prerequisites
-* https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
-
-.On Quarkus
-
-Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
-
---
-.Project dependency to enable PostgreSQL persistence
-[source,xml,subs="attributes+,+quotes"]
-----
-<dependency>
-  <groupId>org.kie.kogito</groupId>
-  <artifactId>kogito-addons-quarkus-persistence-postgresql</artifactId>
-  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
-</dependency>
-<dependency>
-  <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-reactive-pg-client</artifactId>
-</dependency>
-----
---
-
-Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
-+
---
-Replace the server host, port, credentials, and other information according to your PostgreSQL installation.
-
-.Application properties to enable PostgreSQL persistence
-[source]
-------
-kogito.persistence.type=postgresql
-kogito.persistence.auto.ddl=true
-kogito.persistence.query.timeout.millis=10000
-quarkus.datasource.reactive.url=postgresql://localhost:5432/kogito
-quarkus.datasource.username=kogito-user
-quarkus.datasource.password=kogito-pass
-------
-
-* `url`: This parameter can be customized according to the https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING/[connection string specification]. For a complete list of settings for Quarkus reactive datasource, see https://quarkus.io/guides/reactive-sql-clients#reactive-datasource[reactive datasource in Quarkus].
-* `auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a controlled environment.
-* `millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value of `millis` is `10000`.
-
-.On Spring Boot
-
-Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
-+
---
-.Project dependency to enable PostgreSQL persistence
-[source,xml,subs="attributes+,+quotes"]
-----
-<dependency>
-  <groupId>org.kie.kogito</groupId>
-  <artifactId>kogito-quarkus-persistence-postgresql</artifactId>
-  <version>__{PRODUCT_INIT_CAP}_VERSION__</version>
-</dependency>
-----
---
-
-Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
-
-Replace the server host, port, credentials, and other information according to your PostgreSQL installation.
-
-.Application properties to enable PostgreSQL persistence
-[source]
-------
-kogito.persistence.type=postgresql
-kogito.persistence.postgresql.connection.uri=postgresql://kogito-user:kogito-pass@localhost:5432/kogito
-kogito.persistence.auto.ddl=true
-kogito.persistence.query.timeout.millis=10000
-------
-
-* `uri`: This parameter can be customized according to the https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING/[connection string specification].
-* `auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a controlled environment.
-* `millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value of `millis` is `10000`.
-
-Alternatively, you can define the connection properties using the environment variables as shown in the following example:
-
-.Environment variables to enable PostgreSQL persistence
-[source]
-------
-export PGUSER=kogito-user
-export PGPASSWORD=kogito-pass
-export PGDATABASE=kogito
-------
-For more information about the full list of supported variables, see https://vertx.io/docs/vertx-pg-client/java/#_environment_variables[vertx-pg-client].
---
+//==== Enabling PostgreSQL persistence using reactive driver for {PRODUCT} services
+//
+//You can enable PostgreSQL persistence for your {PRODUCT} services using reactive driver.
+//
+//.Prerequisites
+//* https://www.postgresql.org/[PostgreSQL] is installed. For information about PostgreSQL installation and configuration, see https://www.postgresql.org/docs/current/[PostgreSQL documentation].
+//
+//.On Quarkus
+//
+//Add the following dependencies to the `pom.xml` file of your {PRODUCT} project:
+//
+//--
+//.Project dependency to enable PostgreSQL persistence
+//[source,xml,subs="attributes+,+quotes"]
+//----
+//<dependency>
+//  <groupId>org.kie.kogito</groupId>
+//  <artifactId>kogito-addons-quarkus-persistence-postgresql</artifactId>
+//</dependency>
+//<dependency>
+//  <groupId>io.quarkus</groupId>
+//  <artifactId>quarkus-reactive-pg-client</artifactId>
+//</dependency>
+//----
+//--
+//
+//Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
+//+
+//--
+//Replace the server host, port, credentials, and other information according to your PostgreSQL installation.
+//
+//.Application properties to enable PostgreSQL persistence
+//[source]
+//------
+//kogito.persistence.type=postgresql
+//kogito.persistence.auto.ddl=true
+//kogito.persistence.query.timeout.millis=10000
+//quarkus.datasource.reactive.url=postgresql://localhost:5432/kogito
+//quarkus.datasource.username=kogito-user
+//quarkus.datasource.password=kogito-pass
+//------
+//
+//* `quarkus.datasource.reactive.url`: This parameter can be customized according to the https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING/[connection string specification]. For a complete list of settings for Quarkus reactive datasource, see https://quarkus.io/guides/reactive-sql-clients#reactive-datasource[reactive datasource in Quarkus].
+//* `kogito.persistence.auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a controlled environment.
+//* `kogito.persistence.query.timeout.millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value is `10000`.
+//
+//.On Spring Boot
+//
+//Add the following dependency to the `pom.xml` file of your {PRODUCT} project:
+//+
+//--
+//.Project dependency to enable PostgreSQL persistence
+//[source,xml,subs="attributes+,+quotes"]
+//----
+//<dependency>
+//  <groupId>org.kie.kogito</groupId>
+//  <artifactId>kogito-quarkus-persistence-postgresql</artifactId>
+//</dependency>
+//----
+//--
+//
+//Add the following properties to the `src/main/resources/application.properties` file in your {PRODUCT} project to configure PostgreSQL and to connect to the PostgreSQL server.
+//
+//Replace the server host, port, credentials, and other information according to your PostgreSQL installation.
+//
+//.Application properties to enable PostgreSQL persistence
+//[source]
+//------
+//kogito.persistence.type=postgresql
+//kogito.persistence.postgresql.connection.uri=postgresql://kogito-user:kogito-pass@localhost:5432/kogito
+//kogito.persistence.auto.ddl=true
+//kogito.persistence.query.timeout.millis=10000
+//------
+//
+//* `kogito.persistence.postgresql.connection.uri`: This parameter can be customized according to the https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING/[connection string specification].
+//* `kogito.persistence.auto.ddl`: This parameter indicates the application to run the scripts that create necessary tables. Ensure that you have the required permissions to run the script, which is convenient for testing and validation purposes. However, you can use your infrastructure to run the scripts in a controlled environment.
+//* `kogito.persistence.query.timeout.millis`: This parameter is used to control the waiting time for the application to respond to each executed query. The default value is `10000`.
+//
+//Alternatively, you can define the connection properties using the environment variables as shown in the following example:
+//
+//.Environment variables to enable PostgreSQL persistence
+//[source]
+//------
+//export PGUSER=kogito-user
+//export PGPASSWORD=kogito-pass
+//export PGDATABASE=kogito
+//------
+//For more information about the full list of supported variables, see https://vertx.io/docs/vertx-pg-client/java/#_environment_variables[vertx-pg-client].
+//--
 
 ==== Enabling PostgreSQL persistence using JDBC driver for {PRODUCT} services
 
@@ -1891,19 +1766,10 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/kogito
 ------
 --
 
-For an example {PRODUCT} service with PostgreSQL persistence using reactive and JDBC driver, see the following example applications in GitHub:
+For an example {PRODUCT} service with PostgreSQL persistence using JDBC driver, see the following example applications in GitHub:
 
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-quarkus[`process-postgresql-persistence-quarkus`]: Example on Quarkus
-* https://github.com/kiegroup/kogito-examples/tree/stable/process-postgresql-persistence-springboot[`process-postgresql-persistence-springboot`]: Example on SpringBoot
-
-// end::proc-postgresql-persistence-enabling[]
-
-// tag::proc-oracle-persistence-enabling[]
-[id="proc-oracle-persistence-enabling_{context}"]
-=== Oracle persistence for {PRODUCT} services
-
-[role="_abstract"]
-As an alternative to using Infinispan, MongoDB, or PostgreSQL for {PRODUCT} runtime persistence, you can enable persistence for your {PRODUCT} services using https://www.oracle.com/database/[Oracle Database].
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-quarkus-examples/process-postgresql-persistence-quarkus[`process-postgresql-persistence-quarkus`]: Example on Quarkus
+* https://github.com/kiegroup/kogito-examples/tree/stable/kogito-springboot-examples/process-postgresql-persistence-springboot[`process-postgresql-persistence-springboot`]: Example on SpringBoot
 
 ==== Enabling Oracle persistence using JDBC driver for {PRODUCT} services
 
@@ -1960,7 +1826,7 @@ Replace the server host, port, and database information according to your Oracle
 .On Quarkus
 [source]
 ------
-kogito.persistence.type=oracle
+kogito.persistence.type=jdbc
 quarkus.datasource.db-kind=oracle
 quarkus.datasource.username=kogito
 quarkus.datasource.password=kogito
@@ -1970,14 +1836,14 @@ quarkus.datasource.jdbc.url=jdbc:oracle://oracle:1521/kogito
 .On Spring Boot
 [source]
 ------
-kogito.persistence.type=oracle
+kogito.persistence.type=jdbc
 spring.datasource.username=kogito
 spring.datasource.password=kogito
 spring.datasource.url=jdbc:oracle://oracle:1521/kogito
 ------
 --
 
-// end::proc-oracle-persistence-enabling[]
+// end::proc-jdbc-persistence-enabling[]
 
 [id="con-data-index-service_{context}"]
 == {PRODUCT} Data Index Service
