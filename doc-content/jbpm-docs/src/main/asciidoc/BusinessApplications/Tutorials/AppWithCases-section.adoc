@@ -20,16 +20,7 @@ Next execute these dynamic assets
 
 == What should I do
 
-To get started with business applications the easiest way is to generate it.
-Go to https://start.jbpm.org[start.jbpm.org] and click button
-`Configure your business application`.
-
-image::BusinessApplications/tutorial-7-wizard-dynamic-assets.png[Business process - sample]
-
-* First step: Select `Business Automation` (selected by default)
-* Second step: Provide details for your business application
-* Third step: Select `Dynamic Assets`, `Data Model` and `Service` projects
-* Click `Generate business application` button
+To get started with business applications the easiest way is to generate it using maven archetype commands. Refer to Create your business application section for the commands.
 
 Start {CENTRAL} (if not already started) and open your browser at
 http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
@@ -37,20 +28,20 @@ user `wbadmin` with password `wbadmin`
 
 === Import your business assets project into {CENTRAL}
 
-* Go into business assets project - `business-application-kjar`
+* Go into business assets project - `<project>-kjar`
 * Execute `git init`
 * Execute `git add -A`
 * Execute `git commit -m "my business assets project"`
 * Log in to {CENTRAL} and go to projects
-* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Select import project and enter the following URL `file:///{path to your business application}/<project>-kjar`
 * Click import and confirm project to be imported
 
 === Create Dynamic Asset - Case definition
 
 In browser where you logged into {CENTRAL} go to Projects. You will see your newly imported
-project named business-application-kjar.
+project named <project>-kjar.
 
-* go into business-application-kjar project
+* go into <project>-kjar project
 * click `Add asset` button
 * select `Case definition` asset
 * provide name for this asset e.g. `myfirstcase`
@@ -78,11 +69,11 @@ The first one can be dynamically created on ad hoc basis.
 
 === Pull back your business assets to business application source code
 
-* Go to business-application-kjar
-* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar`
+* Go to <project>-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/<project>-kjar`
 * Execute `git pull origin master` - when prompted enter `wbadmin` as password
 
-Go to `business-application-service` directory and launch the application
+Go to `<project>-service` directory and launch the application
 
 `./launch.sh clean install` for Linux/Unix
 
@@ -99,14 +90,14 @@ to see that your business assets project has been properly deployed and is runni
 NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
 authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
 
-Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/cases/definitions[http://localhost:8090/rest/server/containers/business-application-kjar/cases/definitions]
+Next, point the browser to http://localhost:8090/rest/server/containers/<project>-kjar/cases/definitions[http://localhost:8090/rest/server/containers/<project>-kjar/cases/definitions]
 to see dynamic assets (cases) available for execution.
 
 === Execute business process
 
 You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
 
-URL: `http://localhost:8090/rest/server/containers/business-application-kjar/cases/{casedefid}/instances`
+URL: `http://localhost:8090/rest/server/containers/<project>-kjar/cases/{casedefid}/instances`
 HTTP method: POST
 
 HTTP headers can be set to change the format of data returned
@@ -115,7 +106,7 @@ HTTP headers can be set to change the format of data returned
 * Accept: application/xml for XML (JAXB based) format
 * X-KIE-ContentType: XSTREAM for XML (XStream based) format
 
-{casedefid} needs to be replaced with actual case definition id that is returned from the endpoint http://localhost:8090/rest/server/containers/business-application-kjar/cases/definitions
+{casedefid} needs to be replaced with actual case definition id that is returned from the endpoint http://localhost:8090/rest/server/containers/<project>-kjar/cases/definitions
 
 NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
 
@@ -129,7 +120,7 @@ In response to this request, a case instance id should be returned.
 ----
 
 You can examine details of that case instance by pointing your browser to
-http://localhost:8090/rest/server/containers/business-application-kjar/cases/instances/CASE-0000000001[http://localhost:8090/rest/server/containers/business-application-kjar/cases/instances/CASE-0000000001]
+http://localhost:8090/rest/server/containers/<project>-kjar/cases/instances/CASE-0000000001[http://localhost:8090/rest/server/containers/<project>-kjar/cases/instances/CASE-0000000001]
 
 [source, xml]
 ----
@@ -181,7 +172,7 @@ you should see second task from case definition
 
 You can trigger dynamically the other user task by issuing request to
 
-* URL: http://localhost:8090/rest/server/containers/business-application-kjar/cases/instances/CASE-0000000001/tasks/Dynamic%20User%20Task
+* URL: http://localhost:8090/rest/server/containers/<project>-kjar/cases/instances/CASE-0000000001/tasks/Dynamic%20User%20Task
 * HTTP method: PUT
 
 Optionally you can send data as payload of the request.
@@ -249,7 +240,7 @@ Once done, restart jBPM server.
 
 Stop the application if it's running.
 
-Go to `business-application-service` directory and launch the application in development mode
+Go to `<project>-service` directory and launch the application in development mode
 
 `./launch-dev.sh clean install` for Linux/Unix
 
@@ -262,24 +253,24 @@ Go to {CENTRAL} in the browser and navigate to servers (from the home screen).
 
 image::BusinessApplications/tutorial-7-empty-server.png[]
 
-As you can see the `business-application-service Dev` is there and connected. Although
+As you can see the `<project>-service Dev` is there and connected. Although
 it does not have any kjars deployed. This is because it's now running in managed mode
 meaning it's {CENTRAL} that decides what kjars it should run.
 
-So let's deploy the business-application-kjar to our running application.
+So let's deploy the <project>-kjar to our running application.
 
 * Go to projects from home screen of {CENTRAL}
-* Go into business-application-kjar project
+* Go into <project>-kjar project
 * Click `Deploy` button
-* Make sure that `Server configuration` is set to `business-application-service-dev` and click ok
+* Make sure that `Server configuration` is set to `<project>-service-dev` and click ok
 
 The project should be successfully deployed and you can examine that state by going back to servers
 from home screen.
 
 Next, go to process definitions (in Manage section of the Home screen) and select server configuration
-(top right corner) - again it should be `business-application-service-dev` the list of available
+(top right corner) - again it should be `<project>-service-dev` the list of available
 process definition will be loaded and you should see your single case definition from the project
-`business-application-kjar`.
+`<project>-kjar`.
 
 image::BusinessApplications/tutorial-7-process-defs.png[]
 
