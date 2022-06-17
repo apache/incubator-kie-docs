@@ -1,0 +1,70 @@
+[id='Log4J-proc_{context}']
+= Using Log4J to log  OptaPlanner solver activity
+If you are already using Log4J and you do not want to switch to its faster successor, Logback, you can configure your OptaPlanner project for Log4J.
+
+.Prerequisites
+* You have an OptaPlanner project
+* You are using the Log4J logging framework
+
+.Procedure
+
+. Add the bridge dependency to the project `pom.xml` file:
++
+[source,xml,options="nowrap"]
+----
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>1.x</version>
+    </dependency>
+----
+
+. Configure the logging level on the package `org.optaplanner` in your `log4j.xml` file as shown in the following example, where `<LEVEL>` is a logging level listed in xref:logback-proc_{context}[].
++
+[source,xml,options="nowrap"]
+----
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+
+  <category name="org.optaplanner">
+    <priority value="<LEVEL>" />
+  </category>
+
+  ...
+
+</log4j:configuration>
+----
+. Optional: If you have a multitenant application where multiple `Solver` instances might be running at the same time, separate the logging of each instance into separate files:
+.. Surround the `solve()` call with  http://logback.qos.ch/manual/mdc.html[Mapped Diagnostic Context] (MDC):
++
+[source,java,options="nowrap"]
+----
+        MDC.put("tenant.name",tenantName);
+        MySolution bestSolution = solver.solve(problem);
+        MDC.remove("tenant.name");
+----
+
+.. Configure your logger to use different files for each `${tenant.name}`.
+For example, use a `SiftingAppender` in the `logback.xml` file:
++
+[source,xml,options="nowrap"]
+----
+  <appender name="fileAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
+    <discriminator>
+      <key>tenant.name</key>
+      <defaultValue>unknown</defaultValue>
+    </discriminator>
+    <sift>
+      <appender name="fileAppender.${tenant.name}" class="...FileAppender">
+        <file>local/log/optaplanner-${tenant.name}.log</file>
+        ...
+      </appender>
+    </sift>
+  </appender>
+----
++
+[NOTE]
+====
+When running multiple solvers or one multithreaded solve,
+most appenders, including the console, cause congestion with `debug` and `trace` logging.
+Switch to an async appender to avoid this problem or turn off `debug` logging.
+====
