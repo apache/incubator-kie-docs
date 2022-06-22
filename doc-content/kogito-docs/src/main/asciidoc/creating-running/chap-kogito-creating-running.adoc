@@ -2107,17 +2107,18 @@ The Source Files Add-on provides REST support for the following operation:
 
 ==== List all the source files for the specified process
 
-* GET: `/management/process/{id}/sources`
+* GET: `/management/processes/{processId}/sources`
 ** parameters:
-*** name: id
-**** in: path
+*** processId: process identifier
+** output:
+*** JSON with related source files URIs
 
 .Example: to list the source files for the process with id `petstore_http`, you can use the following command:
 
 [source,bash]
 ----
 $ curl -X 'GET' \
-  'http://localhost:8080/management/process/petstore_http/sources' \
+  'http://localhost:8080/management/processes/petstore_http/sources' \
   -H 'accept: application/json' \
   -H 'Authorization: Basic c2NvdHQ6amIwc3M='
 ----
@@ -2138,6 +2139,58 @@ $ curl -X 'GET' \
 
 ==== Download the specified source file
 
+* GET: `/management/processes/{processId}/source`
+** parameters:
+*** processId: process identifier
+** output:
+*** Source file content used by the editor
+
+.Example: to list the source file for the process with id `petstore_http`, you can use the following command:
+
+[source,bash]
+----
+$ curl -X 'GET' \
+  'http://localhost:8080/management/processes/petstore_http/source' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Basic c2NvdHQ6amIwc3M='
+----
+
+.Output
+
+[source,json]
+----
+{
+  "id": "petstore_http",
+  "version": "1.0",
+  "name": "Send CloudEvent after creating Pluto",
+  "start": "AddPluto",
+  "functions": [
+    {
+      "name": "addPet",
+      "operation": "https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/examples/v2.0/json/petstore-simple.json#addPet"
+    }
+  ],
+  "states": [
+    {
+      "name": "AddPluto",
+      "type": "operation",
+      "actions": [
+        {
+          "functionRef": {
+            "refName": "addPet",
+            "parameters": {
+              "body": {
+                "name": "Pluto"
+              }
+            }
+          }
+        }
+      ],
+      "end": true
+    }
+  ]
+}
+----
 .Example: to download the source file located at `/sources/org/kie/kogito/examples/petstore_http.sw.json`, you can use the following command:
 
 [source,bash]
