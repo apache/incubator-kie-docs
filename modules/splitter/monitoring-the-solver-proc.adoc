@@ -1,12 +1,12 @@
 [id='monitoring-the-solver-proc_{context}']
 = Monitoring the solver
-OptaPlanner exposes metrics through https://micrometer.io/[Micrometer], a metrics instrumentation library for Java applications. You can use Micrometer with popular monitoring systems to monitor the OptaPlanner solver.
+{PLANNER_SHORT} exposes metrics through https://micrometer.io/[Micrometer], a metrics instrumentation library for Java applications. You can use Micrometer with popular monitoring systems to monitor the {PLANNER_SHORT} solver.
 
-== Configuring a Quarkus OptaPlanner application for Micrometer
-To configure your OptaPlanner Quarkus application to use Micrometer and a specified monitoring system, add the Micrometer dependency to the `pom.xml` file.
+== Configuring a Quarkus {PLANNER_SHORT} application for Micrometer
+To configure your {PLANNER_SHORT} Quarkus application to use Micrometer and a specified monitoring system, add the Micrometer dependency to the `pom.xml` file.
 
 .Prerequisites
-* You have a Quarkus OptaPlanner application.
+* You have a Quarkus {PLANNER_SHORT} application.
 
 .Procedure
 . Add the following dependency to your application's `pom.xml` file where `<MONITORING_SYSTEM>` is a monitoring system supported by Micrometer and Quarkus:
@@ -33,11 +33,11 @@ mvn compile quarkus:dev
 http://localhost:8080/q/metrics
 ----
 
-== Configuring a Spring Boot OptaPlanner application for Micrometer
-To configure your Spring Boot OptaPlanner  application to use Micrometer and a specified monitoring system, add the Micrometer dependency to the `pom.xml` file.
+== Configuring a Spring Boot {PLANNER_SHORT} application for Micrometer
+To configure your Spring Boot {PLANNER_SHORT}  application to use Micrometer and a specified monitoring system, add the Micrometer dependency to the `pom.xml` file.
 
 .Prerequisites
-* You have a Spring Boot OptaPlanner  application.
+* You have a Spring Boot {PLANNER_SHORT}  application.
 
 .Procedure
 . Add the following dependency to your application's `pom.xml` file where `<MONITORING_SYSTEM>` is a monitoring system supported by Micrometer and Spring Boot:
@@ -70,12 +70,12 @@ http://localhost:8080/actuator/metrics
 NOTE: Use the following URL as the Prometheus scraper path:
 `http://localhost:8080/actuator/prometheus`
 
-== Configuring a plain Java OptaPlanner application for Micrometer
-To configuring a plain Java OptaPlanner application to use Micrometer, you must add Micrometer dependencies and configuration information for your chosen monitoring system to your project's `POM.XML` file.
+== Configuring a plain Java {PLANNER_SHORT} application for Micrometer
+To configuring a plain Java {PLANNER_SHORT} application to use Micrometer, you must add Micrometer dependencies and configuration information for your chosen monitoring system to your project's `POM.XML` file.
 
 
 .Prerequisites
-* You have a plain Java OptaPlanner application.
+* You have a plain Java {PLANNER_SHORT} application.
 
 .Procedure
 . Add the following dependencies to your application's `pom.xml` file where `<MONITORING_SYSTEM>` is a monitoring system that is configured with Micrometer and `<VERSION>` is the version of Micrometer that you are using:
@@ -121,7 +121,7 @@ try {
 Metrics.addRegistry(prometheusRegistry);
 ----
 
-. Open your monitoring system to view the metrics for your OptaPlanner project. The following metrics are exposed:
+. Open your monitoring system to view the metrics for your {PLANNER_SHORT} project. The following metrics are exposed:
 +
 [NOTE]
 ====
@@ -134,3 +134,46 @@ of the measuring.
 * `optaplanner.solver.solve-length.seconds-max`: run time of the
 longest-running currently active solver.
 * `optaplanner.solver.solve-length.seconds-duration-sum`: the sum of each active solver's solve duration. For example, if there are two active solvers, one running for three minutes and the other for one minute, the total solve time is four minutes.
+
+== Additional Metrics
+
+For more detailed monitoring, you can configure {PLANNER_SHORT} in the solver configuration to monitor additional metrics at a performance cost. The following example uses the `BEST_SCORE` and `SCORE_CALCULATION_COUNT` metric :
+
+[source,xml,options="nowrap"]
+----
+<solver xmlns="https://www.optaplanner.org/xsd/solver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
+  <monitoring>
+    <metric>BEST_SCORE</metric>
+    <metric>SCORE_CALCULATION_COUNT</metric>
+    ...
+  </monitoring>
+  ...
+</solver>
+----
+
+You can enable the following metrics in this configuration:
+
+* `SOLVE_DURATION` (enabled by default, Micrometer meter ID: `optaplanner.solver.solve.duration`): Measures the duration of solving for the longest active solver, the number of active solvers, and the cumulative duration of all active solvers.
+
+* `ERROR_COUNT` (enabled by default, Micrometer meter ID: `optaplanner.solver.errors`): Measures the number of errors that occurred while solving.
+
+* `SCORE_CALCULATION_COUNT` (enabled by default, Micrometer meter ID: `optaplanner.solver.score.calculation.count`): Measures the number of score calculations the {PLANNER_SHORT} performed.
+
+* `BEST_SCORE` (Micrometer meter ID: `optaplanner.solver.best.score.*`): Measures the score of the best solution that {PLANNER_SHORT} has found so far. There are separate meters for each level of the score. For instance, for a `HardSoftScore`, there are `optaplanner.solver.best.score.hard.score` and `optaplanner.solver.best.score.soft.score` meters.
+
+* `STEP_SCORE` (Micrometer meter ID: `optaplanner.solver.step.score.*`): Measures the score of each step that {PLANNER_SHORT} takes. There are separate meters for each level of the score. For instance, for a `HardSoftScore`, there are `optaplanner.solver.step.score.hard.score` and `optaplanner.solver.step.score.soft.score` meters.
+
+* `BEST_SOLUTION_MUTATION` (Micrometer meter ID: `optaplanner.solver.best.solution.mutation`): Measures the number of changed planning variables between consecutive best solutions.
+
+* `MOVE_COUNT_PER_STEP` (Micrometer meter ID: `optaplanner.solver.step.move.count`): Measures the number of moves evaluated in a step.
+
+* `MEMORY_USE` (Micrometer meter ID: `jvm.memory.used`): Measures the amount of memory used across the JVM. This does not measure the amount of memory used by a solver; two solvers on the same JVM will report the same value for this metric.
+
+* `CONSTRAINT_MATCH_TOTAL_BEST_SCORE` (Micrometer meter ID: `optaplanner.solver.constraint.match.best.score.*`): Measures the score impact of each constraint on the best solution that {PLANNER_SHORT} has found so far. There are separate meters for each level of the score, with tags for each constraint. For instance, for a `HardSoftScore` for a constraint "Minimize Cost" in package "com.example", there are `optaplanner.solver.constraint.match.best.score.hard.score` and `optaplanner.solver.constraint.match.best.score.soft.score` meters with tags "constraint.package=com.example" and "constraint.name=Minimize Cost".
+
+* `CONSTRAINT_MATCH_TOTAL_STEP_SCORE` (Micrometer meter ID: `optaplanner.solver.constraint.match.step.score.*`): Measures the score impact of each constraint on the current step. There are separate meters for each level of the score, with tags for each constraint. For instance, for a `HardSoftScore` for a constraint "Minimize Cost" in package "com.example", there are `optaplanner.solver.constraint.match.step.score.hard.score` and `optaplanner.solver.constraint.match.step.score.soft.score` meters with tags "constraint.package=com.example" and "constraint.name=Minimize Cost".
+
+* `PICKED_MOVE_TYPE_BEST_SCORE_DIFF` (Micrometer meter ID: `optaplanner.solver.move.type.best.score.diff.*`): Measures how much a particular move type improves the best solution. There are separate meters for each level of the score, with a tag for the move type. For instance, for a `HardSoftScore` and a `ChangeMove` for the computer of a process, there are `optaplanner.solver.move.type.best.score.diff.hard.score` and `optaplanner.solver.move.type.best.score.diff.soft.score` meters with the tag `move.type=ChangeMove(Process.computer)`.
+
+* `PICKED_MOVE_TYPE_STEP_SCORE_DIFF` (Micrometer meter ID: `optaplanner.solver.move.type.step.score.diff.*`): Measures how much a particular move type improves a step. There are separate meters for each level of the score, with a tag for the move type. For instance, for a `HardSoftScore` and a `ChangeMove` for the computer of a process, there are `optaplanner.solver.move.type.step.score.diff.hard.score` and `optaplanner.solver.move.type.step.score.diff.soft.score` meters with the tag `move.type=ChangeMove(Process.computer)`.
