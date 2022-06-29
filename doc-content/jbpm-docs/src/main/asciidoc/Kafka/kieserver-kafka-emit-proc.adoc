@@ -1,7 +1,7 @@
 [id='kieserver-kafka-emit-proc_{context}']
-= Configuring a service and {KIE_SERVER} to emit Kafka messages when a transaction is committed
+= Configuring a service and {KIE_SERVER} to send Kafka messages when a transaction is committed
 
-You can configure {KIE_SERVER} to emit Kafka messages automatically. In this case, {KIE_SERVER} sends a message every time a task, process, case, or variable is created, updated, or deleted. The Kafka message contains information about the modified object. {KIE_SERVER} sends the message when it commits the transaction with the change.
+You can configure {KIE_SERVER} with an _emitter_ that sends Kafka messages automatically. In this case, {KIE_SERVER} sends a message every time a task, process, case, or variable is created, updated, or deleted. The Kafka message contains information about the modified object. {KIE_SERVER} sends the message when it commits the transaction with the change.
 
 You can use this functionality with any business process or case. You do not need to change anything in the process design.
 
@@ -23,9 +23,13 @@ The published messages comply with the https://github.com/cloudevents/spec[Cloud
 * `time`: The timestamp of the event, by default in the https://tools.ietf.org/html/rfc3339[RFC3339] format
 * `data`: Information about the process, case, or task, presented in a JSON format
 
+.Prerequisites
+
+* A {KIE_SERVER} instance is installed.
+
 .Procedure
 
-. To enable emitting Kafka messages, complete one of the following steps:
+. To send Kafka messages automatically, complete one of the following tasks:
 .. If you deployed {KIE_SERVER} on {EAP} or another application server, complete the following steps:
 ifdef::PAM,DM[]
 ... Download the `{PRODUCT_FILE}-maven-repository.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal.
@@ -49,16 +53,43 @@ endif::JBPM,DROOLS,OP[]
 ----
 +
 . Configure any of the following {KIE_SERVER} system properties as necessary:
-* `org.kie.jbpm.event.emitters.kafka.bootstrap.servers`: The host and port of the Kafka broker. The default value is `localhost:9092`. You can use a comma-separated list of multiple host:port pairs.
-* `org.kie.jbpm.event.emitters.kafka.date_format`: The timestamp format for the `time` field of the messages. The default value is `yyyy-MM-dd'T'HH:mm:ss.SSSZ` .
-* `org.kie.jbpm.event.emitters.kafka.topic.processes`: The topic name for process event messages. The default value is `jbpm-processes-events`.
-* `org.kie.jbpm.event.emitters.kafka.topic.cases`: The topic name for process event messages. The default value is `jbpm-cases-events`.
-* `org.kie.jbpm.event.emitters.kafka.topic.tasks`: The topic name for process event messages. The default value is `jbpm-processes-tasks`.
-* `org.kie.jbpm.event.emitters.kafka.client.id`: An identifier string to pass to the server when making requests. The server uses this string for logging.
-* `org.kie.jbpm.event.emitters.kafka._property_name_`: You can set any {KAFKA_PRODUCT} consumer or producer property by using the `org.kie.jbpm.event.emitters.kafka` prefix. For example, to set a value for the `buffer.memory` producer property, set the `org.kie.jbpm.event.emitters.kafka.buffer.memory` {KIE_SERVER} system property.
 +
-This setting applies when {KIE_SERVER} emits Kafka messages automatically when completing transactions.
-+
+.{KIE_SERVER} system properties related to the Kafka emitter
+[cols="35%,35%,30%", options="header"]
+|===
+|Property
+|Description
+|Default value
+
+|`org.kie.jbpm.event.emitters.kafka.bootstrap.servers`:
+|The host and port of the Kafka broker. You can use a comma-separated list of multiple host:port pairs.
+|`localhost:9092`
+
+|`org.kie.jbpm.event.emitters.kafka.date_format`:
+|The timestamp format for the `time` field of the messages.
+|`yyyy-MM-dd'T'HH:mm:ss.SSSZ`
+
+|`org.kie.jbpm.event.emitters.kafka.topic.processes`
+|The topic name for process event messages.
+|`jbpm-processes-events`
+
+|`org.kie.jbpm.event.emitters.kafka.topic.cases`
+|The topic name for case event messages.
+|`jbpm-cases-events`
+
+|`org.kie.jbpm.event.emitters.kafka.topic.tasks`
+|The topic name for task event messages.
+|`jbpm-processes-tasks`
+
+|`org.kie.jbpm.event.emitters.kafka.client.id`
+|An identifier string to pass to the server when making requests. The server uses this string for logging.
+|
+
+|`org.kie.jbpm.event.emitters.kafka._property_name_`
+|Set any {KAFKA_PRODUCT} consumer or producer property by using this prefix. For example, to set a value for the `buffer.memory` producer property, set the `org.kie.jbpm.event.emitters.kafka.buffer.memory` {KIE_SERVER} system property.
+
+This setting applies when {KIE_SERVER} is configured with an emitter to send Kafka messages automatically when completing transactions.
+
 For a list of {KAFKA_PRODUCT} consumer and producer properties, see
 ifdef::PAM,DM[]
 the _Consumer configuration parameters_ and _Producer configuration parameters_ appendixes in https://access.redhat.com/documentation/en-us/red_hat_amq/{AMQ_URL_QUARTERLY}/html-single/using_amq_streams_on_rhel/index[_Using AMQ Streams on RHEL_].
@@ -66,7 +97,11 @@ endif::PAM,DM[]
 ifdef::JBPM,DROOLS,OP[]
 the _Consumer Configs_ and _Producer Configs_ sections in https://kafka.apache.org/documentation/[the Apache Kafka documentation].
 endif::JBPM,DROOLS,OP[]
-+
-* `org.kie.jbpm.event.emitters.eagerInit`: By default, {KIE_SERVER} initializes the Kafka emitter only when sending a message. If you want to initialize the Kafka emitter when {KIE_SERVER} starts, set this property to `true`.
-+
+|
+
+|`org.kie.jbpm.event.emitters.eagerInit`
+|By default, {KIE_SERVER} initializes the Kafka emitter only when sending a message. If you want to initialize the Kafka emitter when {KIE_SERVER} starts, set this property to `true`.
+
 When {KIE_SERVER} initializes the Kafka emitter, it logs any errors in Kafka emitter configuration and any Kafka communication errors. If you set the `org.kie.jbpm.event.emitters.eagerInit` property to `true`, any such errors appear in the log output when {KIE_SERVER} starts.
+|`false`
+|===
