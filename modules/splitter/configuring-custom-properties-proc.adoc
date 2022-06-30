@@ -1,0 +1,43 @@
+[id='configuring-custom-properties-proc_{context}']
+= Configuring custom properties
+
+In your OptaPlanner projects, you can add custom properties to solver configuration elements that instantiate classes and have documents that explicitly mention custom properties.
+
+.Prerequisites
+* You have a solver.
+
+.Procedure
+. Add a custom property.
++
+For example, if your `EasyScoreCalculator` has heavy calculations which are cached
+and you want to increase the cache size in one benchmark add the `myCacheSize` property:
++
+[source,xml,options="nowrap"]
+----
+  <scoreDirectorFactory>
+    <easyScoreCalculatorClass>...MyEasyScoreCalculator</easyScoreCalculatorClass>
+    <easyScoreCalculatorCustomProperties>
+      <property name="myCacheSize" value="1000"/><!-- Override value -->
+    </easyScoreCalculatorCustomProperties>
+  </scoreDirectorFactory>
+----
+
+. Add a public setter for each custom property, which is called when a `Solver` is built.
++
+[source,java,options="nowrap"]
+----
+public class MyEasyScoreCalculator extends EasyScoreCalculator<MySolution, SimpleScore> {
+
+        private int myCacheSize = 500; // Default value
+
+        @SuppressWarnings("unused")
+        public void setMyCacheSize(int myCacheSize) {
+            this.myCacheSize = myCacheSize;
+        }
+
+    ...
+}
+----
++
+Most value types are supported, including `boolean`, `int`, `double`, `BigDecimal`, `String` and `enums`.
+

@@ -1,0 +1,68 @@
+[id='xml-configuration-proc_{context}']
+= Using an XML file to configure the {PLANNER_SHORT} solver
+You can use an XML file to configure the solver. In a typical project that follows the Maven directory structure, after you build a `Solver` instance with the `SolverFactory`, the `solverConfig` XML file is located in the `$PROJECT_DIR/src/main/resources/org/optaplanner/examples/<PROJECT>/solver` directory, where `<PROJECT>` is the name of your OptaPlanner project. Alternatively, you can create a `SolverFactory` from a file with `SolverFactory.createFromXmlFile()`.
+However, for portability reasons, a classpath resource is recommended.
+
+
+Both a `Solver` and a `SolverFactory` have a generic type called `Solution_`, which is the class representing a planning problem and solution.
+
+OptaPlanner makes it relatively easy to switch optimization algorithms by changing the configuration.
+//There is a benchmarker which enables you to test different configurations against each other and report the most appropriate configuration for your use case.
+
+.Procedure
+. Build a `Solver` instance with the `SolverFactory`.
+
+. Configure the solver configuration XML file:
+.. Define the model.
+.. Define the score function.
+.. Optional: Configure the optimization algorithm.
++
+The following example is a solver XML file for the NQueens problem:
++
+[source,xml,options="nowrap"]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<solver xmlns="https://www.optaplanner.org/xsd/solver" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://www.optaplanner.org/xsd/solver https://www.optaplanner.org/xsd/solver/solver.xsd">
+  <!-- Define the model -->
+  <solutionClass>org.optaplanner.examples.nqueens.domain.NQueens</solutionClass>
+  <entityClass>org.optaplanner.examples.nqueens.domain.Queen</entityClass>
+
+  <!-- Define the score function -->
+  <scoreDirectorFactory>
+    <scoreDrl>org/optaplanner/examples/nqueens/solver/nQueensConstraints.drl</scoreDrl>
+  </scoreDirectorFactory>
+
+  <!-- Configure the optimization algorithms (optional) -->
+  <termination>
+    ...
+  </termination>
+  <constructionHeuristic>
+    ...
+  </constructionHeuristic>
+  <localSearch>
+    ...
+  </localSearch>
+</solver>
+----
++
+[NOTE]
+====
+On some environments, for example OSGi and JBoss modules, classpath resources such as the solver config, score DRLs, and domain classe) in your JAR files might not be available to the default `ClassLoader` of the `optaplanner-core` JAR file.
+In those cases, provide the `ClassLoader` of your classes as a parameter:
+
+[source,java,options="nowrap"]
+----
+       SolverFactory<NQueens> solverFactory = SolverFactory.createFromXmlResource(
+               ".../nqueensSolverConfig.xml", getClass().getClassLoader());
+----
+====
+
+. Configure the `SolverFactory` with a solver configuration XML file, provided as a classpath resource as defined by `ClassLoader.getResource()`:
++
+[source,java,options="nowrap"]
+----
+       SolverFasctory<NQueens> solverFactory = SolverFactory.createFromXmlResource(
+               "org/optaplanner/examples/nqueens/solver/nqueensSolverConfig.xml");
+       Solver<NQueens> solver = solverFactory.buildSolver();
+----
