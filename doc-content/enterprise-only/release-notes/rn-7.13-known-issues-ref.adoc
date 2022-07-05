@@ -1,0 +1,149 @@
+[id='rn-7.13-known-issues-ref']
+= Known issues in {PRODUCT} {ENTERPRISE_VERSION_LONG}
+
+This section lists known issues with {PRODUCT} {PRODUCT_VERSION}.
+
+ifdef::PAM[]
+
+== Process Designer
+
+.The JavaScript language in an On Entry Action property produces an error after changing a node to multiple instances [https://issues.redhat.com/browse/RHPAM-3409[RHPAM-3409]]
+
+Issue: When the language of the *On Entry Action* property is set to JavaScript, and then you change the node to *Multiple Instance*, you receive a system error.
+
+Steps to reproduce:
+
+. Create a new business process.
+. Create a user task and set it to the *Multiple Instance* property.
+. Enter any string to *On Entry Action* or *On Exit Action*.
+. Select the JavaScript language.
+. Select the *Multiple Instance* check box.
+
+Actual result: You receive a system error.
+
+Expected result: You do not receive an error either in the UI or in the server log file.
+
+Workaround: None.
+
+.`customCaseRoles` metadata attribute is not added [https://issues.redhat.com/browse/RHPAM-4410[RHPAM-4410]]
+
+Issue: It is not possible to add new `customCaseRoles` metadata attribute in a case process definition.
+
+Steps to reproduce:
+
+. Create a case project.
+. Create a case definition.
+. Open *Case Management* in *Properties* panel and add a new case roles as `owner:1`.
+. Save, close and reopen the case.
+. In *Properties* panel, check the metadata attributes under *Advanced* section.
+
+Actual result: The Metadata Attributes section is empty.
+
+Expected result: The Metadata Attributes contains the `customCaseRoles:owner:1`.
+
+Workaround: None.
+
+== {PROCESS_ENGINE_CAP}
+
+.When you abort a process instance, timer is not deleted [https://issues.redhat.com/browse/RHPAM-4380[RHPAM-4380]]
+
+Issue: Aborting a process instance with an active timer does not delete the timer. The timer then fires at the defined trigger date, which is silently dismissed by the system, so this is not a functional problem. However, it populates the EJB timer subsystem with `orphaned` timers, in particular if the timers are long-running, and the number of aborted process instances is high.
+
+Workaround: None.
+
+.When you are using Spring Boot, the `UserGroupCallback` implementation is not getting injected into {KIE_SERVER} [https://issues.redhat.com/browse/RHPAM-4281[RHPAM-4281]]
+
+Issue: When you are using an engine embedded in a {KIE_SERVER} packaged as a Spring Boot application, the bean defined as `userGroupCallback` is not injected into the engine, and therefore when you trying to call some of the rest endpoints fetching some tasks based on the user or groups assigned to them (such as potOwner, stakeHolders, businessAdmin, etc) will not work as expected since the `UserGroupCallback` implementation used in the engine will be different than the one defined at the Spring boot application level. Note that this is only applicable to cases and not to processes.
+
+Steps to reproduce:
+
+. Start {KIE_SERVER} as a Spring Boot app with a default identity provider and a `UserGroupCallback` implementation.
+. Try to fetch some tasks assigned to a group by using some rest endpoints such as potOwner, stakeHolders, or businessAdmins.
+
+Workaround: None.
+
+.Kafka-clients contains misalignment with any supported {AMQ_STREAMS} version [https://issues.redhat.com/browse/RHPAM-4417[RHPAM-4417]]
+
+Issue: Kafka dependencies for the community are not aligned with the ones supported by RHOAR for {PRODUCT} {PRODUCT_VERSION}. The current version of the Kafka community version is 2.8.0 and it must be aligned with the version used by {AMQ_STREAMS} 2.1.0 which is 3.1.0 for the community.
+
+Workaround: None.
+
+endif::PAM[]
+
+== Spring Boot
+
+.Wrong managed version of Spring Boot dependencies [https://issues.redhat.com/browse/RHPAM-4413[RHPAM-4413]]
+
+Issue: The current Spring Boot version (2.6.6) in maven repository is not certified by Red Hat yet. You receive a mismatch for the narayana starter in productized binaries.
+
+Workaround: In your `pom.xml` file, define the following properties to override the current versions:
+
+[source, xml]
+----
+<version.org.springframework.boot>2.5.12</version.org.springframework.boot>
+<version.me.snowdrop.narayana>2.6.3.redhat-00001</version.me.snowdrop.narayana>
+----
+
+== {KOGITO}
+
+.{KOGITO} is aligned with non supported Spring Boot version [https://issues.redhat.com/browse/RHPAM-4419[RHPAM-4419]]
+
+Issue: {KOGITO} Spring Boot versions are managed in `kogito-spring-boot-bom` file, which imports dependency management from `org.springframework.boot:spring-boot-dependencies` BOM. The currently aligned version is 2.6.6, which does not map to any Red Hat supported versions, the latest supported version is 2.5.12. You must override dependency management with a BOM aligning to Red Hat supported version which is 2.5.12.
+
+Workaround:
+
+. Maintain the order of imported BOM files. First include the Spring Boot BOM and after that include the {KOGITO} specific BOM.
++
+[source, xml]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>dev.snowdrop</groupId>
+            <artifactId>snowdrop-dependencies</artifactId>
+            <version>2.5.12.Final-redhat-00001</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.kie.kogito</groupId>
+            <artifactId>kogito-spring-boot-bom</artifactId>
+            <version>1.13.2.redhat-00002</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+----
+
+. Align version of `spring-boot-maven-plugin` to the same version in your project build configuration file
++
+[source, xml]
+----
+<plugins>
+      <plugin>
+        <groupId>org.kie.kogito</groupId>
+        <artifactId>kogito-maven-plugin</artifactId>
+        <version>1.13.2.redhat-00002</version>
+        <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>2.5.12</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+----
+
+.{KOGITO} on Spring Boot leads to misalignment of Kafka-clients version [https://issues.redhat.com/browse/RHPAM-4418[RHPAM-4418]]
+
+Issue: The Kafka-clients dependency version for {KOGITO} Spring Boot is by default managed by `org.springframework.boot:spring-boot-dependencies` BOM. Depending on which Spring Boot version is used users might end up with unsupported or vulnerable version of Kafka-clients. You must override the default dependency in your `kogito-spring-boot-bom` to make sure you stick to the expected Kafka-clients version.
+
+Workaround:  In your projects, define `dependencyManagement` explicitly for `org.apache.kafka:kafka-clients` dependency to use the version released by {AMQ_STREAMS} release supported at a given time.
