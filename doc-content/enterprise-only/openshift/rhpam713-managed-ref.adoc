@@ -4,10 +4,10 @@
     Changes to .adoc or HTML files may be overwritten! Please change the
     generator or the input template (https://github.com/jboss-container-images/jboss-kie-modules/tree/main/tools/gen-template-doc/*.in)
 ////
-[id='rhdm712-authoring-ref_{context}']
-= rhdm712-authoring.yaml template
+[id='rhpam713-managed-ref_{context}']
+= rhpam713-managed.yaml template
 
-Application template for a non-HA persistent authoring environment, for {PRODUCT_DM} 7.12 - Deprecated
+Application template for a managed HA production runtime environment, for Red Hat Process Automation Manager 7.13 - Deprecated
 
 
 
@@ -21,54 +21,65 @@ https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/
 |Variable name |Image Environment Variable |Description |Example value |Required
 
 |`APPLICATION_NAME` | -- | The name for the application. | myapp | True
-|`CREDENTIALS_SECRET` | -- | Secret containing the KIE_ADMIN_USER and KIE_ADMIN_PWD values. | rhpam-credentials | True
+|`MAVEN_MIRROR_URL` | `MAVEN_MIRROR_URL` | Maven mirror that the KIE Server must use. If you configure a mirror, this mirror must contain all artifacts that are required for deploying your services. | -- | False
+|`MAVEN_MIRROR_OF` | `MAVEN_MIRROR_OF` | Maven mirror configuration for KIE Server. | external:* | False
+|`MAVEN_REPO_ID` | `MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhpamcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | repo-custom | False
+|`MAVEN_REPO_URL` | `MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | \http://nexus.nexus-project.svc.cluster.local:8081/nexus/content/groups/public/ | True
+|`MAVEN_REPO_USERNAME` | `MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | -- | False
+|`MAVEN_REPO_PASSWORD` | `MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | -- | False
+|`BUSINESS_CENTRAL_SERVICE` | `RHPAMCENTR_MAVEN_REPO_SERVICE` | The Service name for the optional Business Central, where it can be reached, to allow service lookups (for example,  maven repo usage), if required. | myapp-rhpamcentrmon | False
+|`CREDENTIALS_SECRET` | -- | Secret containing the KIE_ADMIN_USER and KIE_ADMIN_PWD values | rhpam-credentials | True
+|`KIE_SERVER_CONTROLLER_OPENSHIFT_GLOBAL_DISCOVERY_ENABLED` | `KIE_SERVER_CONTROLLER_OPENSHIFT_GLOBAL_DISCOVERY_ENABLED` | If set to true, turns on KIE Server global discovery feature (Sets the org.kie.server.controller.openshift.global.discovery.enabled system property) | false | False
+|`KIE_SERVER_CONTROLLER_OPENSHIFT_PREFER_KIESERVER_SERVICE` | `KIE_SERVER_CONTROLLER_OPENSHIFT_PREFER_KIESERVER_SERVICE` | If OpenShift integration of Business Central is turned on, setting this parameter to true enables connection to KIE Server via an OpenShift internal Service endpoint. (Sets the org.kie.server.controller.openshift.prefer.kieserver.service system property) | true | False
+|`KIE_SERVER_CONTROLLER_TEMPLATE_CACHE_TTL` | `KIE_SERVER_CONTROLLER_TEMPLATE_CACHE_TTL` | KIE ServerTemplate Cache TTL in milliseconds. (Sets the org.kie.server.controller.template.cache.ttl system property) | 5000 | False
+|`IMAGE_STREAM_NAMESPACE` | -- | Namespace in which the ImageStreams for Red Hat Process Automation Manager images are installed. These ImageStreams are normally installed in the openshift namespace. You need to modify this parameter only if you installed the ImageStream in a different namespace/project. Default is "openshift". | openshift | True
+|`KIE_SERVER_IMAGE_STREAM_NAME` | -- | The name of the image stream to use for KIE Server. Default is "rhpam-kieserver-rhel8". | rhpam-kieserver-rhel8 | True
+|`IMAGE_STREAM_TAG` | -- | A named pointer to an image in an image stream. Default is "7.13.0". | 7.13.0 | True
 |`KIE_SERVER_CONTROLLER_TOKEN` | `KIE_SERVER_CONTROLLER_TOKEN` | KIE Server controller token for bearer authentication. (Sets the org.kie.server.controller.token system property) | -- | False
-|`KIE_SERVER_BYPASS_AUTH_USER` | `KIE_SERVER_BYPASS_AUTH_USER` | Allows the KIE Server to bypass the authenticated user for task-related operations, for example, queries. (Sets the org.kie.server.bypass.auth.user system property) | false | False
-|`KIE_SERVER_MODE` | `KIE_SERVER_MODE` | The KIE Server mode. Valid values are 'DEVELOPMENT' or 'PRODUCTION'. In production mode, you can not deploy SNAPSHOT versions of artifacts on the KIE Server and can not change the version of an artifact in an existing container. (Sets the org.kie.server.mode system property). | `DEVELOPMENT` | False
+|`KIE_SERVER_PERSISTENCE_DS` | `KIE_SERVER_PERSISTENCE_DS` | KIE Server persistence datasource. (Sets the org.kie.server.persistence.ds system property) | java:/jboss/datasources/rhpam | False
+|`POSTGRESQL_IMAGE_STREAM_NAMESPACE` | -- | Namespace in which the ImageStream for the PostgreSQL image is installed. The ImageStream is already installed in the openshift namespace. You need to modify this parameter only if you installed the ImageStream in a different namespace/project. Default is "openshift". | openshift | False
+|`POSTGRESQL_IMAGE_STREAM_TAG` | -- | The PostgreSQL image version, which is intended to correspond to the PostgreSQL version. Default is "10". | 10 | False
+|`KIE_SERVER_POSTGRESQL_USER` | `RHPAM_USERNAME` | KIE Server PostgreSQL database user name. | rhpam | False
+|`KIE_SERVER_POSTGRESQL_PWD` | `RHPAM_PASSWORD` | KIE Server PostgreSQL database password. | -- | False
+|`KIE_SERVER_POSTGRESQL_DB` | `RHPAM_DATABASE` | KIE Server PostgreSQL database name. | rhpam7 | False
+|`POSTGRESQL_MAX_PREPARED_TRANSACTIONS` | `POSTGRESQL_MAX_PREPARED_TRANSACTIONS` | Allows the PostgreSQL to handle XA transactions. | 100 | True
+|`DB_VOLUME_CAPACITY` | -- | Size of persistent storage for the database volume. | 1Gi | True
+|`KIE_SERVER_POSTGRESQL_DIALECT` | `KIE_SERVER_PERSISTENCE_DIALECT` | KIE Server PostgreSQL Hibernate dialect. | org.hibernate.dialect.PostgreSQLDialect | True
+|`KIE_SERVER_MODE` | `KIE_SERVER_MODE` | The KIE Server mode. Valid values are 'DEVELOPMENT' or 'PRODUCTION'. In production mode, you can not deploy SNAPSHOT versions of artifacts on the KIE Server and can not change the version of an artifact in an existing container. (Sets the org.kie.server.mode system property). | `PRODUCTION` | False
 |`KIE_MBEANS` | `KIE_MBEANS` | KIE Server mbeans enabled/disabled (Sets the kie.mbeans and kie.scanner.mbeans system properties) | enabled | False
-|`DROOLS_SERVER_FILTER_CLASSES` | `DROOLS_SERVER_FILTER_CLASSES` | KIE Server class filtering (Sets the org.drools.server.filter.classes system property) | true | False
+|`DROOLS_SERVER_FILTER_CLASSES` | `DROOLS_SERVER_FILTER_CLASSES` | KIE Server class filtering. (Sets the org.drools.server.filter.classes system property) | true | False
 |`PROMETHEUS_SERVER_EXT_DISABLED` | `PROMETHEUS_SERVER_EXT_DISABLED` | If set to false, the prometheus server extension will be enabled. (Sets the org.kie.prometheus.server.ext.disabled system property) | false | False
-|`BUSINESS_CENTRAL_HOSTNAME_HTTP` | `HOSTNAME_HTTP` | Custom hostname for http service route for BUSINESS CENTRAL. Leave blank for default hostname, e.g.: insecure-<application-name>-rhdmcentr-<project>.<default-domain-suffix> | -- | False
-|`BUSINESS_CENTRAL_HOSTNAME_HTTPS` | `HOSTNAME_HTTPS` | Custom hostname for https service route for BUSINESS CENTRAL.  Leave blank for default hostname, e.g.: <application-name>-rhdmcentr-<project>.<default-domain-suffix> | -- | False
-|`KIE_SERVER_HOSTNAME_HTTP` | `HOSTNAME_HTTP` | Custom hostname for http service route for KIE Server. Leave blank for default hostname, e.g.: insecure-<application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
-|`KIE_SERVER_HOSTNAME_HTTPS` | `HOSTNAME_HTTPS` | Custom hostname for https service route for KIE Server.  Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
-|`BUSINESS_CENTRAL_HTTPS_SECRET` | -- | The name of the secret containing the keystore file for BUSINESS CENTRAL. | businesscentral-app-secret | True
+|`BUSINESS_CENTRAL_HOSTNAME_HTTP` | `HOSTNAME_HTTP` | Custom hostname for http service route.  Leave blank for default hostname, e.g.: insecure-<application-name>-rhpamcentrmon-<project>.<default-domain-suffix> | -- | False
+|`BUSINESS_CENTRAL_HOSTNAME_HTTPS` | `HOSTNAME_HTTPS` | Custom hostname for https service route.  Leave blank for default hostname, e.g.: <application-name>-rhpamcentrmon-<project>.<default-domain-suffix> | -- | False
+|`KIE_SERVER_HOSTNAME_HTTP` | `HOSTNAME_HTTP` | Custom hostname for http service route. Leave blank for default hostname, e.g.: insecure-<application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
+|`KIE_SERVER_HOSTNAME_HTTPS` | `HOSTNAME_HTTPS` | Custom hostname for https service route.  Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | -- | False
+|`BUSINESS_CENTRAL_HTTPS_SECRET` | -- | The name of the secret containing the keystore file for Business Central. | businesscentral-app-secret | True
 |`BUSINESS_CENTRAL_HTTPS_KEYSTORE` | `HTTPS_KEYSTORE` | The name of the keystore file within the secret. | keystore.jks | False
 |`BUSINESS_CENTRAL_HTTPS_NAME` | `HTTPS_NAME` | The name associated with the server certificate. | jboss | False
 |`BUSINESS_CENTRAL_HTTPS_PASSWORD` | `HTTPS_PASSWORD` | The password for the keystore and certificate. | mykeystorepass | False
-|`KIE_SERVER_HTTPS_SECRET` | -- | The name of the secret containing the keystore file. | kieserver-app-secret | True
+|`KIE_SERVER_HTTPS_SECRET` | -- | The name of the secret containing the keystore file for KIE Server. | kieserver-app-secret | True
 |`KIE_SERVER_HTTPS_KEYSTORE` | `HTTPS_KEYSTORE` | The name of the keystore file within the secret. | keystore.jks | False
 |`KIE_SERVER_HTTPS_NAME` | `HTTPS_NAME` | The name associated with the server certificate. | jboss | False
 |`KIE_SERVER_HTTPS_PASSWORD` | `HTTPS_PASSWORD` | The password for the keystore and certificate. | mykeystorepass | False
-|`KIE_SERVER_CONTROLLER_OPENSHIFT_GLOBAL_DISCOVERY_ENABLED` | `KIE_SERVER_CONTROLLER_OPENSHIFT_GLOBAL_DISCOVERY_ENABLED` | If set to true, turns on KIE Server global discovery feature (Sets the org.kie.server.controller.openshift.global.discovery.enabled system property) | false | False
-|`KIE_SERVER_CONTROLLER_OPENSHIFT_PREFER_KIESERVER_SERVICE` | `KIE_SERVER_CONTROLLER_OPENSHIFT_PREFER_KIESERVER_SERVICE` | If OpenShift integration of Business Central is turned on, setting this parameter to true enables connection to KIE Server via an OpenShift internal Service endpoint. (Sets the org.kie.server.controller.openshift.prefer.kieserver.service system property) | true | False
-|`KIE_SERVER_CONTROLLER_TEMPLATE_CACHE_TTL` | `KIE_SERVER_CONTROLLER_TEMPLATE_CACHE_TTL` | KIE ServerTemplate Cache TTL in milliseconds. (Sets the org.kie.server.controller.template.cache.ttl system property) | 60000 | False
-|`IMAGE_STREAM_NAMESPACE` | -- | Namespace in which the ImageStreams for {PRODUCT_DM} images are installed. These ImageStreams are normally installed in the openshift namespace. You need to modify this parameter only if you installed the ImageStreams in a different namespace/project. | openshift | True
-|`KIE_SERVER_IMAGE_STREAM_NAME` | -- | The name of the image stream to use for KIE Server. Default is "rhdm-kieserver-rhel8". | rhdm-kieserver-rhel8 | True
-|`IMAGE_STREAM_TAG` | -- | A named pointer to an image in an image stream. Default is "7.12.0". | 7.12.0 | True
-|`MAVEN_MIRROR_URL` | `MAVEN_MIRROR_URL` | Maven mirror that BUSINESS CENTRAL and KIE Server must use. If you configure a mirror, this mirror must contain all artifacts that are required for building and deploying your services. | -- | False
-|`MAVEN_MIRROR_OF` | `MAVEN_MIRROR_OF` | Maven mirror configuration for KIE Server. | external:*,!repo-rhdmcentr | False
-|`MAVEN_REPO_ID` | `MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhdmcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | repo-custom | False
-|`MAVEN_REPO_URL` | `MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | \http://nexus.nexus-project.svc.cluster.local:8081/nexus/content/groups/public/ | False
-|`MAVEN_REPO_USERNAME` | `MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | -- | False
-|`MAVEN_REPO_PASSWORD` | `MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | -- | False
-|`GIT_HOOKS_DIR` | `GIT_HOOKS_DIR` | The directory to use for git hooks, if required. | `/opt/kie/data/git/hooks` | False
-|`BUSINESS_CENTRAL_VOLUME_CAPACITY` | -- | Size of the persistent storage for BUSINESS CENTRAL's runtime data. | 1Gi | True
-|`BUSINESS_CENTRAL_MEMORY_LIMIT` | -- | BUSINESS CENTRAL Container memory limit. | 4Gi | True
-|`BUSINESS_CENTRAL_CPU_LIMIT` | -- | BUSINESS CENTRAL Container CPU limit. | 2 | True
-|`BUSINESS_CENTRAL_MEMORY_REQUEST` | -- | BUSINESS CENTRAL Container memory request. | 3Gi | True
-|`BUSINESS_CENTRAL_CPU_REQUEST` | -- | BUSINESS CENTRAL Container CPU request. | 1500m | True
+|`KIE_SERVER_BYPASS_AUTH_USER` | `KIE_SERVER_BYPASS_AUTH_USER` | Allows the KIE Server to bypass the authenticated user for task-related operations, for example, queries. (Sets the org.kie.server.bypass.auth.user system property) | false | False
+|`TIMER_SERVICE_DATA_STORE_REFRESH_INTERVAL` | `TIMER_SERVICE_DATA_STORE_REFRESH_INTERVAL` | Sets refresh-interval for the EJB timer service database-data-store. | 30000 | False
+|`BUSINESS_CENTRAL_MEMORY_LIMIT` | -- | Business Central Monitoring Container memory limit. | 2Gi | True
+|`BUSINESS_CENTRAL_MEMORY_REQUEST` | -- | Business Central Monitoring Container memory request. | 1536Mi | True
+|`BUSINESS_CENTRAL_CPU_LIMIT` | -- | Business Central Monitoring Container CPU limit. | 1 | True
+|`BUSINESS_CENTRAL_CPU_REQUEST` | -- | Business Central Monitoring Container CPU request. | 750m | True
 |`KIE_SERVER_MEMORY_LIMIT` | -- | KIE Server Container memory limit. | 2Gi | True
-|`KIE_SERVER_MEMORY_REQUEST` | -- | KIE Server Container memory Request. | 1536Mi | True
+|`KIE_SERVER_MEMORY_REQUEST` | -- | KIE Server Container memory request. | 1536Mi | True
 |`KIE_SERVER_CPU_LIMIT` | -- | KIE Server Container CPU limit. | 1 | True
-|`KIE_SERVER_CPU_REQUEST` | -- | KIE Server Container CPU Request. | 750m | True
+|`KIE_SERVER_CPU_REQUEST` | -- | KIE Server Container CPU request. | 750m | True
+|`BUSINESS_CENTRAL_MONITORING_CONTAINER_REPLICAS` | -- | Business Central Monitoring Container Replicas, will define how much Business Central Monitoring containers will be started. | 3 | True
+|`KIE_SERVER_CONTAINER_REPLICAS` | -- | KIE Server Container Replicas, will define how much KIE Server containers will be started. | 3 | True
 |`SSO_URL` | `SSO_URL` | RH-SSO URL. | \https://rh-sso.example.com/auth | False
 |`SSO_REALM` | `SSO_REALM` | RH-SSO Realm name. | -- | False
-|`BUSINESS_CENTRAL_SSO_CLIENT` | `SSO_CLIENT` | BUSINESS CENTRAL RH-SSO Client name | -- | False
-|`BUSINESS_CENTRAL_SSO_SECRET` | `SSO_SECRET` | BUSINESS CENTRAL RH-SSO Client Secret. | 252793ed-7118-4ca8-8dab-5622fa97d892 | False
+|`BUSINESS_CENTRAL_SSO_CLIENT` | `SSO_CLIENT` | Business Central Monitoring RH-SSO Client name. | -- | False
+|`BUSINESS_CENTRAL_SSO_SECRET` | `SSO_SECRET` | Business Central Monitoring RH-SSO Client Secret. | 252793ed-7118-4ca8-8dab-5622fa97d892 | False
 |`KIE_SERVER_SSO_CLIENT` | `SSO_CLIENT` | KIE Server RH-SSO Client name. | -- | False
 |`KIE_SERVER_SSO_SECRET` | `SSO_SECRET` | KIE Server RH-SSO Client Secret. | 252793ed-7118-4ca8-8dab-5622fa97d892 | False
-|`SSO_USERNAME` | `SSO_USERNAME` | RH-SSO Realm admin user name used to create the Client if it doesn't exist. | -- | False
+|`SSO_USERNAME` | `SSO_USERNAME` | RH-SSO Realm admin user name for creating the Client if it doesn't exist. | -- | False
 |`SSO_PASSWORD` | `SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client. | -- | False
 |`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | `SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation. | false | False
 |`SSO_PRINCIPAL_ATTRIBUTE` | `SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as user name. | preferred_username | False
@@ -77,6 +88,7 @@ https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/
 |`AUTH_LDAP_LOGIN_FAILOVER` | `AUTH_LDAP_LOGIN_FAILOVER` | Enable failover, if LDAP Url is unreachable, it will fail over to the KieFsRealm. | true | False
 |`AUTH_LDAP_BIND_DN` | `AUTH_LDAP_BIND_DN` | Bind DN used for authentication. | uid=admin,ou=users,ou=example,ou=com | False
 |`AUTH_LDAP_BIND_CREDENTIAL` | `AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication. | Password | False
+|`AUTH_LDAP_ALLOW_EMPTY_PASSWORDS` | `AUTH_LDAP_ALLOW_EMPTY_PASSWORDS` | Does this realm support blank password direct verification? Blank password attempt will be rejected otherwise. Boolean flag, defaults to false. | true | False
 |`AUTH_LDAP_BASE_CTX_DN` | `AUTH_LDAP_BASE_CTX_DN` | LDAP Base DN of the top-level context to begin the user search. | ou=users,ou=example,ou=com | False
 |`AUTH_LDAP_BASE_FILTER` | `AUTH_LDAP_BASE_FILTER` | LDAP search filter used to locate the context of the user to authenticate. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. A common example for the search filter is (uid={0}). | (uid={0}) | False
 |`AUTH_LDAP_RECURSIVE_SEARCH` | `AUTH_LDAP_RECURSIVE_SEARCH` | Indicates if the user queries are recursive. | true | False
@@ -89,8 +101,8 @@ https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/
 |`AUTH_LDAP_NEW_IDENTITY_ATTRIBUTES` | `AUTH_LDAP_NEW_IDENTITY_ATTRIBUTES` | Provide new identities for LDAP  identity mapping, the pattern to be used with this env is 'attribute_name=attribute_value;another_attribute_name=value' | sn=BlankSurname;cn=BlankCommonName | False
 |`AUTH_LDAP_REFERRAL_MODE` | `AUTH_LDAP_REFERRAL_MODE` | If LDAP referrals should be followed. Corresponds to REFERRAL ('java.naming.referral') environment property. Allowed values: 'ignore', 'follow', 'throw' | -- | False
 |`AUTH_ROLE_MAPPER_ROLES_PROPERTIES` | `AUTH_ROLE_MAPPER_ROLES_PROPERTIES` | When present, the RoleMapping will be configured to use the provided properties file or roles. This parameter defines the fully-qualified file path and name of a properties file or a set of roles with the following pattern 'role=role1;another-role=role2'. The format of every entry in the file is original_role=role1,role2,role3 | role=role1,role3,role4;role7=role,admin | False
-|`AUTH_LDAP_MAPPER_KEEP_MAPPED` | `AUTH_LDAP_MAPPER_KEEP_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have defined mappings. Defaults to false. | -- | False
-|`AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | `AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have no defined mappings. Defaults to false. | -- | False
+|`AUTH_LDAP_MAPPER_KEEP_MAPPED` | `AUTH_LDAP_MAPPER_KEEP_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have defined mappings. | -- | False
+|`AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | `AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have no defined mappings. | -- | False
 |=======================================================================
 
 
@@ -109,14 +121,17 @@ https://cloud.google.com/container-engine/docs/services/[container-engine docume
 |=============
 |Service        |Port  |Name | Description
 
-.2+| `${APPLICATION_NAME}-rhdmcentr`
+.2+| `${APPLICATION_NAME}-rhpamcentrmon`
 |8080 | http
-.2+| All the BUSINESS CENTRAL web server's ports.
+.2+| All the Business Central Monitoring web server's ports.
 |8443 | https
 .2+| `${APPLICATION_NAME}-kieserver`
 |8080 | http
-.2+| All the KIE Server web server's ports.
+.2+| All the KIE Server web server's ports. (First KIE Server)
 |8443 | https
+.1+| `${APPLICATION_NAME}-postgresql`
+|5432 | --
+.1+| The first database server's port.
 |=============
 
 
@@ -126,13 +141,13 @@ https://cloud.google.com/container-engine/docs/services/[container-engine docume
 A route is a way to expose a service by giving it an externally reachable hostname such as `www.example.com`. A defined route and the endpoints
 identified by its service can be consumed by a router to provide named connectivity from external clients to your applications. Each route consists
 of a route name, service selector, and (optionally) security configuration. See the
-https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html/architecture/networking#architecture-core-concepts-routes[Openshift documentation] for more information.
+https://access.redhat.com/documentation/en-us/openshift_enterprise/3.2/html/architecture/core-concepts#architecture-core-concepts-routes[Openshift documentation] for more information.
 
 |=============
 | Service    | Security | Hostname
 
-|insecure-${APPLICATION_NAME}-rhdmcentr-http | none | `${BUSINESS_CENTRAL_HOSTNAME_HTTP}`
-|`${APPLICATION_NAME}-rhdmcentr-https` | TLS passthrough | `${BUSINESS_CENTRAL_HOSTNAME_HTTPS}`
+|insecure-${APPLICATION_NAME}-rhpamcentrmon-http | none | `${BUSINESS_CENTRAL_HOSTNAME_HTTP}`
+|`${APPLICATION_NAME}-rhpamcentrmon-https` | TLS passthrough | `${BUSINESS_CENTRAL_HOSTNAME_HTTPS}`
 |insecure-${APPLICATION_NAME}-kieserver-http | none | `${KIE_SERVER_HOSTNAME_HTTP}`
 |`${APPLICATION_NAME}-kieserver-https` | TLS passthrough | `${KIE_SERVER_HOSTNAME_HTTPS}`
 |=============
@@ -154,8 +169,9 @@ https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/
 |============
 |Deployment | Triggers
 
-|`${APPLICATION_NAME}-rhdmcentr` | ImageChange
+|`${APPLICATION_NAME}-rhpamcentrmon` | ImageChange
 |`${APPLICATION_NAME}-kieserver` | ImageChange
+|`${APPLICATION_NAME}-postgresql` | ImageChange
 |============
 
 
@@ -170,8 +186,9 @@ for more information.
 |============
 |Deployment | Replicas
 
-|`${APPLICATION_NAME}-rhdmcentr` | 1
-|`${APPLICATION_NAME}-kieserver` | 1
+|`${APPLICATION_NAME}-rhpamcentrmon` | 3
+|`${APPLICATION_NAME}-kieserver` | 3
+|`${APPLICATION_NAME}-postgresql` | 1
 |============
 
 
@@ -187,8 +204,8 @@ information.
 |============
 |Deployment | Service Account
 
-|`${APPLICATION_NAME}-rhdmcentr` | `${APPLICATION_NAME}-rhdmsvc`
-|`${APPLICATION_NAME}-kieserver` | `${APPLICATION_NAME}-rhdmsvc`
+|`${APPLICATION_NAME}-rhpamcentrmon` | `${APPLICATION_NAME}-rhpamsvc`
+|`${APPLICATION_NAME}-kieserver` | `${APPLICATION_NAME}-rhpamsvc`
 |============
 
 
@@ -198,8 +215,9 @@ information.
 |============
 |Deployment | Image
 
-|`${APPLICATION_NAME}-rhdmcentr` | rhdm-businesscentral-rhel8
+|`${APPLICATION_NAME}-rhpamcentrmon` | rhpam-businesscentral-monitoring-rhel8
 |`${APPLICATION_NAME}-kieserver` | `${KIE_SERVER_IMAGE_STREAM_NAME}`
+|`${APPLICATION_NAME}-postgresql` | postgresql
 |============
 
 
@@ -207,7 +225,7 @@ information.
 ===== Readiness Probe
 
 
-.${APPLICATION_NAME}-rhdmcentr
+.${APPLICATION_NAME}-rhpamcentrmon
 ----
 Http Get on http://localhost:8080/rest/ready
 ----
@@ -217,13 +235,18 @@ Http Get on http://localhost:8080/rest/ready
 Http Get on http://localhost:8080/services/rest/server/readycheck
 ----
 
+.${APPLICATION_NAME}-postgresql
+----
+/usr/libexec/check-container
+----
+
 
 
 
 ===== Liveness Probe
 
 
-.${APPLICATION_NAME}-rhdmcentr
+.${APPLICATION_NAME}-rhpamcentrmon
 ----
 Http Get on http://localhost:8080/rest/healthy
 ----
@@ -231,6 +254,11 @@ Http Get on http://localhost:8080/rest/healthy
 .${APPLICATION_NAME}-kieserver
 ----
 Http Get on http://localhost:8080/services/rest/server/healthcheck
+----
+
+.${APPLICATION_NAME}-postgresql
+----
+/usr/libexec/check-container --live
 ----
 
 
@@ -241,7 +269,7 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |=============
 |Deployments | Name  | Port  | Protocol
 
-.3+| `${APPLICATION_NAME}-rhdmcentr`
+.3+| `${APPLICATION_NAME}-rhpamcentrmon`
 |jolokia | 8778 | `TCP`
 |http | 8080 | `TCP`
 |https | 8443 | `TCP`
@@ -249,6 +277,8 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |jolokia | 8778 | `TCP`
 |http | 8080 | `TCP`
 |https | 8443 | `TCP`
+.1+| `${APPLICATION_NAME}-postgresql`
+|-- | 5432 | `TCP`
 |=============
 
 
@@ -258,46 +288,45 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |=======================================================================
 |Deployment |Variable name |Description |Example value
 
-.53+| `${APPLICATION_NAME}-rhdmcentr`
+.52+| `${APPLICATION_NAME}-rhpamcentrmon`
 |`APPLICATION_USERS_PROPERTIES` | -- | `/opt/kie/data/configuration/application-users.properties`
 |`APPLICATION_ROLES_PROPERTIES` | -- | `/opt/kie/data/configuration/application-roles.properties`
 |`KIE_ADMIN_USER` | Admin user name | Set according to the credentials secret
 |`KIE_ADMIN_PWD` | Admin user password | Set according to the credentials secret
-|`KIE_MBEANS` | KIE Server mbeans enabled/disabled (Sets the kie.mbeans and kie.scanner.mbeans system properties) | `${KIE_MBEANS}`
-|`KIE_SERVER_CONTROLLER_OPENSHIFT_ENABLED` | -- | false
+|`MAVEN_MIRROR_URL` | Maven mirror that the KIE Server must use. If you configure a mirror, this mirror must contain all artifacts that are required for deploying your services. | `${MAVEN_MIRROR_URL}`
+|`MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhpamcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | `${MAVEN_REPO_ID}`
+|`MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | `${MAVEN_REPO_URL}`
+|`MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | `${MAVEN_REPO_USERNAME}`
+|`MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | `${MAVEN_REPO_PASSWORD}`
+|`KIE_SERVER_CONTROLLER_OPENSHIFT_ENABLED` | -- | true
 |`KIE_SERVER_CONTROLLER_OPENSHIFT_GLOBAL_DISCOVERY_ENABLED` | If set to true, turns on KIE Server global discovery feature (Sets the org.kie.server.controller.openshift.global.discovery.enabled system property) | `${KIE_SERVER_CONTROLLER_OPENSHIFT_GLOBAL_DISCOVERY_ENABLED}`
 |`KIE_SERVER_CONTROLLER_OPENSHIFT_PREFER_KIESERVER_SERVICE` | If OpenShift integration of Business Central is turned on, setting this parameter to true enables connection to KIE Server via an OpenShift internal Service endpoint. (Sets the org.kie.server.controller.openshift.prefer.kieserver.service system property) | `${KIE_SERVER_CONTROLLER_OPENSHIFT_PREFER_KIESERVER_SERVICE}`
 |`KIE_SERVER_CONTROLLER_TEMPLATE_CACHE_TTL` | KIE ServerTemplate Cache TTL in milliseconds. (Sets the org.kie.server.controller.template.cache.ttl system property) | `${KIE_SERVER_CONTROLLER_TEMPLATE_CACHE_TTL}`
 |`KIE_SERVER_CONTROLLER_TOKEN` | KIE Server controller token for bearer authentication. (Sets the org.kie.server.controller.token system property) | `${KIE_SERVER_CONTROLLER_TOKEN}`
-|`WORKBENCH_ROUTE_NAME` | -- | `${APPLICATION_NAME}-rhdmcentr`
-|`MAVEN_MIRROR_URL` | Maven mirror that BUSINESS CENTRAL and KIE Server must use. If you configure a mirror, this mirror must contain all artifacts that are required for building and deploying your services. | `${MAVEN_MIRROR_URL}`
-|`MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhdmcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | `${MAVEN_REPO_ID}`
-|`MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | `${MAVEN_REPO_URL}`
-|`MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | `${MAVEN_REPO_USERNAME}`
-|`MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | `${MAVEN_REPO_PASSWORD}`
-|`GIT_HOOKS_DIR` | The directory to use for git hooks, if required. | `${GIT_HOOKS_DIR}`
 |`HTTPS_KEYSTORE_DIR` | -- | `/etc/businesscentral-secret-volume`
 |`HTTPS_KEYSTORE` | The name of the keystore file within the secret. | `${BUSINESS_CENTRAL_HTTPS_KEYSTORE}`
 |`HTTPS_NAME` | The name associated with the server certificate. | `${BUSINESS_CENTRAL_HTTPS_NAME}`
 |`HTTPS_PASSWORD` | The password for the keystore and certificate. | `${BUSINESS_CENTRAL_HTTPS_PASSWORD}`
+|`JGROUPS_PING_PROTOCOL` | -- | kubernetes.KUBE_PING
 |`KUBERNETES_NAMESPACE` | -- | --
-|`KUBERNETES_LABELS` | -- | cluster=jgrp.k8s.${APPLICATION_NAME}.rhdmcentr
+|`KUBERNETES_LABELS` | -- | cluster=jgrp.k8s.${APPLICATION_NAME}.rhpamcentrmon
 |`SSO_URL` | RH-SSO URL. | `${SSO_URL}`
 |`SSO_OPENIDCONNECT_DEPLOYMENTS` | -- | ROOT.war
 |`SSO_REALM` | RH-SSO Realm name. | `${SSO_REALM}`
-|`SSO_SECRET` | BUSINESS CENTRAL RH-SSO Client Secret. | `${BUSINESS_CENTRAL_SSO_SECRET}`
-|`SSO_CLIENT` | BUSINESS CENTRAL RH-SSO Client name | `${BUSINESS_CENTRAL_SSO_CLIENT}`
-|`SSO_USERNAME` | RH-SSO Realm admin user name used to create the Client if it doesn't exist. | `${SSO_USERNAME}`
+|`SSO_SECRET` | Business Central Monitoring RH-SSO Client Secret. | `${BUSINESS_CENTRAL_SSO_SECRET}`
+|`SSO_CLIENT` | Business Central Monitoring RH-SSO Client name. | `${BUSINESS_CENTRAL_SSO_CLIENT}`
+|`SSO_USERNAME` | RH-SSO Realm admin user name for creating the Client if it doesn't exist. | `${SSO_USERNAME}`
 |`SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client. | `${SSO_PASSWORD}`
 |`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation. | `${SSO_DISABLE_SSL_CERTIFICATE_VALIDATION}`
 |`SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as user name. | `${SSO_PRINCIPAL_ATTRIBUTE}`
-|`HOSTNAME_HTTP` | Custom hostname for http service route for BUSINESS CENTRAL. Leave blank for default hostname, e.g.: insecure-<application-name>-rhdmcentr-<project>.<default-domain-suffix> | `${BUSINESS_CENTRAL_HOSTNAME_HTTP}`
-|`HOSTNAME_HTTPS` | Custom hostname for https service route for BUSINESS CENTRAL.  Leave blank for default hostname, e.g.: <application-name>-rhdmcentr-<project>.<default-domain-suffix> | `${BUSINESS_CENTRAL_HOSTNAME_HTTPS}`
+|`HOSTNAME_HTTP` | Custom hostname for http service route.  Leave blank for default hostname, e.g.: insecure-<application-name>-rhpamcentrmon-<project>.<default-domain-suffix> | `${BUSINESS_CENTRAL_HOSTNAME_HTTP}`
+|`HOSTNAME_HTTPS` | Custom hostname for https service route.  Leave blank for default hostname, e.g.: <application-name>-rhpamcentrmon-<project>.<default-domain-suffix> | `${BUSINESS_CENTRAL_HOSTNAME_HTTPS}`
 |`AUTH_LDAP_URL` | LDAP endpoint to connect for authentication. For failover, set two or more LDAP endpoints separated by space. | `${AUTH_LDAP_URL}`
 |`AUTH_LDAP_LOGIN_MODULE` | LDAP login module flag, adds backward compatibility with the legacy security subsystem on Elytron. 'optional' is the only supported value, if set, it will create a distributed realm on Elytron configuration with LDAP and FileSystem realms with the user added using the KIE_ADMIN_USER. | `${AUTH_LDAP_LOGIN_MODULE}`
 |`AUTH_LDAP_LOGIN_FAILOVER` | Enable failover, if LDAP Url is unreachable, it will fail over to the KieFsRealm. | `${AUTH_LDAP_LOGIN_FAILOVER}`
 |`AUTH_LDAP_BIND_DN` | Bind DN used for authentication. | `${AUTH_LDAP_BIND_DN}`
 |`AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication. | `${AUTH_LDAP_BIND_CREDENTIAL}`
+|`AUTH_LDAP_ALLOW_EMPTY_PASSWORDS` | Does this realm support blank password direct verification? Blank password attempt will be rejected otherwise. Boolean flag, defaults to false. | `${AUTH_LDAP_ALLOW_EMPTY_PASSWORDS}`
 |`AUTH_LDAP_BASE_CTX_DN` | LDAP Base DN of the top-level context to begin the user search. | `${AUTH_LDAP_BASE_CTX_DN}`
 |`AUTH_LDAP_BASE_FILTER` | LDAP search filter used to locate the context of the user to authenticate. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. A common example for the search filter is (uid={0}). | `${AUTH_LDAP_BASE_FILTER}`
 |`AUTH_LDAP_RECURSIVE_SEARCH` | Indicates if the user queries are recursive. | `${AUTH_LDAP_RECURSIVE_SEARCH}`
@@ -310,38 +339,49 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |`AUTH_LDAP_NEW_IDENTITY_ATTRIBUTES` | Provide new identities for LDAP  identity mapping, the pattern to be used with this env is 'attribute_name=attribute_value;another_attribute_name=value' | `${AUTH_LDAP_NEW_IDENTITY_ATTRIBUTES}`
 |`AUTH_LDAP_REFERRAL_MODE` | If LDAP referrals should be followed. Corresponds to REFERRAL ('java.naming.referral') environment property. Allowed values: 'ignore', 'follow', 'throw' | `${AUTH_LDAP_REFERRAL_MODE}`
 |`AUTH_ROLE_MAPPER_ROLES_PROPERTIES` | When present, the RoleMapping will be configured to use the provided properties file or roles. This parameter defines the fully-qualified file path and name of a properties file or a set of roles with the following pattern 'role=role1;another-role=role2'. The format of every entry in the file is original_role=role1,role2,role3 | `${AUTH_ROLE_MAPPER_ROLES_PROPERTIES}`
-|`AUTH_LDAP_MAPPER_KEEP_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have defined mappings. Defaults to false. | `${AUTH_LDAP_MAPPER_KEEP_MAPPED}`
-|`AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have no defined mappings. Defaults to false. | `${AUTH_LDAP_MAPPER_KEEP_NON_MAPPED}`
-.61+| `${APPLICATION_NAME}-kieserver`
-|`WORKBENCH_SERVICE_NAME` | -- | `${APPLICATION_NAME}-rhdmcentr`
+|`AUTH_LDAP_MAPPER_KEEP_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have defined mappings. | `${AUTH_LDAP_MAPPER_KEEP_MAPPED}`
+|`AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have no defined mappings. | `${AUTH_LDAP_MAPPER_KEEP_NON_MAPPED}`
+.72+| `${APPLICATION_NAME}-kieserver`
+|`WORKBENCH_SERVICE_NAME` | -- | `${APPLICATION_NAME}-rhpamcentrmon`
 |`KIE_ADMIN_USER` | Admin user name | Set according to the credentials secret
 |`KIE_ADMIN_PWD` | Admin user password | Set according to the credentials secret
 |`KIE_SERVER_MODE` | The KIE Server mode. Valid values are 'DEVELOPMENT' or 'PRODUCTION'. In production mode, you can not deploy SNAPSHOT versions of artifacts on the KIE Server and can not change the version of an artifact in an existing container. (Sets the org.kie.server.mode system property). | `${KIE_SERVER_MODE}`
 |`KIE_MBEANS` | KIE Server mbeans enabled/disabled (Sets the kie.mbeans and kie.scanner.mbeans system properties) | `${KIE_MBEANS}`
-|`DROOLS_SERVER_FILTER_CLASSES` | KIE Server class filtering (Sets the org.drools.server.filter.classes system property) | `${DROOLS_SERVER_FILTER_CLASSES}`
+|`DROOLS_SERVER_FILTER_CLASSES` | KIE Server class filtering. (Sets the org.drools.server.filter.classes system property) | `${DROOLS_SERVER_FILTER_CLASSES}`
 |`PROMETHEUS_SERVER_EXT_DISABLED` | If set to false, the prometheus server extension will be enabled. (Sets the org.kie.prometheus.server.ext.disabled system property) | `${PROMETHEUS_SERVER_EXT_DISABLED}`
 |`KIE_SERVER_BYPASS_AUTH_USER` | Allows the KIE Server to bypass the authenticated user for task-related operations, for example, queries. (Sets the org.kie.server.bypass.auth.user system property) | `${KIE_SERVER_BYPASS_AUTH_USER}`
-|`KIE_SERVER_CONTROLLER_SERVICE` | -- | `${APPLICATION_NAME}-rhdmcentr`
-|`KIE_SERVER_CONTROLLER_PROTOCOL` | -- | ws
 |`KIE_SERVER_ID` | -- | --
-|`KIE_SERVER_ROUTE_NAME` | -- | insecure-${APPLICATION_NAME}-kieserver
-|`KIE_SERVER_STARTUP_STRATEGY` | -- | ControllerBasedStartupStrategy
-|`MAVEN_MIRROR_URL` | Maven mirror that BUSINESS CENTRAL and KIE Server must use. If you configure a mirror, this mirror must contain all artifacts that are required for building and deploying your services. | `${MAVEN_MIRROR_URL}`
+|`KIE_SERVER_ROUTE_NAME` | -- | `${APPLICATION_NAME}-kieserver`
+|`KIE_SERVER_STARTUP_STRATEGY` | -- | OpenShiftStartupStrategy
+|`MAVEN_MIRROR_URL` | Maven mirror that the KIE Server must use. If you configure a mirror, this mirror must contain all artifacts that are required for deploying your services. | `${MAVEN_MIRROR_URL}`
 |`MAVEN_MIRROR_OF` | Maven mirror configuration for KIE Server. | `${MAVEN_MIRROR_OF}`
-|`MAVEN_REPOS` | -- | RHDMCENTR,EXTERNAL
-|`RHDMCENTR_MAVEN_REPO_ID` | -- | repo-rhdmcentr
-|`RHDMCENTR_MAVEN_REPO_SERVICE` | -- | `${APPLICATION_NAME}-rhdmcentr`
-|`RHDMCENTR_MAVEN_REPO_PATH` | -- | `/maven2/`
-|`RHDMCENTR_MAVEN_REPO_USERNAME` | -- | Set according to the credentials secret
-|`RHDMCENTR_MAVEN_REPO_PASSWORD` | -- | Set according to the credentials secret
-|`EXTERNAL_MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhdmcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | `${MAVEN_REPO_ID}`
+|`MAVEN_REPOS` | -- | RHPAMCENTR,EXTERNAL
+|`RHPAMCENTR_MAVEN_REPO_ID` | -- | repo-rhpamcentr
+|`RHPAMCENTR_MAVEN_REPO_SERVICE` | The Service name for the optional Business Central, where it can be reached, to allow service lookups (for example,  maven repo usage), if required. | `${BUSINESS_CENTRAL_SERVICE}`
+|`RHPAMCENTR_MAVEN_REPO_PATH` | -- | `/maven2/`
+|`RHPAMCENTR_MAVEN_REPO_USERNAME` | -- | Set according to the credentials secret
+|`RHPAMCENTR_MAVEN_REPO_PASSWORD` | -- | Set according to the credentials secret
+|`EXTERNAL_MAVEN_REPO_ID` | The id to use for the maven repository. If set, it can be excluded from the optionally configured mirror by adding it to MAVEN_MIRROR_OF. For example: external:*,!repo-rhpamcentr,!repo-custom. If MAVEN_MIRROR_URL is set but MAVEN_MIRROR_ID is not set, an id will be generated randomly, but won't be usable in MAVEN_MIRROR_OF. | `${MAVEN_REPO_ID}`
 |`EXTERNAL_MAVEN_REPO_URL` | Fully qualified URL to a Maven repository or service. | `${MAVEN_REPO_URL}`
 |`EXTERNAL_MAVEN_REPO_USERNAME` | User name for accessing the Maven repository, if required. | `${MAVEN_REPO_USERNAME}`
 |`EXTERNAL_MAVEN_REPO_PASSWORD` | Password to access the Maven repository, if required. | `${MAVEN_REPO_PASSWORD}`
+|`KIE_SERVER_PERSISTENCE_DS` | KIE Server persistence datasource. (Sets the org.kie.server.persistence.ds system property) | `${KIE_SERVER_PERSISTENCE_DS}`
+|`DATASOURCES` | -- | `RHPAM`
+|`RHPAM_JNDI` | KIE Server persistence datasource. (Sets the org.kie.server.persistence.ds system property) | `${KIE_SERVER_PERSISTENCE_DS}`
+|`RHPAM_JTA` | -- | true
+|`RHPAM_DATABASE` | KIE Server PostgreSQL database name. | `${KIE_SERVER_POSTGRESQL_DB}`
+|`RHPAM_DRIVER` | -- | postgresql
+|`KIE_SERVER_PERSISTENCE_DIALECT` | KIE Server PostgreSQL Hibernate dialect. | `${KIE_SERVER_POSTGRESQL_DIALECT}`
+|`RHPAM_USERNAME` | KIE Server PostgreSQL database user name. | `${KIE_SERVER_POSTGRESQL_USER}`
+|`RHPAM_PASSWORD` | KIE Server PostgreSQL database password. | `${KIE_SERVER_POSTGRESQL_PWD}`
+|`RHPAM_SERVICE_HOST` | -- | `${APPLICATION_NAME}-postgresql`
+|`RHPAM_SERVICE_PORT` | -- | 5432
+|`TIMER_SERVICE_DATA_STORE_REFRESH_INTERVAL` | Sets refresh-interval for the EJB timer service database-data-store. | `${TIMER_SERVICE_DATA_STORE_REFRESH_INTERVAL}`
 |`HTTPS_KEYSTORE_DIR` | -- | `/etc/kieserver-secret-volume`
 |`HTTPS_KEYSTORE` | The name of the keystore file within the secret. | `${KIE_SERVER_HTTPS_KEYSTORE}`
 |`HTTPS_NAME` | The name associated with the server certificate. | `${KIE_SERVER_HTTPS_NAME}`
 |`HTTPS_PASSWORD` | The password for the keystore and certificate. | `${KIE_SERVER_HTTPS_PASSWORD}`
+|`JGROUPS_PING_PROTOCOL` | -- | kubernetes.KUBE_PING
 |`KUBERNETES_NAMESPACE` | -- | --
 |`KUBERNETES_LABELS` | -- | cluster=jgrp.k8s.${APPLICATION_NAME}.kieserver
 |`SSO_URL` | RH-SSO URL. | `${SSO_URL}`
@@ -349,17 +389,17 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |`SSO_REALM` | RH-SSO Realm name. | `${SSO_REALM}`
 |`SSO_SECRET` | KIE Server RH-SSO Client Secret. | `${KIE_SERVER_SSO_SECRET}`
 |`SSO_CLIENT` | KIE Server RH-SSO Client name. | `${KIE_SERVER_SSO_CLIENT}`
-|`SSO_USERNAME` | RH-SSO Realm admin user name used to create the Client if it doesn't exist. | `${SSO_USERNAME}`
+|`SSO_USERNAME` | RH-SSO Realm admin user name for creating the Client if it doesn't exist. | `${SSO_USERNAME}`
 |`SSO_PASSWORD` | RH-SSO Realm Admin Password used to create the Client. | `${SSO_PASSWORD}`
 |`SSO_DISABLE_SSL_CERTIFICATE_VALIDATION` | RH-SSO Disable SSL Certificate Validation. | `${SSO_DISABLE_SSL_CERTIFICATE_VALIDATION}`
 |`SSO_PRINCIPAL_ATTRIBUTE` | RH-SSO Principal Attribute to use as user name. | `${SSO_PRINCIPAL_ATTRIBUTE}`
-|`HOSTNAME_HTTP` | Custom hostname for http service route for KIE Server. Leave blank for default hostname, e.g.: insecure-<application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTP}`
-|`HOSTNAME_HTTPS` | Custom hostname for https service route for KIE Server.  Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTPS}`
+|`HOSTNAME_HTTP` | Custom hostname for http service route. Leave blank for default hostname, e.g.: insecure-<application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTP}`
+|`HOSTNAME_HTTPS` | Custom hostname for https service route.  Leave blank for default hostname, e.g.: <application-name>-kieserver-<project>.<default-domain-suffix> | `${KIE_SERVER_HOSTNAME_HTTPS}`
 |`AUTH_LDAP_URL` | LDAP endpoint to connect for authentication. For failover, set two or more LDAP endpoints separated by space. | `${AUTH_LDAP_URL}`
 |`AUTH_LDAP_LOGIN_MODULE` | LDAP login module flag, adds backward compatibility with the legacy security subsystem on Elytron. 'optional' is the only supported value, if set, it will create a distributed realm on Elytron configuration with LDAP and FileSystem realms with the user added using the KIE_ADMIN_USER. | `${AUTH_LDAP_LOGIN_MODULE}`
-|`AUTH_LDAP_LOGIN_FAILOVER` | Enable failover, if LDAP Url is unreachable, it will fail over to the KieFsRealm. | `${AUTH_LDAP_LOGIN_FAILOVER}`
 |`AUTH_LDAP_BIND_DN` | Bind DN used for authentication. | `${AUTH_LDAP_BIND_DN}`
 |`AUTH_LDAP_BIND_CREDENTIAL` | LDAP Credentials used for authentication. | `${AUTH_LDAP_BIND_CREDENTIAL}`
+|`AUTH_LDAP_ALLOW_EMPTY_PASSWORDS` | Does this realm support blank password direct verification? Blank password attempt will be rejected otherwise. Boolean flag, defaults to false. | `${AUTH_LDAP_ALLOW_EMPTY_PASSWORDS}`
 |`AUTH_LDAP_BASE_CTX_DN` | LDAP Base DN of the top-level context to begin the user search. | `${AUTH_LDAP_BASE_CTX_DN}`
 |`AUTH_LDAP_BASE_FILTER` | LDAP search filter used to locate the context of the user to authenticate. The input username or userDN obtained from the login module callback is substituted into the filter anywhere a {0} expression is used. A common example for the search filter is (uid={0}). | `${AUTH_LDAP_BASE_FILTER}`
 |`AUTH_LDAP_RECURSIVE_SEARCH` | Indicates if the user queries are recursive. | `${AUTH_LDAP_RECURSIVE_SEARCH}`
@@ -372,8 +412,13 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |`AUTH_LDAP_NEW_IDENTITY_ATTRIBUTES` | Provide new identities for LDAP  identity mapping, the pattern to be used with this env is 'attribute_name=attribute_value;another_attribute_name=value' | `${AUTH_LDAP_NEW_IDENTITY_ATTRIBUTES}`
 |`AUTH_LDAP_REFERRAL_MODE` | If LDAP referrals should be followed. Corresponds to REFERRAL ('java.naming.referral') environment property. Allowed values: 'ignore', 'follow', 'throw' | `${AUTH_LDAP_REFERRAL_MODE}`
 |`AUTH_ROLE_MAPPER_ROLES_PROPERTIES` | When present, the RoleMapping will be configured to use the provided properties file or roles. This parameter defines the fully-qualified file path and name of a properties file or a set of roles with the following pattern 'role=role1;another-role=role2'. The format of every entry in the file is original_role=role1,role2,role3 | `${AUTH_ROLE_MAPPER_ROLES_PROPERTIES}`
-|`AUTH_LDAP_MAPPER_KEEP_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have defined mappings. Defaults to false. | `${AUTH_LDAP_MAPPER_KEEP_MAPPED}`
-|`AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have no defined mappings. Defaults to false. | `${AUTH_LDAP_MAPPER_KEEP_NON_MAPPED}`
+|`AUTH_LDAP_MAPPER_KEEP_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have defined mappings. | `${AUTH_LDAP_MAPPER_KEEP_MAPPED}`
+|`AUTH_LDAP_MAPPER_KEEP_NON_MAPPED` | When set to 'true' the mapped roles will retain all roles, that have no defined mappings. | `${AUTH_LDAP_MAPPER_KEEP_NON_MAPPED}`
+.4+| `${APPLICATION_NAME}-postgresql`
+|`POSTGRESQL_USER` | KIE Server PostgreSQL database user name. | `${KIE_SERVER_POSTGRESQL_USER}`
+|`POSTGRESQL_PASSWORD` | KIE Server PostgreSQL database password. | `${KIE_SERVER_POSTGRESQL_PWD}`
+|`POSTGRESQL_DATABASE` | KIE Server PostgreSQL database name. | `${KIE_SERVER_POSTGRESQL_DB}`
+|`POSTGRESQL_MAX_PREPARED_TRANSACTIONS` | Allows the PostgreSQL to handle XA transactions. | `${POSTGRESQL_MAX_PREPARED_TRANSACTIONS}`
 |=======================================================================
 
 
@@ -383,8 +428,9 @@ Http Get on http://localhost:8080/services/rest/server/healthcheck
 |=============
 |Deployment |Name  | mountPath | Purpose | readOnly
 
-|`${APPLICATION_NAME}-rhdmcentr` | businesscentral-keystore-volume | `/etc/businesscentral-secret-volume` | ssl certs | True
+|`${APPLICATION_NAME}-rhpamcentrmon` | businesscentral-keystore-volume | `/etc/businesscentral-secret-volume` | ssl certs | True
 |`${APPLICATION_NAME}-kieserver` | kieserver-keystore-volume | `/etc/kieserver-secret-volume` | ssl certs | True
+|`${APPLICATION_NAME}-postgresql` | `${APPLICATION_NAME}-postgresql-pvol` | `/var/lib/pgsql/data` | postgresql | false
 |=============
 
 
@@ -401,7 +447,8 @@ more information.
 |=============
 |Name | Access Mode
 
-|`${APPLICATION_NAME}-rhdmcentr-claim` | ReadWriteOnce
+|`${APPLICATION_NAME}-postgresql-claim` | ReadWriteOnce
+|`${APPLICATION_NAME}-rhpamcentr-claim` | ReadWriteMany
 |=============
 
 
@@ -412,7 +459,3 @@ This template requires the following secrets to be installed for the application
 
  * businesscentral-app-secret
  * kieserver-app-secret
-
-
-
-
