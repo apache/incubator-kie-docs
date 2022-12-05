@@ -1,0 +1,205 @@
+@Library('jenkins-pipeline-shared-libraries')_
+
+import org.jenkinsci.plugins.workflow.libs.Library
+import org.kie.jenkins.MavenCommand
+
+docsRepo = "kie-docs"
+COMMIT_MSG = "Bumped up kie-kogito-docs version"
+
+
+pipeline {
+
+    agent {
+        label 'kie-rhel8 && !built-in'
+    }
+
+    options{
+        timestamps()
+        timeout(time: 60, unit: 'MINUTES')
+    }
+
+    tools {
+        maven "${BUILD_MAVEN_TOOL}"
+        jdk "${BUILD_JDK_TOOL}"
+    }
+
+    environment {
+        // Static env is defined into .jenkins/dsl/jobs.groovy file
+        KOGITO_CI_EMAIL_TO = credentials("${JENKINS_EMAIL_CREDS_ID}")
+        PR_BRANCH = "bump-up-kie-kogito-docs-${util.generateHash(10)}"
+    }
+
+    stages{
+        stage('CleanWorkspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Initialize') {
+            steps{
+                script{
+                    sh 'printenv'
+                    dir(docsRepo){
+                        checkoutRepo(docsRepo, GIT_AUTHOR, getKogitoDocsBranch(), GIT_AUTHOR_CREDENTIALS_ID)
+                    }
+                }
+            }
+        }
+        stage('Create pull request branch') {
+            steps{
+                script{
+                    dir(docsRepo){
+                        githubscm.createBranch(PR_BRANCH)
+
+                    }
+                }
+            }
+        }
+        stage('Update kogito-docs version in kie-docs') {
+            steps {
+                script {
+                    dir("${docsRepo}/doc-content/kogito-docs") {
+                        maven.mvnVersionsSet(parseVersion(getVersion()))
+                        githubscm.commitChanges(COMMIT_MSG)
+                    }
+                }
+            }
+        }
+        stage('Build kie-docs/doc-content/kogito-docs') {
+            steps {
+                configFileProvider([configFile(fileId: '771ff52a-a8b4-40e6-9b22-d54c7314aa1e', targetLocation: 'jenkins-settings.xml', variable: 'SETTINGS_XML_FILE')]) {
+                    dir("${docsRepo}/doc-content/kogito-docs") {
+                    sh""" mvn clean install -Dfull -s $SETTINGS_XML_FILE -Dkie.maven.settings.custom=$SETTINGS_XML_FILE -Dmaven.test.redirectTestOutputToFile=true -Dmaven.test.failure.ignore=true
+                         # clean files created by the build
+                         git clean -d -f """
+                    }
+                }
+            }
+        }
+        stage('Create file for folder creation'){
+            steps{
+                script {
+                    dir("${docsRepo}/doc-content/kogito-docs") {
+                        def data = "mkdir ${getVersion()}"
+                        writeFile(file: 'upload_version.txt', text: data)
+                        sh "chmod +x upload_version.txt"
+                    }
+                }
+            }
+        }
+        stage('Upload kie-kogito-docs') {
+            steps {
+                sshagent(credentials: ['KogitoDocsUpload']) {
+                    script {
+                        dir("${docsRepo}/doc-content/kogito-docs") {
+                            sh "../../script/uploadDocs.sh ${getSshPath()} ${getRsyncPath()} ${getVersion()}"
+                        }
+                    }
+                }
+            }
+        }
+        stage('Create and push tag') {
+            steps {
+                dir("${docsRepo}/doc-content/kogito-docs") {
+                    script {
+                        githubscm.tagRepository("${getVersion()}-kogito")
+                        githubscm.pushRemoteTag('origin', "${getVersion()}-kogito")
+                    }
+                }
+            }
+        }
+        stage('Bump up kie-kogito-docs to next SNAPSHOT'){
+            steps{
+                dir("${docsRepo}/doc-content/kogito-docs") {
+                    script{
+                        maven.mvnVersionsSet(parseNextVersion(getVersion()))
+                    }
+                }
+            }
+        }
+        stage('Bump up kie version') {
+            when {
+                expression { return isNewVersionRequired() }
+            }
+            steps {
+                dir("${docsRepo}") {
+                    script {
+                        // bump up if the current kie-version on main branch is greater then the kie-version on main-kogito branch
+                        maven.mvnVersionsUpdateParentAndChildModules("${env.KIE_VERSION}", true)
+                    }
+                }
+            }
+        }
+        stage('Add and commit latest changes'){
+            steps{
+                dir("${docsRepo}"){
+                    script{
+                        githubscm.commitChanges(COMMIT_MSG)
+                    }
+                }
+            }
+        }
+        stage('Create and push pullrequest'){
+            steps{
+                 dir("${docsRepo}"){
+                     script {
+                        prBody="Please review and merge"
+                        githubscm.pushObject('origin', PR_BRANCH)
+                        githubscm.createPR(COMMIT_MSG,prBody,getKogitoDocsBranch())
+                     }
+                 }
+            }
+        }
+    }
+    post {
+        unsuccessful {
+            sendErrorNotification()
+        }
+    }
+}
+
+void checkoutRepo(String repo, String GIT_AUTHOR, String branch, String GIT_AUTHOR_CREDENTIALS_ID){
+    checkout(githubscm.resolveRepository(repo, GIT_AUTHOR, branch, false, GIT_AUTHOR_CREDENTIALS_ID))
+    // need to manually checkout branch since on a detached branch after checkout command
+    sh "git checkout ${branch}"
+}
+
+String getVersion(){
+    return params.KOGITO_DOCS_VERSION
+}
+
+String getSshPath(){
+    return env.SSH_KOGITO_DOCS_PATH
+}
+
+String getRsyncPath(){
+    return env.RSYNC_KOGITO_DOCS_PATH
+}
+
+String getKogitoDocsBranch(){
+    return env.KOGITO_DOCS_BRANCH
+}
+
+void sendNotification(String body){
+    emailext body: "${body}",
+             subject: "Update kie-docs/kogito-docs",
+             to: env.KOGITO_CI_EMAIL_TO
+}
+
+boolean isNewVersionRequired() {
+    return params.BUMP_UP
+}
+
+void sendErrorNotification(){
+    sendNotification("Job #${BUILD_NUMBER} was: **${currentBuild.currentResult}**\nPlease look here: ${BUILD_URL}")
+}
+
+String parseVersion(String docVersion){
+    Integer[] versionSplit = util.parseVersion(docVersion)
+    return "${versionSplit[0]}.${versionSplit[1]}.${versionSplit[2]}"
+}
+
+String parseNextVersion(String docVersion){
+    Integer[] versionSplit = util.parseVersion(docVersion)
+    return "${versionSplit[0]}.${versionSplit[1] + 1}.${versionSplit[2]}-SNAPSHOT"
+}
