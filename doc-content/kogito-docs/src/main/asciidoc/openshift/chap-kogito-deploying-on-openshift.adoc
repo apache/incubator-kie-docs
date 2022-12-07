@@ -1334,12 +1334,85 @@ infinispan.remote.auth-realm=
 * {URL_CONFIGURING_KOGITO}#con-data-index-service_kogito-configuring[{PRODUCT} Data Index Service]
 * https://github.com/infinispan/infinispan-operator/blob/master/README.md[Infinispan operator]
 
-////
 [id="proc-custom-kogito-service-integration-kafka_{context}"]
 === Integrating a custom {PRODUCT} service with Apache Kafka
 
-<Start here>
-////
+You can integrate a custom {PRODUCT} service with Apache Kafka using the following configuration modes:
+
+* Automatic configuration
+* Manual configuration
+
+==== Integrating a custom {Product} service with Apache Kafka using the automatic configuration mode
+
+In automatic configuration mode, the {PRODUCT} operator automatically fetches the relevant Kafka connection details from the Kafka custom resource and provides it to the custom {PRODUCT} service.
+
+.Prerequisites
+
+* A Kafka cluster is configured by using the Strimzi Operator.
++
+NOTE: You can use the Strimzi Operator to run an Apache Kafka cluster on Kubernetes or OpenShift in various deployment configurations. For more information about Strimzi Operator, see https://strimzi.io/docs/latest/[Strimzi Operator]. For more information about installing Strimzi Operator and Kafka cluster configuration, see https://strimzi.io/quickstarts/[Strimzi Quickstarts].
+
+.Procedure
+. Specify your custom infrastructure resource in the `spec.resource.name` and `spec.resource.namespace` configurations:
++
+`spec.resource.name` refers to the Kafka custom resource name and `spec.resource.namespace` refers to the Kafka custom resource namespace.
++
+.Example: Kogito infrastructure resource for Kafka persistence
+[source,yaml]
+----
+  apiVersion: app.kiegroup.org/v1beta1
+  kind: KogitoInfra
+  metadata:
+    name: kogito-kafka-infra
+  spec:
+    resource:
+      apiVersion: kafka.strimzi.io/v1beta2
+      kind: Kafka
+      name: kogito-kafka
+      namespace: kafka-cluster-namespace
+
+----
+. To enable Kafka messaging for a Kogito service using the {PRODUCT} Operator, bind KogitoInfra with the {PRODUCT} service by performing one of the following tasks:
++
+* Use the `--infra KAFKA_INFRA_NAME` flag during deployment using the {PRODUCT} CLI, for example:
++
+[source,subs="attributes+,+quotes"]
+----
+$ kogito deploy-service travels --infra kogito-kafka-infra
+----
+
+* Edit the `spec.infra` configuration in the {PRODUCT} runtime custom resource, for example:
++
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1beta1
+kind: KogitoRuntime
+metadata:
+  name: travels
+spec:
+  infra:
+    - kogito-kafka-infra
+----
+
+==== Integrating a custom {PRODUCT} service with Kafka using manual configurations
+
+If you set up a custom Kafka cluster, you can refer to it in the {PRODUCT} runtime custom resource by configuring the following environment variables and application properties:
+
+.Required environment variables for a custom Kafka cluster
+[source,yaml]
+----
+ENABLE_EVENTS=true
+----
+
+.Required application properties for a custom Kafka cluster
+[source,yaml]
+----
+# On Quarkus
+kafka.bootstrap.servers=
+
+# On Spring Boot
+spring.kafka.bootstrap-servers=
+----
 
 ==== Apache Kafka messaging in {PRODUCT} services
 
