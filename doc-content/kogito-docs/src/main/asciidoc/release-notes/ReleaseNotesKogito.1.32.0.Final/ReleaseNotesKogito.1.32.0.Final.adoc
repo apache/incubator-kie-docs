@@ -1,0 +1,54 @@
+// IMPORTANT: For 1.10 and later, save each version release notes as its own module file in the release-notes folder that this `ReleaseNotesKogito<version>.adoc` file is in, and then include each version release notes file in the chap-kogito-release-notes.adoc after Additional resources of {PRODUCT} deployment on {OPENSHIFT} section, in the following format:
+//include::ReleaseNotesKogito.<version>/ReleaseNotesKogito.<version>.adoc[leveloffset=+1]
+
+[id="ref-kogito-rn-new-features-1.32_{context}"]
+= New features in {PRODUCT} 1.32
+
+[role="_abstract"]
+The following sections describe some of the new features or enhancements in {PRODUCT} 1.32.
+
+== {PRODUCT} runtimes
+
+=== {PRODUCT} Serverless Workflow
+
+https://kiegroup.github.io/kogito-docs/serverlessworkflow/latest/release_notes.html[New features on 1.32].
+
+=== {PRODUCT} PostgreSQL addon integration with Flyway
+
+Starting from this release, the following addons ( `kogito-addons-quarkus-persistence-postgresql` and `kogito-addons-springboot-persistence-postgresql` ) are now integrated with https://flywaydb.org/[Flyway] for database schema management.
+This also means that `kogito.persistence.auto.ddl` property is no longer used. Below is a migration reference for each plugin:
+
+==== kogito-addons-quarkus-persistence-postgresql
+
+This integration is done via Quarkus Flyway and the following https://quarkus.io/guides/flyway[guide] can give extra details about how to use it. In order to achieve the same behaviour as `kogito.persistence.auto.ddl=true`, the following properties should be added:
+
+- `quarkus.flyway.migrate-at-start=true`
+- `quarkus.datasource.jbdc.url={JDBC_URL}`
+
+The following Quarkus JDBC dependency should also be added to the project:
+
+[source,xml]
+----
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-jdbc-postgresql</artifactId>
+</dependency>
+----
+
+NOTE: Flyway integration uses regular JDBC connection, hence the need to add the dependency and Quarkus JDBC connection properties. Depending on your settings it is likely to need to include more JDBC related properties such as username, password, etc, as shown in https://quarkus.io/guides/flyway#developing-with-flyway[Developing with Flyway].
+
+
+==== kogito-addons-springboot-persistence-postgresql
+
+Spring Boot comes with out-of-the-box https://documentation.red-gate.com/fd/community-plugins-and-integrations-spring-boot-184127423.html#:~:text=integration%20for%20Flyway[integration for Flyway]. Hence, {PRODUCT} PostgreSQL addon exposes full compatibilty with the settings available. In order to achieve the same behaviour as `kogito.persistence.auto.ddl=true`, the following properties should be added:
+
+- `spring.flyway.enabled=true`
+- `spring.flyway.url={JDBC_URL}`
+
+NOTE: Flyway integration uses regular JDBC connection, hence the need to add JDBC connection properties. Depending on your settings it is likely to need to include more JDBC related properties such as username, password, etc. For the complete set of properties, visit https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#appendix.application-properties.data-migration[SpringBoot Data Migration properties].
+
+== {PRODUCT} supporting services
+
+=== Data Index PostgreSQL integration with Flyway
+
+In order to create the database for running Data Index PostgreSQL, it is now possible to use https://flywaydb.org/[Flyway]. This is an alternative to manually applying DDL scripts. This integration is done via Quarkus Flyway and the following https://quarkus.io/guides/flyway[guide] can give extra details about how to use it. In a nutshell, to create the required tables for Data Index on an empty database, the following property should be added `quarkus.flyway.migrate-at-start=true`. For more details, visit https://quarkus.io/guides/flyway#quarkus-flyway_quarkus.flyway.migrate-at-start[quarkus.flyway.migrate-at-start].
