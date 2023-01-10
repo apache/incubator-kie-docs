@@ -14,7 +14,7 @@ setupKogitoDocsJob()
 /////////////////////////////////////////////////////////////////
 
 void setupKogitoDocsJob() {
-    def jobParams = KogitoJobUtils.getBasicJobParams(this, 'kogito-docs-post-release', Folder.RELEASE, "${JENKINSFILE_PATH}/Jenkinsfile.kie-kogito-post-release", "Update Kie Kogito docs")
+    def jobParams = KogitoJobUtils.getBasicJobParams(this, 'kie-docs-post-release', Folder.RELEASE, "${JENKINSFILE_PATH}/Jenkinsfile.kie-kogito-post-release", "Update Kie Kogito docs")
     KogitoJobUtils.setupJobParamsDefaultMavenConfiguration(this, jobParams)
     jobParams.env.putAll([
             JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
