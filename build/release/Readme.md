@@ -10,7 +10,7 @@ This job has three parameters to edit when running the job:
 * BUMP_UP (select box)
 * KIE_VERSION
 
-In most cases there has only to be edited the KOGITO_DOCS_VERSION (as Major.minor.micro i.e. **1.32.0**). From this version the name of the tag is calculated (in this case **1.32.0-kogito**) as well as the new **-SNAPSHOT** version [org.kie.kogito.kogito-docs](https://github.com/kiegroup/kie-docs/blob/main-kogito/doc-content/kogito-docs/pom.xml#L14) will be upgraded to. 
+In most cases, there has only been edited the KOGITO_DOCS_VERSION (as Major.minor.micro i.e. **1.32.0**). From this version, the name of the tag is calculated (in this case **1.32.0-kogito**) as well as the new **-SNAPSHOT** version [org.kie.kogito.kogito-docs](https://github.com/kiegroup/kie-docs/blob/main-kogito/doc-content/kogito-docs/pom.xml#L14) will be upgraded to. 
 
 In cases in the meantime has been released a new version of community kiegroup/... which can be seen at [main branch](https://github.com/kiegroup/kie-docs/blob/main/pom.xml#L23) we have to upgrade this verion also in kie-docs main-kogito branch. Comparing to [main-kogito branch](https://github.com/kiegroup/kie-docs/blob/main-kogito/pom.xml#L23) it can be seen if an upgrade is needed or not. In case it is, the **BUMP_UP** select box has to be selected and the new **KIE_VERSION** has to be specified (as Major.minor.micro-SNAPSHOT i.e. **7.75.0-SNAPSHOT**).
 
