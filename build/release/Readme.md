@@ -2,7 +2,7 @@
 
 To tag a required or desirable version of kogito-docs in kiegroup/kie-docs [main-kogito branch] there has been developed a new job [kie-docs-post-release](https://eng-jenkins-csb-business-automation.apps.ocp-c1.prod.psi.redhat.com/job/KIE/job/kogito/job/${branch}/job/release/job/kie-docs-post-release/) which replaces the known and until now used job [uploadKogitoDocs](https://eng-jenkins-csb-business-automation.apps.ocp-c1.prod.psi.redhat.com/job/KIE/job/kogito/job/kogito-docs/job/uploadKogitoDocs/). 
 
-Each time a new branch is created, in it's folder Jenkins/KIE/kogito/${branch}/release will be displayed a job **kie-docs-post-release**. 
+Each time a new branch is created, in the folder Jenkins/KIE/kogito/${branch}/release will be displayed a job **kie-docs-post-release**. 
 
 This job has three parameters to edit when running the job:
 
