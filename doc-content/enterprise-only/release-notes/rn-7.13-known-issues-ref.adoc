@@ -186,3 +186,50 @@ Workaround:
 Issue: The Kafka-clients dependency version for {KOGITO} Spring Boot is by default managed by the `org.springframework.boot:spring-boot-dependencies` BOM. Depending on which Spring Boot version is used users might end up with an unsupported or vulnerable version of Kafka-clients. You must override the default dependency in your `kogito-spring-boot-bom` to make sure you stick to the expected Kafka-clients version.
 
 Workaround:  In your projects, define `dependencyManagement` explicitly for `org.apache.kafka:kafka-clients` dependency to use the version released by {AMQ_STREAMS}.
+
+== {OPENSHIFT}
+
+.PostgreSQL 13 Pod won't start because of an incompatible data dirctory [https://issues.redhat.com/browse/RHPAM-4464[RHPAM-4418]]
+
+Issue: When you start a PostgreSQL pod after you upgrade the operator, the pod fails to start and you receive the following message:
+
+`Incompatible data directory. This container image provides
+PostgreSQL '13', but data directory is of
+version '10'.
+This image supports automatic data directory upgrade from
+'12', please carefully consult image documentation
+about how to use the '$POSTGRESQL_UPGRADE' startup option.`
+
+Workaround:
+
+. Check the version of PostgreSQL:
++
+[source]
+----
+$ postgres -V
+----
+
+. If the PostgreSQL version returned is 12.x or earlier, upgrade PostgreSQL:
++
+[cols="30%,15%,55%" frame="all", options="header"]
+|===
+| {PRODUCT} version
+| PostgreSQL version
+| Upgrade instructions
+
+| 7.13.1 | 7.10 | Follow the instructions in https://github.com/sclorg/postgresql-container/tree/master/12#upgrading-database-by-switching-to-newer-postgresql-image-version[Upgrading database (by switching to newer PostgreSQL image version)] to upgrade to PostgreSQL 12.x.
+
+| 7.13.2 | 7.10 | 1. Follow the instructions in https://github.com/sclorg/postgresql-container/tree/master/12#upgrading-database-by-switching-to-newer-postgresql-image-version[Upgrading database (by switching to newer PostgreSQL image version)] to upgrade to PostgreSQL 12.x.
+
+2. Follow the instructions in https://github.com/sclorg/postgresql-container/tree/master/13#upgrading-database-by-switching-to-newer-postgresql-image-version[Upgrading database (by switching to newer PostgreSQL image version)] to upgrade to PostgreSQL 13.x.
+
+| 7.13.2 | 7.12 |
+Follow the instructions in https://github.com/sclorg/postgresql-container/tree/master/13#upgrading-database-by-switching-to-newer-postgresql-image-version[Upgrading database (by switching to newer PostgreSQL image version)] to upgrade to PostgreSQL 13.x.
+|===
+
+. Verify that PostpreSQL has been upgraded to your required version:
++
+[source]
+----
+$ postgres -V
+----
