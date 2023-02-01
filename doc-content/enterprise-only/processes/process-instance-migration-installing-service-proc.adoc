@@ -4,105 +4,95 @@
 You can use the process instance migration (PIM) service to create, export and execute migration plans. The PIM service is provided through a GitHub repository. To install the PIM service, clone the GitHub repository, then run the service and access it in a web browser.
 
 .Prerequisites
-* You have defined processes in a backup-ed {PRODUCT} development environment.
+* You have defined processes in a backed up {PRODUCT} development environment.
 * Java Runtime Environment (JRE) version 11 or later is installed.
 
 .Procedure
 . Download the `{PRODUCT_FILE}-add-ons.zip` file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page for {PRODUCT} {PRODUCT_VERSION}.
-. Unzip the downloaded archive.
-. Move the `{PRODUCT_FILE}-process-migration-service-standalone.jar` file from the add-ons archive to a desired location.
-. Start the PIM service:
+. Extract the `{PRODUCT_FILE}-add-ons.zip` file.
+
+. Extract the `{PRODUCT_FILE}-process-migration-service.zip` file.
+
+. Enter the following commands to create the database tables.  Replace `<user>` with your user name and `<host>` with the name of  the local host:
 +
-[source,subs="attributes+"]
+[source]
 ----
-$ java -jar {PRODUCT_FILE}-process-migration-service-standalone.jar -s./config.yml
+$ psql -U <user> -h <host> -d rhpam7 -f ~/process-migration/ddl-scripts/postgres/postgresql-quartz-schema.sql
+$ psql -U <user> -h <host> -d rhpam7 -f ~/process-migration/ddl-scripts/postgres/postgresql-pim-schema.sql
 ----
-. Ensure the relevant authentication method is set for `auth-method`. Valid values are `file`, `jdbc`, and `ldap`. For example:
+
+. Change directory to the `process-migration` directory.
+
+. Use a text editor to create the `servers.yaml` configuration file with the following content and save in the `process-migration` directory. In this example, replace `<user_name>` and `<password>` with the credentials to log in to the KieServer.
 +
-.`ldap` method example
-----
-pim:
-  auth-method: ldap
-quakus:
-  security:
-    ldap:
-      dir-context:
-        url: ldap://localhost:10389
-        principal: uid=admin,ou=system
-        password: secret
-      identity-mapping:
-        search-base-dn: ou=users,dc=example,dc=com
-        rdn-identifier: uid
-        attribute-mappings:
-          from: uid
-          filter: uniqueMember
-          filter-base-dn: ou=groups,dc=example,dc=com
-----
-+
-.`file` method example
-+
-----
-pim:
-  auth-method: file
-quarkus:
-  security:
-    users:
-      file:
-        enabled: true
-        plain-text: true
-        users: users.properties
-        roles: roles.properties
-----
-+
-.`jdbc` method example
-+
-----
-pim:
-  auth-method: jdbc
-quarkus:
-  jdbc:
-    principal-query:
-      sql: SELECT u.password, u.role FROM users u WHERE u.username=?
-      clear-password-mapper:
-        enabled: true
-        password-index: 1
-      attribute-mappings:
-        0:
-          index: 2
-          to: groups
-----
-. Optional: To configure connections to one or more {KIE_SERVERS}, add the {KIE_SERVERS} to the custom configuration file, for example:
-+
+[source,xml,subs="attributes+"]
 ----
 kieservers:
-  - host: http://kieserver1.example.com:8080/kie-server/services/rest/server
-    username: admin
-    password: admin123
-  - host: https://kieserver2.example.com:8443/kie-server/services/rest/server
-    username: foo
-    password: bar
+  - host: http://localhost:8080/kie-server/services/rest/server
+    username: <user_name>
+    password: <password>
+----
+
+. Use a text editor to create the `datasource.yaml` configuration file with the following content `datasource.yaml` and save in the `process-migration` directory. In this example, replace `<user_name>` and `<password>` with the credentials to log in to the database:
++
+[source,xml,subs="attributes+"]
+----
+quarkus:
+  datasource:
+    db-kind: postgresql
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/rhpam7
+    username: <user_name>
+    password: <password>
+----
+
+. Rebuild the `quarkus-run.jar` file to include the PostgreSQL driver:
++
+[source]
+----
+$ java -jar -Dquarkus.launch.rebuild=true -Dquarkus.datasource.db-kind=postgresql quarkus-app/quarkus-run.jar
 ----
 +
-You can use different configuration sources in any other configuration parameter. For more information, see the https://quarkus.io/guides/config-reference#configuration-sources[CONFIGURATION REFERENCE GUIDE].
-. Optional: To configure Mutual TLS (mTLS) authentication that uses client certification or client certification and token-based authentication, configure `client-cert` for mTLS, for example:
+The output of this command should be similar to the following example:
 +
+[source]
 ----
-kieservers:
-  - host: http://localhost:18080/kie-server/services/rest/server
-# HTTP Basic or Token Authentication can still be used, but usually a client identity is sufficient.
-#   username: foo
-#   password: bar
-client-cert:
-  cert-name: pim
-  cert-password: pim-secret
-  keystore-path: /path/to/keystore.jks
-  keystore-password: ks-secret
-  truststore-path: /path/to/truststore.jks
-  truststore-password: ts-secret
+INFO [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 2657ms
 ----
-. Ensure that the `quarkus.launch.rebuild` system property is set to `true`:
+
+. Run the `quarkus-app` JAR file:
 +
+[source]
 ----
-java -jar -Dquarkus.launch.rebuild=true -Dquarkus.datasource.db-kind=mariadb -Dquarkus.flyway.sql-migration-prefix=mariadb target/quarkus-app/quarkus-run.jar
+$ java -jar -Dquarkus.http.port=8090 -Dquarkus.config.locations=servers.yaml,datasource.yaml quarkus-app/quarkus-run.jar
 ----
-. After the PIM service is up and running, enter `\http://localhost:8080` in a web browser.
++
+This command returns output similar to the following example:
++
+[source]
+----
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2022-03-11 13:04:18,261 INFO  [org.fly.cor.int.lic.VersionPrinter] (main) Flyway Community Edition 7.14.0 by Redgate
+2022-03-11 13:04:18,262 INFO  [org.fly.cor.int.dat.bas.BaseDatabaseType] (main) Database: jdbc:postgresql://localhost:5432/rhpam7 (PostgreSQL 13.4)
+2022-03-11 13:04:18,280 INFO  [org.fly.cor.int.com.DbMigrate] (main) Current version of schema "public": 1.0
+2022-03-11 13:04:18,281 INFO  [org.fly.cor.int.com.DbMigrate] (main) Schema "public" is up to date. No migration necessary.
+2022-03-11 13:04:18,601 INFO  [org.qua.imp.jdb.JobStoreCMT] (main) Freed 0 triggers from 'acquired' / 'blocked' state.
+2022-03-11 13:04:18,603 INFO  [org.qua.imp.jdb.JobStoreCMT] (main) Recovering 0 jobs that were in-progress at the time of the last shut-down.
+2022-03-11 13:04:18,603 INFO  [org.qua.imp.jdb.JobStoreCMT] (main) Recovery complete.
+2022-03-11 13:04:18,603 INFO  [org.qua.imp.jdb.JobStoreCMT] (main) Removed 0 'complete' triggers.
+2022-03-11 13:04:18,603 INFO  [org.qua.imp.jdb.JobStoreCMT] (main) Removed 0 stale fired job entries.
+2022-03-11 13:04:18,624 INFO  [org.kie.ser.api.mar.MarshallerFactory] (main) Marshaller extensions init
+2022-03-11 13:04:18,710 INFO  [org.kie.pro.ser.imp.KieServiceImpl] (main) Loaded kie server configuration for: org.kie.processmigration.model.config.KieServers$KieServer9579928Impl@4b6b5352
+2022-03-11 13:04:18,715 INFO  [org.kie.pro.ser.RecoveryService] (main) Resuming ongoing migrations ...
+2022-03-11 13:04:18,856 INFO  [io.quarkus] (main) process-migration-service 7.59.0.Final-redhat-00006 on JVM (powered by Quarkus 2.2.3.Final-redhat-00013) started in 1.443s. Listening on: http://0.0.0.0:8090
+2022-03-11 13:04:18,857 INFO  [io.quarkus] (main) Profile prod activated.
+2022-03-11 13:04:18,857 INFO  [io.quarkus] (main) Installed features: [agroal, cdi, config-yaml, flyway, hibernate-orm, hibernate-orm-panache, jdbc-db2, jdbc-h2, jdbc-mariadb, jdbc-mssql, jdbc-mysql, jdbc-oracle, jdbc-postgresql, narayana-jta, quartz, resteasy, resteasy-jackson, scheduler, security, security-jdbc, security-ldap, security-properties-file, smallrye-context-propagation, smallrye-health]
+----
+
+. To access the Process Instance Migration application, enter `\http://localhost:8090/` in a web browser .
+
+
+. When prompted, enter the user name `admin` and the password `admin1!`. The Process Instance Migration console appears.
