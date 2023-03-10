@@ -1602,6 +1602,8 @@ As an alternative to using Infinispan or MongoDB for {PRODUCT} runtime persisten
 JDBC allows {PRODUCT} to persist data using different relational databases. We recommend using https://www.postgresql.org/[PostgreSQL].
 The complete list of supported databases is dependent on the target runtime you use, for instance, Quarkus supports the following https://quarkus.io/guides/datasource#jdbc-datasource[JDBC datasources].
 
+{PRODUCT} provides two ways to manage the database schema, either via manually applying the provided DDL https://repository.jboss.org/org/kie/kogito/kogito-ddl/{COMMUNITY_VERSION_FINAL}/[kogito-ddl-{COMMUNITY_VERSION_FINAL}-db-scripts.zip], or via https://flywaydb.org/[Flyway] integration. The service does not create a schema by default.
+
 Please check examples below on how to enable different databases using JDBC data sources.
 
 //==== Enabling PostgreSQL persistence using reactive driver for {PRODUCT} services
@@ -1750,10 +1752,12 @@ Replace the server host, port, and database information according to your Postgr
 [source]
 ------
 kogito.persistence.type=jdbc
-quarkus.datasource.db-kind=postgresql
 quarkus.datasource.username=kogito-user
 quarkus.datasource.password=kogito-pass
 quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/kogito
+# Below properties are required to create database schema with Flyway at startup.
+quarkus.flyway.migrate-at-start=true
+quarkus.datasource.db-kind=postgresql
 ------
 
 .On Spring Boot
@@ -1763,6 +1767,9 @@ kogito.persistence.type=jdbc
 spring.datasource.username=kogito-user
 spring.datasource.password=kogito-pass
 spring.datasource.url=jdbc:postgresql://localhost:5432/kogito
+# Below properties are required to create database schema with Flyway at startup.
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/{vendor}
 ------
 --
 
@@ -1827,10 +1834,12 @@ Replace the server host, port, and database information according to your Oracle
 [source]
 ------
 kogito.persistence.type=jdbc
-quarkus.datasource.db-kind=oracle
 quarkus.datasource.username=kogito
 quarkus.datasource.password=kogito
 quarkus.datasource.jdbc.url=jdbc:oracle://oracle:1521/kogito
+# Below properties are required to create database schema with Flyway at startup.
+quarkus.flyway.migrate-at-start=true
+quarkus.datasource.db-kind=oracle
 ------
 
 .On Spring Boot
@@ -1840,6 +1849,9 @@ kogito.persistence.type=jdbc
 spring.datasource.username=kogito
 spring.datasource.password=kogito
 spring.datasource.url=jdbc:oracle://oracle:1521/kogito
+# Below properties are required to create database schema with Flyway at startup.
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/{vendor}
 ------
 --
 
@@ -2987,6 +2999,10 @@ For more information about Oracle configuration on Quarkus, see https://quarkus.
 . After the Data Index Service is running, compile and run your {PRODUCT} project as usual and navigate to the `http://__HOST__:__PORT__` location configured for your running {PRODUCT} service, such as `\http://localhost:8080/`, to explore the exposed data model.
 
 NOTE: Data Index Service with Oracle does not support indexing domain-specific data. The GraphQL schema only exposes queries for `ProcessInstances`, `UserTaskInstances`, and `Jobs`.
+
+==== Oracle database setup for the {PRODUCT} Data Index Service
+
+{PRODUCT} provides two ways to manage the database schema, either via manually applying the provided DDL https://repository.jboss.org/org/kie/kogito/kogito-ddl/{COMMUNITY_VERSION_FINAL}/[kogito-ddl-{COMMUNITY_VERSION_FINAL}-db-scripts.zip], or via https://flywaydb.org/[Flyway] integration. This integration is done via Quarkus Flyway and the following https://quarkus.io/guides/flyway[guide] can give extra details about how to use it. In a nutshell, to create the required tables for Data Index on an empty database, you must add the `quarkus.flyway.migrate-at-start=true` property.
 
 
 [id="con-data-index-dev-service_{context}"]
