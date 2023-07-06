@@ -26,6 +26,9 @@ void setupKogitoDocsJob() {
     KogitoJobTemplate.createPipelineJob(this, jobParams)?.with {
         parameters {
             stringParam('KOGITO_DOCS_VERSION', '', 'Kogito docs version to release in kie-docs as Major.minor.micro')
+            stringParam('KOGITO_RELEASE_NUMBER', '12409824', 'Jira release notes number of kogito release')
+            stringParam('TOOLING_RELEASE_NUMBER', '12409093', 'Jira release notes number of kogito-tooling')
+            stringParam('KOGITO_TOOLING_VERSION', '0.30.0', 'Kogito-tooling version to use as Major.minor.micro')
             booleanParam('BUMP_UP' , false, 'Is a new KIE version needed?')
             stringParam('KIE_VERSION' , '', 'KIE version to bump up to as Major.minor.micro-SNAPSHOT')
         }
