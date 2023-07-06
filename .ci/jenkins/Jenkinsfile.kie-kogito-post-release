@@ -60,6 +60,21 @@ pipeline {
                     dir("${docsRepo}/_artifacts") {
                         def communityVersion=parseCommunityVersion(getKogitoDocsVersion())
                         sh "sed -i '0,/:COMMUNITY_VERSION:.*/s//:COMMUNITY_VERSION: ${communityVersion}/' \'document-attributes.adoc\' "
+                        sh 'head -n20 document-attributes.adoc'
+                    }
+                }
+            }
+        }
+        stage('Update number of kogito & tooling release notes') {
+            steps {
+                script {
+                    dir("${docsRepo}/doc-content/kogito-docs/src/main/asciidoc/release-notes") {
+                        def kogito_release_number = getKogitoReleaseNumber()
+                        def tooling_release_number = getToolingReleaseNumber()
+                        def tooling_version = getToolingVersion()
+                        sh "sed -i '0,/.*\\*.*projectId=12322421&version=.*\\[{PRODUCT} {COMMUNITY_VERSION_FINAL}\\]/s//\\* https:\\/\\/issues.redhat.com\\/secure\\/ReleaseNote.jspa\\?projectId=12322421\\&version=${kogito_release_number}\\[{PRODUCT} {COMMUNITY_VERSION_FINAL}\\]/' chap-kogito-release-notes.adoc"
+                        sh "sed -i '0,/.*\\*\\*.*projectId=12322421&version=.*\\[{PRODUCT} tooling .*\\]/s//\\*\\* https:\\/\\/issues.redhat.com\\/secure\\/ReleaseNote.jspa\\?projectId=12322421\\&version=${tooling_release_number}\\[{PRODUCT} tooling ${tooling_version}\\]/' chap-kogito-release-notes.adoc"
+                        sh 'head -n20 chap-kogito-release-notes.adoc'
                     }
                 }
             }
@@ -92,7 +107,8 @@ pipeline {
                         sh""" 
                             mvn clean install -Dfull -s "$SETTINGS_XML_FILE" -Dkie.maven.settings.custom="$SETTINGS_XML_FILE" -Dmaven.test.redirectTestOutputToFile=true -Dmaven.test.failure.ignore=true
                             # clean files created by the build
-                            git clean -d -f 
+                            git clean -d -f
+                            head -n30 pom.xml
                         """
                     }
                 }
@@ -127,6 +143,7 @@ pipeline {
                             // bump up if the current kie-version on main branch is greater then the kie-version on main-kogito branch
                             maven.mvnVersionsUpdateParentAndChildModules("${getKieVersion()}", true)
                         }
+                        sh 'head -n30 pom.xml'
                     }
                 }
             }
@@ -167,6 +184,18 @@ String getKogitoDocsVersion() {
 
 String getKieVersion() {
     return params.KIE_VERSION
+}
+
+String getKogitoReleaseNumber(){
+    return params.KOGITO_RELEASE_NUMBER
+}
+
+String getToolingReleaseNumber(){
+    return params.TOOLING_RELEASE_NUMBER
+}
+
+String getToolingVersion(){
+    return params.KOGITO_TOOLING_VERSION
 }
 
 String getSshPath() {
