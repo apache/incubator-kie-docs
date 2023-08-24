@@ -1187,7 +1187,7 @@ As an alternative, if you do not want to use the default listeners and the defau
 
 [NOTE]
 ====
-To write custom metrics, you can create custom event listeners and then register your Micrometer `Meter` object to the global `CompositeMeterRegistry` using the method `getDefaultMeterRegistry` of the class `org.kie.kogito.monitoring.core.common.MonitoringRegistry`. For more information about registering custom event listeners in {PRODUCT}, see xref:proc-event-listeners-registering_kogito-configuring[].
+To write custom metrics, you can create custom event listeners and then register your Micrometer `Meter` object to the global `CompositeMeterRegistry` using the method `getDefaultMeterRegistry` of the class `io.micrometer.core.instrument.Metrics.globalRegistry`. For more information about registering custom event listeners in {PRODUCT}, see xref:proc-event-listeners-registering_kogito-configuring[].
 ====
 --
 
@@ -1203,7 +1203,7 @@ To write custom metrics, you can create custom event listeners and then register
 </dependency>
 ----
 
-. Subscribe to your registry using the method `addRegistry` of the class `org.kie.kogito.monitoring.core.common.MonitoringRegistry`. For example, on Quarkus, create the following `AtlasProvider.java` class in your {PRODUCT} project:
+. Subscribe to your registry using the method `add` of the globalRegistry of `io.micrometer.core.instrument.Metrics`. For example, on Quarkus, create the following `AtlasProvider.java` class in your {PRODUCT} project:
 +
 .Example Java class on Quarkus to subscribe to a custom Micrometer registry for {PRODUCT} core monitoring
 [source,java]
@@ -1216,8 +1216,8 @@ import javax.inject.Singleton;
 import com.netflix.spectator.atlas.AtlasConfig;
 import io.micrometer.atlas.AtlasMeterRegistry;
 import io.micrometer.core.instrument.Clock;
+import io.micrometer.core.instrument.Metrics
 import io.quarkus.runtime.Startup;
-import org.kie.kogito.monitoring.core.common.MonitoringRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1245,7 +1245,7 @@ public class AtlasProvider {
             }
         };
         registry = new AtlasMeterRegistry(atlasConfig, Clock.SYSTEM);
-        MonitoringRegistry.addRegistry(registry);
+        Metrics.globalRegistry.add(registry);
         registry.start();
         logger.info("Atlas registry added to monitoring addon and started.");
     }
