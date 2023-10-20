@@ -1,5 +1,5 @@
-![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
-![Quality sync checks main-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=main-kogito)
+![Quality sync checks master](https://github.com/apache/incubator-kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
+![Quality sync checks main-kogito](https://github.com/apache/incubator-kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=main-kogito)
 
 If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
 
@@ -116,7 +116,7 @@ The following is a high-level view of the content workflow between the upstream 
 
 **Procedure**
 
-1. Fork the [`kie-docs`](https://github.com/kiegroup/kie-docs/tree/main-kogito) repository in GitHub, and in a command terminal, clone your forked repository to a local directory and add a remote for the `upstream` repository.
+1. Fork the [`kie-docs`](https://github.com/apache/incubator-kie-docs/tree/main-kogito) repository in GitHub, and in a command terminal, clone your forked repository to a local directory and add a remote for the `upstream` repository.
 
     Cloning your fork:
     ```
@@ -126,12 +126,12 @@ The following is a high-level view of the content workflow between the upstream 
 
     Adding and verifying the upstream remote:
     ```
-    $ git remote add upstream https://github.com/kiegroup/kie-docs.git
+    $ git remote add upstream https://github.com/apache/incubator-kie-docs.git
     $ git remote -v
     origin git@github.com:jsmith/kie-docs.git (fetch)
     origin git@github.com:jsmith/kie-docs.git (push)
-    upstream https://github.com/kiegroup/kie-docs.git (fetch)
-    upstream https://github.com/kiegroup/kie-docs.git (push)
+    upstream https://github.com/apache/incubator-kie-docs.git (fetch)
+    upstream https://github.com/apache/incubator-kie-docs.git (push)
     ```
 
 2. Check out the `main-kogito` branch from your upstream remote and create a working branch based on that branch to begin making changes. You can name your branch based on a JIRA ID, such as `KOGITO-1234` or `BXMSDOC-1234`, or another logical name if the branch is not JIRA-based, such as `Update-DMN-content`.
@@ -173,4 +173,4 @@ The following is a high-level view of the content workflow between the upstream 
 
 # Contributing to Kogito software
 
-To contribute to Kogito software, see the [`kogito-runtimes`](https://github.com/kiegroup/kogito-runtimes) repository in GitHub.
+To contribute to Kogito software, see the [`kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
