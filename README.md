@@ -1,5 +1,5 @@
-![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
-![Quality sync checks master-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
+![Quality sync checks master](https://github.com/apache/incubator-kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
+![Quality sync checks main-kogito](https://github.com/apache/incubator-kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=main-kogito)
 
 If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
 
@@ -9,7 +9,7 @@ If either of the two badges above are not green, please get in contact with engi
 
 Kogito is a cloud-native business automation technology for building cloud-ready business applications. Kogito includes components that are based on well-known business automation projects in the Knowledge Is Everything (KIE) community, specifically [Drools](https://drools.org), [jBPM](https://jbpm.org), and [OptaPlanner](https://optaplanner.org), to offer dependable, open source solutions for business rules, business processes, and constraint solving.
 
-This `master-kogito` branch of the `kie-docs` repository contains the source of the Kogito documentation for both KIE community and Red Hat Business Automation enterprise publications. The latest version of the Kogito documentation for the KIE community is published at https://docs.jboss.org/kogito/release/latest/html_single/.
+This `main-kogito` branch of the `kie-docs` repository contains the source of the Kogito documentation for both KIE community and Red Hat Business Automation enterprise publications. The latest version of the Kogito documentation for the KIE community is published at https://docs.jboss.org/kogito/release/latest/html_single/.
 
 As a Kogito user, developer, or technical writer, you can contribute to Kogito documentation by forking and cloning this repository, updating or adding content, and submitting a pull request for review.
 
@@ -19,7 +19,7 @@ Contents
 =================
 
 * [Required documentation tools](#required-documentation-tools)
-* [File system layout of the `master-kogito` branch](#file-system-layout-of-the-master-kogito-branch)
+* [File system layout of the `main-kogito` branch](#file-system-layout-of-the-main-kogito-branch)
 * [Contributing to Kogito documentation](#contributing-to-kogito-documentation)
 * [Contributing to Kogito software](#contributing-to-kogito-software)
 
@@ -103,7 +103,7 @@ The file structure contains the following core folders:
 
 # Contributing to Kogito documentation
 
-After you install the required documentation tools, you can begin contributing to Kogito documentation in the `master-kogito` branch of the `kie-docs` repository. The `kie-docs` documentation workflow follows the standard [GitHub flow](https://guides.github.com/introduction/flow/), which requires your own GitHub fork of the upstream source repository and a local clone of your fork.
+After you install the required documentation tools, you can begin contributing to Kogito documentation in the `main-kogito` branch of the `kie-docs` repository. The `kie-docs` documentation workflow follows the standard [GitHub flow](https://guides.github.com/introduction/flow/), which requires your own GitHub fork of the upstream source repository and a local clone of your fork.
 
 The following is a high-level view of the content workflow between the upstream `kie-docs` GitHub repo, your GitHub fork of the repo, and your locally cloned copy of your fork:
 
@@ -116,7 +116,7 @@ The following is a high-level view of the content workflow between the upstream 
 
 **Procedure**
 
-1. Fork the [`kie-docs`](https://github.com/kiegroup/kie-docs/tree/master-kogito) repository in GitHub, and in a command terminal, clone your forked repository to a local directory and add a remote for the `upstream` repository.
+1. Fork the [`kie-docs`](https://github.com/apache/incubator-kie-docs/tree/main-kogito) repository in GitHub, and in a command terminal, clone your forked repository to a local directory and add a remote for the `upstream` repository.
 
     Cloning your fork:
     ```
@@ -126,23 +126,23 @@ The following is a high-level view of the content workflow between the upstream 
 
     Adding and verifying the upstream remote:
     ```
-    $ git remote add upstream https://github.com/kiegroup/kie-docs.git
+    $ git remote add upstream https://github.com/apache/incubator-kie-docs.git
     $ git remote -v
     origin git@github.com:jsmith/kie-docs.git (fetch)
     origin git@github.com:jsmith/kie-docs.git (push)
-    upstream https://github.com/kiegroup/kie-docs.git (fetch)
-    upstream https://github.com/kiegroup/kie-docs.git (push)
+    upstream https://github.com/apache/incubator-kie-docs.git (fetch)
+    upstream https://github.com/apache/incubator-kie-docs.git (push)
     ```
 
-2. Check out the `master-kogito` branch from your upstream remote and create a working branch based on that branch to begin making changes. You can name your branch based on a JIRA ID, such as `KOGITO-1234` or `BXMSDOC-1234`, or another logical name if the branch is not JIRA-based, such as `Update-DMN-content`.
+2. Check out the `main-kogito` branch from your upstream remote and create a working branch based on that branch to begin making changes. You can name your branch based on a JIRA ID, such as `KOGITO-1234` or `BXMSDOC-1234`, or another logical name if the branch is not JIRA-based, such as `Update-DMN-content`.
 
     Creating your work branch:
     ```
-    $ git checkout --track upstream/master-kogito
+    $ git checkout --track upstream/main-kogito
     $ git checkout -b Branch-name
     ```
 
-3. Open your Atom text editor (recommended) or other editor of your choice, and update or add content as needed according to the [file system layout](#file-system-layout-of-the-master-kogito-branch) requirements.
+3. Open your Atom text editor (recommended) or other editor of your choice, and update or add content as needed according to the [file system layout](#file-system-layout-of-the-main-kogito-branch) requirements.
 
 4. After you complete and save your changes in your working branch, navigate to the top-level `kie-docs` directory in your local repository and enter the following commands to build the documentation locally and verify the generated preview in a web browser.
 
@@ -165,7 +165,7 @@ The following is a high-level view of the content workflow between the upstream 
     $ git push -u origin KOGITO-1234 #For first-time push, subsequently just `git push`
     ```
 
-6. In your `kie-docs` fork in GitHub, create a pull request to merge your work branch with the  `master-kogito` branch in the upstream `kie-docs` repository.
+6. In your `kie-docs` fork in GitHub, create a pull request to merge your work branch with the  `main-kogito` branch in the upstream `kie-docs` repository.
 
     In your pull request, include the following components:
     * **Description**: Summarize your changes and include any links to JIRA tasks or document previews, if available
@@ -173,4 +173,4 @@ The following is a high-level view of the content workflow between the upstream 
 
 # Contributing to Kogito software
 
-To contribute to Kogito software, see the [`kogito-runtimes`](https://github.com/kiegroup/kogito-runtimes) repository in GitHub.
+To contribute to Kogito software, see the [`kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
