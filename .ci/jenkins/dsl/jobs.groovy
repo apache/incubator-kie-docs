@@ -37,7 +37,8 @@ void setupKogitoDocsJob() {
     jobParams.env.putAll([
             JENKINS_EMAIL_CREDS_ID: "${JENKINS_EMAIL_CREDS_ID}",
             GIT_AUTHOR: "${GIT_AUTHOR_NAME}",
-            GIT_AUTHOR_CREDENTIALS_ID: "${GIT_AUTHOR_CREDENTIALS_ID}",
+            GIT_AUTHOR_CREDS_ID: "${GIT_AUTHOR_CREDENTIALS_ID}",
+            GIT_AUTHOR_PUSH_CREDS_ID: "${GIT_AUTHOR_PUSH_CREDENTIALS_ID}",
             SSH_KOGITO_DOCS_PATH: "kogito@filemgmt-prod.jboss.org:/docs_htdocs/kogito/release",
             RSYNC_KOGITO_DOCS_PATH: "kogito@filemgmt-prod-sync.jboss.org:/docs_htdocs/kogito/release",
             KIE_DOCS_BRANCH: 'main-kogito',
