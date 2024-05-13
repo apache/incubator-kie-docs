@@ -153,9 +153,7 @@ pipeline {
                     script{
                         // Add changed files, commit, open and merge PR
                         String prLink = commitAndCreatePR(commitMsg, PR_BRANCH, getDocsRepoBranch())
-                        sh "git checkout ${getDocsRepoBranch()}"
-                        mergeAndPush(prLink, getDocsRepoBranch())
-                        githubscm.removeRemoteBranch('origin', PR_BRANCH, getGitAuthorPushCredsId())
+                        approveAndMergePR(prLink)
                     }
                 }
             }
@@ -241,10 +239,10 @@ String parseCommunityVersion(String docVersion) {
     return "${versionSplit[0]}.${versionSplit[1]}"
 }
 
-void mergeAndPush(String prLink, String targetBranch) {
+void approveAndMergePR(String prLink) {
     if (prLink?.trim()) {
+        githubscm.approvePR(prLink, getGitAuthorPushCredsId())
         githubscm.mergePR(prLink, getGitAuthorPushCredsId())
-        githubscm.pushObject('origin', targetBranch, getGitAuthorPushCredsId())
     }
 }
 
@@ -253,5 +251,5 @@ String commitAndCreatePR(String commitMsg, String localBranch, String targetBran
     githubscm.setUserConfigFromCreds(getGitAuthorPushCredsId())
     githubscm.commitChanges(commitMsg)
     githubscm.pushObject('origin', localBranch, getGitAuthorPushCredsId())
-    return githubscm.createPR(commitMsg, prBody, targetBranch, getGitAuthorPushCredsId())
+    return githubscm.createPR(commitMsg, prBody, targetBranch, getGitAuthorCredsId())
 }
