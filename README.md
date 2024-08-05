@@ -1,6 +1,5 @@
-# This repository is no longer active.
-## The contents are only for drools 7.x.
-## The current drools docs content is maintained in subproject *drools-docs* here https://github.com/apache/incubator-kie-drools/ 
+### The drools contents are only for drools 7.x and no longer maintained in this repository.
+### The current drools docs content is maintained in subproject *drools-docs* here https://github.com/apache/incubator-kie-drools/
 
 ___
 
