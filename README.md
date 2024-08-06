@@ -1,3 +1,10 @@
+### The drools contents are only for drools 7.x and no longer maintained in this repository.
+### The current drools docs content is maintained in subproject *drools-docs* here https://github.com/apache/incubator-kie-drools/
+
+___
+
+
+
 ![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
 ![Quality sync checks master-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
 
