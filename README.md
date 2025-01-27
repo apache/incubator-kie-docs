@@ -3,7 +3,7 @@
 
 If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
 
-# Kogito documentation
+# jBPM documentation
 
 <p align="center"><img width=55% height=55% src="_images/logos/kogitoLogo.png"_></p>
 
