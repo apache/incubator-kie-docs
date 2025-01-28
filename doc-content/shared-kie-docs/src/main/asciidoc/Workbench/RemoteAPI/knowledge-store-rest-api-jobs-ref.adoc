@@ -1,0 +1,118 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='knowledge-store-rest-api-jobs-ref_{context}']
+= Jobs (API requests)
+
+All `POST` and `DELETE` requests in the Knowledge Store REST API return a job ID associated with each request, in addition to the returned request details. You can use a job ID to view the request status or delete a sent request.
+
+Knowledge Store REST API requests, or _jobs_, can have the following statuses:
+
+.Job statuses (API request statuses)
+[cols="1,3a", frame="all", options="header"]
+|===
+|Status
+|Description
+
+|`ACCEPTED`
+|The request was accepted and is being processed.
+
+|`BAD_REQUEST`
+|The request contained incorrect content and was not accepted.
+
+|`RESOURCE_NOT_EXIST`
+|The requested resource (path) does not exist.
+
+|`DUPLICATE_RESOURCE`
+|The resource already exists.
+
+|`SERVER_ERROR`
+|An error occurred in {KIE_SERVER}.
+
+|`SUCCESS`
+|The request finished successfully.
+
+|`FAIL`
+|The request failed.
+
+|`APPROVED`
+|The request was approved.
+
+|`DENIED`
+|The request was denied.
+
+|`GONE`
+|The job ID for the request could not be found due to one of the following reasons:
+
+* The request was explicitly removed.
+* The request finished and has been deleted from a status cache. A request is removed from a status cache after the cache has reached its maximum capacity.
+* The request never existed.
+|===
+
+The Knowledge Store REST API supports the following endpoints for retrieving or deleting sent API requests. The Knowledge Store REST API base URL is `\http://SERVER:PORT/{URL_COMPONENT_CENTRAL}/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `rest-all` user role.
+
+[GET] /jobs/{jobId}::
++
+--
+Returns the status of a specified job (a previously sent API request).
+
+.Request parameters
+[cols="15%,45%,15%,25%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`jobId`
+|ID of the job to be retrieved (example: `1541010216919-1`)
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "status": "SUCCESS",
+  "jobId": "1541010216919-1",
+  "result": null,
+  "lastModified": 1541010218352,
+  "detailedResult": [
+    "level:INFO, path:null, text:Build of module 'Mortgage_Process' (requested by system) completed.\n Build: SUCCESSFUL"
+  ]
+}
+----
+--
+[DELETE] /jobs/{jobId}::
++
+--
+Deletes a specified job (a previously sent API request). If the job is not being processed yet, this request removes the job from the job queue. This request does not cancel or stop an ongoing job.
+
+.Request parameters
+[cols="15%,45%,15%,25%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`jobId`
+|ID of the job to be deleted (example: `1541010216919-1`)
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "status": "GONE",
+  "jobId": "1541010216919-1",
+  "result": null,
+  "lastModified": 1541132054916,
+  "detailedResult": [
+    "level:INFO, path:null, text:Build of module 'Mortgage_Process' (requested by system) completed.\n Build: SUCCESSFUL"
+  ]
+}
+----
+--

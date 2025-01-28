@@ -1,0 +1,346 @@
+[id='kie-server-extensions-transport-proc_{context}']
+
+= Extending {KIE_SERVER} to use a custom data transport
+
+By default, {KIE_SERVER} extensions are exposed through REST or JMS data transports. You can extend {KIE_SERVER} to support a custom data transport to adapt {KIE_SERVER} transport protocols to your business needs.
+
+As an example, this procedure adds a custom data transport to {KIE_SERVER} that uses the `Drools` extension and that is based on Apache MINA, an open-source Java network-application framework. The example custom MINA transport exchanges string-based data that relies on existing marshalling operations and supports only JSON format.
+
+.Procedure
+. Create an empty Maven project and define the following packaging type and dependencies in the `pom.xml` file for the project:
++
+.Example pom.xml file in the sample project
+[source,xml,subs="attributes+"]
+----
+<packaging>jar</packaging>
+
+<properties>
+  <version.org.kie>{MAVEN_ARTIFACT_VERSION}</version.org.kie>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-internal</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-common</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-drools</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-core</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-compiler</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.25</version>
+  </dependency>
+  <dependency>
+    <groupId>org.apache.mina</groupId>
+    <artifactId>mina-core</artifactId>
+    <version>2.1.3</version>
+  </dependency>
+</dependencies>
+----
+. Implement the `org.kie.server.services.api.KieServerExtension` interface in a Java class in your project, as shown in the following example:
++
+--
+.Sample implementation of the `KieServerExtension` interface
+[source,java]
+----
+public class MinaDroolsKieServerExtension implements KieServerExtension {
+
+    private static final Logger logger = LoggerFactory.getLogger(MinaDroolsKieServerExtension.class);
+
+    public static final String EXTENSION_NAME = "Drools-Mina";
+
+    private static final Boolean disabled = Boolean.parseBoolean(System.getProperty("org.kie.server.drools-mina.ext.disabled", "false"));
+    private static final String MINA_HOST = System.getProperty("org.kie.server.drools-mina.ext.port", "localhost");
+    private static final int MINA_PORT = Integer.parseInt(System.getProperty("org.kie.server.drools-mina.ext.port", "9123"));
+
+    // Taken from dependency on the `Drools` extension:
+    private KieContainerCommandService batchCommandService;
+
+    // Specific to MINA:
+    private IoAcceptor acceptor;
+
+    public boolean isActive() {
+        return disabled == false;
+    }
+
+    public void init(KieServerImpl kieServer, KieServerRegistry registry) {
+
+        KieServerExtension droolsExtension = registry.getServerExtension("Drools");
+        if (droolsExtension == null) {
+            logger.warn("No Drools extension available, quitting...");
+            return;
+        }
+
+        List<Object> droolsServices = droolsExtension.getServices();
+        for( Object object : droolsServices ) {
+            // If the given service is null (not configured), continue to the next service:
+            if (object == null) {
+                continue;
+            }
+            if( KieContainerCommandService.class.isAssignableFrom(object.getClass()) ) {
+                batchCommandService = (KieContainerCommandService) object;
+                continue;
+            }
+        }
+        if (batchCommandService != null) {
+            acceptor = new NioSocketAcceptor();
+            acceptor.getFilterChain().addLast( "codec", new ProtocolCodecFilter( new TextLineCodecFactory( Charset.forName( "UTF-8" ))));
+
+            acceptor.setHandler( new TextBasedIoHandlerAdapter(batchCommandService) );
+            acceptor.getSessionConfig().setReadBufferSize( 2048 );
+            acceptor.getSessionConfig().setIdleTime( IdleStatus.BOTH_IDLE, 10 );
+            try {
+                acceptor.bind( new InetSocketAddress(MINA_HOST, MINA_PORT) );
+
+                logger.info("{} -- Mina server started at {} and port {}", toString(), MINA_HOST, MINA_PORT);
+            } catch (IOException e) {
+                logger.error("Unable to start Mina acceptor due to {}", e.getMessage(), e);
+            }
+
+        }
+    }
+
+    public void destroy(KieServerImpl kieServer, KieServerRegistry registry) {
+        if (acceptor != null) {
+            acceptor.dispose();
+            acceptor = null;
+        }
+        logger.info("{} -- Mina server stopped", toString());
+    }
+
+    public void createContainer(String id, KieContainerInstance kieContainerInstance, Map<String, Object> parameters) {
+        // Empty, already handled by the `Drools` extension
+
+    }
+
+    public void disposeContainer(String id, KieContainerInstance kieContainerInstance, Map<String, Object> parameters) {
+      // Empty, already handled by the `Drools` extension
+
+    }
+
+    public List<Object> getAppComponents(SupportedTransports type) {
+        // Nothing for supported transports (REST or JMS)
+        return Collections.emptyList();
+    }
+
+    public <T> T getAppComponents(Class<T> serviceType) {
+
+        return null;
+    }
+
+    public String getImplementedCapability() {
+        return "BRM-Mina";
+    }
+
+    public List<Object> getServices() {
+        return Collections.emptyList();
+    }
+
+    public String getExtensionName() {
+        return EXTENSION_NAME;
+    }
+
+    public Integer getStartOrder() {
+        return 20;
+    }
+
+    @Override
+    public String toString() {
+        return EXTENSION_NAME + " KIE Server extension";
+    }
+}
+----
+
+The `KieServerExtension` interface is the main extension interface that {KIE_SERVER} can use to provide the additional functionality for the new MINA transport. The interface consists of the following components:
+
+.Overview of the `KieServerExtension` interface
+[source,java]
+----
+public interface KieServerExtension {
+
+    boolean isActive();
+
+    void init(KieServerImpl kieServer, KieServerRegistry registry);
+
+    void destroy(KieServerImpl kieServer, KieServerRegistry registry);
+
+    void createContainer(String id, KieContainerInstance kieContainerInstance, Map<String, Object> parameters);
+
+    void disposeContainer(String id, KieContainerInstance kieContainerInstance, Map<String, Object> parameters);
+
+    List<Object> getAppComponents(SupportedTransports type);
+
+    <T> T getAppComponents(Class<T> serviceType);
+
+    String getImplementedCapability();  // <1>
+
+    List<Object> getServices();
+
+    String getExtensionName();  // <2>
+
+    Integer getStartOrder();  // <3>
+}
+----
+<1> Specifies the capability that is covered by this extension. The capability must be unique within {KIE_SERVER}.
+<2> Defines a human-readable name for the extension.
+<3> Determines when the specified extension should be started. For extensions that have dependencies on other extensions, this setting must not conflict with the parent setting. For example, in this case, this custom extension depends on the `Drools` extension, which has `StartOrder` set to `0`, so this custom add-on extension must be greater than `0` (set to `20` in the sample implementation).
+
+In the previous `MinaDroolsKieServerExtension` sample implementation of this interface, the `init` method is the main element for collecting services from the `Drools` extension and for bootstrapping the MINA server. All other methods in the `KieServerExtension` interface can remain with the standard implementation to fulfill interface requirements.
+
+The `TextBasedIoHandlerAdapter` class is the handler on the MINA server that reacts to incoming requests.
+--
+. Implement the `TextBasedIoHandlerAdapter` handler for the MINA server, as shown in the following example:
++
+--
+.Sample implementation of the `TextBasedIoHandlerAdapter` handler
+[source,java]
+----
+public class TextBasedIoHandlerAdapter extends IoHandlerAdapter {
+
+    private static final Logger logger = LoggerFactory.getLogger(TextBasedIoHandlerAdapter.class);
+
+    private KieContainerCommandService batchCommandService;
+
+    public TextBasedIoHandlerAdapter(KieContainerCommandService batchCommandService) {
+        this.batchCommandService = batchCommandService;
+    }
+
+    @Override
+    public void messageReceived( IoSession session, Object message ) throws Exception {
+        String completeMessage = message.toString();
+        logger.debug("Received message '{}'", completeMessage);
+        if( completeMessage.trim().equalsIgnoreCase("quit") || completeMessage.trim().equalsIgnoreCase("exit") ) {
+            session.close(false);
+            return;
+        }
+
+        String[] elements = completeMessage.split("\\|");
+        logger.debug("Container id {}", elements[0]);
+        try {
+            ServiceResponse<String> result = batchCommandService.callContainer(elements[0], elements[1], MarshallingFormat.JSON, null);
+
+            if (result.getType().equals(ServiceResponse.ResponseType.SUCCESS)) {
+                session.write(result.getResult());
+                logger.debug("Successful message written with content '{}'", result.getResult());
+            } else {
+                session.write(result.getMsg());
+                logger.debug("Failure message written with content '{}'", result.getMsg());
+            }
+        } catch (Exception e) {
+
+        }
+    }
+}
+----
+
+In this example, the handler class receives text messages and executes them in the `Drools` service.
+
+Consider the following handler requirements and behavior when you use the `TextBasedIoHandlerAdapter` handler implementation:
+
+* Anything that you submit to the handler must be a single line because each incoming transport request is a single line.
+* You must pass a KIE container ID in this single line so that the handler expects the format `containerID|payload`.
+* You can set a response in the way that it is produced by the marshaller. The response can be multiple lines.
+* The handler supports a _stream mode_ that enables you to send commands without disconnecting from a {KIE_SERVER} session. To end a {KIE_SERVER} session in stream mode, send either an `exit` or `quit` command to the server.
+--
+. To make the new data transport discoverable for {KIE_SERVER}, create a `META-INF/services/org.kie.server.services.api.KieServerExtension` file in your Maven project and add the fully qualified class name of the `KieServerExtension` implementation class within the file. For this example, the file contains the single line `org.kie.server.ext.mina.MinaDroolsKieServerExtension`.
+. Build your project and copy the resulting JAR file and the `mina-core-2.0.9.jar` file (which the extension depends on in this example) into the `~/kie-server.war/WEB-INF/lib` directory of your project.
+ifdef::DM,PAM[]
+For example, on {EAP}, the path to this directory is `_EAP_HOME_/standalone/deployments/kie-server.war/WEB-INF/lib`.
+endif::[]
+. Start the {KIE_SERVER} and deploy the built project to the running {KIE_SERVER}. You can deploy the project using either the {CENTRAL} interface or the {KIE_SERVER} REST API (a `PUT` request to `\http://SERVER:PORT/kie-server/services/rest/server/containers/{containerId}`).
++
+--
+After your project is deployed on a running {KIE_SERVER}, you can view the status of the new data transport in your {KIE_SERVER} log and start using your new data transport:
+
+.New data transport in the server log
+[source]
+----
+Drools-Mina KIE Server extension -- Mina server started at localhost and port 9123
+Drools-Mina KIE Server extension has been successfully registered as server extension
+----
+
+For this example, you can use Telnet to interact with the new MINA-based data transport in {KIE_SERVER}:
+
+.Starting Telnet and connecting to {KIE_SERVER} on port 9123 in a command terminal
+[source,shell]
+----
+telnet 127.0.0.1 9123
+----
+
+.Example interactions with {KIE_SERVER} in a command terminal
+[source,shell]
+----
+Trying 127.0.0.1...
+Connected to localhost.
+Escape character is '^]'.
+
+# Request body:
+demo|{"lookup":"defaultKieSession","commands":[{"insert":{"object":{"org.jbpm.test.Person":{"name":"john","age":25}}}},{"fire-all-rules":""}]}
+
+# Server response:
+{
+  "results" : [ {
+    "key" : "",
+    "value" : 1
+  } ],
+  "facts" : [ ]
+}
+
+demo|{"lookup":"defaultKieSession","commands":[{"insert":{"object":{"org.jbpm.test.Person":{"name":"mary","age":22}}}},{"fire-all-rules":""}]}
+{
+  "results" : [ {
+    "key" : "",
+    "value" : 1
+  } ],
+  "facts" : [ ]
+}
+
+demo|{"lookup":"defaultKieSession","commands":[{"insert":{"object":{"org.jbpm.test.Person":{"name":"james","age":25}}}},{"fire-all-rules":""}]}
+{
+  "results" : [ {
+    "key" : "",
+    "value" : 1
+  } ],
+  "facts" : [ ]
+}
+exit
+Connection closed by foreign host.
+----
+
+.Example server log output
+[source]
+----
+16:33:40,206 INFO  [stdout] (NioProcessor-2) Hello john
+16:34:03,877 INFO  [stdout] (NioProcessor-2) Hello mary
+16:34:19,800 INFO  [stdout] (NioProcessor-2) Hello james
+----
+--

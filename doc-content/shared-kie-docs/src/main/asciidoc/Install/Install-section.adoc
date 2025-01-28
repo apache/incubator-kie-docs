@@ -1,0 +1,226 @@
+
+= Installing and using
+
+{DECISION_ENGINE} provides an Eclipse-based IDE, which is optional. However, the Eclipse-based IDE will be deprecated in a future release.
+
+The latest working version of the Eclipse-based IDE is 7.46.0.Final and can be used with the recent versions of {PRODUCT}.
+
+A simple way to get started is to download and install the Eclipse plug-in - this will also require the Eclipse GEF framework to be installed (see below, if you don't have it installed already). This will provide you with all the dependencies you need to get going: you can simply create a new rule project and everything will be done for you.
+Refer to the chapter on {CENTRAL} and IDE for detailed instructions on this.
+Installing the Eclipse plug-in is generally as simple as unzipping a file into your Eclipse plug-in directory.
+
+Use of the Eclipse plug-in is not required.
+Rule files are just textual input (or spreadsheets as the case may be) and the IDE (also known as {CENTRAL}) is just a convenience.
+People have integrated the {DECISION_ENGINE} in many ways, there is no "one size fits all".
+
+Alternatively, you can download the binary distribution, and include the relevant JARs in your projects classpath.
+
+== Dependencies and JARs
+
+
+Drools is broken down into a few modules, some are required during rule development/compiling, and some are required at runtime.
+In many cases, people will simply want to include all the dependencies at runtime, and this is fine.
+It allows you to have the most flexibility.
+However, some may prefer to have their "runtime" stripped down to the bare minimum, as they will be deploying rules in binary form - this is also possible.
+The core {DECISION_ENGINE} can be quite compact, and only requires a few 100 kilobytes across 3 JAR files.
+
+The following is a description of the important libraries that make up JBoss Drools
+
+* knowledge-api.jar - this provides the interfaces and factories. It also helps clearly show what is intended as a user API and what is just an engine API.
+* knowledge-internal-api.jar - this provides internal interfaces and factories.
+* drools-core.jar - this is the core {DECISION_ENGINE}, runtime component. Contains both the RETE engine and the LEAPS engine. This is the only runtime dependency if you are pre-compiling rules (and deploying via Package or RuleBase objects).
+* drools-compiler.jar - this contains the compiler/builder components to take rule source, and build executable rule bases. This is often a runtime dependency of your application, but it need not be if you are pre-compiling your rules. This depends on drools-core.
+* drools-jsr94.jar - this is the JSR-94 compliant implementation, this is essentially a layer over the drools-compiler component. Note that due to the nature of the JSR-94 specification, not all features are easily exposed via this interface. In some cases, it will be easier to go direct to the Drools API, but in some environments the JSR-94 is mandated.
+* drools-decisiontables.jar - this is the decision tables 'compiler' component, which uses the drools-compiler component. This supports both excel and CSV input formats.
+
+
+There are quite a few other dependencies which the above components require, most of which are for the drools-compiler, drools-jsr94 or drools-decisiontables module.
+Some key ones to note are "POI" which provides the spreadsheet parsing ability, and "antlr" which provides the parsing for the rule language itself.
+
+NOTE: if you are using Drools in J2EE or servlet containers and you come across classpath issues with "JDT", then you can switch to the janino compiler.
+Set the system property "drools.compiler": For example: -Ddrools.compiler=JANINO.
+
+For up to date info on dependencies in a release, consult the released POMs, which can be found on the Maven repository.
+
+== Use with Maven, Gradle, Ivy, Buildr or Ant
+
+
+The JARs are also available in http://search.maven.org/#search|ga|1|org.drools[the central
+    Maven repository] (and also in https://repository.jboss.org/nexus/index.html#nexus-search;gav~org.drools~~~~[the JBoss Maven
+    repository]).
+
+If you use Maven, add KIE and Drools dependencies in your project's [path]_pom.xml_
+ like this:
+
+[source,xml]
+----
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.drools</groupId>
+        <artifactId>drools-bom</artifactId>
+        <type>pom</type>
+        <version>...</version>
+        <scope>import</scope>
+      </dependency>
+      ...
+    </dependencies>
+  </dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.kie</groupId>
+      <artifactId>kie-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.drools</groupId>
+      <artifactId>drools-compiler</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    ...
+  <dependencies>
+----
+
+
+This is similar for Gradle, Ivy and Buildr.
+To identify the latest version, check the Maven repository.
+
+If you're still using Ant (without Ivy), copy all the JARs from the download zip's [path]_binaries_
+ directory and manually verify that your classpath doesn't contain duplicate JARs.
+
+== Runtime
+
+
+The "runtime" requirements mentioned here are if you are deploying rules as their binary form (either as KnowledgePackage objects, or KnowledgeBase objects etc). This is an optional feature that allows you to keep your runtime very light.
+You may use drools-compiler to produce rule packages "out of process", and then deploy them to a runtime system.
+This runtime system only requires drools-core.jar and knowledge-api for execution.
+This is an optional deployment pattern, and many people do not need to "trim" their application this much, but it is an ideal option for certain environments.
+
+== Installing IDE (Rule Workbench)
+
+
+The rule workbench (for Eclipse) requires that you have Eclipse 3.4 or greater, as well as Eclipse GEF 3.4 or greater.
+You can install it either by downloading the plug-in or using the update site.
+
+Another option is to use the JBoss IDE, which comes with all the plug-in requirements pre packaged, as well as a choice of other tools separate to rules.
+You can choose just to install rules from the "bundle" that JBoss IDE ships with.
+
+=== Installing GEF (a required dependency)
+
+
+GEF is the Eclipse Graphical Editing Framework, which is used for graph viewing components in the plug-in.
+
+If you don't have GEF installed, you can install it using the built in update mechanism (or downloading GEF from the Eclipse.org website not recommended). JBoss IDE has GEF already, as do many other "distributions" of Eclipse, so this step may be redundant for some people.
+
+Open the Help->Software updates...->Available Software->Add Site... from the help menu.
+Location is:
+
+[source]
+----
+http://download.eclipse.org/tools/gef/updates/releases/
+----
+
+
+Next you choose the GEF plug-in:
+
+
+image::Install/install_gef.png[align="center"]
+
+
+Press next, and agree to install the plug-in (an Eclipse restart may be required). Once this is completed, then you can continue on installing the rules plug-in.
+
+=== Installing GEF from zip file
+
+
+To install from the zip file, download and unzip the file.
+Inside the zip you will see a plug-in directory, and the plug-in JAR itself.
+You place the plug-in JAR into your Eclipse applications plug-in directory, and restart Eclipse.
+
+=== Installing Drools plug-in from zip file
+
+
+Download the Drools Eclipse IDE plugin from the link below.
+Unzip the downloaded file in your main eclipse folder (do not just copy the file there, extract it so that the feature and plugin JARs end up in the features and plugin directory of eclipse) and (re)start Eclipse.
+
+https://www.drools.org/download/download.html
+
+To check that the installation was successful, try opening the Drools perspective: Click the 'Open Perspective' button in the top right corner of your Eclipse window, select 'Other...' and pick the Drools perspective.
+If you cannot find the Drools perspective as one of the possible perspectives, the installation probably was unsuccessful.
+Check whether you executed each of the required steps correctly: Do you have the right version of Eclipse (3.4.x)? Do you have Eclipse GEF installed (check whether the org.eclipse.gef_3.4.*.jar exists in the plugins directory in your eclipse root folder)? Did you extract the Drools Eclipse plugin correctly (check whether the org.drools.eclipse_*.jar exists in the plugins directory in your eclipse root folder)? If you cannot find the problem, try contacting us (e.g.
+on irc or on the user mailing list), more info can be found no our homepage here:
+
+https://www.drools.org/
+
+=== Drools Runtimes
+
+
+A Drools runtime is a collection of JARs on your file system that represent one specific release of the Drools project JARs.
+To create a runtime, you must point the IDE to the release of your choice.
+If you want to create a new runtime based on the latest Drools project JARs included in the plugin itself, you can also easily do that.
+You are required to specify a default Drools runtime for your Eclipse workspace, but each individual project can override the default and select the appropriate runtime for that project specifically.
+
+==== Defining a Drools runtime
+
+
+You are required to define one or more Drools runtimes using the Eclipse preferences view.
+To open up your preferences, in the menu Window select the Preferences menu item.
+A new preferences dialog should show all your preferences.
+On the left side of this dialog, under the Drools category, select "Installed Drools runtimes". The panel on the right should then show the currently defined Drools runtimes.
+If you have not yet defined any runtimes, it should like something like the figure below.
+
+
+image::Install/drools-runtimes.png[align="center"]
+
+
+To define a new Drools runtime, click the add button.
+A dialog as shown below should pop up, requiring the name for your runtime and the location on your file system where it can be found.
+
+
+image::Install/drools-runtimes-add.png[align="center"]
+
+
+In general, you have two options:
+
+. If you simply want to use the default JARs as included in the Drools Eclipse plugin, you can create a new Drools runtime automatically by clicking the "Create a new Drools 5 runtime ..." button. A file browser will show up, asking you to select the folder on your file system where you want this runtime to be created. The plugin will then automatically copy all required dependencies to the specified folder. After selecting this folder, the dialog should look like the figure shown below.
+. If you want to use one specific release of the Drools project, you should create a folder on your file system that contains all the necessary Drools libraries and dependencies. Instead of creating a new Drools runtime as explained above, give your runtime a name and select the location of this folder containing all the required JARs.
+
+
+
+image::Install/drools-runtimes-add2.png[align="center"]
+
+
+After clicking the OK button, the runtime should show up in your table of installed Drools runtimes, as shown below.
+Click checkbox in front of the newly created runtime to make it the default Drools runtime.
+The default Drools runtime will be used as the runtime of all your Drools project that have not selected a project-specific runtime.
+
+
+image::Install/drools-runtimes2.png[align="center"]
+
+
+You can add as many Drools runtimes as you need.
+For example, the screenshot below shows a configuration where three runtimes have been defined: a Drools 4.0.7 runtime, a Drools 5.0.0 runtime and a Drools 5.0.0.SNAPSHOT runtime.
+The Drools 5.0.0 runtime is selected as the default one.
+
+
+image::Install/drools-runtimes3.png[align="center"]
+
+
+Note that you will need to restart Eclipse if you changed the default runtime and you want to make sure that all the projects that are using the default runtime update their classpath accordingly.
+
+==== Selecting a runtime for your Drools project
+
+Whenever you create a Drools project (using the New Drools Project wizard or by converting an existing Java project to a Drools project using the "Convert to Drools Project" action that is shown when you are in the Drools perspective and you right-click an existing Java project), the plugin will automatically add all the required JARs to the classpath of your project.
+
+When creating a new Drools project, the plugin will automatically use the default Drools runtime for that project, unless you specify a project-specific one.
+You can do this in the final step of the New Drools Project wizard, as shown below, by deselecting the "Use default Drools runtime" checkbox and selecting the appropriate runtime in the drop-down box.
+If you click the "Configure workspace settings ..." link, the workspace preferences showing the currently installed Drools runtimes will be opened, so you can add new runtimes there.
+
+
+image::Install/drools-runtimes-newproject.png[align="center"]
+
+
+You can change the runtime of a Drools project at any time by opening the project properties (right-click the project and select Properties) and selecting the Drools category, as shown below.
+Check the "Enable project specific settings" checkbox and select the appropriate runtime from the drop-down box.
+If you click the "Configure workspace settings ..." link, the workspace preferences showing the currently installed Drools runtimes will be opened, so you can add new runtimes there.
+If you deselect the "Enable project specific settings" checkbox, it will use the default runtime as defined in your global preferences.
+
+image::Install/drools-runtimes-project.png[align="center"]

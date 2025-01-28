@@ -1,0 +1,235 @@
+[id='kie-server-rest-api-requests-proc_{context}']
+= Sending requests with the {KIE_SERVER} REST API using a REST client or curl utility
+
+The {KIE_SERVER} REST API enables you to interact with your KIE containers and business assets (such as business rules, processes, and solvers) in {PRODUCT} without using the {CENTRAL} user interface. You can send {KIE_SERVER} REST API requests using any REST client or curl utility.
+
+.Prerequisites
+* {KIE_SERVER} is installed and running.
+* You have `kie-server` user role access to {KIE_SERVER}.
+
+.Procedure
+. Identify the relevant xref:kie-server-rest-api-endpoints-ref_kie-apis[API endpoint] to which you want to send a request, such as `[GET] /server/containers` to retrieve KIE containers from {KIE_SERVER}.
+. In a REST client or curl utility, enter the following components for a `GET` request to `/server/containers`. Adjust any request details according to your use case.
++
+--
+For REST client:
+
+* *Authentication*: Enter the user name and password of the {KIE_SERVER} user with the `kie-server` role.
+* *HTTP Headers*: Set the following header:
+** `Accept`: `application/json`
+* *HTTP method*: Set to `GET`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and endpoint, such as `\http://localhost:8080/kie-server/services/rest/server/containers`.
+
+
+For curl utility:
+
+* `-u`: Enter the user name and password of the {KIE_SERVER} user with the `kie-server` role.
+* `-H`: Set the following header:
+** `Accept`: `application/json`
+* `-X`: Set to `GET`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and endpoint, such as `\http://localhost:8080/kie-server/services/rest/server/containers`.
+
+[source]
+----
+curl -u 'baAdmin:password@1' -H "Accept: application/json" -X GET "http://localhost:8080/kie-server/services/rest/server/containers"
+----
+--
+
+. Execute the request and review the {KIE_SERVER} response.
++
+--
+Example server response (JSON):
+
+[source,json]
+----
+{
+  "type": "SUCCESS",
+  "msg": "List of created containers",
+  "result": {
+    "kie-containers": {
+      "kie-container": [
+        {
+          "container-id": "itorders_1.0.0-SNAPSHOT",
+          "release-id": {
+            "group-id": "itorders",
+            "artifact-id": "itorders",
+            "version": "1.0.0-SNAPSHOT"
+          },
+          "resolved-release-id": {
+            "group-id": "itorders",
+            "artifact-id": "itorders",
+            "version": "1.0.0-SNAPSHOT"
+          },
+          "status": "STARTED",
+          "scanner": {
+            "status": "DISPOSED",
+            "poll-interval": null
+          },
+          "config-items": [],
+          "container-alias": "itorders"
+        }
+      ]
+    }
+  }
+}
+----
+--
+. For this example, copy or note the project `group-id`, `artifact-id`, and `version` (GAV) data from one of the deployed KIE containers returned in the response.
+. In your REST client or curl utility, send another API request with the following components for a `PUT` request to `/server/containers/{containerId}` to deploy a new KIE container with the copied project GAV data. Adjust any request details according to your use case.
++
+--
+For REST client:
+
+* *Authentication*: Enter the user name and password of the {KIE_SERVER} user with the `kie-server` role.
+* *HTTP Headers*: Set the following headers:
+** `Accept`: `application/json`
+** `Content-Type`: `application/json`
++
+NOTE: When you add `fields=not_null` to `Content-Type`, the null fields are excluded from the REST API response.
+
+* *HTTP method*: Set to `PUT`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and endpoint, such as `\http://localhost:8080/kie-server/services/rest/server/containers/MyContainer`.
+* *Request body*: Add a JSON request body with the configuration items for the new KIE container:
+
+[source,json]
+----
+{
+  "config-items": [
+    {
+      "itemName": "RuntimeStrategy",
+      "itemValue": "SINGLETON",
+      "itemType": "java.lang.String"
+    },
+    {
+      "itemName": "MergeMode",
+      "itemValue": "MERGE_COLLECTIONS",
+      "itemType": "java.lang.String"
+    },
+    {
+      "itemName": "KBase",
+      "itemValue": "",
+      "itemType": "java.lang.String"
+    },
+    {
+      "itemName": "KSession",
+      "itemValue": "",
+      "itemType": "java.lang.String"
+    }
+  ],
+  "release-id": {
+    "group-id": "itorders",
+    "artifact-id": "itorders",
+    "version": "1.0.0-SNAPSHOT"
+  },
+  "scanner": {
+    "poll-interval": "5000",
+    "status": "STARTED"
+  }
+}
+----
+
+For curl utility:
+
+* `-u`: Enter the user name and password of the {KIE_SERVER} user with the `kie-server` role.
+* `-H`: Set the following headers:
+** `Accept`: `application/json`
+** `Content-Type`: `application/json`
++
+NOTE: When you add `fields=not_null` to `Content-Type`, the null fields are excluded from the REST API response.
+
+* `-X`: Set to `PUT`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and endpoint, such as `\http://localhost:8080/kie-server/services/rest/server/containers/MyContainer`.
+* `-d`: Add a JSON request body or file (`@file.json`) with the configuration items for the new KIE container:
+
+[source]
+----
+curl -u 'baAdmin:password@1' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT "http://localhost:8080/kie-server/services/rest/server/containers/MyContainer" -d "{ \"config-items\": [ { \"itemName\": \"RuntimeStrategy\", \"itemValue\": \"SINGLETON\", \"itemType\": \"java.lang.String\" }, { \"itemName\": \"MergeMode\", \"itemValue\": \"MERGE_COLLECTIONS\", \"itemType\": \"java.lang.String\" }, { \"itemName\": \"KBase\", \"itemValue\": \"\", \"itemType\": \"java.lang.String\" }, { \"itemName\": \"KSession\", \"itemValue\": \"\", \"itemType\": \"java.lang.String\" } ], \"release-id\": { \"group-id\": \"itorders\", \"artifact-id\": \"itorders\", \"version\": \"1.0.0-SNAPSHOT\" }, \"scanner\": { \"poll-interval\": \"5000\", \"status\": \"STARTED\" }}"
+----
+
+[source]
+----
+curl -u 'baAdmin:password@1' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT "http://localhost:8080/kie-server/services/rest/server/containers/MyContainer" -d @my-container-configs.json
+----
+--
+. Execute the request and review the {KIE_SERVER} response.
++
+--
+Example server response (JSON):
+
+[source,json]
+----
+{
+  "type": "SUCCESS",
+  "msg": "Container MyContainer successfully deployed with module itorders:itorders:1.0.0-SNAPSHOT.",
+  "result": {
+    "kie-container": {
+      "container-id": "MyContainer",
+      "release-id": {
+        "group-id": "itorders",
+        "artifact-id": "itorders",
+        "version": "1.0.0-SNAPSHOT"
+      },
+      "resolved-release-id": {
+        "group-id": "itorders",
+        "artifact-id": "itorders",
+        "version": "1.0.0-SNAPSHOT"
+      },
+      "status": "STARTED",
+      "scanner": {
+        "status": "STARTED",
+        "poll-interval": 5000
+      },
+      "config-items": [],
+      "messages": [
+        {
+          "severity": "INFO",
+          "timestamp": {
+            "java.util.Date": 1540584717937
+          },
+          "content": [
+            "Container MyContainer successfully created with module itorders:itorders:1.0.0-SNAPSHOT."
+          ]
+        }
+      ],
+      "container-alias": null
+    }
+  }
+}
+----
+
+If you encounter request errors, review the returned error code messages and adjust your request accordingly.
+
+ifdef::PAM,JBPM[]
+.REST API requests for process instances
+[NOTE]
+====
+For REST API requests that send complex data objects to the process instance endpoint `/server/containers/{containerId}/processes/{processId}/instances`, ensure that you include either the fully qualified class name (such as `com.myspace.Person`) or the simple class name (such as `Person`) in the request body. The class name is required for the request body to be mapped to the correct business object in {PRODUCT}. If you exclude the class name from the request, {KIE_SERVER} does not unmarshall the object to the expected type.
+
+.Correct request body for process instance
+[source,json]
+----
+{
+  "id": 4,
+  "lease": {
+    "com.myspace.restcall.LeaseModel": {
+      "annualRent": 109608,
+      "isAutoApproved": false
+    }
+  }
+}
+----
+
+.Incorrect request body for process instance
+[source,json]
+----
+{
+  "id": 4,
+  "lease": {
+    "annualRent": 109608,
+    "isAutoApproved": false
+  }
+}
+----
+====
+endif::[]
+--

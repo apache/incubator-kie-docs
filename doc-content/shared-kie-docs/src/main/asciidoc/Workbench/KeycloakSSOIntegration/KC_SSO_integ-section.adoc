@@ -1,0 +1,532 @@
+[[_kie.keycloakssointegration]]
+= Keycloak SSO integration
+
+
+Single Sign On (SSO) and related token exchange mechanisms are becoming the most common scenario for the authentication and authorization in different environments on the web, especially when moving into the cloud.
+
+This section talks about the integration of Keycloak with jBPM or Drools applications in order to use all the features provided on Keycloak.
+Keycloak is an integrated SSO and IDM for browser applications and RESTful web services.
+Lean more about it in the http://keycloak.jboss.org/[Keycloak's home page].
+
+The result of the integration with Keycloak has lots of advantages such as:
+
+* Provide an integrated SSO and IDM environment for different clients, including {CENTRAL}
+* Social logins - use your Facebook, Google, LinkedIn, etc accounts
+* User session management
+* And much more...
+
+Next sections cover the following integration points with Keycloak:
+
+* *{CENTRAL} authentication through a Keycloak server*
++
+It basically consists of securing both web client and remote service clients through the Keycloak SSO.
+So either web interface or remote service consumers (whether a user or a service) will authenticate into trough KC.
+* *Execution server authentication through a Keycloak server*
++
+Consists of securing the remote services provided by the execution server (as it does not provide web interface). Any remote service consumer (whether a user or a service) will authenticate trough KC.
+* *Consuming remote services*
++
+This section describes how a third party clients can consume the remote service endpoints provided by both {CENTRAL} and Execution Server, such as the REST API or remote file system services.
+* *Keycloak and {CENTRAL}'s security administration area*
+
+
+== Scenario
+
+
+Consider the following diagram as the environment for this document's example:
+
+Keycloak is a standalone process that provides remote authentication, authorization and administration services that can be potentially consumed by one or more jBPM applications over the network.
+
+
+image::Workbench/KeycloakSSOIntegration/KeyCloak_sso_scenario.png[align="center"]
+
+
+Consider these main steps for building this environment:
+
+* Install and set up a Keycloak server
+* Create and set up a Realm for this example - Configure realm's clients, users and roles
+* Install and set up the SSO client adapter & jBPM application
+
+Note: The resulting environment and the different configurations for this document are based on {CENTRAL}.
+
+== Install and set up a Keycloak server
+
+
+Keycloak provides an extensive documentation and several articles about the installation on different environments.
+This section describes the minimal setup for being able to build an integrated environment for the example.
+Please refer to the http://www.keycloak.org/documentation.html[Keycloak documentation] if you need more information.
+
+Here are the steps for a minimal Keycloak installation and set up:
+
+* Download the latest version of Keycloak from the http://www.keycloak.org/downloads.html[Downloads] section. This example is based on Keycloak 1.9.0.Final
+* Unzip the downloaded distribution of Keycloak into a folder, let's refer to it as
++
+[source]
+----
+$KC_HOME
+----
+* Run the KC server - This example is based on running both Keycloak and jBPM on same host. In order to avoid port conflicts you can use a port offset for the Keycloak's server as:
++
+[source]
+----
+$KC_HOME/bin/standalone.sh -Djboss.socket.binding.port-offset=100
+----
+
+* Create a Keycloak's administration 'admin' user by navigating to http://localhost:8180/auth/
+
+The Keycloak administration console will be available at http://localhost:8180/auth/admin/.
+
+== Create and set up the demo realm
+
+
+Security realms are used to restrict the access for the different application's resources.
+
+Once the Keycloak server is running next step is about creating a realm.
+This realm will provide the different users, roles, sessions, etc for the jBPM application/s.
+
+Keycloak provides several examples for the realm creation and management, from the https://github.com/keycloak/keycloak/tree/master/examples[official
+        examples] to different articles with more examples.
+
+Follow these steps in order to create the _demo_ realm used later in this document:
+
+* Go to the Keycloak http://localhost:8180/auth/admin[administration console] and click _Add realm_ button. Give it the name __demo__.
+* Go to the Clients section (from the main admin console menu) and create a new client for the _demo_ realm:
++
+** Client ID:  _kie_
+** Client protocol: _openid-connect_
+** Access type: _confidential_
+** Root URL: _http://localhost:8080_
+** Base URL:  _/{URL_COMPONENT_CENTRAL}-x.y.z.Final_
+** Redirect URIs: _/{URL_COMPONENT_CENTRAL}-x.y.z.Final/*_
+
+The resulting _kie_ client settings screen:
+
+
+image::Workbench/KeycloakSSOIntegration/kie_client_settings.png[align="center"]
+
+[NOTE]
+====
+As you can see in the above settings it's being considered the value _{URL_COMPONENT_CENTRAL}-x.y.z.Final_ for the application's context path.
+If your jBPM application will be deployed on a different context path, host or port, just use your concrete settings here.
+====
+
+Last step for being able to use the _demo_ realm from {CENTRAL} is to create the application's user and roles:
+
+* Go to the Roles section and create the roles __admin__, __kiemgmt__ and __rest-all__
+* Go to the Users section and create the __admin__ user. Set the password with value __password__ in the credentials tab, unset the temporary switch.
+* In  the Users section navigate to the _Role Mappings_ tab and assign the __admin__, __kiemgmt__ and __rest-all__ roles to the __admin__ user
++
+
+
+image::Workbench/KeycloakSSOIntegration/admin_user_roles.png[align="center"]
+
+At this point a Keycloak server is running on the host, set up with a minimal configuration set.
+Let's move to {CENTRAL} set up.
+
+== Install and set up {CENTRAL}
+
+
+For this tutorial let's use a Wildfly as the application server for {CENTRAL}, as the jBPM installer does by default.
+
+Let's assume, after running the jBPM installer, the _$JBPM_HOME_ as the root path for the Wildfly server where the application has been deployed.
+
+=== Install the KC adapter
+
+
+In order to use the Keycloak's authentication and authorization modules from the jBPM application, the http://www.keycloak.org/docs/latest/securing_apps/#jboss-eap-wildfly-adapter[Keycloak JBoss EAP/Wildfly Adapter] must be installed on our server at __$JBPM_HOME__.
+Keycloak provides multiple adapters for different containers out of the box, if you are using another container or need to use another adapter, please take a look at the http://www.keycloak.org/docs/latest/securing_apps/index.html[Securing Applications section] from the Keycloak docs.
+Here are the steps to install and set up the adapter for Wildfly 11/10/9:
+
+* Download the adapter from https://downloads.jboss.org/keycloak/3.4.3.Final/adapters/keycloak-oidc/keycloak-wildfly-adapter-dist-3.4.3.Final.zip[Keycloak Client Adapter for Wildfly 11/10/9]
+* Execute the following commands on your shell:
++
+[source]
+----
+cd $JBPM_HOME
+unzip keycloak-wildfly-adapter-dist-3.4.3.Final.zip // Install the KC client adapter
+
+cd $JBPM_HOME/bin
+./standalone.sh -c standalone-full.xml // set up the KC client adapter.
+
+// ** Once server is up, open a new command line terminal and run:
+cd $JBPM_HOME/bin
+./jboss-cli.sh -c --file=adapter-install.cli
+----
+
+
+=== Configure the KC adapter
+
+
+Once installed the KC adapter into Wildfly, next step is to configure the adapter in order to specify different settings such as the location for the authentication server, the realm to use and so on.
+
+Keycloak provides two ways of configuring the adapter:
+
+* Per WAR configuration
+* Via Keycloak subsystem
+
+In this example let's use the second option, use the Keycloak subsystem, so our WAR is free from this kind of settings.
+If you want to use the per WAR approach, please take a look http://www.keycloak.org/docs/latest/securing_apps/index.html#jboss-eap-wildfly-adapter[Required Per WAR Configuration].
+
+Edit the configuration file _$JBPM_HOME/standalone/configuration/standalone-full.xml_ and locate the subsystem configuration section.
+Add the following content:
+
+
+[source,xml,subs="attributes+"]
+----
+<subsystem xmlns="urn:jboss:domain:keycloak:1.1">
+  <secure-deployment name="{URL_COMPONENT_CENTRAL}-x.y.z.Final.war">
+    <realm>demo</realm>
+    <realm-public-key>MIIBIjANBgkqhkiG9w0BAQEFAAOCA...</realm-public-key>
+    <auth-server-url>http://localhost:8180/auth</auth-server-url>
+    <ssl-required>external</ssl-required>
+    <resource>kie</resource>
+    <enable-basic-auth>true</enable-basic-auth>
+    <credential name="secret">925f9190-a7c1-4cfd-8a3c-004f9c73dae6</credential>
+    <principal-attribute>preferred_username</principal-attribute>
+  </secure-deployment>
+</subsystem>
+----
+
+If you have imported the example json files from this document in __step 2__, you can just use the same configuration as above by using your concrete deployment name. Otherwise please use your values for these configurations:
+
+* _Name for the secure deployment_ - Use your concrete application's WAR file name
+* _Realm_ - Is the realm that the applications will use, in our example, the _demo_ realm created in the previous step.
+* _Realm Public Key_ - Provide here the public key for the _demo_ realm. It's not mandatory, if it's not specified, it will be retrieved from the server. Otherwise, you can find it in the Keycloak admin console -> Realm settings (for _demo_ realm) -> Keys
+* _Authentication server URL_ - The URL for the Keycloak's authentication server
+* _Resource_ - The name for the client created on step 2. In our example, use the value __kie__.
+* _Enable basic auth_ - For this example let's enable Basic authentication mechanism as well, so clients can use both Token (Bearer) and Basic approaches to perform the requests.
+* _Credential_ - Use the password value for the _kie_ client. You can find it in the Keycloak admin console -> Clients -> kie -> Credentials tab -> Copy the value for the __secret__.
+
+For this example you have to take care about using your concrete values for _secure-deployment_ name, _realm-public-key_ and _credential_ password.
+
+[IMPORTANT]
+====
+Ensure the following tag is NOT present in the Wildfly/EAP profile's configuration file (eg: standalone.xml):
+[source]
+----
+<single-sign-on/>
+----
+It's enabled by default in some server versions. If present, it must be removed/disabled in order to allow Keycloak to properly handle the clients.
+====
+
+=== Run the environment
+
+
+At this point a Keycloak server is up and running on the host, and the KC adapter is installed and configured for the jBPM application server.
+You can run the application using:
+
+
+[source]
+----
+$JBPM_HOME/bin/standalone.sh -c standalone-full.xml
+----
+
+You can navigate into the application once the server is up at:
+
+
+[source,subs="attributes+"]
+----
+ http://localhost:8080/{URL_COMPONENT_CENTRAL}-x.y.z.Final
+----
+
+
+image::Workbench/KeycloakSSOIntegration/jbpm_login_screen.png[align="center"]
+
+
+Use your Keycloak's admin user credentials to login: __admin/password__.
+
+== Securing {CENTRAL} remote services via Keycloak
+
+
+{CENTRAL} provides different remote service endpoints that can be consumed by third party clients using the <<knowledge-store-rest-api-con_kie-apis,Knowledge Store REST API>>.
+
+In order to authenticate those services through Keycloak, apply those modifications for the _WEB-INF/web.xml_ file (app deployment descriptor) from jBPM's WAR file:
+
+* Constraint the remote services URL patterns as:
++
+[source,xml]
+----
+<security-constraint>
+  <web-resource-collection>
+    <web-resource-name>remote-services</web-resource-name>
+    <url-pattern>/rest/*</url-pattern>
+    <url-pattern>/maven2/*</url-pattern>
+    <url-pattern>/ws/*</url-pattern>
+  </web-resource-collection>
+  <auth-constraint>
+    <role-name>rest-all</role-name>
+  </auth-constraint>
+</security-constraint>
+----
+
+[IMPORTANT]
+====
+The user that consumes the remote services must be member of role __rest-all__.
+As described in previous steps, the _admin_ user in this example is already a member of the __rest-all __role.
+====
+
+== Securing {CENTRAL}'s file system services via Keycloak
+
+
+In order to consume other remote services such as the file system ones (e.g. remote GIT),
+a specific **Keycloak login module must be used** for the application's security domain in the
+__$JBPM_HOME/standalone/configuration/standalone-full.xml__ file.
+By default {CENTRAL} uses the __other__ security domain, so the resulting  configuration on the
+__$JBPM_HOME/standalone/configuration/standalone-full.xml__ should be such as:
+
+[source,xml]
+----
+<security-domain name="other" cache-type="default">
+    <authentication>
+        <login-module code="org.keycloak.adapters.jaas.DirectAccessGrantsLoginModule" flag="required">
+            <!-- Parameter value can be a file system absolute path or a classpath (e.g. "classpath:/some-path/kie-git.json")-->
+            <module-option name="keycloak-config-file" value="$JBPM_HOME/kie-git.json"/>
+        </login-module>
+    </authentication>
+</security-domain>
+----
+
+Note that:
+
+* The login modules on the __other__ security domain in the __$JBPM_HOME/standalone/configuration/standalone-full.xml__ file must be REPLACED by the above given one.
+* Replace __$JBPM_HOME/kie-git.json__ by the path (on file system) or the classpath (e.g. __classpath:/some-path/kie-git.json__) for the json configuration file used for the remote services client. Please continue reading in order to create this Keycloak client and how to obtain this json file.
+
+At this point, remote services that use JAAS for the authentication process, such as the file system ones (e.g. GIT), are secured by Keycloak using the client specified in the above json configuration file. So let's create this client on Keycloak and generate the required JSON file:
+
+* Navigate to the http://localhost:8180/auth/admin[KC administration console] and create a new client for the __demo__ realm using __kie-git__ as name.
+* Enable __Direct Access Grants Enabled__ option
+* Disable __Standard Flow Enabled__ option
+* Use a __confidential__ access type for this client. See below image as example:
+
+image::Workbench/KeycloakSSOIntegration/kie_git_client_settings.png[align="center"]
+
+* Go to the __Installation__ tab in same __kie-git__ client configuration screen and export using the __Keycloak OIDC JSON__ type.
+* Finally copy this generated JSON file into an accessible directory on the server's file system or add it in the application's classpath. Use this path value as the __keycloak-config-file__ argument for the above configuration of the __org.keycloak.adapters.jaas.DirectAccessGrantsLoginModule__ login module.
+* More information about Keycloak JAAS Login modules can be found http://www.keycloak.org/docs/latest/securing_apps/index.html#_jaas_adapter[Keycloak JAAS plugin].
+
+At this point, the internal Git repositories can be cloned by all users authenticated via the Keycloak server:
+
+[source]
+----
+# Command example:
+git clone ssh://admin@localhost:8001/system
+----
+
+== Execution server
+
+
+The KIE Execution Server provides a <<kie-server-rest-api-con_kie-apis,REST API>> that can be consumed for any third party clients.
+This section is about how to integrate the KIE Execution Server with the Keycloak SSO in order to delegate the third party clients identity management to the SSO server.
+
+Consider the above environment running, so consider having:
+
+* A Keycloak server running and listening on http://localhost:8180/auth
+* A realm named _demo_ with a client named _kie_ for {CENTRAL}
+* A {CENTRAL} running at http://localhost:8080/{URL_COMPONENT_CENTRAL}-x.y.z.Final
+
+Follow these steps in order to add an execution server into this environment:
+
+* Create the client for the execution server on Keycloak
+* Install set up and the Execution server (with the KC client adapter)
+
+
+=== Create the execution server's client on Keycloak
+
+
+As per each execution server is going to be deployed, you have to create a new client on the _demo_ realm in Keycloak:
+
+* Go to the http://localhost:8180/auth/admin[KC admin console] -> Clients -> New client
+* Name: _kie-execution-server_
+* Root URL: _http://localhost:8280/_
+* Client protocol: _openid-connect_
+* Access type: _confidential_ (or _public_ if you want so, but not recommended for production environments)
+* Valid redirect URIs: _/kie-server-x.y.z.Final/*_
+* Base URL: _/kie-server-x.y.z.Final_
+
+In this example the _admin_ user already created on previous steps is the one used for the client requests.
+So ensure that the _admin_ user is a member of the role _kie-server_ in order to use the execution server's remote services.
+If the role does not exist, create it.
+
+Note: This example considers that the execution server will be configured to run using a port offset of 200, so the HTTP port will be available at localhost:8280.
+
+=== Install and set up the KC adapter on the execution server
+
+
+At this point, a client named _kie-execution-server_ is ready on the KC server to use from the execution server.
+
+Let's install, set up and deploy the execution server:
+
+* Install another Wildfly server to use for the execution server and the KC client adapter as well. You can follow above instructions for {CENTRAL} or follow the http://www.keycloak.org/docs/latest/securing_apps/index.html[securing applications guide]
+* Edit the _standalone-full.xml_ file from the Wildfly server's configuration path and configure the KC subsystem adapter as:
++
+[source,xml]
+----
+<secure-deployment name="kie-server-x.y.z.Final.war">
+    <realm>demo</realm>
+    <realm-public-key>MIGfMA0GCSqGSIb...</realm-public-key>
+    <auth-server-url>http://localhost:8180/auth</auth-server-url>
+    <ssl-required>external</ssl-required>
+    <resource>kie-execution-server</resource>
+    <enable-basic-auth>true</enable-basic-auth>
+    <credential name="secret">e92ec68d-6177-4239-be05-28ef2f3460ff</credential>
+    <principal-attribute>preferred_username</principal-attribute>
+</secure-deployment>
+----
+
+Consider your concrete environment settings if different from this example:
+
+* Secure deployment name -> use the name of the execution server war file being deployed
+* Public key -> Use the demo realm public key or leave it blank, the server will provide one if so
+* Resource -> This time, instead of the kie client used in the {CENTRAL} configuration, use the _kie-execution-server_ client
+* Enable basic auth -> Up to you. You can enable Basic auth for third party service consumers
+* Credential -> Use the secret key for the _kie-execution-server_ client. You can find it in the __Credentials__ tab of the KC admin console
+
+
+=== Deploy and run the execution server
+
+
+Just deploy the execution server in Wildfly using any of the available mechanisms.
+Run the execution server using this command:
+
+
+[source,subs="attributes+"]
+----
+$EXEC_SERVER_HOME/bin/standalone.sh -c standalone-full.xml -Djboss.socket.binding.port-offset=200 -Dorg.kie.server.id=<ID> -Dorg.kie.server.user=<USER> -Dorg.kie.server.pwd=<PWD> -Dorg.kie.server.location=<LOCATION_URL>  -Dorg.kie.server.controller=<CONTROLLER_URL> -Dorg.kie.server.controller.user=<CONTROLLER_USER> -Dorg.kie.server.controller.pwd=<CONTOLLER_PASSWORD>
+----
+
+Example:
+
+
+[source,subs="attributes+"]
+----
+$EXEC_SERVER_HOME/bin/standalone.sh -c standalone-full.xml -Djboss.socket.binding.port-offset=200 -Dorg.kie.server.id=kieserver1 -Dorg.kie.server.user=admin -Dorg.kie.server.pwd=password -Dorg.kie.server.location=http://localhost:8280/kie-server-x.y.z.Final/services/rest/server -Dorg.kie.server.controller=http://localhost:8080/{URL_COMPONENT_CENTRAL}-x.y.z.Final/rest/controller -Dorg.kie.server.controller.user=admin -Dorg.kie.server.controller.pwd=password
+----
+
+[IMPORTANT]
+====
+The users that will consume the execution server remote service endpoints must have the role _kie-server_ assigned.
+So create and assign this role in the KC admin console for the users that will consume the execution server remote services.
+====
+
+Once up, you can check the server status as (considered using Basic authentication for this request, see next <<consumingRemoteServices>> for more information):
+
+
+[source]
+----
+curl http://admin:password@localhost:8280/kie-server-x.y.z.Final/services/rest/server/
+----
+
+[[consumingRemoteServices]]
+== Consuming remote services
+
+
+In order to use the different remote services provided by {CENTRAL} or by an Execution Server, your client must be authenticated on the KC server and have a valid token to perform the requests.
+
+Remember that in order to use the remote services, the authenticated user must have assigned:
+
+* The role _rest-all_ for using the {CENTRAL} remote services
+* The role _kie-server_ for using the Execution Server remote services
+
+Please ensure necessary roles are created and assigned to the users that will consume the remote services on the Keycloak admin console.
+
+You have two options to consume the different remove service endpoints:
+
+* Using basic authentication, if the application's client supports it
+* Using Bearer (token) based authentication
+
+
+=== Using basic authentication
+
+
+If the KC client adapter configuration has the Basic authentication enabled, as proposed in this guide for both {CENTRAL} (__step 3.2__) and Execution Server, you can avoid the token grant/refresh calls and just call the services as the following examples.
+
+Example for a {CENTRAL} remote repositories endpoint:
+
+
+[source,subs="attributes+"]
+----
+curl http://admin:password@localhost:8080/{URL_COMPONENT_CENTRAL}-x.y.z.Final/rest/repositories
+----
+
+Example to check the status for the Execution Server:
+
+
+[source]
+----
+curl http://admin:password@localhost:8280/kie-server-x.y.z.Final/services/rest/server/
+----
+
+[[usingTokenBasedAuthentication]]
+=== Using token-based authentication
+
+
+First step is to create a new client on Keycloak that allows the third party remote service clients to obtain a token.
+It can be done as:
+
+* Go to the KC admin console and create a _new client_ using this configuration:
++
+** Client id: _kie-remote_
+** Client protocol: _openid-connect_
+** Access type: _public_
+** Valid redirect URIs: _http://localhost/_
+* As we are going to manually obtain a token and invoke the service let's increase the lifespan of tokens slightly. In production access tokens should have a relatively low timeout, ideally less than 5 minutes:
++
+** Go to the KC admin console
+** Click your Realm Settings
+** Click Tokens tab
+** Change the value for Access Token Lifespan to 15 minutes. That should give us plenty of time to obtain a token and invoke the service before it expires.
+
+Once a public client for our remote clients has been created, you can now obtain the token by performing an HTTP request to the KC server's tokens endpoint.
+Here is an example for command line:
+
+
+[source]
+----
+RESULT=`curl --data "grant_type=password&client_id=kie-remote&username=admin&password=password" http://localhost:8180/auth/realms/demo/protocol/openid-connect/token`
+----
+[source]
+----
+TOKEN=`echo $RESULT | sed 's/.*access_token":"//g' | sed 's/".*//g'`
+----
+
+At this point, if you echo the _$TOKEN_ it will output the token string obtained from the KC server, that can be now used to authorize further calls to the remote endpoints.
+For example, if you want to check the internal jBPM repositories:
+
+
+[source,subs="attributes+"]
+----
+curl -H "Authorization: bearer $TOKEN" http://localhost:8080/{URL_COMPONENT_CENTRAL}-x.y.z.Final/rest/repositories
+----
+
+== Keycloak and the {CENTRAL}'s security administration area
+
+{CENTRAL} provides an administration area which provides user, group and role management features. For more information, see xref:con-business-central-user-management[User and group management] and xref:con-business-central-security-management[Security management] sections.
+
+By default the application's security management system points to the application's server realm. For instance, in case of using the packaged distribution for Wildfly, it points to the Wildfly's ApplicationRealm (properties based). It means the entities from the realm presented in the administration area are not the ones from the Keycloak realm that the application is using. There exist the following options in order to change this default behavior:
+
+* Disable the user system administration
+* Use the built-in Keycloak security management provider instead of the default one
+
+In order to customize an existing jBPM application (WAR file) for using the Keycloak security management provider replace the content for __WEB-INF/classes/security-management.properties__ by:
+[source]
+----
+org.uberfire.ext.security.management.api.userManagementServices=KCAdapterUserManagementService
+org.uberfire.ext.security.management.keycloak.authServer=<authz_server_url>
+# eg: org.uberfire.ext.security.management.keycloak.authServer=http://localhost:8180/auth
+----
+[NOTE]
+====
+The properties `org.uberfire.ext.security.management.api.userManagementServices` and `org.uberfire.ext.security.management.keycloak.authServer` can be set as system properties as well.
+====
+
+[NOTE]
+====
+The __jar__ artifacts required in the steps above can be either downloaded from https://repository.jboss.org/nexus/[JBoss Nexus] or either build from https://github.com/kiegroup/appformer[sources].
+====
+
+Once applying the above changes, the security administration area uses the access token present in the user's session in order to authorize and manage the specific Keycloak realm data.
+
+[IMPORTANT]
+====
+In order to be able to manage Keycloak realms remotely, please ensure the user has the __realm-management__ client role assigned
+====

@@ -1,0 +1,274 @@
+= Examples
+
+== Credit dispute process
+
+The following credit dispute process example is intended to show a simple use case where you can use the "skills" configuration to influence the way tasks are assigned according to the solver constraints and the process data.
+
+.Credit dispute process
+image::KieServerTaskAssigning/CreditDisputeProcess.png[]
+
+=== Process start
+
+When the process starts, the user is asked to complete the information in the following image.
+In particular, the credit card brand for which the dispute is related to and the preferred language for receiving the process notifications are requested.
+This information is used for assigning the process tasks.
+
+.Start credit dispute process form
+image::KieServerTaskAssigning/StartCreditDisputeForm.png[]
+
+=== Process configuration
+
+The following image shows the process variables that are used for holding the card brand and language respectively.
+
+.Credit dispute process variables
+image::KieServerTaskAssigning/CreditDisputeProcessWithVariables.png[]
+
+The process start form populates these variables with the user inputs.
+
+=== Resolve dispute task configuration
+
+The following image shows the ResolveDispute task configuration, which establishes that the task input parameter skills is assigned with the value of the process variable cardType.
+
+.Resolve dispute task configuration
+image::KieServerTaskAssigning/ResolveDisputeTaskConfiguration.png[]
+
+With this configuration, {PLANNER} assigns this task to users that meet the following criteria:
+
+. Are in the user group CreditAnalyst
+. Have all of the skills configured in the task input parameter skills
+
+
+=== Notify customer task configuration
+
+The following image shows the NotifyCustomer task configuration, which establishes that the task input parameter skills is assigned with the value of the process variable language.
+
+.Notify customer task configuration
+image::KieServerTaskAssigning/NotifyCustomerTaskConfiguration.png[]
+
+With this configuration {PLANNER} assigns this task to users that meet the following criteria:
+
+. Are in the group ClientRelations
+. Have all of the skills configured in the task input parameter skills
+. Note that in this case the language selection is optional since the form field is not marked with "*" <<Process start, see the process start form>>, meaning that when no language is selected the task won’t have any configured skills.
+This implies that in such cases whatever users that are in group ClientRelations can be assigned to the task.
+
+=== Process execution (example users)
+
+Let’s assume that the following users configurations are used for executing the process.
+
+**users.properties file:**
+
+[source, java]
+----
+john=analyst,admin,user,Accounting,PM,ClientRelations
+mary=analyst,admin,user,ClientRelations
+katy=analyst,admin,user,HR,CreditAnalyst
+maciek=admin,analyst,user,PM,HR,CreditAnalyst
+----
+
+**skills.properties file:**
+
+[source, java]
+----
+john=ES,EN                     (has skills in the Spanish and English languages)
+mary=ZH                        (has skills in the Chinese language)
+katy=CITI,MASTER               (has skills in the CITI and MASTER cards)
+maciek=VISA,AMERICAN_EXPRESS   (has skills in the VISA and AMERICAN EXPRESS cards)
+----
+
+=== Process execution (example instances)
+
+With the preceding configurations the following execution scenarios are expected:
+
+**Process instance #1:**
+
+1) Start process
+
+.Start credit dispute process instance #1
+image::KieServerTaskAssigning/StartCreditDisputeInstance1Simple.png[]
+
+2) ResolveDispute task
+
+.Resolve dispute task for process instance #1
+image::KieServerTaskAssigning/ResolveDisputeTaskForProcessInstance1WasCreated.png[]
+
+The ResolveDispute task is assigned to the user maciek since it requires VISA skills.
+
+[NOTE]
+====
+In real environments there might be many users with this skill. In this case {PLANNER} assigns the new created task considering the optimized plan, which means that depending on the workload a different user could have been assigned.
+====
+
+3) NotifyCustomer task
+
+.Notify customer task for process instance #1
+image::KieServerTaskAssigning/NotifyCustomerTaskForProcessInstance1WasCreated.png[]
+
+When the ResolveDispute task is completed, a new task NotifyCustomer is created and assigned to the user john because that task requires skills in Spanish.
+
+**Process instance #2:**
+
+1) Start process
+
+.Start credit dispute process instance #2
+image::KieServerTaskAssigning/StartCreditDisputeInstance2Simple.png[]
+
+2) ResolveDispute task
+
+.Resolve dispute task for process instance #2
+image::KieServerTaskAssigning/ResolveDisputeTaskForProcessInstance2WasCreated.png[]
+
+The ResolveDispute task is assigned to the user katy since it requires CITI skills.
+
+3) NotifyCustomer task
+
+.Notify customer task for process instance #2
+image::KieServerTaskAssigning/NotifyCustomerTaskForProcessInstance2WasCreated.png[]
+
+When the ResolveDispute task is completed, a new task NotifyCustomer is created and assigned to the user mary because that task requires skills in Chinese.
+
+**Process instance #3:**
+
+1) Start process
+
+.Start credit dispute process instance #3
+image::KieServerTaskAssigning/StartCreditDisputeInstance3Simple.png[]
+
+2) ResolveDispute task
+
+.Resolve dispute task for process instance #3
+image::KieServerTaskAssigning/ResolveDisputeTaskForProcessInstance3WasCreated.png[]
+
+The ResolveDispute task is assigned to the user katy because that task requires skills in the MASTER card.
+
+3) NotifyCustomer task
+
+.Notify customer task for process instance #3
+image::KieServerTaskAssigning/NotifyCustomerTaskForProcessInstance3WasCreated.png[]
+
+When the ResolveDispute task is completed, a new task NotifyCustomer is created and assigned to the planninguser because none of the users has the required skills in Hindi.
+In this case, an external interaction is required to determine the best suited user to complete the task. The planinguser must perform this action by delegating the task.
+
+[NOTE]
+====
+The planninguser assignment is used to cover edge cases and should not be part of the modelling strategy.
+In the preceding example, if it is known that no user will have skills in Hindi. A similar but softer constraint can be configured by using affinities.
+====
+
+== Customized User System Service
+
+For creating a custom user system service implementation follow these steps:
+
+1) Create a KJAR project structure
+
+2) Add the following dependency
+
+[source, xml]
+----
+<dependency>
+  <!-- Kie Server, OptaPlanner, or any other product dependencies must use provided scope -->
+  <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-task-assigning-user-system-api</artifactId>
+    <version>configure the proper version number aligned with the target kie-server</version>
+    <scope>provided</scope>
+</dependency>
+----
+
+3) Provide your UserSystemService implementation, see the following example:
+
+[source, java]
+----
+public class MyDBUserSystemService implements UserSystemService {
+
+    private DataSource dataSource;
+
+    public String getName() {
+        return "MyDBUserSystemService";
+    }
+
+    public void start() {
+        String dataSourceName = System.getProperty("org.example.DBUserSystemService.ds",
+                                                   "java:jboss/datasources/ExampleDS");
+        try {
+            InitialContext initialContext = new InitialContext();
+            dataSource = (DataSource) initialContext.lookup(dataSourceName);
+        } catch (NamingException e) {
+             // throw an exception if there are unrecoverable errors that prevent
+             // the service to start.
+            throw new DBUserSystemServiceException("Unable to find data source under name " +
+                                                   dataSourceName, e);
+       }
+    }
+
+    public void test() throws Exception {
+         // test your database queries etc.
+    }
+
+    public List<User> findAllUsers() {
+        try (Connection conn = dataSource.getConnection()) {
+            List<User> myUsers;
+            // query the users information from the database.
+           return myUsers;
+       } catch (SQLException e) {
+           throw new DBUserSystemServiceException("An error was produced finding all users: " +
+                                                  e.getMessage(), e);
+       }
+   }
+
+    public User findUser(String userId) {
+        if (userId == null) {
+            return null;
+        }
+        try (Connection conn = dataSource.getConnection()) {
+            User user;
+            // query the user information from the database.
+            return user;
+        } catch (SQLException e) {
+          throw new DBUserSystemServiceException("An error was produced finding user: "+
+                                                  e.getMessage(), e);
+        }
+    }
+}
+----
+
+4) Add the following resource to the project and declare your user system service provider class on it.
+
+[source, java]
+----
+src/main/resources/META-INF/services/org.kie.server.services.taskassigning.user.system.api.UserSystemService
+
+org.example.MyDBUserSystemService
+----
+
+Finally for using it in the <<Planning kie-server, Planning kie-server>> follow these steps:
+
+
+1) Build your KJAR and be sure the corresponding maven generated artifact is installed in the maven repository used by your <<Planning kie-server, Planning kie-server>>.
+
+2) Add a datasource configuration to your <<Planning kie-server, Planning kie-server>> pointing to the target DB
+(this step is only required for the example above)
+For example with JNDI name java:jboss/datasources/db-user-system-datasource
+
+3) Finally add the following items to the <<Planning kie-server, Planning kie-server>> configuration file:
+
+[source, xml]
+----
+<server>
+...
+<system-properties>
+  <property name="org.kie.server.taskAssigning.userSystem.name"
+            value="MyDBUserSystemService" />
+  <property name="org.kie.server.taskAssigning.userSystem.container.id"
+            value="my-db-user-system-container" />
+  <property name="org.kie.server.taskAssigning.userSystem.container.groupId"
+            value="your KJARs groupId" />
+  <property name="org.kie.server.taskAssigning.userSystem.container.artifactId"
+            value="your KJARs artifactId" />
+  <property name="org.kie.server.taskAssigning.userSystem.container.version"
+            value="your KJARs version number" />
+  <property name="org.example.DBUserSystemService.ds"
+            value="java:jboss/datasources/db-user-system-datasource" />
+</system-properties>
+...
+</server>
+----

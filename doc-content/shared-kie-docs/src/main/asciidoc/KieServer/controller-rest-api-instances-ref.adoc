@@ -1,0 +1,271 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='controller-rest-api-instances-ref_{context}']
+= {KIE_SERVER} instances and KIE containers
+
+// The {CONTROLLER} REST API supports the following endpoints for managing {KIE_SERVER} instances (remote servers) and associated KIE containers. The {CONTROLLER} REST API base URL is `\http://SERVER:PORT/CONTROLLER/rest/controller/`. All requests require HTTP Basic authentication or token-based authentication for the `rest-all` user role if you installed {CENTRAL} and you want to use the built-in {CONTROLLER}, or the `kie-server` user role if you installed the {HEADLESS_CONTROLLER} separately from {CENTRAL}.
+
+== [GET] /controller/runtime/servers/{serverTemplateId}/instances
+
+Returns all {KIE_SERVER} instances configured with the {CONTROLLER} for a specified {KIE_SERVER} template.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`serverTemplateId`
+|ID of the {KIE_SERVER} template for which you are retrieving {KIE_SERVER} instances
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "server-instance-key": [
+    {
+      "server-instance-id": "default-kieserver-instance@localhost:8080",
+      "server-name": "default-kieserver-instance@localhost:8080",
+      "server-template-id": "default-kieserver",
+      "server-url": "http://localhost:8080/kie-server/services/rest/server"
+    }
+  ]
+}
+----
+
+== [GET] /controller/runtime/servers/{serverTemplateId}/containers/{containerId}/instances
+
+Returns all instances of a specified KIE container in a specified {KIE_SERVER} template.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`serverTemplateId`
+|ID of the {KIE_SERVER} template for which you are retrieving KIE containers
+|String
+|Required
+
+|`containerId`
+|ID of the KIE container to be retrieved
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "container-details": [
+    {
+      "sever-template-id": "default-kieserver",
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "container-name": "evaluation",
+      "url": "http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT",
+      "sever-instance-id": "default-kieserver-instance@localhost:8080",
+      "container-release-id": {
+        "group-id": "evaluation",
+        "artifact-id": "evaluation",
+        "version": "1.0.0-SNAPSHOT"
+      },
+      "messages": []
+    }
+  ],
+  "status": "STARTED"
+}
+----
+
+== [GET] /controller/runtime/servers/{serverTemplateId}/instances/{serverInstanceId}/containers
+
+Returns all KIE containers for a specified {KIE_SERVER} template and a specified {KIE_SERVER} instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`serverTemplateId`
+|ID of the {KIE_SERVER} template associated with the {KIE_SERVER} instance
+|String
+|Required
+
+|`serverInstanceId`
+|ID of the {KIE_SERVER} instance for which you are retrieving KIE containers (example: `default-kieserver-instance@localhost:8080`)
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "container-details": [
+    {
+      "sever-template-id": "default-kieserver",
+      "container-id": "employeerostering_1.0.0-SNAPSHOT",
+      "container-name": "employeerostering",
+      "url": "http://localhost:8080/kie-server/services/rest/server/containers/employeerostering_1.0.0-SNAPSHOT",
+      "sever-instance-id": "default-kieserver-instance@localhost:8080",
+      "container-release-id": {
+        "group-id": "employeerostering",
+        "artifact-id": "employeerostering",
+        "version": "1.0.0-SNAPSHOT2"
+      },
+      "messages": [
+        {
+          "severity": "ERROR",
+          "timestamp": {
+            "java.util.Date": 1540840080654
+          },
+          "content": [
+            "Error creating container 'employeerostering_1.0.0-SNAPSHOT' for module 'employeerostering:employeerostering:1.0.0-SNAPSHOT2' due to Cannot find KieModule: employeerostering:employeerostering:1.0.0-SNAPSHOT2"
+          ]
+        }
+      ],
+      "status": "FAILED"
+    },
+    {
+      "sever-template-id": "default-kieserver",
+      "container-id": "evaluation_1.0.0-SNAPSHOT",
+      "container-name": "evaluation",
+      "url": "http://localhost:8080/kie-server/services/rest/server/containers/evaluation_1.0.0-SNAPSHOT",
+      "sever-instance-id": "default-kieserver-instance@localhost:8080",
+      "container-release-id": {
+        "group-id": "evaluation",
+        "artifact-id": "evaluation",
+        "version": "1.0.0-SNAPSHOT"
+      },
+      "messages": [
+        {
+          "severity": "INFO",
+          "timestamp": {
+            "java.util.Date": 1540840061467
+          },
+          "content": [
+            "Release id successfully updated for container evaluation_1.0.0-SNAPSHOT"
+          ]
+        }
+      ],
+      "status": "STARTED"
+    }
+  ]
+}
+----
+
+== [PUT] /controller/server/{serverInstanceId}
+
+Configures a new {KIE_SERVER} instance with the {CONTROLLER}.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`serverInstanceId`
+|ID of the new {KIE_SERVER} instance (example: `new-kieserver-instance`)
+|String
+|Required
+
+|*body*
+|A map containing the `id`, `version`, `name`, `location`, `capabilities` (such as `KieServer`, `BPM`, `DMN`, `Swagger`), and other components of the new {KIE_SERVER} instance
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "id": "new-kieserver-instance",
+  "name": "new-kieserver-instance",
+  "version": "7.14.0-SNAPSHOT",
+  "location": "http://localhost:8080/kie-server/services/rest/server",
+  "capabilities": [
+    "KieServer",
+    "BRM",
+    "BPM",
+    "CaseMgmt",
+    "BPM-UI",
+    "BRP",
+    "DMN",
+    "Swagger"
+  ],
+  "messages": null
+}
+----
+
+*<@Cristiano: The request works but the server responds with null contents of server configs, containers, etc., regardless of payload. Better to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Server instance new-kieserver-instance@localhost:8080 successfully connected."
+    }
+  ]
+}
+----
+
+== [DELETE] /controller/server/{serverInstanceId}
+
+Removes a {KIE_SERVER} instance from the {CONTROLLER}.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`serverInstanceId`
+|ID of the {KIE_SERVER} instance to be removed (example: `default-kieserver-instance@localhost:8080`)
+|String
+|Required
+
+|`location`
+|URL of the {KIE_SERVER} instance to be removed
+|String
+|Required
+|===
+
+*<@Cristiano: Please note especially the `location` parameter, which is not clearly documented in the Swagger doc.>*
+
+.Example DELETE endpoint with parameters
+[source,subs="attributes+"]
+----
+http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/server/new-kieserver-instance?location=http://localhost:8080/kie-server/services/rest/server
+----
+
+*<@Cristiano: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Server instance new-kieserver-instance@localhost:8080 successfully disconnected."
+    }
+  ]
+}
+----

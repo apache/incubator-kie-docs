@@ -1,0 +1,125 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-dmn-ref_{context}']
+= DMN models
+
+// The {KIE_SERVER} REST API supports the following endpoints for Decision Model and Notation (DMN) models. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+== [GET] /server/containers/{containerId}/dmn
+
+Returns a list of DMN models in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where one or more DMN models reside
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "OK models successfully retrieved from container 'MovieDMNContainer'",
+      "result": {
+        "dmn-model-info-list": {
+          "models": [
+            {
+              "model-namespace": "http://www.redhat.com/_c7328033-c355-43cd-b616-0aceef80e52a",
+              "model-name": "dmn-movieticket-ageclassification",
+              "model-id": "_99",
+              "decisions": [
+                {
+                  "decision-id": "_3",
+                  "decision-name": "AgeClassification"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+----
+
+== [POST] /server/containers/{containerId}/dmn
+
+Executes a DMN model in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where one or more DMN models reside
+|String
+|Required
+
+|*body*
+|The DMN model `model-namespace`, `model-name`, and `dmn-context` object containing input values
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "model-namespace": "http://www.redhat.com/_c7328033-c355-43cd-b616-0aceef80e52a",
+  "model-name": "dmn-movieticket-ageclassification",
+  "decision-name": [],
+  "decision-id": [],
+  "dmn-context": {
+    "Age": 66
+  }
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "OK from container 'MovieDMNContainer'",
+      "result": {
+        "dmn-evaluation-result": {
+          "messages": [],
+          "model-namespace": "http://www.redhat.com/_c7328033-c355-43cd-b616-0aceef80e52a",
+          "model-name": "dmn-movieticket-ageclassification",
+          "decision-name": [],
+          "dmn-context": {
+            "Age": 66,
+            "AgeClassification": "Senior"
+          },
+          "decision-results": {
+            "_3": {
+              "messages": [],
+              "decision-id": "_3",
+              "decision-name": "AgeClassification",
+              "result": "Senior",
+              "status": "SUCCEEDED"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+----

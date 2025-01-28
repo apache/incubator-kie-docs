@@ -1,0 +1,73 @@
+[[_wb.installation]]
+= Installation
+
+[[_wb.warinstallation]]
+== War installation
+
+
+Use the `war` from the {CENTRAL} distribution zip that corresponds to your application server.
+The differences between these `war` files are mainly superficial.
+For example, some JARs might be excluded if the application server already supplies them.
+
+* ``eap7``: tailored for Red Hat JBoss Enterprise Application Platform 7
+* ``wildfly14``: tailored for Wildfly 14
+
+
+[[_wb.workbenchdata]]
+== {CENTRAL} data
+
+
+{CENTRAL} stores its data, by default in the directory ``$WORKING_DIRECTORY/.niogit``, for example ``wildfly-14.0.1.Final/bin/.niogit``, but it can be overridden with the <<_wb.systemproperties,system property>>``-Dorg.uberfire.nio.git.dir``.
+
+[NOTE]
+====
+In production, make sure to back up the {CENTRAL} data directory.
+====
+
+[[_wb.troubleshooting]]
+== Troubleshooting
+
+[[_wb.troubleshootingloadingspinner]]
+=== Loading.. does not disappear and {CENTRAL} fails to show
+
+
+There have been reports that Firewalls in between the server and the browser can interfere with Server Sent Events (SSE) used by {CENTRAL}.
+
+The issue results in the "Loading..." spinner remaining visible and {CENTRAL} failing to materialize.
+
+The workaround is to disable the {CENTRAL}'s use of Server Sent Events by adding file `/WEB-INF/classes/ErraiService.properties` to the exploded WAR containing the value ``errai.bus.enable_sse_support=false``.
+Re-package the WAR and re-deploy.
+
+Some Users have also reported disabling Server Sent Events does not resolve the issue. The solution found to work is to configure the JVM to use a different Entropy Gathering Device on Linux for `SecureRandom`. This can be configured by setting System Property `java.security.egd` to `file:/dev/./urandom`. See http://stackoverflow.com/questions/33166198/kie-workbench-not-loading-after-login/39110177#39110177[this]  Stack Overflow post for details.
+
+Please note however this affects the JVM's random  number generation and may present other challenges where strong cryptography is required. Configure with caution.
+
+=== Not able to clone {CENTRAL} Git repository using ssh protocol.
+Git clients using ssh to interact with the Git server that is bundled with {CENTRAL} are authenticated and authorized to perform git commands by the security API that is part of the Uberfire backend server.  When using an LDAP security realm, some git clients were not being authorized as expected.  This was due to the fact that for non-web clients such as Git via ssh, the principal (i.e., user or group) name assigned to a user by the application server's user registry is the more complex DN associated to that principal by LDAP. The logic of the Uberfire backend server looked for on exact match of roles allowed with the principal name returned and therefore failed.
+
+It is now possible to control the role-principal matching via the system property
+
+[source, property]
+----
+org.uberfire.ldap.regex.role_mapper
+----
+
+which takes as its value a Regex pattern to be applied when matching LDAP principal to role names.  The pattern must contain the literal word variable 'role'.  During authorization the variable is replaced by each of the allow application roles.  If the pattern is matched the role is added to the user.
+
+For instance, if the DN for the admin group in LDAP is
+
+[source, property]
+----
+DN: cn=admin,ou=groups,dc=example,dc=com
+----
+
+and its intended role is admin, then setting `org.uberfire.ldap.regex.role_mapper` with value
+
+[source, regex]
+----
+cn[\\ ]*=[\\ ]*role
+----
+
+will find a match on role 'admin'.
+
+include::business-central-system-properties-ref.adoc[]

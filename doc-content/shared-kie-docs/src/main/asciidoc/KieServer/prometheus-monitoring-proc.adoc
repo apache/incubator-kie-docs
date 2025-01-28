@@ -1,0 +1,265 @@
+[id='prometheus-monitoring-proc_{context}']
+
+= Configuring Prometheus metrics monitoring for {KIE_SERVER}
+
+You can configure your {KIE_SERVER} instances to use Prometheus to collect and store metrics related to your business asset activity in {PRODUCT}. For the list of available metrics that {KIE_SERVER} exposes with Prometheus,
+ifdef::DM,PAM[]
+download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/droolsjbpm-integration-$VERSION/kie-server-parent/kie-server-services/kie-server-services-prometheus/src/main/java/org/kie/server/services/prometheus`.
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+see the https://github.com/kiegroup/droolsjbpm-integration/tree/main/kie-server-parent/kie-server-services/kie-server-services-prometheus[{KIE_SERVER} Prometheus Extension] page in GitHub.
+endif::[]
+
+.Prerequisites
+* {KIE_SERVER} is installed.
+* You have `kie-server` user role access to {KIE_SERVER}.
+* Prometheus is installed. For information about downloading and using Prometheus, see the https://prometheus.io/docs/introduction/overview/[Prometheus documentation page].
+
+.Procedure
+. In your {KIE_SERVER} instance, set the `org.kie.prometheus.server.ext.disabled` system property to `false` to enable the Prometheus extension. You can define this property when you start {KIE_SERVER} or in the `standalone.xml` or `standalone-full.xml` file of {PRODUCT} distribution.
+. If you are running {PRODUCT} on Spring Boot, configure the required key in the `application.properties` system property:
++
+--
+
+.Spring Boot application.properties key for {PRODUCT} and Prometheus
+[source,xml]
+----
+ifdef::PAM,JBPM[]
+kieserver.jbpm.enabled=true
+endif::[]
+kieserver.drools.enabled=true
+kieserver.dmn.enabled=true
+kieserver.prometheus.enabled=true
+----
+--
+. In the `prometheus.yaml` file of your Prometheus distribution, add the following settings in the `scrape_configs` section to configure Prometheus to scrape metrics from {KIE_SERVER}:
++
+--
+.Scrape configurations in prometheus.yaml file
+[source,yaml]
+----
+scrape_configs:
+  - job_name: 'kie-server'
+    metrics_path: /SERVER_PATH/services/rest/metrics
+    basicAuth:
+      username: USER_NAME
+      password: PASSWORD
+    static_configs:
+      - targets: ["HOST:PORT"]
+----
+
+.Scrape configurations in prometheus.yaml file for Spring Boot (if applicable)
+[source,yaml]
+----
+scrape_configs:
+  - job_name: 'kie'
+    metrics_path: /rest/metrics
+    static_configs:
+      - targets: ["HOST:PORT"]
+----
+
+Replace the values according to your {KIE_SERVER} location and settings.
+--
+. Start the {KIE_SERVER} instance.
++
+--
+ifdef::DM,PAM[]
+.Example start command for {PRODUCT} on {EAP}
+[source]
+----
+$ cd ~/EAP_HOME/bin
+$ ./standalone.sh --c standalone-full.xml
+----
+endif::[]
+
+After you start the configured {KIE_SERVER} instance, Prometheus begins collecting metrics and {KIE_SERVER} publishes the metrics to the REST API endpoint `\http://HOST:PORT/SERVER/services/rest/metrics` (or on Spring Boot, to `\http://HOST:PORT/rest/metrics`).
+--
+. In a REST client or curl utility, send a REST API request with the following components to verify that {KIE_SERVER} is publishing the metrics:
++
+--
+For REST client:
+
+* *Authentication*: Enter the user name and password of the {KIE_SERVER} user with the `kie-server` role.
+* *HTTP Headers*: Set the following header:
+** `Accept`: `application/json`
+* *HTTP method*: Set to `GET`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and metrics endpoint, such as `\http://localhost:8080/kie-server/services/rest/metrics` (or on Spring Boot, `\http://localhost:8080/rest/metrics`).
+
+
+For curl utility:
+
+* `-u`: Enter the user name and password of the {KIE_SERVER} user with the `kie-server` role.
+* `-H`: Set the following header:
+** `accept`: `application/json`
+* `-X`: Set to `GET`.
+* *URL*: Enter the {KIE_SERVER} REST API base URL and metrics endpoint, such as `\http://localhost:8080/kie-server/services/rest/metrics` (or on Spring Boot, `\http://localhost:8080/rest/metrics`).
+
+.Example curl command for {PRODUCT} on {EAP}
+[source]
+----
+curl -u 'baAdmin:password@1' -X GET "http://localhost:8080/kie-server/services/rest/metrics"
+----
+
+.Example curl command for {PRODUCT} on Spring Boot
+----
+curl -u 'baAdmin:password@1' -X GET "http://localhost:8080/rest/metrics"
+----
+
+.Example server response
+[source]
+----
+# HELP kie_server_container_started_total Kie Server Started Containers
+# TYPE kie_server_container_started_total counter
+kie_server_container_started_total{container_id="task-assignment-kjar-1.0",} 1.0
+# HELP solvers_running Number of solvers currently running
+# TYPE solvers_running gauge
+solvers_running 0.0
+# HELP dmn_evaluate_decision_nanosecond DMN Evaluation Time
+# TYPE dmn_evaluate_decision_nanosecond histogram
+# HELP solver_duration_seconds Time in seconds it took solver to solve the constraint problem
+# TYPE solver_duration_seconds summary
+solver_duration_seconds_count{solver_id="100tasks-5employees.xml",} 1.0
+solver_duration_seconds_sum{solver_id="100tasks-5employees.xml",} 179.828255925
+solver_duration_seconds_count{solver_id="24tasks-8employees.xml",} 1.0
+solver_duration_seconds_sum{solver_id="24tasks-8employees.xml",} 179.995759653
+# HELP drl_match_fired_nanosecond Drools Firing Time
+# TYPE drl_match_fired_nanosecond histogram
+# HELP dmn_evaluate_failed_count DMN Evaluation Failed
+# TYPE dmn_evaluate_failed_count counter
+# HELP kie_server_start_time Kie Server Start Time
+# TYPE kie_server_start_time gauge
+kie_server_start_time{name="myapp-kieserver",server_id="myapp-kieserver",location="http://myapp-kieserver-demo-monitoring.127.0.0.1.nip.io:80/services/rest/server",version="7.4.0.redhat-20190428",} 1.557221271502E12
+# HELP kie_server_container_running_total Kie Server Running Containers
+# TYPE kie_server_container_running_total gauge
+kie_server_container_running_total{container_id="task-assignment-kjar-1.0",} 1.0
+# HELP solver_score_calculation_speed Number of moves per second for a particular solver solving the constraint problem
+# TYPE solver_score_calculation_speed summary
+solver_score_calculation_speed_count{solver_id="100tasks-5employees.xml",} 1.0
+solver_score_calculation_speed_sum{solver_id="100tasks-5employees.xml",} 6997.0
+solver_score_calculation_speed_count{solver_id="24tasks-8employees.xml",} 1.0
+solver_score_calculation_speed_sum{solver_id="24tasks-8employees.xml",} 19772.0
+ifdef::PAM,JBPM[]
+# HELP kie_server_case_started_total Kie Server Started Cases
+# TYPE kie_server_case_started_total counter
+kie_server_case_started_total{case_definition_id="itorders.orderhardware",} 1.0
+# HELP kie_server_case_running_total Kie Server Running Cases
+# TYPE kie_server_case_running_total gauge
+kie_server_case_running_total{case_definition_id="itorders.orderhardware",} 2.0
+# HELP kie_server_data_set_registered_total Kie Server Data Set Registered
+# TYPE kie_server_data_set_registered_total gauge
+kie_server_data_set_registered_total{name="jbpmProcessInstanceLogs::CUSTOM",uuid="jbpmProcessInstanceLogs",} 1.0
+kie_server_data_set_registered_total{name="jbpmRequestList::CUSTOM",uuid="jbpmRequestList",} 1.0
+kie_server_data_set_registered_total{name="tasksMonitoring::CUSTOM",uuid="tasksMonitoring",} 1.0
+kie_server_data_set_registered_total{name="jbpmHumanTasks::CUSTOM",uuid="jbpmHumanTasks",} 1.0
+kie_server_data_set_registered_total{name="jbpmHumanTasksWithUser::FILTERED_PO_TASK",uuid="jbpmHumanTasksWithUser",} 1.0
+kie_server_data_set_registered_total{name="jbpmHumanTasksWithVariables::CUSTOM",uuid="jbpmHumanTasksWithVariables",} 1.0
+kie_server_data_set_registered_total{name="jbpmProcessInstancesWithVariables::CUSTOM",uuid="jbpmProcessInstancesWithVariables",} 1.0
+kie_server_data_set_registered_total{name="jbpmProcessInstances::CUSTOM",uuid="jbpmProcessInstances",} 1.0
+kie_server_data_set_registered_total{name="jbpmExecutionErrorList::CUSTOM",uuid="jbpmExecutionErrorList",} 1.0
+kie_server_data_set_registered_total{name="processesMonitoring::CUSTOM",uuid="processesMonitoring",} 1.0
+kie_server_data_set_registered_total{name="jbpmHumanTasksWithAdmin::FILTERED_BA_TASK",uuid="jbpmHumanTasksWithAdmin",} 1.0
+# HELP kie_server_execution_error_total Kie Server Execution Errors
+# TYPE kie_server_execution_error_total counter
+# HELP kie_server_task_completed_total Kie Server Completed Tasks
+# TYPE kie_server_task_completed_total counter
+# HELP kie_server_container_running_total Kie Server Running Containers
+# TYPE kie_server_container_running_total gauge
+kie_server_container_running_total{container_id="itorders_1.0.0-SNAPSHOT",} 1.0
+# HELP kie_server_job_cancelled_total Kie Server Cancelled Jobs
+# TYPE kie_server_job_cancelled_total counter
+# HELP kie_server_process_instance_started_total Kie Server Started Process Instances
+# TYPE kie_server_process_instance_started_total counter
+kie_server_process_instance_started_total{container_id="itorders_1.0.0-SNAPSHOT",process_id="itorders.orderhardware",} 1.0
+# HELP solver_duration_seconds Time in seconds it took solver to solve the constraint problem
+# TYPE solver_duration_seconds summary
+# HELP kie_server_task_skipped_total Kie Server Skipped Tasks
+# TYPE kie_server_task_skipped_total counter
+# HELP kie_server_data_set_execution_time_seconds Kie Server Data Set Execution Time
+# TYPE kie_server_data_set_execution_time_seconds summary
+kie_server_data_set_execution_time_seconds_count{uuid="jbpmProcessInstances",} 8.0
+kie_server_data_set_execution_time_seconds_sum{uuid="jbpmProcessInstances",} 0.05600000000000001
+# HELP kie_server_job_scheduled_total Kie Server Started Jobs
+# TYPE kie_server_job_scheduled_total counter
+# HELP kie_server_data_set_execution_total Kie Server Data Set Execution
+# TYPE kie_server_data_set_execution_total counter
+kie_server_data_set_execution_total{uuid="jbpmProcessInstances",} 8.0
+# HELP kie_server_process_instance_completed_total Kie Server Completed Process Instances
+# TYPE kie_server_process_instance_completed_total counter
+# HELP kie_server_job_running_total Kie Server Running Jobs
+# TYPE kie_server_job_running_total gauge
+# HELP kie_server_task_failed_total Kie Server Failed Tasks
+# TYPE kie_server_task_failed_total counter
+# HELP kie_server_task_exited_total Kie Server Exited Tasks
+# TYPE kie_server_task_exited_total counter
+# HELP dmn_evaluate_decision_nanosecond DMN Evaluation Time
+# TYPE dmn_evaluate_decision_nanosecond histogram
+# HELP kie_server_data_set_lookups_total Kie Server Data Set Running Lookups
+# TYPE kie_server_data_set_lookups_total gauge
+kie_server_data_set_lookups_total{uuid="jbpmProcessInstances",} 0.0
+# HELP kie_server_process_instance_duration_seconds Kie Server Process Instances Duration
+# TYPE kie_server_process_instance_duration_seconds summary
+# HELP kie_server_case_duration_seconds Kie Server Case Duration
+# TYPE kie_server_case_duration_seconds summary
+# HELP dmn_evaluate_failed_count DMN Evaluation Failed
+# TYPE dmn_evaluate_failed_count counter
+# HELP kie_server_task_added_total Kie Server Added Tasks
+# TYPE kie_server_task_added_total counter
+kie_server_task_added_total{deployment_id="itorders_1.0.0-SNAPSHOT",process_id="itorders.orderhardware",task_name="Prepare hardware spec",} 1.0
+# HELP drl_match_fired_nanosecond Drools Firing Time
+# TYPE drl_match_fired_nanosecond histogram
+# HELP kie_server_container_started_total Kie Server Started Containers
+# TYPE kie_server_container_started_total counter
+kie_server_container_started_total{container_id="itorders_1.0.0-SNAPSHOT",} 1.0
+# HELP kie_server_process_instance_sla_violated_total Kie Server Process Instances SLA Violated
+# TYPE kie_server_process_instance_sla_violated_total counter
+# HELP kie_server_task_duration_seconds Kie Server Task Duration
+# TYPE kie_server_task_duration_seconds summary
+# HELP kie_server_job_executed_total Kie Server Executed Jobs
+# TYPE kie_server_job_executed_total counter
+# HELP kie_server_deployments_active_total Kie Server Active Deployments
+# TYPE kie_server_deployments_active_total gauge
+kie_server_deployments_active_total{deployment_id="itorders_1.0.0-SNAPSHOT",} 1.0
+# HELP kie_server_process_instance_running_total Kie Server Running Process Instances
+# TYPE kie_server_process_instance_running_total gauge
+kie_server_process_instance_running_total{container_id="itorders_1.0.0-SNAPSHOT",process_id="itorders.orderhardware",} 2.0
+# HELP solvers_running Number of solvers currently running
+# TYPE solvers_running gauge
+solvers_running 0.0
+# HELP kie_server_work_item_duration_seconds Kie Server Work Items Duration
+# TYPE kie_server_work_item_duration_seconds summary
+# HELP kie_server_job_duration_seconds Kie Server Job Duration
+# TYPE kie_server_job_duration_seconds summary
+# HELP solver_score_calculation_speed Number of moves per second for a particular solver solving the constraint problem
+# TYPE solver_score_calculation_speed summary
+# HELP kie_server_start_time Kie Server Start Time
+# TYPE kie_server_start_time gauge
+kie_server_start_time{name="sample-server",server_id="sample-server",location="http://localhost:8080/kie-server/services/rest/server",version="7.75.0-SNAPSHOT",} 1.557285486469E12
+endif::[]
+----
+
+If the metrics are not available in {KIE_SERVER}, review and verify the {KIE_SERVER} and Prometheus configurations described in this section.
+
+You can also interact with your collected metrics in the Prometheus expression browser at `\http://HOST:PORT/graph`, or integrate your Prometheus data source with a data-graphing tool such as Grafana:
+
+.Prometheus expression browser with {KIE_SERVER} metrics
+image::KieServer/prometheus-expression-browser-data.png[]
+
+.Prometheus expression browser with {KIE_SERVER} target
+image::KieServer/prometheus-expression-browser-targets.png[]
+
+.Grafana dashboard with {KIE_SERVER} metrics for DMN models
+image::KieServer/prometheus-grafana-data-dmn.png[]
+
+.Grafana dashboard with {KIE_SERVER} metrics for solvers
+image::KieServer/prometheus-grafana-data-optimizer.png[]
+
+ifdef::PAM,JBPM[]
+.Grafana dashboard with {KIE_SERVER} metrics for processes, cases, and tasks
+image::KieServer/prometheus-grafana-data-jbpm.png[]
+endif::[]
+--
+
+.Additional resources
+* https://prometheus.io/docs/prometheus/latest/getting_started/[Getting Started with Prometheus]
+* https://prometheus.io/docs/visualization/grafana/[Grafana Support for Prometheus]
+* https://grafana.com/docs/features/datasources/prometheus/[Using Prometheus in Grafana]

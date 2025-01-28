@@ -1,0 +1,1022 @@
+
+= Configuring the integration
+
+ifdef::DM,PAM[]
+:FIRST_AVAILABLE_VERSION: 7.8.x
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+:FIRST_AVAILABLE_VERSION: 7.38.x
+endif::[]
+
+== Product version
+
+The current task assigning integration implementation is provided for the {PLANNER}, {CONTEXTUAL_BPMSUITE}, and {KIE_SERVER} {FIRST_AVAILABLE_VERSION}+ series.
+
+[NOTE]
+====
+{KIE_SERVER} provides many installation alternatives, for example controller driven servers, standalone servers, high availability, etc.
+The purpose of this guide is to show you how to configure your {KIE_SERVER} installation for the task assigning integration.
+====
+
+For {KIE_SERVER} and {CONTEXTUAL_BPMSUITE} configuration information see their respective product documentation.
+
+The following procedure is recommended:
+
+. Install the {KIE_SERVERS} topology that you require.
+. If you are using the {CONTEXTUAL_BPMSUITE} schema generation scripts be sure to execute the following sql script corresponding to the target database management system:
++
+{CONTEXTUAL_BPMSUITE} installer -> /db/ddl-scripts/<dbms_vendor>/task_assigning_tables_<dbms_vendor>.sql
++
+For example, in the case of a db2 database you must execute the following script:
++
+{CONTEXTUAL_BPMSUITE} installer -> /db/ddl-scripts/db2/task_assigning_tables_db2.sql
++
+For more information related to these scripts see {CONTEXTUAL_BPMSUITE} documentation.
++
+Note: the reverse script in cases where the generated schema needs to be deleted can be found in the same location
+and has the following name: task_assigning_tables_drop_<dbms_vendor>.sql
+
+[start=3]
+. Be sure the process runtime is executing well.
+. Install a dedicated <<Planning kie-server, Planning kie-server>> (see next topics).
+. Complete the task assigning integration specific configuration parameters in all of the associated <<Process Runtime kie-server, Process Runtime kie-servers>> and the <<Planning kie-server, Planning kie-server>>.
+
+== Simplified architecture
+
+The following simplified architecture identifies the key components and configuration parameters for the task assigning integration.
+
+.Simplified architecture
+image::KieServerTaskAssigning/SimplifiedArchitecture.png[]
+
+=== Process Runtime kie-server
+
+This is the {KIE_SERVER} instance where the business processes execute. In clustered and high-availability configurations, multiple instances can be used.
+
+[NOTE]
+====
+The task assigning integration can manage multiple process runtime {KIE_SERVERS} as long they share the same database where the process instances, human tasks instances, and so forth are stored and have the same set of deployed containers.
+In topologies where a {KIE_SERVER} controller is configured this usually happens when they belong to the same {KIE_SERVER} template.
+Be sure these statements are true before running the task assigning integration.
+====
+
+=== Planning kie-server
+
+This is the {KIE_SERVER} instance where OptaPlanner will execute, for example where the optimized plans and so forth, will be calculated and where the <<UserSystemService integration component, UserSystemService integration component>> will run.
+The task assigning integration requires a single dedicated {KIE_SERVER} instance for this purpose.
+Be sure no other {KIE_SERVER} extensions are enabled on this server.
+
+== Configuration parameters setup
+
+All of the configuration parameters that are defined in the next topics are defined through the Java system properties.
+In Wildfly and Red Hat Enterprise Application Server (EAP) installations, these parameters are usually configured in the <system-properties> section of the selected configuration file, for example:
+
+[source,xml]
+----
+<server xmlns="urn:jboss:domain:8.0">
+...
+    <system-properties>
+        ...
+        <property name="org.kie.server.taskAssigning.runtime.ext.disabled" value="false"/>
+        ...
+    </system-properties>
+...
+</server>
+----
+
+You can also use other methods of setting system properties, for example passing JVM parameters on the command line:
+
+[source, java]
+----
+-Dorg.kie.server.taskAssigning.runtime.ext.disabled=false
+----
+
+[NOTE]
+====
+It is  recommended to use the same configuration method for all {KIE_SERVER} required parameters.
+====
+
+== Process Runtime kie-server configuration
+
+The following table shows the only parameter that must be configured in all of the <<Process Runtime kie-server, Process Runtime kie-servers>> in the target topology.
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+| org.kie.server.taskAssigning.runtime.ext.disabled | Not required | The default value is "true", meaning that the task assigning integration is always disabled.
+
+Must be set to "false" for making it work.
+
+|===
+
+=== Process Runtime kie-server Wildfly/EAP configuration example
+
+[source,xml]
+----
+<server>
+...
+    <system-properties>
+       ...
+        <property name="org.kie.server.taskAssigning.runtime.ext.disabled" value="false"/>
+       ...
+    </system-properties>
+...
+</server>
+----
+
+== Planning kie-server configuration
+
+The following topics explain the parameters that you must configure in the <<Planning kie-server, Planning kie-server>>.
+Whatever the target topology is, only one instance of this server will exist.
+
+[NOTE]
+====
+The parameters tagged as "Required" must be set only in cases where the task assigning integration is enabled. Some of them have a default value that automatically applies when not set.
+====
+
+=== Global configuration parameters
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| org.kie.server.taskAssigning.planning.ext.disabled | Not required | The default value is "true", meaning that the task assigning integration is always disabled.
+
+Must be set to "false" for making it work.
+
+| org.kie.server.services.taskAssigning.core.model.planningUserId | Required | The default value is "planninguser".
+
+This value configures the user for being assigned with the tasks that no other user in the system can be assigned to.
+
+For example If a task has a required skill "astronaut" and no user can be found with this skill, it will be assigned to the planninguser.
+
+But it is not only restricted to skills, another example might be a task configured for a users group "Finance". If no user exists in that group it will be assigned to the planning user.
+
+It is strongly recommended that the planning user has the required human tasks administration grants in all of the target <<Process Runtime kie-server, Process Runtime kie-servers>>. By doing so it can easily proceed to track and eventually re-assign the tasks that couldn’t be managed by the tasks assigning integration.
+
+Note: it is recommended to keep this name.
+
+| org.kie.server.taskAssigning.processRuntime.url | Required | The default value is \http://localhost:8080/kie-server/services/rest/server
+
+This value configures the URL for connecting to the <<Process Runtime kie-server, Process Runtime kie-server>> rest services.
+
+In a clustered environment a list of "\|" separated urls can be used for doing  load balancing between the different <<Process Runtime kie-server, Process Runtime kie-servers>>.
+
+| org.kie.server.taskAssigning.processRuntime.user | Required | The default value is wbadmin
+
+This value configures the user id  for connecting to the <<Process Runtime kie-server, Process Runtime kie-server>>. In a clustered environment it must exist in all of the configured target servers.
+
+The configured user must belong to the human tasks administration group. This group is usually found by looking at the target <<Process Runtime kie-server, Process Runtine kie-server>> configuration parameter:
+
+<property name="org.jbpm.ht.admin.group" value="process-admin"/>
+
+Following the example above the configured user must belong to the group "process-admin"
+
+| org.kie.server.taskAssigning.processRuntime.pwd | Required | No default value is set.
+
+This value configures the password  for the user configured in org.kie.server.taskAssigning.processRuntime.user parameter.
+
+| org.kie.server.taskAssigning.processRuntime.targetUser | Required | No default value is set.
+
+This value configures the user ID used to  execute the process runtime operations "on behalf of", and is usually the same as the  value of the
+org.kie.server.taskAssigning.processRuntime.user parameter
+
+| org.kie.server.taskAssigning.processRuntime.key.alias | Not Required | No default value is set.
+
+This parameter can be used in cases where it is required to  get the runtime user password from the {KIE_SERVER} keystore and represents the alias for locating it.
+
+| org.kie.server.taskAssigning.processRuntime.key.pwd | Not Required | No default value is set.
+
+This parameter must be used in cases where the runtime user password is stored in the {KIE_SERVER} keystore, and represents the password for accessing the corresponding keystore entry.
+
+| kie.keystore.keyStoreURL | Not Required | No default value is set.
+
+URL for the JCEKS that you want to use, for example \file:///home/kie/keystores/keystore.jceks
+
+| kie.keystore.keyStorePwd | Not Required | No default value is set.
+
+Password for the JCEKS
+
+| org.kie.server.taskAssigning.processRuntime.timeout | Not Required | The default value is 90000.
+
+This value configures the timeout in milliseconds for the operation invocations on the <<Process Runtime kie-server, Process runtime kie-server>>.
+
+| org.kie.server.taskAssigning.runtimeDelegate.pageSize | Not Required | The default value is 3000.
+
+This value configures the page size for the paged queries. The default value is good for most scenarios and it’s not recommended to be modified unless specific fine tunings are required.
+
+| org.kie.server.taskAssigning.solutionSyncInterval | Required | The default value is "PT2S" (two seconds).
+
+This value configures the time interval for the tasks information refreshing from the <<Process Runtime kie-server, Process Runtime kie-server>>.
+
+The accepted format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+For example:
+
+"PT1.500S":  configures 1500 milliseconds.
+
+"PT0.500S":  configures 500 milliseconds.
+
+"PT3S":      configures 3000 milliseconds.
+
+| org.kie.server.taskAssigning.solutionSyncQueriesShift | Required | The default value is "PT10M"
+
+This value configures a timeshift for adjusting the tasks information refreshing queries. In most cases it should never be modified and should not be less than PT5M (five minutes).
+
+The accepted format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| org.kie.server.taskAssigning.publishWindowSize | Required | The default value is 2.
+
+This value configures the maximum amount of tasks per user that will be assigned to it in the <<Process Runtime kie-server, Process Runtime kie-server>> when an optimized plan is calculated. See "published tasks"
+
+This value should usually be low 2, 3, or 4, since it is expected that the  tasks will be assigned to the users according to an optimized plan that is changing over the time. High values might lead into the <<BPM standard task assigning, BPM Standard task assigning>> which could make the tasks assigning integration senseless.
+
+| org.kie.server.taskAssigning.usersSyncInterval | Required | The default value is "PT2H" (two hours)
+
+This value configures the time interval for the user's information refreshing from the <<UserSystemService integration component, UserSystemService integration component>>.
+
+The accepted format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| org.kie.server.taskAssigning.waitForImprovedSolutionDuration | Not Required | The default value is "PT0S" (no wait)
+
+This value configures the time interval to improve a solution before the corresponding optimized plan is sent to the <<Process Runtime kie-server, Process Runtime kie-server>>.
+
+Because this wait time is applied every time a new set of changes is processed it should usually be short, for example "PT0.500" (500 milliseconds). Use it in cases when early improvements are desired.
+
+The accepted format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+| org.kie.server.taskAssigning.improveSolutionOnBackgroundDuration | Not Required | The default value is "PT1M" (one minute)
+
+This value configures the time interval for doing a background optimization of the current solution after the corresponding optimized plan is sent to the <<Process Runtime kie-server, Process Runtime kie-server>>.
+
+In situations where no changes in the processes are produced and a better solution is calculated during that period, the new optimized plan is automatically sent to the <<Process Runtime kie-server, Process Runtime kie-server>>.
+
+The accepted format is based on the ISO-8601 duration format PnDTnHnMn.nS with days considered to be exactly 24 hours.
+
+|===
+
+=== Solver configuration parameters
+
+As it was mentioned, the task assigning integration delegates the calculation of "which tasks must be assigned to whom" to {PLANNER} and it will resolve this requirement by producing an optimized plan.
+This plan is calculated by using a Solver with a set of configured constraints. See {PLANNER} product documentation for more information.
+
+Two mechanisms are available for configuring the {PLANNER}’s Solver specifics.
+
+Note: The parameter tagged as "Required" must have a value independently of the selected Solver configuration mechanism.
+
+=== Class path based solver configuration
+
+This mechanism implements the ability of configuring the Solver by using a class path resource.
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| org.kie.server.taskAssigning.solver.configResource | Required | The default value is:
+"org/kie/server/services/taskassigning/solver/taskAssigningDefaultSolverConfig.xml"
+
+This value configures the path to a class-path resource with the Solver configuration.
+
+If the resource can’t be found or the configuration is wrong, a controlled error will be added to the <<Planning kie-server, Planning kie-server>> error messages and the task assigning integration won’t be initialized. The {KIE_SERVER} APIs can be used for querying these error messages and checking the status.
+
+| org.kie.server.taskAssigning.solver.moveThreadCount | Not Required | The default value is AUTO.
+
+This value configures the solver’s ability of using multithreaded incremental solving.
+
+For more information see {PLANNER} documentation.
+
+Note: when the container based solver configuration is used this value is not considered, the configuration provided in the KJAR is used instead.
+
+| org.kie.server.taskAssigning.solver.moveThreadBufferSize | Not Required | No default value is set.
+
+This value power tweaks the number of moves that are selected but won’t be foraged when multithreaded incremental solving is used.
+Setting it too low reduces performance, but setting it too high too. Unless you’re deeply familiar with the inner workings of multithreaded solving, don’t configure this parameter.
+
+For more information see {PLANNER} documentation.
+
+Note: when the container based solver configuration is used this value is not considered, the configuration provided in the KJAR is used instead.
+
+| org.kie.server.taskAssigning.solver.threadFactoryClass | Not Required | No default value is set.
+
+The threadFactoryClass allows you to plug in a custom ThreadFactory for environments where arbitrary thread creation should be avoided.
+
+For more information see {PLANNER} documentation.
+
+Note: when the container based solver configuration is used this value is not considered, the configuration provided in the KJAR is used instead.
+
+|===
+
+[NOTE]
+====
+The default solver configuration includes a set of constraints for implementing optimized task assigning, therefore it is not necessary to provide a different set of constraints in most cases.
+Use cases that require specific tunings, for example related to business data, can use this alternative. However it is recommended to use a Container based configuration for these purposes.
+====
+
+=== Container based solver configuration
+
+This mechanism implements the ability to configure the Solver by using a container.
+Finally, given that the {KIE_SERVER} architecture is based on containers this is usually the recommended approach.
+However in many of the use cases the by default configuration is good enough and no container configuration is necessary see <<Default Constraints, Default Constraints>>
+
+The following table shows the container-based configuration parameters:
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| org.kie.server.taskAssigning.solver.container.id | Not Required | No default value is set.
+
+This value configures the Identifier of the container to use.
+
+When set the container based configuration will be activated and the following container related parameters are required.
+
+| org.kie.server.taskAssigning.solver.container.groupId | Required if the container configuration is activated | No default value is set.
+
+This value configures the Maven groupId of the artifact to use for creating the container when needed.
+
+| org.kie.server.taskAssigning.solver.container.artifactId | Required if the container configuration is activated | No default value is set.
+
+This value configures the Maven artifactId for the artifact to use for creating the container when needed.
+
+| org.kie.server.taskAssigning.solver.container.version | Required if the container configuration is activated | No default value is set.
+
+This value configures the Maven version for the artifact to use for creating the container when needed.
+
+| org.kie.server.taskAssigning.solver.configResource | Required if the container configuration is activated | This value configures the path to the resource with the Solver configuration in the container class-path.
+
+|===
+
+In case of errors, analogous to the "Class path based solver configuration" proper {KIE_SERVER} error messages will be generated and the task assigning integration won’t be initialized.
+The {KIE_SERVER} APIs can be used for querying these error messages and checking the status.
+
+=== UserSystemService integration component
+
+Calculating an optimized plan for assigning tasks to users often requires considering business related information.
+Common examples, included in the current task assigning integration version, are the usage of the groups, the skills that a given user has or the affinities in certain topics, etc. See <<Skills and Affinities, Skills and Affinities>>.
+This business oriented information must be provided by each particular installation and is delegated to the UserSystemService integration component.
+It is up to the tasks assigning integrator to provide this component.
+
+
+UserSystemService API
+
+A user system service component must implement the following API.
+
+
+[source,java]
+----
+public interface UserSystemService {
+
+    /**
+     * Invoked by the task assigning integration as part of the initialization procedure and
+     * before any other method is invoked.
+     */
+    void start();
+
+    /**
+     * Invoked by the task assigning integration as part of the initialization procedure and
+     * after the start() method is invoked.
+     * @throws Exception if the test method failed.
+     */
+    void test() throws Exception;
+
+    /**
+     * @return the name of the UserSystemService implementation.
+     */
+    String getName();
+
+    /**
+     * @return the list of all users present in the external user system. This method is normally
+     * invoked each time the solver is initialized or when the users information is updated from
+     * the external user system.
+     */
+    List<User> findAllUsers();
+
+    /**
+     * Get the user information for a particular user.
+     * @param id user identifier for querying.
+     * @return the User corresponding to the given identifier, null if no user was found.
+     */
+    User findUser(String id);
+}
+----
+
+=== UserSystemService configuration
+
+Analogous to the Solver configuration two mechanisms are available for configuring the UserSystemService and in both cases the standard Java SPI (Service Provider Interface) and ServiceLoader mechanisms are used for its instantiation.
+
+=== Class path based UserSystemService configuration
+
+Use the following resource for configuring the different UserSystemService provider implementations:
+
+META-INF/services/org.kie.server.services.taskassigning.user.system.api.UserSystemService
+
+And finally add the following configuration parameters for configuring the selected implementation:
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| org.kie.server.taskAssigning.userSystem.name | Required | No default value is set.
+
+This value configures the name of the UserSystemService provider instance to use.
+
+See: UserSystemService.getName()
+
+All of the configured providers are loaded from the application class-path and the one that matches with the configured name will be used.
+
+A simple user system service implementation is provided see <<SimpleUserSystemService, SimpleUserSystemService>>
+
+|===
+
+=== Container based UserSystemService configuration
+
+Use the following resource in your Kie Module (KJAR) to configure the different UserSystemService provider implementations:
+
+project_home/src/main/resources/META-INF/services/org.kie.server.services.taskassigning.user.system.api.UserSystemService
+
+And finally add the following configuration parameters for configuring the selected implementation:
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| org.kie.server.taskAssigning.userSystem.name | Required | No default value is set.
+
+This value configures the name of the UserSystemService provider instance to use.
+
+See: UserSystemService.getName()
+
+| org.kie.server.taskAssigning.userSystem.container.id | Not Required | No default value is set.
+
+This value configures the Identifier of the container to use.
+
+When set the container based configuration will be activated and all of the potential UserSystemService providers that might be defined in the container class-path will be considered for selection, additionally to the ones in the application class-path.
+
+The following parameters will be required.
+
+| org.kie.server.taskAssigning.userSystem.container.groupId | Required if the container configuration is activated. | No default value is set.
+
+This value configures the Maven groupId of the artifact to use for creating the container when needed.
+
+| org.kie.server.taskAssigning.userSystem.container.artifactId | Required if the container configuration is activated. | No default value is set.
+
+This value configures the Maven artifactId for the artifact to use for creating the container when needed.
+
+| org.kie.server.taskAssigning.userSystem.container.version | Required if the container configuration is activated. | No default value is set.
+
+This value configures the Maven version for the artifact to use for creating the container when needed.
+
+|===
+
+In case of errors, for example if the configured provider name was not found, the container couldn’t be instantiated, etc, a controlled error will be added to the <<Planning kie-server, Planning kie-server>> error messages and the task assigning integration won’t be initialized.
+The {KIE_SERVER} APIs can be used for querying these error messages and checking the status.
+
+=== SimpleUserSystemService
+
+The SimpleUserSystemService is a basic UserSystemService implementation that loads the user definitions, skills and affinities from Java properties file in the format used by the Wildfly/EAP application servers.
+This implementation is always present in the <<Planning kie-server, Planning kie-server>> and is intended mainly for development and testing purposes.
+
+The following example shows a user definitions file:
+
+[source, java]
+----
+katy=analyst,HR
+john=IT,Developer
+----
+
+
+In this example, two users are defined:
+
+* User katy that belongs to the groups analyst and HR
+
+* User john that belongs to the groups IT and Developer
+
+The following parameters can be used to configure it:
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| org.kie.server.taskAssigning.userSystem.name | Required | Must be the value SimpleUserSystemService
+
+| org.kie.server.services.taskassigning.user.system.simple.users | Required | This value configures a <<Planning kie-server, Planning kie-server>> web application accessible path with the user definitions file.
+
+For example in Wildfly/EAP installations can be like this.
+
+${jboss.server.config.dir}/roles.properties
+
+Note: the configured file must have the same values as the roles.properties files of the <<Process Runtime kie-server, Process Runtime kie-servers>> in the target topology.
+
+| org.kie.server.services.taskassigning.user.system.simple.skills | Not Required | This value configures a <<Planning kie-server, Planning kie-server>> web application accessible path with the users skills definitions if desired, see <<Skills and Affinities, Skills and Affinities>>.
+
+For example in Wildfly/EAP installations can be like this.
+
+${jboss.server.config.dir}/skills.properties
+
+Note: the format is analogous to the user definitions file.
+
+katy=skill1,skill2
+john=skill1,skill2
+
+| org.kie.server.services.taskassigning.user.system.simple.affinities | Not Required | This value configures a <<Planning kie-server, Planning kie-server>> web application accessible path with the users affinities definition if desired, <<Skills and Affinities, Skills and Affinities>>.
+
+For example in Wildfly/EAP installations can be like this.
+
+${jboss.server.config.dir}/affinities.properties
+
+Note: the format is analogous to the user definitions file.
+
+katy=affinity1,affinity4
+In this example john has no affinities.
+
+|===
+
+=== Planning kie-server Wildfly/EAP configuration example
+
+Below is an extract of the task assigning configuration parameters for a Wildfly/EAP server.
+
+[source,xml]
+----
+<server>
+...
+<system-properties>
+...
+  <!-- the following kie-server extensions must be disabled in the Planning kie-server -->
+  <property name="org.optaplanner.server.ext.disabled" value="true"/>
+  <property name="org.jbpm.server.ext.disabled" value="true"/>
+  <property name="org.jbpm.ui.server.ext.disabled" value="true"/>
+  <property name="org.jbpm.case.server.ext.disabled" value="true"/>
+  <property name="org.kie.dmn.server.ext.disabled" value="true"/>
+  <property name="org.kie.swagger.server.ext.disabled" value="true"/>
+
+  <!-- enable the TaskAssigningPlanningKieServerExtension -->
+  <property name="org.kie.server.taskAssigning.planning.ext.disabled" value="false"/>
+
+  <property name="org.kie.server.taskAssigning.processRuntime.url"
+            value="http://localhost:8080/kie-server/services/rest/server"/>
+  <property name="org.kie.server.taskAssigning.processRuntime.user" value="wbadmin"/>
+  <property name="org.kie.server.taskAssigning.processRuntime.pwd" value="wbadmin"/>
+  <property name="org.kie.server.taskAssigning.processRuntime.targetUser" value="wbadmin"/>
+  <property name="org.kie.server.taskAssigning.solutionSyncInterval" value="PT2S"/>
+
+  <!-- example of a Solver configuration based on a user provided kjar -->
+  <!--
+  <property name="org.kie.server.taskAssigning.solver.configResource" value="org/kie/server/services/taskassigning/solver/taskAssigningDefaultSolverConfig.xml"/>
+  <property name="org.kie.server.taskAssigning.solver.container.id"
+            value="kie-server-task-assigning-default-planner-kjar-container"/>
+  <property name="org.kie.server.taskAssigning.solver.container.groupId" value="org.kie.server"/>
+  <property name="org.kie.server.taskAssigning.solver.container.artifactId"
+            value="kie-server-task-assigning-default-planner-kjar"/>
+  <property name="org.kie.server.taskAssigning.solver.container.version" value="X.XX.XXX"/>
+  -->
+
+  <!-- default SimpleUserSystemService configuration -->
+  <property name="org.kie.server.taskAssigning.userSystem.name" value="SimpleUserSystemService"/>
+  <property name="org.kie.server.services.taskassigning.user.system.simple.users"
+            value="${jboss.server.config.dir}/roles.properties"/>
+
+  <!-- un-comment and configure if skills information will be loaded -->
+  <!--
+  <property name="org.kie.server.services.taskassigning.user.system.simple.skills"
+            value="${jboss.server.config.dir}/skills.properties"/>
+  -->
+
+  <!-- un-comment and configure if affinities information will be loaded -->
+  <!--
+  <property name="org.kie.server.services.taskassigning.user.system.simple.affinities"
+            value="${jboss.server.config.dir}/affinities.properties"/>
+  -->
+  <!-- end of default SimpleUserSystemService configuration -->
+
+  <!-- example of a UserSystemService configuration based on a user provided kjar -->
+  <!--
+  <property name="org.kie.server.taskAssigning.userSystem.name"
+            value="SimpleUserSystemServiceByKjar"/>
+  <property name="org.kie.server.taskAssigning.userSystem.container.id"
+            value="task-assigning-user-system-service-simple-by-kjar-container"/>
+  <property name="org.kie.server.taskAssigning.userSystem.container.groupId"
+            value="org.kie.server"/>
+  <property name="org.kie.server.taskAssigning.userSystem.container.artifactId"
+            value="kie-server-task-assigning-user-system-simple-kjar"/>
+  <property name="org.kie.server.taskAssigning.userSystem.container.version" value="X.XX.XXX"/>
+  -->
+...
+</system-properties>
+...
+</server>
+----
+
+=== Spring Boot configuration
+
+When the {KIE_SERVER} Spring Boot Starter version is used the following configuration parameters are used to configure the task assigning integration.
+These parameters are usually configured in the corresponding Spring Boot application.properties file. The same statements as for standard {KIE_SERVER} topologies apply in this case.
+
+[cols="50%,10%,40%" frame="all", options="header"]
+|===
+|Parameter
+|Requirement
+|Description
+
+| kieserver.taskAssigning.runtime.enabled | Required | Must be set to "true" in order to enable the task assigning integration in the <<Process Runtime kie-server, Process Runtime kie-server>>
+
+| kieserver.taskAssigning.planning.enabled | Required | Must be set to "true" in order to enable the task assigning integration in the <<Planning kie-server, Planning kie-server>>
+
+| taskassigning.core.model.planningUserId | Required | This value is analogous to the org.kie.server.services.taskAssigning.core.model.planningUserId configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.url | Required | This value is analogous to the org.kie.server.taskAssigning.processRuntime.url configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.user | Required | This value is analogous to the org.kie.server.taskAssigning.processRuntime.user configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.pwd | Required | This value is analogous to the org.kie.server.taskAssigning.processRuntime.pwd configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.targetUser | Required | This value is analogous to the org.kie.server.taskAssigning.processRuntime.targetUser configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.key.alias | Not Required | This value is analogous to the org.kie.server.taskAssigning.processRuntime.key.alias configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.key.pwd | Not Required | This value is analogous to the org.kie.server.taskAssigning.processRuntime.key.pwd configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.processRuntime.timeout | Not Required | This value is analogous to the  org.kie.server.taskAssigning.processRuntime.timeout configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.runtimeDelegate.pageSize | Not Required | This value is analogous to the  org.kie.server.taskAssigning.runtimeDelegate.pageSize configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.solutionSyncInterval | Required | This value is analogous to the org.kie.server.taskAssigning.solutionSyncInterval configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.solutionSyncQueriesShift | Required | This value is analogous to the org.kie.server.taskAssigning.solutionSyncQueriesShift configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.publishWindowSize | Required | This value is analogous to the org.kie.server.taskAssigning.publishWindowSize configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.usersSyncInterval | Required | This value is analogous to the org.kie.server.taskAssigning.usersSyncInterval configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.waitForImprovedSolutionDuration | Not Required | This value is analogous to the org.kie.server.taskAssigning.waitForImprovedSolutionDuration configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.improveSolutionOnBackgroundDuration | Not Required | This value is analogous to the org.kie.server.taskAssigning.improveSolutionOnBackgroundDuration configuration parameter, see <<Global configuration parameters, Global configuration parameters>>
+
+| taskassigning.solver.configResource | Required | This value is analogous to the org.kie.server.taskAssigning.solver.configResource configuration parameter, see <<Solver configuration parameters, Solver configuration parameters>>
+
+| taskassigning.solver.moveThreadCount | Not Required | This value is analogous to the org.kie.server.taskAssigning.solver.moveThreadCount configuration parameter, see <<Solver configuration parameters, Solver configuration parameters>>
+
+| taskassigning.solver.moveThreadBufferSize | Not Required | This value is analogous to the org.kie.server.taskAssigning.solver.moveThreadBufferSize configuration parameter, see <<Solver configuration parameters, Solver configuration parameters>>
+
+| taskassigning.solver.threadFactoryClass | Not Required | This value is analogous to the org.kie.server.taskAssigning.solver.threadFactoryClass configuration parameter, see <<Solver configuration parameters, Solver configuration parameters>>
+
+| taskassigning.solver.container.id | Not Required | This value is analogous to the org.kie.server.taskAssigning.solver.container.id configuration parameter, see <<Container based solver configuration, Container based solver configuration>>
+
+| taskassigning.solver.container.groupId | Required if the container configuration is activated | This value is analogous to the org.kie.server.taskAssigning.solver.container.groupId configuration parameter, see <<Container based solver configuration, Container based solver configuration>>
+
+| taskassigning.solver.container.artifactId | Required if the container configuration is activated | This value is analogous to the org.kie.server.taskAssigning.solver.container.artifactId configuration parameter, see <<Container based solver configuration, Container based solver configuration>>
+
+| taskassigning.solver.container.version | Required if the container configuration is activated | This value is analogous to the org.kie.server.taskAssigning.solver.container.version configuration parameter, see <<Container based solver configuration, Container based solver configuration>>
+
+| taskassigning.solver.configResource | Required if the container configuration is activated | This value is analogous to the org.kie.server.taskAssigning.solver.configResource configuration parameter, see <<Container based solver configuration, Container based solver configuration>>
+
+| taskassigning.userSystem.name | Required | This value is analogous to the org.kie.server.taskAssigning.userSystem.name configuration parameter, see <<UserSystemService configuration, UserSystemService configuration>>
+
+| taskassigning.userSystem.container.id | Not Required | This value is analogous to the org.kie.server.taskAssigning.userSystem.container.id configuration parameter, see <<Container based UserSystemService configuration, Container based UserSystemService configuration>>
+
+| taskassigning.userSystem.container.groupId | Required if the container configuration is activated | This value is analogous to the org.kie.server.taskAssigning.userSystem.container.groupId configuration parameter, see <<Container based UserSystemService configuration, Container based UserSystemService configuration>>
+
+| taskassigning.userSystem.container.artifactId | Required if the container configuration is activated |This value is analogous to the org.kie.server.taskAssigning.userSystem.container.artifactId configuration parameter, see <<Container based UserSystemService configuration, Container based UserSystemService configuration>>
+
+| taskassigning.userSystem.container.version | Required if the container configuration is activated | This value is analogous to the org.kie.server.taskAssigning.userSystem.container.version configuration parameter, see <<Container based UserSystemService configuration, Container based UserSystemService configuration>>
+
+| tastaskassigning.userSystem.simple.users | Required if the Simple User System is configured | This value is analogous to the org.kie.server.services.taskassigning.user.system.simple.users configuration parameter, see <<SimpleUserSystemService, SimpleUserSystemService>>
+
+| taskassigning.userSystem.simple.skills | Not Required | This value is analogous to the org.kie.server.services.taskassigning.user.system.simple.skills configuration parameter, see <<SimpleUserSystemService, SimpleUserSystemService>>
+
+| taskassigning.userSystem.simple.affinities | Not Required | This value is analogous to the  org.kie.server.services.taskassigning.user.system.simple.affinities configuration parameter, see see <<SimpleUserSystemService, SimpleUserSystemService>>
+
+|===
+
+=== Default Constraints
+
+The following table gives a high level description of the set of constraints that are included in the task assigning integration.
+These constraints are used for the construction of the optimized plan, in other words "for determining which tasks should be assigned to whom".
+
+In general a large set of use cases can be covered by using them and no extensions are required, but it is possible to work with a user provided-customized set of constraints if needed, see <<Container based solver configuration, Container based solver configuration>>.
+
+Optimized solutions construction is made by using a BendableLongScore with two levels of Hard constraints and six levels of Soft constraints. These constraint levels can be customized by following a set of restrictions.
+
+[cols="30%,15%,55%" frame="all", options="header"]
+|===
+|Constraint
+|Level/Requirement
+|Description
+
+| Required Potential Owner | Hard Constraint 0 (required) | Determines that a task must be assigned to one of it is "Potential Owners", or to the "Planning User" in cases where no "Potential Owners" are found.
+
+User provided customizations must always include this constraint as the first level hard constraint.
+Otherwise the business process semantics won’t be considered by the task assigning integration, i.e., tasks might be assigned to users that are not "Potential Owners" for it.
+
+In cases where this constraint is still customized, it must always consider assigning the "Planning User" when no other user fits the customized condition.
+
+| Required Skills | Hard Constraint 1 | Determines that a task can only be assigned to a user that has all of the task’s configured skills, see <<Skills and Affinities, Skills and Affinities>>.
+
+If a task has configured skills but no user with all of these skills can be found it’ll be assigned to the "Planning User".
+
+If the task doesn’t have configured skills the constraint has no effect.
+
+In cases where this constraint is customized, it must always consider assigning the "Planning User" when no other user fits the customized condition.
+
+| PlanningUser assignment | Soft Constraint 0 (required) | Penalizes the "Planning User" assignment. This constraint enforces the minimization of the "Planning User" assignment and ensures it’ll be assigned as the "last available option"
+
+Do not customize or change this constraint.
+
+| High level priority | Soft Constraint 1 | Enforces the assignment of higher priority tasks first whenever it is possible.
+
+| Desired Affinities | Soft Constraint 2 | Makes a best effort for assigning tasks according to its configured affinities, see <<Skills and Affinities, Skills and Affinities>>
+
+If a task has configured affinities, whenever it is possible, a user with the most of them will be picked for its assignment.
+
+If the task doesn’t have configured affinities the constraint has no effect.
+
+| Minimize makespan | Soft Constraint 3 (required) | Reduce the time to complete all tasks.
+
+This constraint must always be included.
+
+| Medium level priority | Soft Constraint 4 | Medium level priority tasks are assigned after higher priority tasks whenever it is possible.
+
+| Low level priority |  Soft Constraint 5 | Low level priority tasks are assigned lastly whenever it is possible.
+
+|===
+
+[NOTE]
+====
+The current TaskAssigningSolution implementation is based on a BendableLongScore scoring function and thus any potential extension of the provided constraints, etc., typically by using a user provided KJAR, will be based on it.
+However this scoring function as well as the core model classes might change in future releases.
+====
+
+=== Constraints configuration by using a DRL file
+
+The following example shows the key parts of the DRL file that contains the constraints configurations.
+
+[source, java]
+----
+
+// ############################################################################
+// Hard constraints
+// ############################################################################
+
+// A task can only be assigned to one of its potential owners or to the PlanningUser
+rule "Required Potential Owner"
+   when
+       $task : Task(user != null, !TaskAssigningConditions.userMeetsPotentialOwnerOrPlanningUserCondition($task, user))
+   then
+       scoreHolder.addHardConstraintMatch(kcontext, 0, -1);
+end
+
+// A task with defined skills can only be assigned to users that has all of the of them or to the PlanningUser
+rule "Required Skills"
+   when
+       $task : Task(user != null, !TaskAssigningConditions.userMeetsRequiredSkillsOrPlanningUserCondition($task, user))
+   then
+       scoreHolder.addHardConstraintMatch(kcontext, 1, -1);
+end
+
+// ############################################################################
+// Soft constraints
+// ############################################################################
+
+// First level soft constraint for penalizing the assignment of the PLANNING_USER.
+rule "PlanningUser assignment"
+   when
+       Task(user != null, ModelConstants.IS_PLANNING_USER.test(user.getEntityId()))
+   then
+       // a penalization is added each time the PLANNING_USER is assigned.
+       scoreHolder.addSoftConstraintMatch(kcontext, 0, -1);
+end
+
+// Second level soft constraint for penalizing the assignment of the PLANNING_USER.
+rule "High level priority"
+   when
+       $task : Task(user != null, PriorityHelper.isHighLevel(priority))
+   then
+       scoreHolder.addSoftConstraintMatch(kcontext, 1, PriorityHelper.calculateWeightedPenalty($task.getPriority(), $task.getEndTimeInMinutes()));
+end
+
+
+// Third level soft constraint, when a task has defined affinities consider assigning users that match
+// the most of them as possible.
+rule "Desired Affinities"
+   when
+       $task : Task(user != null, user.isEnabled())
+   then
+       scoreHolder.addSoftConstraintMatch(kcontext, 2, TaskHelper.countMatchingLabels($task, $task.getUser(), DefaultLabels.AFFINITIES.name()));
+end
+
+// Fourth level soft constraint.
+rule "Minimize makespan (starting with the latest ending user first)"
+   when
+       Task(user != null, nextTask == null, $endTimeInMinutes : endTimeInMinutes)
+   then
+       scoreHolder.addSoftConstraintMatch(kcontext, 3, - ($endTimeInMinutes * $endTimeInMinutes));
+end
+
+// Fifth level soft constraint.
+rule "Medium level priority"
+   when
+       $task : Task(user != null, PriorityHelper.isMediumLevel(priority))
+   then
+       scoreHolder.addSoftConstraintMatch(kcontext, 4, PriorityHelper.calculateWeightedPenalty($task.getPriority(), $task.getEndTimeInMinutes()));
+end
+
+// Sixth level soft constraint.
+rule "Low level priority"
+   when
+       $task : Task(user != null, PriorityHelper.isLowLevel(priority))
+   then
+       scoreHolder.addSoftConstraintMatch(kcontext, 5, PriorityHelper.calculateWeightedPenalty($task.getPriority(), $task.getEndTimeInMinutes()));
+end
+
+----
+
+[NOTE]
+====
+The current by default DRL might change in future versions and thus  can not be considered as part of the product public API. Any potential customization of the provided constraints might use this DRL as a start point or could also use other mechanisms as the constraints streams for implementing them.
+====
+
+
+=== Skills and Affinities
+
+The use of skills and affinities implements the ability of declaring business related data for being considered by the default provided constraints or any other user defined ones.
+This is a fine grained decision mechanism that you can use on top of the groups-based assignment semantics defined in the business process.
+
+Internally, this mechanism is based on the ability to label the human tasks generated by the business processes runtime and the users information.
+
+**Labeling mechanism**
+
+The following procedure shows how the labeling mechanism converts information in  human tasks, and users information to labels:
+
+.Tasks Labeling
+image::KieServerTaskAssigning/LabelingMechanismTasks.png[]
+
+. Any human task is created in the processes runtime.
+. When the new task is detected by the task assigning solution refreshing mechanism, a set of LabelValueExtrators is applied.
+. These LabelValueExtractors can transform any piece of information in the human task or user into a label.
+. The default constraints consider these labels.
+
+In the preceding example,the following labels are produced:
+
+* The input data "skills",  with the value "skill1, skill2" resulted in the label SKILLS with the following set of values {"skill1", "skill2"}
+* The input data "affinities" with the value "affinity1" resulted in the label AFFINITIES with the following set of values {"affinity1"}
+
+
+[NOTE]
+====
+Task labels are calculated only the first time the task is identified by the task assigning integration and can use any of the information present in the task.
+====
+
+User labeling works in a similar way:
+
+.Tasks Labeling
+image::KieServerTaskAssigning/LabelingMechanismUsers.png[]
+
+=== Default HumanTask and User LabelValueExtractors
+
+Four label value extractors are provided to manage the SKILLS and AFFINITIES labels.
+
+
+[cols="50%,50%" frame="all", options="header"]
+|===
+|Extractor Name
+|Description
+| DefaultTaskDataSkillsValueExtractor | Processes the human task "skills" input value  as a string of comma separated values, and creates a java Set<Object> with tokenized String values.
+The resulting set is assigned to the label SKILLS.
+
+For example, the "skills" input value "english,finance" is extracted as a set with the values {"english", "finance"} and assigned to the label with name SKILLS.
+
+By default extraction can be customized by using the following system property for defining the task input value from where the SKILLS will be extracted.
+
+For example:
+org.kie.server.services.taskassigning.planning.data.DefaultTaskDataSkillsValueExtractor.skills=someOtherName
+
+| DefaultTaskDataAffinitiesValueExtractor | Processes the human task "affinities" input value, as a string comma separated values, and creates a java Set<Object> with tokenized String values. The resulting set is assigned to the label AFFINITIES.
+
+Ej. The "affinities" input value "news,history" is extracted as a set with the values {"news", "history"} and assigned to the label with name AFFINITIES.
+
+By default extraction can be customized by using the following system property for defining the task input value from where the AFFINITIES will be extracted.
+
+For example:
+org.kie.server.services.taskassigning.planning.data.DefaultTaskDataAffinitiesValueExtractor.affinities=someOtherName
+
+| DefaultUserSkillsValueExtractor | Analogous to the DefaultTaskDataSkillsValueExtractor
+By default extraction can be customized by using the following system property for defining the user attribute from where the SKILLS will be extracted.
+
+For example:
+org.kie.server.services.taskassigning.planning.data.DefaultUserSkillsValueExtractor.skills=someOtherName
+
+| DefaultUserAffinitiesValueExtractor | Analogous to the DefaultTaskDataAffinitiesValueExtractor
+By default extraction can be customized by using the following system property for defining the user attribute from where the AFFINITIES will be extracted.
+
+For example:
+org.kie.server.services.taskassigning.planning.data.DefaultUserAffinitiesValueExtractor.affinities=someOtherName
+
+|===
+
+[NOTE]
+====
+The current core model classes like the TaskAssigningSolution, Task and User might change in future releases.
+====
+
+
+=== Linking the human tasks inputs with the labels
+
+A simple approach for labeling tasks with business related information is implemented using the task inputs configuration. The following image shows an example of such a configuration.
+
+.Skills and affinities configuration
+image::KieServerTaskAssigning/SkillsAndAffinitiesConfigurationExample.png[]
+
+The example above links the process variable "variableWithTheSkills" with the task input name "skills", and the corresponding value will be processed by the "DefaultTaskDataSkillsValueExtractor" and automatically associated with the label name SKILLS.
+
+This mechanism can be used for any other user provided LabelValueExtractor.
+
+=== Custom extractors
+
+Installations that require the definition of customized LabelValueExtractors can add them by providing their implementations in the customized KJARs with the <<Container based UserSystemService configuration, UserSystemIntegration implementation>> or the <<Container based solver configuration, Solver configuration>>.
+
+. Add a component in the specified KJAR that implements the following interface:
++
+org.kie.server.api.model.taskassigning.data.LabelValueExtractor
++
+Note: Ensure that the following dependency is added to the given KJAR:
+
+[source, xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-api</artifactId>
+  <version>corresponding version</version>
+  <scope>provided</scope>
+</dependency>
+----
+
+[start=2]
+. Declare the component implementation by using the Java standard service provider mechanism in the following resource:
++
+project_home/src/main/resources/META-INF/services/project_home/src/main/resources/META-INF/services/org.kie.server.api.model.taskassigning.data.LabelValueExtractor
+
+When configured, the LabelValueExtractor will be processed accordingly.
+
+The following example shows a custom LabelValueExtractor:
+
+[source, java]
+----
+import org.kie.server.api.model.taskassigning.data.LabelValueExtractor;
+import org.kie.server.services.taskassigning.user.system.api.User;
+
+public class UserExampleValueExtractor implements LabelValueExtractor<User> {
+
+   public Class<User> getType() {
+       // consider this extractor for processing users information.
+       return org.kie.server.services.taskassigning.user.system.api.User.class;
+   }
+
+   public String getLabelName() {
+       return "PASSPORT";
+   }
+
+   public int getPriority() {
+       return 1;
+   }
+
+   public Set<Object> extract(User source) {
+       Map<String, Object> attributes = source.getAttributes();
+       Object value = attributes != null ? attributes.get("passport_number") : null;
+       return value != null ? new HashSet<Object>(Collections.singleton(value)) : null;
+   }
+}
+----
+
+Ensure that the following dependency is added to the specified KJAR:
+
+[source, xml]
+----
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-services-task-assigning-user-system-api</artifactId>
+  <version>corresponding version</version>
+  <scope>provided</scope>
+</dependency>
+----
+
+[NOTE]
+====
+Extractors for processing the human tasks information must use the class
+org.kie.server.api.model.taskassigning.TaskData as source type.
+====
+
+[NOTE]
+====
+The current core model classes like the TaskAssigningSolution, Task and User might change in future releases.
+====

@@ -1,0 +1,106 @@
+[id='controller-rest-api-con_{context}']
+= {CONTROLLER} REST API for {KIE_SERVER} templates and instances
+
+{PRODUCT} provides a {CONTROLLER} REST API that you can use to interact with your {KIE_SERVER} templates (configurations), {KIE_SERVER} instances (remote servers), and associated KIE containers (deployment units) in {PRODUCT} without using the {CENTRAL} user interface. This API support enables you to maintain your {PRODUCT} servers and resources more efficiently and optimize your integration and development with {PRODUCT}.
+
+With the {CONTROLLER} REST API, you can perform the following actions:
+
+* Retrieve information about {KIE_SERVER} templates, instances, and associated KIE containers
+* Update, start, or stop KIE containers associated with {KIE_SERVER} templates and instances
+* Create, update, or delete {KIE_SERVER} templates
+* Create, update, or delete {KIE_SERVER} instances
+
+Requests to the {CONTROLLER} REST API require the following components:
+
+Authentication::
+The {CONTROLLER} REST API requires HTTP Basic authentication or token-based authentication for the following user roles, depending on controller type:
++
+--
+* `rest-all` user role if you installed {CENTRAL} and you want to use the built-in {CONTROLLER}
+* `kie-server` user role if you installed the {HEADLESS_CONTROLLER} separately from {CENTRAL}
+
+To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
+
+To add a user with the `kie-server` role or the `rest-all` role or both, navigate to `~/$SERVER_HOME/bin` and run the following command with the role or roles specified:
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['kie-server','rest-all'])"
+----
+
+To configure the `kie-server` or `rest-all` user with {CONTROLLER} access, navigate to `~/$SERVER_HOME/standalone/configuration/standalone-full.xml`, uncomment the `org.kie.server` properties (if applicable), and add the controller user login credentials and controller location (if needed):
+
+[source,xml,subs="attributes+"]
+----
+<property name="org.kie.server.location" value="http://localhost:8080/kie-server/services/rest/server"/>
+<property name="org.kie.server.controller" value="http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller"/>
+<property name="org.kie.server.controller.user" value="baAdmin"/>
+<property name="org.kie.server.controller.pwd" value="password@1"/>
+<property name="org.kie.server.id" value="default-kieserver"/>
+----
+
+For more information about user roles and {PRODUCT} installation options, see
+ifdef::PAM,DM[]
+{URL_INSTALLING_AND_CONFIGURING}#assembly-planning[_{PLANNING_INSTALL}_].
+endif::[]
+ifdef::DROOLS,JBPM[]
+<<_installing_the_kie_server>>.
+endif::[]
+--
+
+HTTP headers::
+The {CONTROLLER} REST API requires the following HTTP headers for API requests:
++
+* `Accept`: Data format accepted by your requesting client:
+** `application/json` (JSON)
+** `application/xml` (XML, for JAXB)
+* `Content-Type`: Data format of your `POST` or `PUT` API request data:
+** `application/json` (JSON)
+** `application/xml` (XML, for JAXB)
+
+HTTP methods::
+The {CONTROLLER} REST API supports the following HTTP methods for API requests:
++
+* `GET`: Retrieves specified information from a specified resource endpoint
+* `POST`: Updates a resource or resource instance
+* `PUT`: Creates a resource or resource instance
+* `DELETE`: Deletes a resource or resource instance
+
+Base URL::
+The base URL for {CONTROLLER} REST API requests is `\http://SERVER:PORT/CONTROLLER/rest/`, such as  `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/` if you are using the {CONTROLLER} built in to {CENTRAL}.
+
+Endpoints::
+{CONTROLLER} REST API endpoints, such as `/controller/management/servers/{serverTemplateId}` for a specified {KIE_SERVER} template, are the URIs that you append to the {CONTROLLER} REST API base URL to access the corresponding server resource or type of server resource in {PRODUCT}.
++
+--
+.Example request URL for `/controller/management/servers/{serverTemplateId}` endpoint
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers/default-kieserver`
+--
+
+Request parameters and request data::
+Some {CONTROLLER} REST API requests require specific parameters in the request URL path to identify or filter specific resources and to perform specific actions. You can append URL parameters to the endpoint in the format `?<PARAM>=<VALUE>&<PARAM>=<VALUE>`.
++
+--
+.Example DELETE request URL with parameters
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/server/new-kieserver-instance?location=http://localhost:8080/kie-server/services/rest/server`
+
+HTTP `POST` and `PUT` requests may additionally require a request body or file with data to accompany the request.
+
+.Example PUT request URL and JSON request body data
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers/new-kieserver`
+
+[source,json]
+----
+{
+  "server-id": "new-kieserver",
+  "server-name": "new-kieserver",
+  "container-specs": [],
+  "server-config": {},
+  "capabilities": [
+    "RULE",
+    "PROCESS",
+    "PLANNING"
+  ]
+}
+----
+--

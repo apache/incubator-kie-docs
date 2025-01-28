@@ -1,0 +1,53 @@
+[[_kieserver.releasenoteskie.7.0.0]]
+= Breaking changes in Kie Server 7.0 from 6.x
+
+== ServiceResponse XStream marshalling changes
+
+NOTE: This release note applies only when directly interfacing with the Kie Server (kie-server) API, not when using the Kie Server Java Client (kie-server-client) API.
+
+In an effort to be more consistent with JAXB marshalling, XStream marshalling has undergone the following changes:
+
+- The XML ServiceResponse element's `response` object no longer renders with the canonical name.
+- XStream now uses `type` and `msg` as attributes, not child elements.
+
+For more details, see https://issues.jboss.org/browse/DROOLS-1509[DROOLS-1509].
+
+== Simplified Planner REST API
+
+=== ServiceResponse wrapper removal
+`ServiceResponse` wrapper has been removed from Planner service responses returned by KIE Server.
+This allows an easier processing of the responses on the client side.
+
+[source,xml,options="nowrap"]
+----
+<solver-instance>
+    ...
+    <status>SOLVING</status>
+    <score scoreClass="org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore">0hard/-10soft</score>
+    <best-solution class="curriculumcourse.curriculumcourse.CourseSchedule">
+        ...
+    </best-solution>
+</solver-instance>
+----
+
+=== New Planner API overview
+
+Register a solver:
+
+- PUT http://${kie-server}/services/rest/server/containers/${container_id}/solvers/${solver_id}
+
+Submit a solution:
+
+- POST http://${kie-server}/services/rest/server/containers/${container_id}/solvers/${solver_id}/state/solving
+
+Get the best solution:
+
+- GET http://${kie-server}/services/rest/server/containers/${container_id}/solvers/${solver_id}/bestsolution
+
+Terminate a solver:
+
+- POST http://${kie-server}/services/rest/server/containers/${container_id}/solvers/${solver_id}/state/terminating-early
+
+Dispose a solver:
+
+- DELETE http://${kie-server}/services/rest/server/containers/${container_id}/solvers/${solver_id}

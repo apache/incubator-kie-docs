@@ -1,0 +1,55 @@
+[id='ejb-api-war-proc_{context}']
+
+// Workaround until we address the EAP/Wildfly variable issue properly and globally. (Stetson, 22 Oct 2019)
+ifdef::JBPM[]
+:EAP: Wildfly
+endif::[]
+
+= Deploying an EJB services WAR file
+
+You can use the Enterprise JavaBeans (EJB) interface to create and deploy an EJB services WAR file that you want to use as part of your {PRODUCT} distribution.
+
+.Procedure
+
+. Register a human task callback using a startup Java class, such as the following example:
++
+[source]
+----
+@Singleton
+@Startup
+public class StartupBean {
+
+  @PostConstruct
+  public void init()
+  { System.setProperty("org.jbpm.ht.callback", "jaas"); }
+
+}
+----
+
+. Build your EJB project to generate the WAR file according to your project configuration.
+. Deploy the generated file on the {EAP} instance where {PRODUCT} is running.
++
+--
+Avoid using the `Singleton` strategy for your runtime sessions. The `Singleton` strategy can cause applications to load the same `ksession` instance multiple times from the underlying file system and cause optimistic lock exceptions.
+
+If you want to deploy the EJB WAR file on a {EAP} instance separate from the one where {PRODUCT} is running, configure your application or the application server to invoke a remote EJB and to propagate the security context.
+
+If you are using Hibernate to create a database schema for {PRODUCT}, update the `persistence.xml` file in {CENTRAL} and set the value of the `hibernate.hbm2ddl.auto` property to `update` instead of `create`.
+--
+. Test the deployment locally by creating a basic web application and injecting the EJB services, as shown in the following example:
++
+[source]
+----
+@EJB(lookup = "ejb:/sample-war-ejb-app/ProcessServiceEJBImpl!org.jbpm.services.ejb.api.ProcessServiceEJBRemote")
+private ProcessServiceEJBRemote processService;
+
+@EJB(lookup = "ejb:/sample-war-ejb-app/UserTaskServiceEJBImpl!org.jbpm.services.ejb.api.UserTaskServiceEJBRemote")
+private UserTaskServiceEJBRemote userTaskService;
+
+@EJB(lookup = "ejb:/sample-war-ejb-app/RuntimeDataServiceEJBImpl!org.jbpm.services.ejb.api.RuntimeDataServiceEJBRemote")
+private RuntimeDataServiceEJBRemote runtimeDataService;
+----
+
+ifdef::PAM[]
+For more information about developing and deploying EJB applications with {EAP}, see https://access.redhat.com/documentation/en-us/red_hat_jboss_enterprise_application_platform/{EAP_VERSION}/html-single//developing_jakarta_enterprise_beans_applications/index[_Developing Jakarta Enterprise Beans Applications_].
+endif::[]

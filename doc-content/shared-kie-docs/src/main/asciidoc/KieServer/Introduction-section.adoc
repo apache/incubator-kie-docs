@@ -1,0 +1,47 @@
+
+= Overview
+
+
+_{KIE_SERVER}_ is a modular, standalone server component that can be used to instantiate and execute rules and processes.
+It exposes this functionality via REST, JMS and Java interfaces to client application.
+It also provides seamless integration with the __{CENTRAL}__.
+
+At its core, _{KIE_SERVER}_ is a configurable web application packaged as a WAR file.
+Distributions are available for pure web containers (like Tomcat) and for JEE 6 and JEE 7 containers.
+
+Most capabilities on the Kie Server are configurable, and based on the concepts of extensions.
+Each extension can be enabled/disabled independently, allowing the user to configure the server to its need.
+
+The current version of the Kie Server ships with two default extensions:
+
+* BRM: provides support for the execution of Business Rules using the {DECISION_ENGINE}.
+* BPM: provides support for the execution of Business Processes using the {PROCESS_ENGINE}. It supports:
+** process execution
+** task execution
+** asynchronous job execution
+
+
+Both extensions enabled by default, but can be disabled by setting the corresponding property (see configuration chapter for details).
+
+This server was designed to have a low footprint, with minimal memory consumption, and therefore, to be easily deployable on a cloud environment.
+Each instance of this server can open and instantiate multiple _Kie Containers_ which allows you to execute multiple services in parallel.
+
+== Glossary
+
+* **Kie Server**: execution server purely focusing on providing runtime environment for both rules and processes. These capabilities are provided by __Kie Server Extensions__. More capabilities can be added by further extensions (e.g. customer could add his own extensions in case of missing functionality that will then use infrastructure of the KIE Server). A Kie Server instance is a standalone Kie Server executing on a given application server/web container. A Kie Server instantiates and provides support for multiple Kie Containers.
+* **Kie Server Extension**: a "plugin" for the Kie Server that adds capabilities to the server. The Kie Server ships with two default kie server extensions: BRM and BPM.
+* **Kie Container**: an in-memory instantiation of a kjar, allowing for the instantiation and usage of its assets (domain models, processes, rules, etc). A Kie Server exposes Kie Containers through a standard API over transport protocols like REST and JMS.
+* **Controller**: a server-backed REST endpoint that will be responsible for managing KIE Server instances. Such end point must provide following capabilities:
++
+** respond to connect requests
+** sync all registered containers on the corresponding _Kie Server ID_
+** respond to disconnect requests
+* **Kie Server state**: currently known state of given Kie Server instance. This is a local storage (by default in file) that maintains the following information:
++
+** list of registered {CONTROLLER}s
+** list of known containers
+** kie server configuration
++
+The server state is persisted upon receival of events like: _Kie Container_ created, _Kie Container_ is disposed, {CONTROLLER} accepts registration of _Kie Server_ instance, etc.
+
+* **Kie Server ID**: an arbitrary assigned identifier to which configurations are assigned. At boot, each Kie Server Instance is assigned an ID, and that ID is matched to a configuration on the {CONTROLLER}. The Kie Server Instance fetches and uses that configuration to setup itself.

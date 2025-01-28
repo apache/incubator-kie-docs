@@ -1,0 +1,182 @@
+[id='controller-rest-api-requests-proc_{context}']
+= Sending requests with the {CONTROLLER} REST API using a REST client or curl utility
+
+The {CONTROLLER} REST API enables you to interact with your {KIE_SERVER} templates (configurations), {KIE_SERVER} instances (remote servers), and associated KIE containers (deployment units) in {PRODUCT} without using the {CENTRAL} user interface. You can send {CONTROLLER} REST API requests using any REST client or curl utility.
+
+.Prerequisites
+* {KIE_SERVER} is installed and running.
+* The {CONTROLLER} or {HEADLESS_CONTROLLER} is installed and running.
+* You have `rest-all` user role access to the {CONTROLLER} if you installed {CENTRAL}, or `kie-server` user role access to the {HEADLESS_CONTROLLER} installed separately from {CENTRAL}.
+
+.Procedure
+. Identify the relevant xref:controller-rest-api-endpoints-ref_kie-apis[API endpoint] to which you want to send a request, such as `[GET] /controller/management/servers` to retrieve {KIE_SERVER} templates from the {CONTROLLER}.
+. In a REST client or curl utility, enter the following components for a `GET` request to `controller/management/servers`. Adjust any request details according to your use case.
++
+--
+For REST client:
+
+* *Authentication*: Enter the user name and password of the {CONTROLLER} user with the `rest-all` role or the {HEADLESS_CONTROLLER} user with the `kie-server` role.
+* *HTTP Headers*: Set the following header:
+** `Accept`: `application/json`
+* *HTTP method*: Set to `GET`.
+* *URL*: Enter the {CONTROLLER} REST API base URL and endpoint, such as `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers`.
+
+
+For curl utility:
+
+* `-u`: Enter the user name and password of the {CONTROLLER} user with the `rest-all` role or the {HEADLESS_CONTROLLER} user with the `kie-server` role.
+* `-H`: Set the following header:
+** `Accept`: `application/json`
+* `-X`: Set to `GET`.
+* *URL*: Enter the {CONTROLLER} REST API base URL and endpoint, such as `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers`.
+
+[source,subs="attributes+"]
+----
+curl -u 'baAdmin:password@1' -H "Accept: application/json" -X GET "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers"
+----
+--
+
+. Execute the request and review the {CONTROLLER} response.
++
+--
+Example server response (JSON):
+
+[source,json]
+----
+{
+  "server-template": [
+    {
+      "server-id": "default-kieserver",
+      "server-name": "default-kieserver",
+      "container-specs": [
+        {
+          "container-id": "employeerostering_1.0.0-SNAPSHOT",
+          "container-name": "employeerostering",
+          "server-template-key": {
+            "server-id": "default-kieserver",
+            "server-name": "default-kieserver"
+          },
+          "release-id": {
+            "group-id": "employeerostering",
+            "artifact-id": "employeerostering",
+            "version": "1.0.0-SNAPSHOT"
+          },
+          "configuration": {
+            "RULE": {
+              "org.kie.server.controller.api.model.spec.RuleConfig": {
+                "pollInterval": null,
+                "scannerStatus": "STOPPED"
+              }
+            },
+            "PROCESS": {
+              "org.kie.server.controller.api.model.spec.ProcessConfig": {
+                "runtimeStrategy": "SINGLETON",
+                "kbase": "",
+                "ksession": "",
+                "mergeMode": "MERGE_COLLECTIONS"
+              }
+            }
+          },
+          "status": "STARTED"
+        },
+        {
+          "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+          "container-name": "mortgage-process",
+          "server-template-key": {
+            "server-id": "default-kieserver",
+            "server-name": "default-kieserver"
+          },
+          "release-id": {
+            "group-id": "mortgage-process",
+            "artifact-id": "mortgage-process",
+            "version": "1.0.0-SNAPSHOT"
+          },
+          "configuration": {
+            "RULE": {
+              "org.kie.server.controller.api.model.spec.RuleConfig": {
+                "pollInterval": null,
+                "scannerStatus": "STOPPED"
+              }
+            },
+            "PROCESS": {
+              "org.kie.server.controller.api.model.spec.ProcessConfig": {
+                "runtimeStrategy": "PER_PROCESS_INSTANCE",
+                "kbase": "",
+                "ksession": "",
+                "mergeMode": "MERGE_COLLECTIONS"
+              }
+            }
+          },
+          "status": "STARTED"
+        }
+      ],
+      "server-config": {},
+      "server-instances": [
+        {
+          "server-instance-id": "default-kieserver-instance@localhost:8080",
+          "server-name": "default-kieserver-instance@localhost:8080",
+          "server-template-id": "default-kieserver",
+          "server-url": "http://localhost:8080/kie-server/services/rest/server"
+        }
+      ],
+      "capabilities": [
+        "RULE",
+        "PROCESS",
+        "PLANNING"
+      ]
+    }
+  ]
+}
+----
+--
+. In your REST client or curl utility, send another API request with the following components for a `PUT` request to `/controller/management/servers/{serverTemplateId}` to create a new {KIE_SERVER} template. Adjust any request details according to your use case.
++
+--
+For REST client:
+
+* *Authentication*: Enter the user name and password of the {CONTROLLER} user with the `rest-all` role or the {HEADLESS_CONTROLLER} user with the `kie-server` role.
+* *HTTP Headers*: Set the following headers:
+** `Accept`: `application/json`
+** `Content-Type`: `application/json`
+* *HTTP method*: Set to `PUT`.
+* *URL*: Enter the {CONTROLLER} REST API base URL and endpoint, such as `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers/new-kieserver`.
+* *Request body*: Add a JSON request body with the configurations for the new {KIE_SERVER} template:
+
+[source,json]
+----
+{
+  "server-id": "new-kieserver",
+  "server-name": "new-kieserver",
+  "container-specs": [],
+  "server-config": {},
+  "capabilities": [
+    "RULE",
+    "PROCESS",
+    "PLANNING"
+  ]
+}
+----
+
+For curl utility:
+
+* `-u`: Enter the user name and password of the {CONTROLLER} user with the `rest-all` role or the {HEADLESS_CONTROLLER} user with the `kie-server` role.
+* `-H`: Set the following headers:
+** `Accept`: `application/json`
+** `Content-Type`: `application/json`
+* `-X`: Set to `PUT`.
+* *URL*: Enter the {CONTROLLER} REST API base URL and endpoint, such as `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers/new-kieserver`.
+* `-d`: Add a JSON request body or file (`@file.json`) with the configurations for the new {KIE_SERVER} template:
+
+[source,subs="attributes+"]
+----
+curl -u 'baAdmin:password@1' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers/new-kieserver" -d "{ \"server-id\": \"new-kieserver\", \"server-name\": \"new-kieserver\", \"container-specs\": [], \"server-config\": {}, \"capabilities\": [ \"RULE\", \"PROCESS\", \"PLANNING\" ]}"
+----
+
+[source,subs="attributes+"]
+----
+curl -u 'baAdmin:password@1' -H "Accept: application/json" -H "Content-Type: application/json" -X PUT "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller/management/servers/new-kieserver" -d @my-server-template-configs.json
+----
+--
+. Execute the request and confirm the successful {CONTROLLER} response.
++
+If you encounter request errors, review the returned error code messages and adjust your request accordingly.

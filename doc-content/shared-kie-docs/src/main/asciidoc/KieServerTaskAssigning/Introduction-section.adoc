@@ -1,0 +1,116 @@
+= Introduction to business processes
+
+Business process management systems (BPMS) products such as {CONTEXTUAL_BPMSUITE} have the ability to model and execute multiple business processes.
+A business process is typically composed of nodes such as events, gateways, and tasks that are connected to each other for defining the process flow.
+Every type of node has a specific semantic and is instantiated by the process runtime engine when a process instance is executed.
+Business processes that require human interaction are modelled by using human task nodes.
+
+The following image shows a process where three tasks require human interaction:
+
+.Example process
+image::KieServerTaskAssigning/PurchaseOrderProcessDefinition.png[]
+
+It is usual for a system that executes several process instances to have many human task instances that are waiting for an external human action.
+
+.Default task list
+image::KieServerTaskAssigning/BPMDefaultAssignment.png[]
+
+_**{PLANNER} integrates with {CONTEXTUAL_BPMSUITE} to provide the ability to assign human tasks to users as part of an optimized plan.
+**_
+
+This is referred to as _task assigning integration_.
+
+== BPM standard task assigning
+
+In general, business process runtime engines assign human tasks to users on a group basis.
+The target audience is usually included as part of the human task configuration.
+
+The following image shows how the Review Purchase Order human task is configured with the PurchaseDepartment group:
+
+.Human task configuration
+image::KieServerTaskAssigning/ReviewPurchaseOrderTaskConfiguration.png[]
+
+At runtime, every time a new instance of the Review Purchase Order task is created it is automatically assigned to the PurchaseDepartment group with the status Ready.
+This makes the task automatically available to all users that belong to the group. All users in the group see it on their respective *Task Inbox* but none are the actual owner or responsible for the task. To be able to work with a particular task, a user must execute the claim operation to reserve the task for that user.
+
+The following image shows an example of the claim operation execution for the task #152:
+
+.User claims a task
+image::KieServerTaskAssigning/UserClaimsTask.png[]
+
+When the claim operation is executed, the task status is changed to Reserved and the task is assigned to the claiming user.
+In the preceding example, the claimer of the task is `wbadmin` user. After the user claims the task, he is known as the task "actual owner”.
+
+.Task claimed by wbadmin
+image::KieServerTaskAssigning/TaskClaimed.png[]
+
+Although this is the standard procedure for most BPMS products, it is not flexible enough for all use cases. For example, this procedure does not work well with scenarios where an optimal distribution of a huge set of tasks between users by given criteria is required.
+In these cases, users usually find a large list of tasks up-front but do not have the knowledge to claim and execute them in the best way.
+
+== {PLANNER} driven task assigning
+
+{PLANNER} and {CONTEXTUAL_BPMSUITE} integration provides the ability to assign the human tasks produced by the process runtime engine between users according to an optimized plan.
+Instead of users having to claim the tasks, the tasks are assigned to them.
+
+The following image shows how the tasks are assigned when integration is enabled.
+
+.Assignments produced by {PLANNER}
+image::KieServerTaskAssigning/TasksAlreadyDistributed.png[]
+
+The following assignments are shown:
+
+* User katy is assigned to tasks #150 and #148
+* User john is assigned to tasks #151 and #149
+* Tasks #152, #153, #154, #155, #156 and #157 are left un-assigned (these tasks will be analysed later)
+
+Behind the scenes the following actions took place:
+
+. All of the available tasks with the status "Ready" consumed by {PLANNER}.
+
+. The users john and katy were identified as belonging to the "PurchaseDepartment" users group.
+
+. It was identified that the "Review Purchase Order" tasks were identified as defined for the "PurchaseDepartment" group.
+
+. An optimized plan was calculated and all of the tasks (including the "un-assigned" tasks) were assigned according to their configuration, for example group condition and {PLANNER} optimization rules. The resulting plan stated that:
+
+** Tasks #150 and #148 must be assigned to katy
+** Tasks #151 and #149 must be assigned to john
+
+. {PLANNER} executed the correct process runtime actions to make these assignments happen. Note that the users were not required to execute the "claim" operation. Instead they can focus on completing their respective assigned work and leave the distribution and assignment work to {PLANNER}.
+
+This simple example shows the main concept behind integration:
+
+_**"{PLANNER} analyses the available work, calculates an optimized plan, and produces the necessary assignments in the process runtime.  Users then rely on that plan and focus on executing their assigned work".
+**_
+
+**Unassigned tasks**
+
+Usually, a running BPM creates many process instances and many human tasks.
+At the same time, users are working and completing these human tasks.
+This cycle is repeated over and over.
+
+{PLANNER} addresses this situation by re-calculating the optimized plan when new human tasks are created a/or completed and produce "new assignments" to reflect the new optimized plan.
+This is often achieved by combining different "Repeated Planning and Real Time Planning" techniques. For detailed information see the {PLANNER} documentation.
+
+Additionally it might be the case that a plan that was optimal at time N is no longer optimal at time N+1.
+For example, a higher priority task has arrived and must be performed as soon as possible.
+The direct impact of this situation is that the programmed assignments at time N might change at time N+1, which means that tasks are routinely re-assigned many times when the new optimized plans are calculated. One of {PLANNER}’s strengths is the ability to react to a changing context.
+
+**User impact**
+
+If not controlled, continuous task re-assignment might negatively impact the user’s experience because they might feel that tasks come in and out of their workload randomly.
+This situation is present in other types of optimization problems as well and is usually managed by combining different repeated and continuous planning techniques.
+For detailed information see the "Repeated Planning" section of the {PLANNER} documentation.
+
+A simple strategy is to introduce the concept of a planning window which is a defined subset of the available work that will not be changed or re-assigned even when new plans are calculated.
+Only this subset is available to users. The tasks in the planning window are called published tasks.
+
+The previous example contains a planning window with a size of two. This means that only two tasks from the optimized plan are assigned in the processes runtime for each user so that users have at most two tasks assigned to them and they must focus on those two tasks.
+As soon they start completing these tasks {PLANNER} assigns them additional tasks according to the last optimized plan.
+However, internally {PLANNER} maintains information about the best assignments for all of the tasks and not only the published tasks.
+
+This is how the assignments are distributed in the preceding example:
+
+* User katy is assigned to tasks #150 and #148 which belong to the planning window
+* User john is assigned to tasks #151 and #149 which belong to the planning window
+* The un-assigned tasks are outside of the planning window which means they are assigned only internally by {PLANNER}. As long as these tasks remain unpublished they can be reassigned if necessary during the different optimized plans calculation.

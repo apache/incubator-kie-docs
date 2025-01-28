@@ -1,0 +1,77 @@
+[id='security-management-rest-api-con_{context}']
+= Security Management REST API for {CENTRAL} groups, roles, and users
+
+{PRODUCT} provides a Security Management REST API that you can use to manage the groups, roles, and users in {PRODUCT} without using the {CENTRAL} user interface. This API support enables you to facilitate and automate management of {CENTRAL} groups, roles, users, and granted permissions.
+
+With the Security Management REST API, you can perform the following actions:
+
+* Retrieve information about all groups, roles, users, and their granted permissions
+* Create, update, or delete groups and users
+* Update granted permissions for groups, roles, and users
+* Retrieve information about groups and roles assigned to the users
+
+Security Management REST API requests require the following components:
+
+Authentication::
+The Security Management REST API requires HTTP Basic authentication or token-based authentication for the user role `admin`. To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
++
+--
+To add a user with the `admin` role, navigate to `~/$SERVER_HOME/bin` and run the following command:
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['admin'])"
+----
+
+For more information about user roles and {PRODUCT} installation options, see
+ifdef::PAM,DM[]
+{URL_INSTALLING_AND_CONFIGURING}#assembly-planning[_{PLANNING_INSTALL}_].
+endif::[]
+ifdef::DROOLS,JBPM[]
+<<_installing_the_kie_server>>.
+endif::[]
+--
+
+HTTP headers::
+The Security Management REST API requires the following HTTP headers for API requests:
++
+* `Accept`: Data format accepted by your requesting client:
+** `application/json` (JSON)
+* `Content-Type`: Data format of your `POST` or `PUT` API request data:
+** `application/json` (JSON)
+
+HTTP methods::
+The Security Management REST API supports the following HTTP methods for API requests:
++
+* `GET`: Retrieves specified information from a specified resource endpoint
+* `POST`: Creates or updates a resource
+* `PUT`: Updates a resource
+* `DELETE`: Deletes a resource
+
+Base URL::
+The base URL for Security Management REST API requests is `\http://SERVER:PORT/{URL_COMPONENT_CENTRAL}/rest/`, such as  `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/`.
++
+NOTE: The REST API base URL for the Security Management, Knowledge Store, and {CONTROLLER} built into {CENTRAL} are the same because all are considered part of {CENTRAL} REST services.
+
+Endpoints::
+Security Management REST API endpoints, such as `/users/{userName}` for a specified user, are the URIs that you append to the Security Management REST API base URL to access the corresponding resource or type of resource in {PRODUCT}.
++
+--
+.Example request URL for `/users/{userName}` endpoint
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/users/newUser`
+--
+
+Request data::
+HTTP `POST` requests in the Security Management REST API may require a JSON request body with data to accompany the request.
++
+--
+.Example POST request URL and JSON request body data
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/users/newUser/groups`
+
+[source,json]
+----
+[
+  "newGroup"
+]
+----
+--

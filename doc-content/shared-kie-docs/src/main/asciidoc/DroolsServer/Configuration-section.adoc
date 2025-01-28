@@ -1,0 +1,269 @@
+
+= Configuration
+
+
+Inside the war file you will find a few XML configuration files.
+
+* beans.xml
+** Skeleton XML that imports knowledge-services.xml and camel-server.xml
+* camel-server.xml
+** Configures CXF endpoints with Camel Routes
+** Came Routes pipeline messages to various configured knowledge services
+* knowledge-services.xml
+** Various KIE bases and Sessions
+* camel-client.xml
+** Sample camel client showing how to send and receive a message
+** Used by "out of the box" test.jsp
+
+
+== REST/Camel Services configuration
+
+
+The next step is configure the services that are going to be exposed through drools-server.
+You can modify this configuration in camel-server.xml file.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:cxf="http://camel.apache.org/schema/cxf"
+  xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+  xsi:schemaLocation="
+  http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+  http://camel.apache.org/schema/cxf http://camel.apache.org/schema/cxf/camel-cxf.xsd
+  http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd
+  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+<import resource="classpath:META-INF/cxf/cxf.xml" />
+<import resource="classpath:META-INF/cxf/cxf-extension-jaxrs-binding.xml"/>
+<import resource="classpath:META-INF/cxf/cxf-servlet.xml" />
+
+  <!--
+   !   If you are running on JBoss you will need to copy a camel-jboss.jar into the lib and set this ClassLoader configuration
+   !  http://camel.apache.org/camel-jboss.html
+   !   <bean id="jbossResolver" class="org.apache.camel.jboss.JBossPackageScanClassResolver"/>
+   -->
+
+  <!--
+   !   Define the server end point.
+   !   Copy and paste this element, changing id and the address, to expose services on different urls.
+   !   Different Camel routes can handle different end point paths.
+   -->
+  <cxf:rsServer id="rsServer"
+                address="/rest"
+                serviceClass="org.kie.jax.rs.CommandExecutorImpl">
+       <cxf:providers>
+           <bean class="org.kie.jax.rs.CommandMessageBodyReader"/>
+       </cxf:providers>
+  </cxf:rsServer>
+
+  <cxf:cxfEndpoint id="soapServer"
+            address="/soap"
+             serviceName="ns:CommandExecutor"
+             endpointName="ns:CommandExecutorPort"
+          wsdlURL="soap.wsdl"
+          xmlns:ns="http://soap.jax.drools.org/" >
+    <cxf:properties>
+      <entry key="dataFormat" value="MESSAGE"/>
+      <entry key="defaultOperationName" value="execute"/>
+    </cxf:properties>
+  </cxf:cxfEndpoint>
+
+  <!-- Leave this, as it's needed to make Camel "drools" aware -->
+  <bean id="kiePolicy" class="org.kie.camel.component.KiePolicy" />
+
+  <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+    <!--
+     ! Routes incoming messages from end point id="rsServer".
+     ! Example route unmarshals the messages with xstream and executes against ksession1.
+     ! Copy and paste this element, changing marshallers and the 'to' uri, to target different sessions, as needed.
+     !-->
+
+    <route>
+       <from uri="cxfrs://bean://rsServer"/>
+       <policy ref="kiePolicy">
+         <unmarshal ref="xstream" />
+         <to uri="kie:ksession1" />
+         <marshal ref="xstream" />
+       </policy>
+    </route>
+
+    <route>
+      <from uri="cxf://bean://soapServer"/>
+      <policy ref="kiePolicy">
+        <unmarshal ref="xstream" />
+        <to uri="kie:ksession1" />
+        <marshal ref="xstream" />
+      </policy>
+    </route>
+
+  </camelContext>
+
+</beans>
+----
+
+=== RESTful service endpoint creation
+
+
+In the next XML snippet code we are creating a RESTful (JAX-RS) endpoint bound to /kservice/rest address and using org.drools.jax.rs.CommandExecutorImpl as the service implementer.
+This class is only used to instantiate the service endpoint because all the internal implementation is managed by Camel, and you can see in the source file that the exposed execute service must be never called.
+
+Also a JAX-RS Provider is provided to determine if the message transported can be processed in this service endpoint.
+
+[source,xml]
+----
+<cxf:rsServer id="rsServer"
+              address="/rest"
+              serviceClass="org.kie.jax.rs.CommandExecutorImpl">
+     <cxf:providers>
+         <bean class="org.kie.jax.rs.CommandMessageBodyReader"/>
+     </cxf:providers>
+</cxf:rsServer>
+----
+
+
+Ideally this configuration doesn't need to be modified, at least the Service Class and the JAX-RS Provider, but you can add more endpoints associated to different addresses to use them in other Camel Routes.
+
+After all this initial configuration, you can start config your own Knowledge Services.
+
+=== Camel Kie Policy & Context creation
+
+
+KiePolicy is used to add Drools support in Camel, basically what it does is to add interceptors into the camel route to create Camel Processors on the fly and modify the internal navigation route.
+If you want to have SOAP support you need to create your custom Drools Policy, but it's going to be added in the next release.
+
+But you don`'t need to know more internal details, only instantiate this bean:
+
+[source,xml]
+----
+<bean id="kiePolicy" class="org.kie.camel.component.KiePolicy" />
+----
+
+
+The next is create the camel route that will have the responsibility to execute the commands sent through JAX-RS.
+Basically we create a route definition associated with the JAX-RS definition as the data input, the camel policy to be used and inside the "`execution route`" or ProcessorDefinitions.
+As you can see, we set XStream as the marshaller/unmarshaller and the drools execution route definition
+
+[source,xml]
+----
+<camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+   <route>
+      <from uri="cxfrs://bean://rsServer"/>
+      <policy ref="kiePolicy">
+        <unmarshal ref="xstream" />
+        <to uri="kie:ksession1" />
+        <marshal ref="xstream" />
+      </policy>
+   </route>
+   <route>
+     <from uri="cxf://bean://soapServer"/>
+     <policy ref="kiePolicy">
+       <unmarshal ref="xstream" />
+       <to uri="kie:ksession1" />
+       <marshal ref="xstream" />
+     </policy>
+   </route>
+</camelContext>
+----
+
+
+The drools endpoint creation has the next arguments
+
+
+[source,xml]
+----
+<to uri="kie:{1}/{2}" />
+----
+
+. Execution Node identifier that is registered in the CamelContext
+. KIE session identifier that was registered in the Execution Node with identifier {1}
+
+
+Both parameters are configured in knowledge-services.xml file.
+
+=== Knowledge Services configuration
+
+
+The next step is create the KIE sessions that you are going to use.
+
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:kie="http://drools.org/schema/kie-spring"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                          http://drools.org/schema/kie-spring http://drools.org/schema/kie-spring.xsd">
+
+  <kie:kmodule id="drools-camel-server">
+    <kie:kbase name="kbase1" packages="org.drools.server">
+      <kie:ksession name="ksession1" type="stateless"/>
+    </kie:kbase>
+  </kie:kmodule>
+
+  <bean id="kiePostProcessor"
+            class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+
+</beans>
+----
+
+
+The execution-node is a context for registered kbases and ksessions, here kbase1 and ksession1 are placed in the node1 context.
+The kbase itself consists of two knowledge definitions, a DRL and an XSD.
+The Spring documentation contains a lot more information on configuring these knowledge services.
+
+=== Test
+
+
+With drools-server war unzipped you should be able to see a test.jsp and run it.
+This example just executes a simple "echo" type application.
+It sends a message to the rule server that pre-appends the word "echo" to the front and sends it back.
+By default the message is "Hello World", different messages can be passed using the url parameter msg - test.jsp?msg="My Custom Message".
+
+Under the hood the jsp invokes the Test.java class, this then calls out to Camel which is where the meet happens.
+The camel-client.xml defines the client with just a few lines of XML:
+
+[source,xml]
+----
+<!-- Leave this, as it's needed to make Camel "drools" aware -->
+<bean id="kiePolicy" class="org.kie.camel.component.KiePolicy" />
+
+<camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+  <route>
+     <from uri="direct://kservice/rest"/>
+     <policy ref="kiePolicy">
+       <to uri="cxfrs://http://localhost:8080/drools-server/kservice/rest"/>
+     </policy>
+  </route>
+  <route>
+    <from uri="direct://kservice/soap"/>
+    <policy ref="kiePolicy">
+      <to uri="cxfrs://http://localhost:8080/drools-server/kservice/soap"/>
+    </policy>
+  </route>
+</camelContext>
+----
+
+
+"direct://kservice" is just a named hook, allowing Java to grab a reference and push data into it.
+In this example the data is already in XML, so we don't need to add any ``DataFormat``s to do the marshalling.
+The KiePolicy adds some smarts to the route and you'll see it used on the server side too.
+If JAXB or XStream were used, it would inject custom paths and converters, it can also set the ClassLoader too on the server side, on the client side it automatically unwraps the Response object.
+
+The rule itself can be found here: test.drl.
+Notice the type Message is declared part of the DRL and is thus not present on the Classpath.
+
+[source]
+----
+declare Message
+   text : String
+end
+
+
+rule "echo"
+when
+   $m : Message();
+then
+   $m.text = "echo:" + $m.text;
+end
+----

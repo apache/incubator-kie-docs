@@ -1,0 +1,830 @@
+[id='kie-server-commands-samples-ref_{context}']
+
+= Sample {KIE_SERVER} and KIE container commands
+
+The following are sample {KIE_SERVER} commands that you can use with the {KIE_SERVER} REST API or Java client API for server-related or container-related operations in {KIE_SERVER}:
+
+* `GetServerInfoCommand`
+* `GetServerStateCommand`
+* `CreateContainerCommand`
+* `GetContainerInfoCommand`
+* `ListContainersCommand`
+* `CallContainerCommand`
+* `DisposeContainerCommand`
+* `GetScannerInfoCommand`
+* `UpdateScannerCommand`
+* `UpdateReleaseIdCommand`
+
+For the full list of supported {KIE_SERVER} configuration and management commands, see the `org.kie.server.api.commands` package in your {PRODUCT} instance.
+
+You can run {KIE_SERVER} commands individually or together as a batch REST API request or batch Java API request:
+
+.Batch REST API request to create, call, and dispose a KIE container (JSON)
+[source,json]
+----
+{
+  "commands": [
+    {
+      "create-container": {
+        "container": {
+          "status": "STARTED",
+          "container-id": "command-script-container",
+          "release-id": {
+            "version": "1.0",
+            "group-id": "com.redhat",
+            "artifact-id": "Project1"
+          }
+        }
+      }
+    },
+    {
+      "call-container": {
+        "payload": "{\n  \"commands\" : [ {\n    \"fire-all-rules\" : {\n      \"max\" : -1,\n      \"out-identifier\" : null\n    }\n  } ]\n}",
+        "container-id": "command-script-container"
+      }
+    },
+    {
+      "dispose-container": {
+        "container-id": "command-script-container"
+      }
+    }
+  ]
+}
+----
+
+.Batch Java API request to retrieve, dispose, and re-create a KIE container
+[source,java]
+----
+public void disposeAndCreateContainer() {
+    System.out.println("== Disposing and creating containers ==");
+
+    // Retrieve list of KIE containers
+    List<KieContainerResource> kieContainers = kieServicesClient.listContainers().getResult().getContainers();
+    if (kieContainers.size() == 0) {
+        System.out.println("No containers available...");
+        return;
+    }
+
+    // Dispose KIE container
+    KieContainerResource container = kieContainers.get(0);
+    String containerId = container.getContainerId();
+    ServiceResponse<Void> responseDispose = kieServicesClient.disposeContainer(containerId);
+    if (responseDispose.getType() == ResponseType.FAILURE) {
+        System.out.println("Error disposing " + containerId + ". Message: ");
+        System.out.println(responseDispose.getMsg());
+        return;
+    }
+    System.out.println("Success Disposing container " + containerId);
+    System.out.println("Trying to recreate the container...");
+
+    // Re-create KIE container
+    ServiceResponse<KieContainerResource> createResponse = kieServicesClient.createContainer(containerId, container);
+    if(createResponse.getType() == ResponseType.FAILURE) {
+        System.out.println("Error creating " + containerId + ". Message: ");
+        System.out.println(responseDispose.getMsg());
+        return;
+    }
+    System.out.println("Container recreated with success!");
+}
+----
+
+Each command in this section includes a REST request body example (JSON) for the {KIE_SERVER} REST API and an embedded method example from the `KieServicesClient` Java client for the {KIE_SERVER} Java client API.
+
+GetServerInfoCommand::
++
+--
+Returns information about this {KIE_SERVER} instance.
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "get-server-info" : { }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+KieServerInfo serverInfo = kieServicesClient.getServerInfo();
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Kie Server info",
+      "result": {
+        "kie-server-info": {
+          "id": "default-kieserver",
+          "version": "7.11.0.Final-redhat-00001",
+          "name": "default-kieserver",
+          "location": "http://localhost:8080/kie-server/services/rest/server",
+          "capabilities": [
+            "KieServer",
+            "BRM",
+            "BPM",
+            "CaseMgmt",
+            "BPM-UI",
+            "BRP",
+            "DMN",
+            "Swagger"
+          ],
+          "messages": [
+            {
+              "severity": "INFO",
+              "timestamp": {
+                "java.util.Date": 1538502533321
+              },
+              "content": [
+                "Server KieServerInfo{serverId='default-kieserver', version='7.11.0.Final-redhat-00001', name='default-kieserver', location='http://localhost:8080/kie-server/services/rest/server', capabilities=[KieServer, BRM, BPM, CaseMgmt, BPM-UI, BRP, DMN, Swagger], messages=null}started successfully at Tue Oct 02 13:48:53 EDT 2018"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+----
+--
+GetServerStateCommand::
++
+--
+Returns information about the current state and configurations of this {KIE_SERVER} instance.
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "get-server-state" : { }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+KieServerStateInfo serverStateInfo = kieServicesClient.getServerState();
+----
+
+.Example server response (JSON)
+[source,json,subs="attributes+"]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Successfully loaded server state for server id default-kieserver",
+      "result": {
+        "kie-server-state-info": {
+          "controller": [
+            "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller"
+          ],
+          "config": {
+            "config-items": [
+              {
+                "itemName": "org.kie.server.location",
+                "itemValue": "http://localhost:8080/kie-server/services/rest/server",
+                "itemType": "java.lang.String"
+              },
+              {
+                "itemName": "org.kie.server.controller.user",
+                "itemValue": "controllerUser",
+                "itemType": "java.lang.String"
+              },
+              {
+                "itemName": "org.kie.server.controller",
+                "itemValue": "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller",
+                "itemType": "java.lang.String"
+              }
+            ]
+          },
+          "containers": [
+            {
+              "container-id": "employee-rostering",
+              "release-id": {
+                "group-id": "employeerostering",
+                "artifact-id": "employeerostering",
+                "version": "1.0.0-SNAPSHOT"
+              },
+              "resolved-release-id": null,
+              "status": "STARTED",
+              "scanner": {
+                "status": "STOPPED",
+                "poll-interval": null
+              },
+              "config-items": [
+                {
+                  "itemName": "KBase",
+                  "itemValue": "",
+                  "itemType": "BPM"
+                },
+                {
+                  "itemName": "KSession",
+                  "itemValue": "",
+                  "itemType": "BPM"
+                },
+                {
+                  "itemName": "MergeMode",
+                  "itemValue": "MERGE_COLLECTIONS",
+                  "itemType": "BPM"
+                },
+                {
+                  "itemName": "RuntimeStrategy",
+                  "itemValue": "SINGLETON",
+                  "itemType": "BPM"
+                }
+              ],
+              "messages": [],
+              "container-alias": "employeerostering"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+----
+--
+CreateContainerCommand::
++
+--
+Creates a KIE container in the {KIE_SERVER}.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container`
+|Map containing the `container-id`, `release-id` data (group ID, artifact ID, version), `status`, and any other components of the new KIE container
+|Required
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "create-container" : {
+      "container" : {
+        "status" : null,
+        "messages" : [ ],
+        "container-id" : "command-script-container",
+        "release-id" : {
+          "version" : "1.0",
+          "group-id" : "com.redhat",
+          "artifact-id" : "Project1"
+        },
+        "config-items" : [ ]
+      }
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+ServiceResponse<KieContainerResource> response = kieServicesClient.createContainer("command-script-container", resource);
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Container command-script-container successfully deployed with module com.redhat:Project1:1.0.",
+      "result": {
+        "kie-container": {
+          "container-id": "command-script-container",
+          "release-id": {
+            "version" : "1.0",
+            "group-id" : "com.redhat",
+            "artifact-id" : "Project1"
+          },
+          "resolved-release-id": {
+            "version" : "1.0",
+            "group-id" : "com.redhat",
+            "artifact-id" : "Project1"
+          },
+          "status": "STARTED",
+          "scanner": {
+            "status": "DISPOSED",
+            "poll-interval": null
+          },
+          "config-items": [],
+          "messages": [
+            {
+              "severity": "INFO",
+              "timestamp": {
+                "java.util.Date": 1538762455510
+              },
+              "content": [
+                "Container command-script-container successfully created with module com.redhat:Project1:1.0."
+              ]
+            }
+          ],
+          "container-alias": null
+        }
+      }
+    }
+  ]
+}
+----
+--
+GetContainerInfoCommand::
++
+--
+Returns information about a specified KIE container in {KIE_SERVER}.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container-id`
+|ID of the KIE container
+|Required
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "get-container-info" : {
+      "container-id" : "command-script-container"
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+ServiceResponse<KieContainerResource> response = kieServicesClient.getContainerInfo("command-script-container");
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Info for container command-script-container",
+      "result": {
+        "kie-container": {
+          "container-id": "command-script-container",
+          "release-id": {
+            "group-id": "com.redhat",
+            "artifact-id": "Project1",
+            "version": "1.0"
+          },
+          "resolved-release-id": {
+            "group-id": "com.redhat",
+            "artifact-id": "Project1",
+            "version": "1.0"
+          },
+          "status": "STARTED",
+          "scanner": {
+            "status": "DISPOSED",
+            "poll-interval": null
+          },
+          "config-items": [
+
+          ],
+          "container-alias": null
+        }
+      }
+    }
+  ]
+}
+----
+--
+ListContainersCommand::
++
+--
+Returns a list of KIE containers that have been created in this {KIE_SERVER} instance.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`kie-container-filter`
+|Optional map containing `release-id-filter`, `container-status-filter`, and any other KIE container properties by which you want to filter results
+|Optional
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "list-containers" : {
+      "kie-container-filter" : {
+        "release-id-filter" : { },
+        "container-status-filter" : {
+          "accepted-status" : ["FAILED"]
+        }
+      }
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+KieContainerResourceFilter filter = new KieContainerResourceFilter.Builder()
+        .status(KieContainerStatus.FAILED)
+        .build();
+
+KieContainerResourceList containersList = kieServicesClient.listContainers(filter);
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "List of created containers",
+      "result": {
+        "kie-containers": {
+          "kie-container": [
+            {
+              "container-id": "command-script-container",
+              "release-id": {
+                "group-id": "com.redhat",
+                "artifact-id": "Project1",
+                "version": "1.0"
+              },
+              "resolved-release-id": {
+                "group-id": "com.redhat",
+                "artifact-id": "Project1",
+                "version": "1.0"
+              },
+              "status": "STARTED",
+              "scanner": {
+                "status": "STARTED",
+                "poll-interval": 5000
+              },
+              "config-items": [
+                {
+                  "itemName": "RuntimeStrategy",
+                  "itemValue": "SINGLETON",
+                  "itemType": "java.lang.String"
+                },
+                {
+                  "itemName": "MergeMode",
+                  "itemValue": "MERGE_COLLECTIONS",
+                  "itemType": "java.lang.String"
+                },
+                {
+                  "itemName": "KBase",
+                  "itemValue": "",
+                  "itemType": "java.lang.String"
+                },
+                {
+                  "itemName": "KSession",
+                  "itemValue": "",
+                  "itemType": "java.lang.String"
+                }
+              ],
+              "messages": [
+                {
+                  "severity": "INFO",
+                  "timestamp": {
+                    "java.util.Date": 1538504619749
+                  },
+                  "content": [
+                    "Container command-script-container successfully created with module com.redhat:Project1:1.0."
+                  ]
+                }
+              ],
+              "container-alias": null
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
+----
+--
+CallContainerCommand::
++
+--
+Calls a KIE container and executes one or more runtime commands. For information about {PRODUCT} runtime commands, see xref:runtime-commands-con_kie-apis[].
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container-id`
+|ID of the KIE container to be called
+|Required
+
+|`payload`
+|One or more commands in a `BatchExecutionCommand` wrapper to be executed on the KIE container
+|Required
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "call-container" : {
+      "payload" : "{\n  \"lookup\" : \"defaultKieSession\",\n  \"commands\" : [ {\n    \"fire-all-rules\" : {\n      \"max\" : -1,\n      \"out-identifier\" : null\n    }\n  } ]\n}",
+      "container-id" : "command-script-container"
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+List<Command<?>> commands = new ArrayList<Command<?>>();
+      BatchExecutionCommand batchExecution1 = commandsFactory.newBatchExecution(commands, "defaultKieSession");
+      commands.add(commandsFactory.newFireAllRules());
+
+      ServiceResponse<ExecutionResults> response1 = ruleClient.executeCommandsWithResults("command-script-container", batchExecution1);
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Container command-script-container successfully called.",
+      "result": "{\n  \"results\" : [ ],\n  \"facts\" : [ ]\n}"
+    }
+  ]
+}
+----
+--
+DisposeContainerCommand::
++
+--
+Disposes a specified KIE container in the {KIE_SERVER}.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container-id`
+|ID of the KIE container to be disposed
+|Required
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "dispose-container" : {
+      "container-id" : "command-script-container"
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+ServiceResponse<Void> response = kieServicesClient.disposeContainer("command-script-container");
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Container command-script-container successfully disposed.",
+      "result": null
+    }
+  ]
+}
+----
+--
+GetScannerInfoCommand::
++
+--
+Returns information about the KIE scanner used for automatic updates in a specified KIE container, if applicable.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container-id`
+|ID of the KIE container where the KIE scanner is used
+|Required
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "get-scanner-info" : {
+      "container-id" : "command-script-container"
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+ServiceResponse<KieScannerResource> response = kieServicesClient.getScannerInfo("command-script-container");
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Scanner info successfully retrieved",
+      "result": {
+        "kie-scanner": {
+          "status": "DISPOSED",
+          "poll-interval": null
+        }
+      }
+    }
+  ]
+}
+----
+--
+UpdateScannerCommand::
++
+--
+Starts or stops a KIE scanner that controls polling for updated KIE container deployments.
+
+NOTE: Avoid using a KIE scanner with business processes. Using a KIE scanner with processes can lead to unforeseen updates that can then cause errors in long-running processes when changes are not compatible with running process instances.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container-id`
+|ID of the KIE container where the KIE scanner is used
+|Required
+
+|`status`
+|Status to be set on the KIE scanner (`STARTED`, `STOPPED`)
+|Required
+
+|`poll-interval`
+|Permitted polling duration in milliseconds
+|Required only when starting scanner
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "update-scanner" : {
+      "scanner" : {
+        "status" : "STARTED",
+        "poll-interval" : 10000
+      },
+      "container-id" : "command-script-container"
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+KieScannerResource scannerResource = new KieScannerResource();
+scannerResource.setPollInterval(10000);
+scannerResource.setStatus(KieScannerStatus. STARTED);
+
+ServiceResponse<KieScannerResource> response = kieServicesClient.updateScanner("command-script-container", scannerResource);
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Kie scanner successfully created.",
+      "result": {
+        "kie-scanner": {
+          "status": "STARTED",
+          "poll-interval": 10000
+        }
+      }
+    }
+  ]
+}
+----
+--
+UpdateReleaseIdCommand::
++
+--
+Updates the release ID data (group ID, artifact ID, version) for a specified KIE container.
+
+.Command attributes
+[cols="30%,50%,20%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Requirement
+
+|`container-id`
+|ID of the KIE container to be updated
+|Required
+
+|`releaseId`
+|Updated GAV (group ID, artifact ID, version) data to be applied to the KIE container
+|Required
+|===
+
+.Example REST request body (JSON)
+[source,json]
+----
+{
+  "commands" : [ {
+    "update-release-id" : {
+      "releaseId" : {
+        "version" : "1.1",
+        "group-id" : "com.redhat",
+        "artifact-id" : "Project1"
+      },
+      "container-id" : "command-script-container"
+    }
+  } ]
+}
+----
+
+.Example Java client method
+[source,java]
+----
+ServiceResponse<ReleaseId> response = kieServicesClient.updateReleaseId("command-script-container", "com.redhat:Project1:1.1");
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Release id successfully updated",
+      "result": {
+        "release-id": {
+          "group-id": "com.redhat",
+          "artifact-id": "Project1",
+          "version": "1.1"
+        }
+      }
+    }
+  ]
+}
+----
+--

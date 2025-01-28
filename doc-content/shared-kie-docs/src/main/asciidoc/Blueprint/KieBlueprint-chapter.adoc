@@ -1,0 +1,555 @@
+[[_ch.kie.blueprint]]
+= Integration with Aries Blueprint
+
+== Integration with Drools Expert
+
+
+In this section we will explain the _kie_ namespace.
+
+=== KieModule
+
+
+The _<kie:kmodule>_ defines a collection of KieBase and associated KieSession's.
+The _kmodule_ tag has one MANDATORY parameter 'id'.
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|id
+|Bean's _id_ is the name to be
+              referenced from other beans. Standard Blueprint ID semantics
+              applies.
+|Yes
+|===
+
+
+A _kmodule_ tag can contain only the following tags as children.
+
+* kie:kbase
+
+
+Refer to the documentation of kmodule.xml in the Drools Expert documentation for detailed explanation of the need for kmodule.
+
+=== KieBase
+
+==== <kie:kbase>'s parameters as attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|name
+|Name of the KieBase
+|Yes
+
+|packages
+|Comma separated list of resource packages to be
+                included in this kbase
+|No
+
+|includes
+|kbase names to be included. All resources from the
+                corresponding kbase are included in this kbase.
+|No
+
+|default
+|Boolean (TRUE/FALSE). Default kbase, if not provided,
+                it is assumed to be FALSE
+|No
+
+|scope
+|prototype \| singleton. If not provided assumed to be singleton (default)
+|No
+
+|eventProcessingMode
+|Event Processing Mode. Valid options are STREAM,
+                CLOUD
+|No
+
+|equalsBehavior
+|Valid options are IDENTITY, EQUALITY
+|No
+|===
+
+==== A _kbase_ tag can contain only the following tags as children.
+
+* kie:ksession
+
+
+==== <kie:kbase>'s definition example
+
+
+A kmodule can contain multiple (1..n) kbase elements.
+
+.kbase definition example
+====
+[source,xml]
+----
+<kie:kmodule id="sample_module">
+   <kie:kbase name="kbase1" packages="org.drools.blueprint.sample">
+     ...
+   </kie:kbase>
+</kie:kmodule>
+----
+====
+
+==== Blueprint Bean Scope (for KieBase and KieSession)
+
+
+When defining a KieBase or a KieSession, you have the option of declaring a scope for that bean.
+For example, To force Blueprint to produce a new bean instance each time one is needed, you should declare the bean's scope attribute to be 'prototype'. Similar way if you want Blueprint to return the same bean instance each time one is needed, you should declare the bean's scope attribute to be 'singleton'.
+
+=== KieSessions
+
+
+<kie:ksession> element defines KieSessions.
+The same tag is used to define both Stateful (__org.kie.api.runtime.KieSession__) and Stateless (__org.kie.api.runtime.StatelessKieSession__) sessions.
+
+==== <kie:ksession>'s parameters as attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|name
+|ksession's name.
+|Yes
+
+|type
+|is the session _stateful_ or
+                __stateless?__. If this attribute is empty or
+                missing, the session is assumed to be of type
+                Stateful.
+|No
+
+|default
+|Is this the default session?
+|No
+
+|scope
+|prototype \| singleton. If not provided assumed to be singleton (default)
+|No
+
+|clockType
+|REALTIME or PSEUDO
+|No
+
+|listeners-ref
+|Specifies the reference to the event listeners group
+                (see <<_kie_grouping_listeners,'Defining a Group
+                of listeners'>> section below).
+|No
+|===
+
+.ksession definition example
+====
+[source,xml]
+----
+<kie:kmodule id="sample-kmodule">
+  <kie:kbase name="drl_kiesample3" packages="drl_kiesample3">
+    <kie:ksession name="ksession1" type="stateless"/>
+    <kie:ksession name="ksession2"/>
+  </kie:kbase>
+</kie:kmodule>
+----
+====
+
+
+=== Kie:ReleaseId
+
+
+
+==== <kie:releaseId>'s parameters as attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|id
+|Bean's _id_ is the name to be
+                  referenced from other beans. Standard Blueprint ID semantics
+                  applies.
+|Yes
+
+|groupId
+|groupId from Maven GAV
+|Yes
+
+|artifactId
+|artifactId from Maven GAV
+|Yes
+
+|version
+|version from Maven GAV
+|Yes
+|===
+
+.releaseId definition example
+====
+[source,xml]
+----
+<kie:releaseId id="beanId" groupId="org.kie.blueprint"
+            artifactId="named-artifactId" version="1.0.0-SNAPSHOT"/>
+----
+====
+
+=== Kie:Import
+
+
+Starting with version 6.5, kie-aries-blueprint allows for importing of kie objects from kjars found on the classpath.
+Two modes of importing the kie objects are currently supported.
+
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+
+|releaseId
+|Reference to a Bean ID. Standard Blueprint ID semantics
+                applies.
+|No
+
+|enableScanner
+|Enable Scanner. This attribute is used only if 'releaseId' is specified.
+|No
+
+|scannerInterval
+|Scanning Interval in milli seconds. This attribute is used only if 'releaseId' is specified.
+|No
+|===
+
+==== Global Import
+
+
+The _import_ tag will force the automatic scan of all the jars on the classpath, initialize the Kie Objects (Kbase/KSessions) and import these objects into the blueprint context.
+
+.Global Import
+[source,xml]
+----
+<kie:import />
+----
+
+==== Specific Import - ReleaseId
+
+
+Using the _releaseId-ref_ attribute on the import tag will initialize the specific Kie Objects (Kbase/KSessions) and import these objects into the blueprint context.
+
+.Import Kie Objects using a releaseId
+[source,xml,subs="verbatim,attributes"]
+----
+<kie:import releaseId-ref="namedKieSession"/>
+<kie:releaseId id="namedKieSession" groupId="org.drools"
+            artifactId="named-kiesession" version="{revnumber}"/>
+----
+
+
+Kie Scanning feature can be enabled for KieBase's imported with a specific releaseId.
+This feature is currently not available for global imports.
+
+.Import Kie Objects using a releaseId - Enable Scanner
+[source,xml,subs="verbatim,attributes"]
+----
+<kie:import releaseId-ref="namedKieSession"
+            enableScanner="true" scannerInterval="1000"/>
+
+<kie:releaseId id="namedKieSession" groupId="org.drools"
+            artifactId="named-kiesession" version="{revnumber}"/>
+----
+
+
+If the scanner is defined and enabled, an implicit _KieScanner_ object is created and inserted into the blueprint container.
+It can be programmatically retrieved from the blueprint container using the _-scanner_ suffix.
+
+.Retrieving the KieScanner from Blueprint Container
+[source,java]
+----
+
+// the implicit name would be releaseId-scanner
+KieScanner releaseIdScanner = (KieScanner)container.getComponentInstance("namedKieSession-scanner");
+releaseIdScanner.scanNow();
+----
+
+[NOTE]
+====
+
+kie-ci must be available on the classpath for the releaseId importing feature to work.
+====
+
+
+=== Event Listeners
+
+
+Drools supports adding 3 types of listeners to KieSessions - __AgendaListener__, __WorkingMemoryListener__, _ProcessEventListener_
+
+The kie-aries-blueprint module allows you to configure these listeners to KieSessions using XML tags.
+These tags have identical names as the actual listener interfaces i.e., <kie:agendaEventListener....>, <kie:ruleRuntimeEventListener....> and <kie:processEventListener....>.
+
+kie-aries-blueprint provides features to define the listeners as standalone (individual) listeners and also to define them as a group.
+
+==== Defining Stand alone Listeners:
+
+==== Attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Required
+| Description
+
+|ref
+|No
+|A reference to another declared bean.
+|===
+
+.Listener configuration example - using a bean:ref.
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-rr-listener" class="mocks.MockRuleRuntimeEventListener"/>
+<bean id="mock-process-listener" class="mocks.MockProcessEventListener"/>
+
+<kie:kmodule id="listeners_kmodule">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksession2">
+      <kie:agendaEventListener ref="mock-agenda-listener"/>
+      <kie:processEventListener ref="mock-process-listener"/>
+      <kie:ruleRuntimeEventListener ref="mock-rr-listener"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+----
+====
+
+==== Defining multiple listeners of the same type
+
+
+It is also valid to define multiple beans of the same event listener types for a KieSession.
+
+.Listener configuration example - multiple listeners of the same type.
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener1" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-agenda-listener2" class="mocks.MockAgendaEventListener"/>
+
+<kie:kmodule id="listeners_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksession1">
+      <kie:agendaEventListener ref="mock-agenda-listener1"/>
+      <kie:agendaEventListener ref="mock-agenda-listener2"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+----
+====
+
+[[_kie_grouping_listeners]]
+==== Defining a Group of listeners:
+
+
+kie-aries-blueprinty allows for grouping of listeners.
+This is particularly useful when you define a set of listeners and want to attach them to multiple sessions.
+The grouping feature is also very useful, when we define a set of listeners for 'testing' and then want to switch them for 'production' use.
+
+==== Attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Required
+| Description
+
+|ID
+|yes
+|Unique identifier
+|===
+
+==== Nested Elements:
+
+* kie:agendaEventListener...
+* kie:ruleRuntimeEventListener...
+* kie:processEventListener...
+
+
+[NOTE]
+====
+
+The above mentioned child elements can be declared in any order.
+Only one declaration of each type is allowed in a group.
+====
+
+==== Example:
+
+.Group of listeners - example
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-rr-listener" class="mocks.MockRuleRuntimeEventListener"/>
+<bean id="mock-process-listener" class="mocks.MockProcessEventListener"/>
+
+<kie:kmodule id="listeners_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="statelessWithGroupedListeners" type="stateless" 
+             listeners-ref="debugListeners"/>
+  </kie:kbase>
+</kie:kmodule>
+
+  <kie:eventListeners id="debugListeners">
+  <kie:agendaEventListener ref="mock-agenda-listener"/>
+  <kie:processEventListener ref="mock-process-listener"/>
+  <kie:ruleRuntimeEventListener ref="mock-rr-listener"/>
+</kie:eventListeners>
+----
+====
+
+=== Loggers
+
+
+Drools supports adding 2 types of loggers to KieSessions - __ConsoleLogger__, _FileLogger._
+
+The kie-aries-blueprint module allows you to configure these loggers to KieSessions using XML tags.
+These tags have identical names as the actual logger interfaces i.e., <kie:consoleLogger....> and <kie:fileLogger....>.
+
+==== Defining a console logger:
+
+
+A console logger can be attached to a KieSession by using the _<kie:consoleLogger/>_ tag.
+This tag has no attributes and must be present directly under a <kie:ksession....> element.
+
+.Defining a console logger - example
+====
+[source,xml]
+----
+<kie:kmodule id="loggers_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ConsoleLogger-statefulSession" type="stateful">
+      <kie:consoleLogger/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+----
+====
+
+==== Defining a file logger:
+
+
+A file logger can be attached to a KieSession by using the _<kie:fileLogger/>_ tag.
+This tag has the following attributes and must be present directly under a <kie:ksession....> element.
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Required
+| Description
+
+|ID
+|yes
+|Unique identifier
+
+|file
+|yes
+|Path to the actual file on the disk
+
+|threaded
+|no
+|Defaults to false. Valid values are 'true' or
+                'false'
+
+|interval
+|no
+|Integer. Specifies the interval for flushing the
+                contents from memory to the disk.
+|===
+
+.Defining a file logger - example
+====
+[source,xml]
+----
+<kie:kmodule id="loggers_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ConsoleLogger-statefulSession" type="stateful">
+      <kie:fileLogger id="fl_logger" file="#{ systemProperties['java.io.tmpdir'] }/log1"/>
+      <kie:fileLogger id="tfl_logger" file="#{ systemProperties['java.io.tmpdir'] }/log2" 
+                          threaded="true" interval="5"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+----
+====
+
+==== Closing a FileLogger
+
+
+To prevent leaks, it is advised to close the _<kie:fileLogger ...>_ programmatically.
+
+[source,java]
+----
+LoggerAdaptor adaptor = (LoggerAdaptor) container.getComponentInstance("fl_logger");
+adaptor.close();
+----
+
+=== Defining Batch Commands
+
+
+A _<kie:batch>_ element can be used to define a set of batch commands for a given ksession. This tag has no attributes and must be present directly under a <kie:ksession....> element.
+The commands supported are
+
+.Initialization Batch Commands
+* insert-object
+** ref = String (optional)
+** Anonymous bean
+* set-global
+** identifier = String (required)
+** reg = String (optional)
+** Anonymous bean
+* fire-all-rules
+** max : n
+* fire-until-halt
+* start-process
+** parameter
+*** identifier = String (required)
+*** ref = String (optional)
+*** Anonymous bean
+* signal-event
+** ref = String (optional)
+** event-type = String (required)
+** process-instance-id =n (optional)
+
+
+.Batch commands - example
+====
+[source,xml]
+----
+<kie:kmodule id="batch_commands_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksessionForCommands" type="stateful">
+      <kie:batch>
+        <kie:insert-object ref="person2"/>
+        <kie:set-global identifier="persons" ref="personsList"/>
+        <kie:fire-all-rules max="10"/>
+      </kie:batch>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+----
+====

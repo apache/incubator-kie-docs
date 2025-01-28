@@ -1,0 +1,457 @@
+[id="ref-rest-api-dmn-endpoints_{context}"]
+= REST endpoints for specific DMN models
+
+{PRODUCT} provides model-specific DMN KIE Server endpoints that you can use to interact with your specific DMN model without using the {CENTRAL} user interface.
+
+For each DMN model in a container in {PRODUCT}, the following {KIE_SERVER} REST endpoints are automatically generated based on the content of the DMN model:
+
+* `POST /server/containers/{containerId}/dmn/models/{modelname}`: A business-domain endpoint for evaluating a specified DMN model in a container
+* `POST /server/containers/{containerId}/dmn/models/{modelname}/{decisionServiceName}`: A business-domain endpoint for evaluating a specified decision service component in a specific DMN model available in a container
+* `POST /server/containers/{containerId}/dmn/models/{modelname}/dmnresult`: An endpoint for evaluating a specified DMN model containing customized body payload and returning a `DMNResult` response, including business-domain context, helper messages, and helper decision pointers
+* `POST /server/containers/{containerId}/dmn/models/{modelname}/{decisionServiceName}/dmnresult`: An endpoint for evaluating a specified decision service component in a specific DMN model and returning a `DMNResult` response, including the business-domain context, helper messages, and help decision pointers for the decision service
+* `GET /server/containers/{containerId}/dmn/models/{modelname}`: An endpoint for returning standard DMN XML without decision logic and containing the inputs and decisions of the specified DMN model
+* `GET /server/containers/{containerId}/dmn/openapi.json (|.yaml)`: An endpoint for retrieving Swagger or OAS for the DMN models in a specified container
+
+You can use these endpoints to interact with a DMN model or a specific decision service within a model. As you decide between using business-domain and `dmnresult` variants of these REST endpoints, review the following considerations:
+
+* *REST business-domain endpoints*: Use this endpoint type if a client application is only concerned with a positive evaluation outcome, is not interested in parsing `Info` or `Warn` messages, and only needs an HTTP 5xx response for any errors. This type of endpoint is also helpful for single-page application-like clients, due to singleton coercion of decision service results that resemble the DMN modeling behavior.
+* *REST `dmnresult` endpoints*: Use this endpoint type if a client needs to parse `Info`, `Warn`, or `Error` messages in all cases.
+
+For each endpoint, use a REST client or curl utility to send requests with the following components:
+
+* *Base URL*: `http://__HOST__:__PORT__/kie-server/services/rest/`
+* *Path parameters*:
+** `{containerId}`: The string identifier of the container, such as `mykjar-project`
+** `{modelName}`: The string identifier of the DMN model, such as `Traffic Violation`
+** `{decisionServiceName}`: The string identifier of the decision service component in the DMN DRG, such as `TrafficViolationDecisionService`
+** `dmnresult`: The string identifier that enables the endpoint to return a full `DMNResult` response with more detailed `Info`, `Warn`, and `Error` messaging
+* *HTTP headers*: For `POST` requests only:
+** `accept`: `application/json`
+** `content-type`: `application/json`
+* *HTTP methods*: `GET` or `POST`
+
+The examples in the following endpoints are based on a `mykjar-project` container that contains a `Traffic Violation` DMN model, containing a `TrafficViolationDecisionService` decision service component.
+
+For all of these endpoints, if a DMN evaluation `Error` message occurs, a `DMNResult` response is returned along with an HTTP 5xx error. If a DMN `Info` or `Warn` message occurs, the relevant response is returned along with the business-domain REST body, in the `X-Kogito-decision-messages` extended HTTP header, to be used for client-side business logic. When there is a requirement of more refined client-side business logic, the client can use the `dmnresult` variant of the endpoints.
+
+Retrieve Swagger or OAS for DMN models in a specified container::
++
+--
+`GET /server/containers/{containerId}/dmn/openapi.json (|.yaml)`
+
+.Example REST endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/openapi.json (|.yaml)`
+--
+
+Return the DMN XML without decision logic::
++
+--
+`GET /server/containers/{containerId}/dmn/models/{modelname}`
+
+.Example REST endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation`
+
+.Example curl request
+[source]
+----
+curl -u wbadmin:wbadmin -X GET "http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic%20Violation" -H  "accept: application/xml"
+----
+
+.Example response (XML)
+[source,xml]
+----
+<?xml version='1.0' encoding='UTF-8'?>
+<dmn:definitions xmlns:dmn="http://www.omg.org/spec/DMN/20180521/MODEL/" xmlns="https://kiegroup.org/dmn/_A4BCA8B8-CF08-433F-93B2-A2598F19ECFF" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="http://www.drools.org/kie/dmn/1.2" xmlns:feel="http://www.omg.org/spec/DMN/20180521/FEEL/" xmlns:dmndi="http://www.omg.org/spec/DMN/20180521/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="_1C792953-80DB-4B32-99EB-25FBE32BAF9E" name="Traffic Violation" expressionLanguage="http://www.omg.org/spec/DMN/20180521/FEEL/" typeLanguage="http://www.omg.org/spec/DMN/20180521/FEEL/" namespace="https://kiegroup.org/dmn/_A4BCA8B8-CF08-433F-93B2-A2598F19ECFF">
+  <dmn:extensionElements/>
+  <dmn:itemDefinition id="_63824D3F-9173-446D-A940-6A7F0FA056BB" name="tDriver" isCollection="false">
+    <dmn:itemComponent id="_9DAB5DAA-3B44-4F6D-87F2-95125FB2FEE4" name="Name" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_856BA8FA-EF7B-4DF9-A1EE-E28263CE9955" name="Age" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_FDC2CE03-D465-47C2-A311-98944E8CC23F" name="State" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_D6FD34C4-00DC-4C79-B1BF-BBCF6FC9B6D7" name="City" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_7110FE7E-1A38-4C39-B0EB-AEEF06BA37F4" name="Points" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+  </dmn:itemDefinition>
+  <dmn:itemDefinition id="_40731093-0642-4588-9183-1660FC55053B" name="tViolation" isCollection="false">
+    <dmn:itemComponent id="_39E88D9F-AE53-47AD-B3DE-8AB38D4F50B3" name="Code" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_1648EA0A-2463-4B54-A12A-D743A3E3EE7B" name="Date" isCollection="false">
+      <dmn:typeRef>date</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_9F129EAA-4E71-4D99-B6D0-84EEC3AC43CC" name="Type" isCollection="false">
+      <dmn:typeRef>string</dmn:typeRef>
+      <dmn:allowedValues kie:constraintType="enumeration" id="_626A8F9C-9DD1-44E0-9568-0F6F8F8BA228">
+        <dmn:text>"speed", "parking", "driving under the influence"</dmn:text>
+      </dmn:allowedValues>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_DDD10D6E-BD38-4C79-9E2F-8155E3A4B438" name="Speed Limit" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_229F80E4-2892-494C-B70D-683ABF2345F6" name="Actual Speed" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+  </dmn:itemDefinition>
+  <dmn:itemDefinition id="_2D4F30EE-21A6-4A78-A524-A5C238D433AE" name="tFine" isCollection="false">
+    <dmn:itemComponent id="_B9F70BC7-1995-4F51-B949-1AB65538B405" name="Amount" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+    <dmn:itemComponent id="_F49085D6-8F08-4463-9A1A-EF6B57635DBD" name="Points" isCollection="false">
+      <dmn:typeRef>number</dmn:typeRef>
+    </dmn:itemComponent>
+  </dmn:itemDefinition>
+  <dmn:inputData id="_1929CBD5-40E0-442D-B909-49CEDE0101DC" name="Violation">
+    <dmn:variable id="_C16CF9B1-5FAB-48A0-95E0-5FCD661E0406" name="Violation" typeRef="tViolation"/>
+  </dmn:inputData>
+  <dmn:decision id="_4055D956-1C47-479C-B3F4-BAEB61F1C929" name="Fine">
+    <dmn:variable id="_8C1EAC83-F251-4D94-8A9E-B03ACF6849CD" name="Fine" typeRef="tFine"/>
+    <dmn:informationRequirement id="_800A3BBB-90A3-4D9D-BA5E-A311DED0134F">
+      <dmn:requiredInput href="#_1929CBD5-40E0-442D-B909-49CEDE0101DC"/>
+    </dmn:informationRequirement>
+  </dmn:decision>
+  <dmn:inputData id="_1F9350D7-146D-46F1-85D8-15B5B68AF22A" name="Driver">
+    <dmn:variable id="_A80F16DF-0DB4-43A2-B041-32900B1A3F3D" name="Driver" typeRef="tDriver"/>
+  </dmn:inputData>
+  <dmn:decision id="_8A408366-D8E9-4626-ABF3-5F69AA01F880" name="Should the driver be suspended?">
+    <dmn:question>Should the driver be suspended due to points on his license?</dmn:question>
+    <dmn:allowedAnswers>"Yes", "No"</dmn:allowedAnswers>
+    <dmn:variable id="_40387B66-5D00-48C8-BB90-E83EE3332C72" name="Should the driver be suspended?" typeRef="string"/>
+    <dmn:informationRequirement id="_982211B1-5246-49CD-BE85-3211F71253CF">
+      <dmn:requiredInput href="#_1F9350D7-146D-46F1-85D8-15B5B68AF22A"/>
+    </dmn:informationRequirement>
+    <dmn:informationRequirement id="_AEC4AA5F-50C3-4FED-A0C2-261F90290731">
+      <dmn:requiredDecision href="#_4055D956-1C47-479C-B3F4-BAEB61F1C929"/>
+    </dmn:informationRequirement>
+  </dmn:decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <di:extension/>
+      <dmndi:DMNShape id="dmnshape-_1929CBD5-40E0-442D-B909-49CEDE0101DC" dmnElementRef="_1929CBD5-40E0-442D-B909-49CEDE0101DC" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="708" y="350" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="dmnshape-_4055D956-1C47-479C-B3F4-BAEB61F1C929" dmnElementRef="_4055D956-1C47-479C-B3F4-BAEB61F1C929" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="709" y="210" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="dmnshape-_1F9350D7-146D-46F1-85D8-15B5B68AF22A" dmnElementRef="_1F9350D7-146D-46F1-85D8-15B5B68AF22A" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="369" y="344" width="100" height="50"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="dmnshape-_8A408366-D8E9-4626-ABF3-5F69AA01F880" dmnElementRef="_8A408366-D8E9-4626-ABF3-5F69AA01F880" isCollapsed="false">
+        <dmndi:DMNStyle>
+          <dmndi:FillColor red="255" green="255" blue="255"/>
+          <dmndi:StrokeColor red="0" green="0" blue="0"/>
+          <dmndi:FontColor red="0" green="0" blue="0"/>
+        </dmndi:DMNStyle>
+        <dc:Bounds x="534" y="83" width="133" height="63"/>
+        <dmndi:DMNLabel/>
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="dmnedge-_800A3BBB-90A3-4D9D-BA5E-A311DED0134F" dmnElementRef="_800A3BBB-90A3-4D9D-BA5E-A311DED0134F">
+        <di:waypoint x="758" y="375"/>
+        <di:waypoint x="759" y="235"/>
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="dmnedge-_982211B1-5246-49CD-BE85-3211F71253CF" dmnElementRef="_982211B1-5246-49CD-BE85-3211F71253CF">
+        <di:waypoint x="419" y="369"/>
+        <di:waypoint x="600.5" y="114.5"/>
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="dmnedge-_AEC4AA5F-50C3-4FED-A0C2-261F90290731" dmnElementRef="_AEC4AA5F-50C3-4FED-A0C2-261F90290731">
+        <di:waypoint x="759" y="235"/>
+        <di:waypoint x="600.5" y="114.5"/>
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+----
+--
+
+Evaluate a specified DMN model in a specified container::
++
+--
+`POST /server/containers/{containerId}/dmn/models/{modelname}`
+
+.Example REST endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation`
+
+.Example curl request
+[source]
+----
+curl -u wbadmin:wbadmin-X POST "http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation" -H  "accept: application/json" -H  "Content-Type: application/json" -d "{\"Driver\":{\"Points\":15},\"Violation\":{\"Date\":\"2021-04-08\",\"Type\":\"speed\",\"Actual Speed\":135,\"Speed Limit\":100}}"
+----
+
+.Example POST request body with input data
+[source,json]
+----
+{
+  "Driver": {
+    "Points": 15
+  },
+  "Violation": {
+    "Date": "2021-04-08",
+    "Type": "speed",
+    "Actual Speed": 135,
+    "Speed Limit": 100
+  }
+}
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+  "Violation": {
+    "Type": "speed",
+    "Speed Limit": 100,
+    "Actual Speed": 135,
+    "Code": null,
+    "Date": "2021-04-08"
+  },
+  "Driver": {
+    "Points": 15,
+    "State": null,
+    "City": null,
+    "Age": null,
+    "Name": null
+  },
+  "Fine": {
+    "Points": 7,
+    "Amount": 1000
+  },
+  "Should the driver be suspended?": "Yes"
+}
+----
+--
+
+Evaluate a specified decision service within a specified DMN model in a container::
++
+--
+`POST /server/containers/{containerId}/dmn/models/{modelname}/{decisionServiceName}`
+
+For this endpoint, the request body must contain all the requirements of the decision service. The response is the resulting DMN context of the decision service, including the decision values, the original input values, and all other parametric DRG components in serialized form. For example, a business knowledge model is available in string-serialized form in its signature.
+
+If the decision service is composed of a single-output decision, the response is the resulting value of that specific decision. This behavior provides an equivalent value at the API level of a specification feature when invoking the decision service in the model itself. As a result, you can, for example, interact with a DMN decision service from single-page web applications.
+
+.Example `TrafficViolationDecisionService` decision service with single-output decision
+image::dmn/dmn-model-traffic-violation-single-output.png[Image of decision service in Traffic Violation DMN model]
+
+.Example `TrafficViolationDecisionService` decision service with multiple-output decision
+image::dmn/dmn-model-traffic-violation-multi-output.png[Image of decision service in Traffic Violation DMN model]
+
+.Example REST endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation/TrafficViolationDecisionService`
+
+.Example POST request body with input data
+[source,json]
+----
+{
+  "Driver": {
+    "Points": 2
+  },
+  "Violation": {
+    "Type": "speed",
+    "Actual Speed": 120,
+    "Speed Limit": 100
+  }
+}
+----
+
+.Example curl request
+[source]
+----
+curl -X POST http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation/TrafficViolationDecisionService -H 'content-type: application/json' -H 'accept: application/json' -d '{"Driver": {"Points": 2}, "Violation": {"Type": "speed", "Actual Speed": 120, "Speed Limit": 100}}'
+----
+
+.Example response for single-output decision (JSON)
+[source,json]
+----
+"No"
+----
+
+.Example response for multiple-output decision (JSON)
+[source,json]
+----
+{
+  "Violation": {
+    "Type": "speed",
+    "Speed Limit": 100,
+    "Actual Speed": 120
+  },
+  "Driver": {
+    "Points": 2
+  },
+  "Fine": {
+    "Points": 3,
+    "Amount": 500
+  },
+  "Should the driver be suspended?": "No"
+}
+----
+--
+
+Evaluate a specified DMN model in a specified container and return a `DMNResult` response::
++
+--
+`POST /server/containers/{containerId}/dmn/models/{modelname}/dmnresult`
+
+.Example REST endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation/dmnresult`
+
+.Example POST request body with input data
+[source,json]
+----
+{
+  "Driver": {
+    "Points": 2
+  },
+  "Violation": {
+    "Type": "speed",
+    "Actual Speed": 120,
+    "Speed Limit": 100
+  }
+}
+----
+
+.Example curl request
+[source]
+----
+curl -X POST http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation/dmnresult -H 'content-type: application/json' -H 'accept: application/json' -d '{"Driver": {"Points": 2}, "Violation": {"Type": "speed", "Actual Speed": 120, "Speed Limit": 100}}'
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+  "namespace": "https://kiegroup.org/dmn/_A4BCA8B8-CF08-433F-93B2-A2598F19ECFF",
+  "modelName": "Traffic Violation",
+  "dmnContext": {
+    "Violation": {
+      "Type": "speed",
+      "Speed Limit": 100,
+      "Actual Speed": 120,
+      "Code": null,
+      "Date": null
+    },
+    "Driver": {
+      "Points": 2,
+      "State": null,
+      "City": null,
+      "Age": null,
+      "Name": null
+    },
+    "Fine": {
+      "Points": 3,
+      "Amount": 500
+    },
+    "Should the driver be suspended?": "No"
+  },
+  "messages": [],
+  "decisionResults": [
+    {
+      "decisionId": "_4055D956-1C47-479C-B3F4-BAEB61F1C929",
+      "decisionName": "Fine",
+      "result": {
+        "Points": 3,
+        "Amount": 500
+      },
+      "messages": [],
+      "evaluationStatus": "SUCCEEDED"
+    },
+    {
+      "decisionId": "_8A408366-D8E9-4626-ABF3-5F69AA01F880",
+      "decisionName": "Should the driver be suspended?",
+      "result": "No",
+      "messages": [],
+      "evaluationStatus": "SUCCEEDED"
+    }
+  ]
+}
+----
+--
+
+Evaluate a specified decision service within a DMN model in a specified container and return a `DMNResult` response::
++
+--
+`POST /server/containers/{containerId}/dmn/models/{modelname}/{decisionServiceName}/dmnresult`
+
+.Example REST endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation/TrafficViolationDecisionService/dmnresult`
+
+.Example POST request body with input data
+[source,json]
+----
+{
+  "Driver": {
+    "Points": 2
+  },
+  "Violation": {
+    "Type": "speed",
+    "Actual Speed": 120,
+    "Speed Limit": 100
+  }
+}
+----
+
+.Example curl request
+[source]
+----
+curl -X POST http://localhost:8080/kie-server/services/rest/server/containers/mykjar-project/dmn/models/Traffic Violation/TrafficViolationDecisionService/dmnresult -H 'content-type: application/json' -H 'accept: application/json' -d '{"Driver": {"Points": 2}, "Violation": {"Type": "speed", "Actual Speed": 120, "Speed Limit": 100}}'
+----
+
+.Example response (JSON)
+[source,json]
+----
+{
+  "namespace": "https://kiegroup.org/dmn/_A4BCA8B8-CF08-433F-93B2-A2598F19ECFF",
+  "modelName": "Traffic Violation",
+  "dmnContext": {
+    "Violation": {
+      "Type": "speed",
+      "Speed Limit": 100,
+      "Actual Speed": 120,
+      "Code": null,
+      "Date": null
+    },
+    "Driver": {
+      "Points": 2,
+      "State": null,
+      "City": null,
+      "Age": null,
+      "Name": null
+    },
+    "Should the driver be suspended?": "No"
+  },
+  "messages": [],
+  "decisionResults": [
+    {
+      "decisionId": "_8A408366-D8E9-4626-ABF3-5F69AA01F880",
+      "decisionName": "Should the driver be suspended?",
+      "result": "No",
+      "messages": [],
+      "evaluationStatus": "SUCCEEDED"
+    }
+  ]
+}
+----
+--

@@ -1,0 +1,238 @@
+[id='kie-server-extensions-client-proc_{context}']
+
+= Extending the {KIE_SERVER} client with a custom client API
+
+{KIE_SERVER} uses predefined client APIs that you can interact with to use {KIE_SERVER} services. You can extend the {KIE_SERVER} client with a custom client API to adapt {KIE_SERVER} services to your business needs.
+
+As an example, this procedure adds a custom client API to {KIE_SERVER} to accommodate a custom data transport (configured previously for this scenario) that is based on Apache MINA, an open-source Java network-application framework.
+
+.Procedure
+. Create an empty Maven project and define the following packaging type and dependencies in the `pom.xml` file for the project:
++
+.Example pom.xml file in the sample project
+[source,xml,subs="attributes+"]
+----
+<packaging>jar</packaging>
+
+<properties>
+   <version.org.kie>{MAVEN_ARTIFACT_VERSION}</version.org.kie>
+ </properties>
+
+ <dependencies>
+   <dependency>
+     <groupId>org.kie.server</groupId>
+     <artifactId>kie-server-api</artifactId>
+     <version>${version.org.kie}</version>
+   </dependency>
+   <dependency>
+      <groupId>org.kie.server</groupId>
+      <artifactId>kie-server-client</artifactId>
+      <version>${version.org.kie}</version>
+    </dependency>
+   <dependency>
+     <groupId>org.drools</groupId>
+     <artifactId>drools-compiler</artifactId>
+     <version>${version.org.kie}</version>
+   </dependency>
+ </dependencies>
+----
+. Implement the relevant `ServicesClient` interface in a Java class in your project, as shown in the following example:
++
+--
+.Sample `RulesMinaServicesClient` interface
+[source,java]
+----
+public interface RulesMinaServicesClient extends RuleServicesClient {
+
+}
+----
+
+A specific interface is required because you must register client implementations based on the interface, and you can have only one implementation for a given interface.
+
+For this example, the custom MINA-based data transport uses the `Drools` extension, so this example `RulesMinaServicesClient` interface extends the existing `RuleServicesClient` client API from the `Drools` extension.
+--
+. Implement the `RulesMinaServicesClient` interface that {KIE_SERVER} can use to provide the additional client functionality for the new MINA transport, as shown in the following example:
++
+--
+.Sample implementation of the `RulesMinaServicesClient` interface
+[source,java]
+----
+public class RulesMinaServicesClientImpl implements RulesMinaServicesClient {
+
+    private String host;
+    private Integer port;
+
+    private Marshaller marshaller;
+
+    public RulesMinaServicesClientImpl(KieServicesConfiguration configuration, ClassLoader classloader) {
+        String[] serverDetails = configuration.getServerUrl().split(":");
+
+        this.host = serverDetails[0];
+        this.port = Integer.parseInt(serverDetails[1]);
+
+        this.marshaller = MarshallerFactory.getMarshaller(configuration.getExtraJaxbClasses(), MarshallingFormat.JSON, classloader);
+    }
+
+    public ServiceResponse<String> executeCommands(String id, String payload) {
+
+        try {
+            String response = sendReceive(id, payload);
+            if (response.startsWith("{")) {
+                return new ServiceResponse<String>(ResponseType.SUCCESS, null, response);
+            } else {
+                return new ServiceResponse<String>(ResponseType.FAILURE, response);
+            }
+        } catch (Exception e) {
+            throw new KieServicesException("Unable to send request to KIE Server", e);
+        }
+    }
+
+    public ServiceResponse<String> executeCommands(String id, Command<?> cmd) {
+        try {
+            String response = sendReceive(id, marshaller.marshall(cmd));
+            if (response.startsWith("{")) {
+                return new ServiceResponse<String>(ResponseType.SUCCESS, null, response);
+            } else {
+                return new ServiceResponse<String>(ResponseType.FAILURE, response);
+            }
+        } catch (Exception e) {
+            throw new KieServicesException("Unable to send request to KIE Server", e);
+        }
+    }
+
+    protected String sendReceive(String containerId, String content) throws Exception {
+
+        // Flatten the content to be single line:
+        content = content.replaceAll("\\n", "");
+
+        Socket minaSocket = null;
+        PrintWriter out = null;
+        BufferedReader in = null;
+
+        StringBuffer data = new StringBuffer();
+        try {
+            minaSocket = new Socket(host, port);
+            out = new PrintWriter(minaSocket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(minaSocket.getInputStream()));
+
+            // Prepare and send data:
+            out.println(containerId + "|" + content);
+            // Wait for the first line:
+            data.append(in.readLine());
+            // Continue as long as data is available:
+            while (in.ready()) {
+                data.append(in.readLine());
+            }
+
+            return data.toString();
+        } finally {
+            out.close();
+            in.close();
+            minaSocket.close();
+        }
+    }
+}
+----
+
+This example implementation specifies the following data and behavior:
+
+* Uses socket-based communication for simplicity
+* Relies on default configurations from the {KIE_SERVER} client and uses `ServerUrl` for providing the host and port of the MINA server
+* Specifies JSON as the marshalling format
+* Requires received messages to be JSON objects that start with an open bracket `{`
+* Uses direct socket communication with a blocking API while waiting for the first line of the response and then reads all lines that are available
+* Does not use _stream mode_ and therefore disconnects the {KIE_SERVER} session after invoking a command
+--
+. Implement the `org.kie.server.client.helper.KieServicesClientBuilder` interface in a Java class in your project, as shown in the following example:
++
+--
+.Sample implementation of the `KieServicesClientBuilder` interface
+[source,java]
+----
+public class MinaClientBuilderImpl implements KieServicesClientBuilder {  // <1>
+
+    public String getImplementedCapability() {  // <2>
+        return "BRM-Mina";
+    }
+
+    public Map<Class<?>, Object> build(KieServicesConfiguration configuration, ClassLoader classLoader) {  // <3>
+        Map<Class<?>, Object> services = new HashMap<Class<?>, Object>();
+
+        services.put(RulesMinaServicesClient.class, new RulesMinaServicesClientImpl(configuration, classLoader));
+
+        return services;
+    }
+
+}
+----
+<1> Enables you to provide additional client APIs to the generic {KIE_SERVER} client infrastructure
+<2> Defines the {KIE_SERVER} capability (extension) that the client uses
+<3> Provides a map of the client implementations, where the key is the interface and the value is the fully initialized implementation
+--
+. To make the new client API discoverable for the {KIE_SERVER} client, create a `META-INF/services/org.kie.server.client.helper.KieServicesClientBuilder` file in your Maven project and add the fully qualified class name of the `KieServicesClientBuilder` implementation class within the file. For this example, the file contains the single line `org.kie.server.ext.mina.client.MinaClientBuilderImpl`.
+. Build your project and copy the resulting JAR file into the `~/kie-server.war/WEB-INF/lib` directory of your project.
+ifdef::DM,PAM[]
+For example, on {EAP}, the path to this directory is `_EAP_HOME_/standalone/deployments/kie-server.war/WEB-INF/lib`.
+endif::[]
+. Start {KIE_SERVER} and deploy the built project to the running {KIE_SERVER}. You can deploy the project using either the {CENTRAL} interface or the {KIE_SERVER} REST API (a `PUT` request to `\http://SERVER:PORT/kie-server/services/rest/server/containers/{containerId}`).
++
+--
+After your project is deployed on a running {KIE_SERVER}, you can start interacting with your new {KIE_SERVER} client. You use your new client in the same way as the standard {KIE_SERVER} client, by creating the client configuration and client instance, retrieving the service client by type, and invoking client methods.
+
+For this example, you can create a `RulesMinaServiceClient` client instance and invoke operations on {KIE_SERVER} through the MINA transport:
+
+.Sample implementation to create the `RulesMinaServiceClient` client
+[source,java]
+----
+protected RulesMinaServicesClient buildClient() {
+    KieServicesConfiguration configuration = KieServicesFactory.newRestConfiguration("localhost:9123", null, null);
+    List<String> capabilities = new ArrayList<String>();
+    // Explicitly add capabilities (the MINA client does not respond to `get-server-info` requests):
+    capabilities.add("BRM-Mina");
+
+    configuration.setCapabilities(capabilities);
+    configuration.setMarshallingFormat(MarshallingFormat.JSON);
+
+    configuration.addJaxbClasses(extraClasses);
+
+    KieServicesClient kieServicesClient =  KieServicesFactory.newKieServicesClient(configuration);
+
+    RulesMinaServicesClient rulesClient = kieServicesClient.getServicesClient(RulesMinaServicesClient.class);
+
+    return rulesClient;
+}
+----
+
+.Sample configuration to invoke operations on {KIE_SERVER} through the MINA transport
+[source,java]
+----
+RulesMinaServicesClient rulesClient = buildClient();
+
+List<Command<?>> commands = new ArrayList<Command<?>>();
+BatchExecutionCommand executionCommand = commandsFactory.newBatchExecution(commands, "defaultKieSession");
+
+Person person = new Person();
+person.setName("mary");
+commands.add(commandsFactory.newInsert(person, "person"));
+commands.add(commandsFactory.newFireAllRules("fired"));
+
+ServiceResponse<String> response = rulesClient.executeCommands(containerId, executionCommand);
+Assert.assertNotNull(response);
+
+Assert.assertEquals(ResponseType.SUCCESS, response.getType());
+
+String data = response.getResult();
+
+Marshaller marshaller = MarshallerFactory.getMarshaller(extraClasses, MarshallingFormat.JSON, this.getClass().getClassLoader());
+
+ExecutionResultImpl results = marshaller.unmarshall(data, ExecutionResultImpl.class);
+Assert.assertNotNull(results);
+
+Object personResult = results.getValue("person");
+Assert.assertTrue(personResult instanceof Person);
+
+Assert.assertEquals("mary", ((Person) personResult).getName());
+Assert.assertEquals("JBoss Community", ((Person) personResult).getAddress());
+Assert.assertEquals(true, ((Person) personResult).isRegistered());
+----
+--

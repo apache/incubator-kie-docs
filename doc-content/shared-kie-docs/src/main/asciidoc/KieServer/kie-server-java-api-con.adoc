@@ -1,0 +1,228 @@
+[id='kie-server-java-api-con_{context}']
+= {KIE_SERVER} Java client API for KIE containers and business assets
+
+{PRODUCT} provides a {KIE_SERVER} Java client API that enables you to connect to {KIE_SERVER} using REST protocol from your Java client application. You can use the {KIE_SERVER} Java client API as an alternative to the {KIE_SERVER} REST API to interact with your KIE containers and business assets (such as business rules, processes, and solvers) in {PRODUCT} without using the {CENTRAL} user interface. This API support enables you to maintain your {PRODUCT} resources more efficiently and optimize your integration and development with {PRODUCT}.
+
+With the {KIE_SERVER} Java client API, you can perform the following actions also supported by the {KIE_SERVER} REST API:
+
+* Deploy or dispose KIE containers
+* Retrieve and update KIE container information
+* Return {KIE_SERVER} status and basic information
+* Retrieve and update business asset information
+* Execute business assets (such as rules and processes)
+
+{KIE_SERVER} Java client API requests require the following components:
+
+Authentication::
+The {KIE_SERVER} Java client API requires HTTP Basic authentication for the user role `kie-server`. To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
++
+--
+To add a user with the `kie-server` role, navigate to `~/$SERVER_HOME/bin` and run the following command:
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['kie-server'])"
+----
+
+For more information about user roles and {PRODUCT} installation options, see
+ifdef::PAM,DM[]
+{URL_INSTALLING_AND_CONFIGURING}#assembly-planning[_{PLANNING_INSTALL}_].
+endif::[]
+ifdef::DROOLS,JBPM[]
+<<_installing_the_kie_server>>.
+endif::[]
+--
+
+Project dependencies::
+The {KIE_SERVER} Java client API requires the following dependencies on the relevant classpath of your Java project:
++
+--
+[source,xml,subs="attributes+"]
+----
+<!-- For remote execution on {KIE_SERVER} -->
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- For runtime commands -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-compiler</artifactId>
+  <scope>runtime</scope>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- For debug logging (optional) -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+----
+
+The `<version>` for {PRODUCT} dependencies is the Maven artifact version for {PRODUCT} currently used in your project (for example, {MAVEN_ARTIFACT_VERSION}).
+
+ifdef::DM,PAM[]
+[NOTE]
+====
+Instead of specifying a {PRODUCT} `<version>` for individual dependencies, consider adding the {PRODUCT_BA} bill of materials (BOM) dependency to your project `pom.xml` file. The {PRODUCT_BA} BOM applies to both {PRODUCT_DM} and {PRODUCT_PAM}. When you add the BOM files, the correct versions of transitive dependencies from the provided Maven repositories are included in the project.
+
+Example BOM dependency:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>com.redhat.ba</groupId>
+  <artifactId>ba-platform-bom</artifactId>
+  <version>{BOM_VERSION}</version>
+  <scope>import</scope>
+  <type>pom</type>
+</dependency>
+----
+
+For more information about the {PRODUCT_BA} BOM, see
+ifdef::PAM[]
+https://access.redhat.com/solutions/3405361[What is the mapping between RHPAM product and maven library version?].
+endif::[]
+ifdef::DM[]
+https://access.redhat.com/solutions/3363991[What is the mapping between RHDM product and maven library version?].
+endif::[]
+====
+endif::DM,PAM[]
+--
+
+Client request configuration::
+All Java client requests with the {KIE_SERVER} Java client API must define at least the following server communication components:
++
+--
+* Credentials of the `kie-server` user
+* {KIE_SERVER} location, such as `\http://localhost:8080/kie-server/services/rest/server`
+* Marshalling format for API requests and responses (JSON, JAXB, or XSTREAM)
+* A `KieServicesConfiguration` object and a `KieServicesClient` object, which serve as the entry point for starting the server communication using the Java client API
+* A `KieServicesFactory` object defining REST protocol and user access
+* Any other client services used, such as `RuleServicesClient`, `ProcessServicesClient`, or `QueryServicesClient`
+
+The following are examples of basic and advanced client configurations with these components:
+
+.Basic client configuration example
+[source,java]
+----
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+
+public class MyConfigurationObject {
+
+  private static final String URL = "http://localhost:8080/kie-server/services/rest/server";
+  private static final String USER = "baAdmin";
+  private static final String PASSWORD = "password@1";
+
+  private static final MarshallingFormat FORMAT = MarshallingFormat.JSON;
+
+  private static KieServicesConfiguration conf;
+  private static KieServicesClient kieServicesClient;
+
+  public static void initialize() {
+    conf = KieServicesFactory.newRestConfiguration(URL, USER, PASSWORD);
+
+    //If you use custom classes, such as Obj.class, add them to the configuration.
+    Set<Class<?>> extraClassList = new HashSet<Class<?>>();
+    extraClassList.add(Obj.class);
+    conf.addExtraClasses(extraClassList);
+
+    conf.setMarshallingFormat(FORMAT);
+    kieServicesClient = KieServicesFactory.newKieServicesClient(conf);
+  }
+}
+----
+
+.Advanced client configuration example with additional client services
+[source,java]
+----
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.client.CaseServicesClient;
+import org.kie.server.client.DMNServicesClient;
+import org.kie.server.client.DocumentServicesClient;
+import org.kie.server.client.JobServicesClient;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+import org.kie.server.client.ProcessServicesClient;
+import org.kie.server.client.QueryServicesClient;
+import org.kie.server.client.RuleServicesClient;
+import org.kie.server.client.SolverServicesClient;
+import org.kie.server.client.UIServicesClient;
+import org.kie.server.client.UserTaskServicesClient;
+import org.kie.server.api.model.instance.ProcessInstance;
+import org.kie.server.api.model.KieContainerResource;
+import org.kie.server.api.model.ReleaseId;
+
+public class MyAdvancedConfigurationObject {
+
+    // REST API base URL, credentials, and marshalling format
+    private static final String URL = "http://localhost:8080/kie-server/services/rest/server";
+    private static final String USER = "baAdmin";
+    private static final String PASSWORD = "password@1";;
+
+    private static final MarshallingFormat FORMAT = MarshallingFormat.JSON;
+
+    private static KieServicesConfiguration conf;
+
+    // KIE client for common operations
+    private static KieServicesClient kieServicesClient;
+
+    // Rules client
+    private static RuleServicesClient ruleClient;
+
+    // Process automation clients
+    private static CaseServicesClient caseClient;
+    private static DocumentServicesClient documentClient;
+    private static JobServicesClient jobClient;
+    private static ProcessServicesClient processClient;
+    private static QueryServicesClient queryClient;
+    private static UIServicesClient uiClient;
+    private static UserTaskServicesClient userTaskClient;
+
+    // DMN client
+    private static DMNServicesClient dmnClient;
+
+    // Planning client
+    private static SolverServicesClient solverClient;
+
+    public static void main(String[] args) {
+        initializeKieServerClient();
+        initializeDroolsServiceClients();
+        initializeJbpmServiceClients();
+        initializeSolverServiceClients();
+    }
+
+    public static void initializeKieServerClient() {
+        conf = KieServicesFactory.newRestConfiguration(URL, USER, PASSWORD);
+        conf.setMarshallingFormat(FORMAT);
+        kieServicesClient = KieServicesFactory.newKieServicesClient(conf);
+    }
+
+    public static void initializeDroolsServiceClients() {
+        ruleClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
+        dmnClient = kieServicesClient.getServicesClient(DMNServicesClient.class);
+    }
+
+    public static void initializeJbpmServiceClients() {
+        caseClient = kieServicesClient.getServicesClient(CaseServicesClient.class);
+        documentClient = kieServicesClient.getServicesClient(DocumentServicesClient.class);
+        jobClient = kieServicesClient.getServicesClient(JobServicesClient.class);
+        processClient = kieServicesClient.getServicesClient(ProcessServicesClient.class);
+        queryClient = kieServicesClient.getServicesClient(QueryServicesClient.class);
+        uiClient = kieServicesClient.getServicesClient(UIServicesClient.class);
+        userTaskClient = kieServicesClient.getServicesClient(UserTaskServicesClient.class);
+    }
+
+    public static void initializeSolverServiceClients() {
+        solverClient = kieServicesClient.getServicesClient(SolverServicesClient.class);
+    }
+}
+----
+--

@@ -1,0 +1,1132 @@
+[[_ch.kie.spring]]
+= Integration with Spring
+
+== Important Changes for Drools 6.0
+
+
+Drools Spring integration has undergone a complete makeover inline with the changes for Drools 6.0.
+The following are some of the major changes
+
+* The recommended prefix for the Drools Spring has changed from 'drools:' to 'kie:'
+* New Top Level Tags in 6.0
+** kie:kmodule
+** kie:import (from version 6.2)
+** kie:releaseId (from version 6.2)
+* The following tags are no longer valid as top level tags.
+** kie:kbase - A child of the _kie:kmodule_ tag.
+** kie:ksession - A child of the _kie:kbase_ tag.
+* Removed Tags from previous versions Drools 5.x
+** drools:resources
+** drools:resource
+** drools:grid
+** drools:grid-node
+
+
+== Integration with Drools Expert
+
+
+In this section we will explain the _kie_ namespace.
+
+=== KieModule
+
+
+The _<kie:kmodule>_ defines a collection of KieBase and associated KieSession's.
+The _kmodule_ tag has one MANDATORY parameter 'id'.
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|id
+|Bean's _id_ is the name to be
+              referenced from other beans. Standard Spring ID semantics
+              apply.
+|Yes
+|===
+
+
+A _kmodule_ tag can contain only the following tags as children.
+
+* kie:kbase
+
+
+Refer to the documentation of kmodule.xml in the Drools Expert documentation for detailed explanation of the need for kmodule.
+
+=== KieBase
+
+==== <kie:kbase>'s parameters as attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|name
+|Name of the KieBase
+|Yes
+
+|packages
+|Comma separated list of resource packages to be
+                included in this kbase
+|No
+
+|includes
+|kbase names to be included. All resources from the
+                corresponding kbase are included in this kbase.
+|No
+
+|default
+|Boolean (TRUE/FALSE). Default kbase, if not provided,
+                it is assumed to be FALSE
+|No
+
+|scope
+|prototype \| singleton. If not provided assumed to be singleton (default)
+|No
+
+|eventProcessingMode
+|Event Processing Mode. Valid options are STREAM,
+                CLOUD
+|No
+
+|equalsBehavior
+|Valid options are IDENTITY, EQUALITY
+|No
+
+|declarativeAgenda
+|Valid options are enabled, disabled, true,
+                false
+|No
+|===
+
+==== A _kbase_ tag can contain only the followingtags as children.
+
+* kie:ksession
+
+
+==== <kie:kbase>'s definition example
+
+
+A kmodule can contain multiple (1..n) kbase elements.
+
+.kbase definition example
+====
+[source,xml]
+----
+<kie:kmodule id="sample_module">
+   <kie:kbase name="kbase1" packages="org.drools.spring.sample">
+     ...
+   </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Spring Bean Scope (for KieBase and KieSession)
+
+
+When defining a KieBase or a KieSession, you have the option of declaring a scope for that bean.
+For example, To force Spring to produce a new bean instance each time one is needed, you should declare the bean's scope attribute to be 'prototype'. Similar way if you want Spring to return the same bean instance each time one is needed, you should declare the bean's scope attribute to be 'singleton'.
+
+=== IMPORTANT NOTE
+
+
+For proper initialization of the kmodule objects (kbase/ksession), it is mandatory for a bean of type `org.kie.spring.KModuleBeanFactoryPostProcessor` or `org.kie.spring.annotations.KModuleAnnotationPostProcessor` be defined.
+
+.Regular kie-spring post processorbean definition
+====
+[source,xml]
+----
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+
+
+.kie-spring post processorbean definition when annotations are used
+====
+[source,xml]
+----
+<bean id="kiePostProcessor"
+          class="org.kie.spring.annotations.KModuleAnnotationPostProcessor"/>
+----
+====
+
+[NOTE]
+====
+
+Without the org.kie.spring.KModuleBeanFactoryPostProcessor or org.kie.spring.annotations.KModuleAnnotationPostProcessor bean definition, the kie-spring integration will fail to work.
+====
+
+=== KieSessions
+
+
+<kie:ksession> element defines KieSessions.
+The same tag is used to define both Stateful (__org.kie.api.runtime.KieSession__) and Stateless (__org.kie.api.runtime.StatelessKieSession__) sessions.
+
+==== <kie:ksession>'s parameters as attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|name
+|ksession's name.
+|Yes
+
+|type
+|is the session _stateful_ or
+                __stateless?__. If this attribute is empty or
+                missing, the session is assumed to be of type
+                Stateful.
+|No
+
+|default
+|Is this the default session?
+|no
+
+|scope
+|prototype \| singleton. If not provided assumed to be singleton (default)
+|no
+
+|clockType
+|REALTIME or PSEUDO
+|no
+
+|listeners-ref
+|Specifies the reference to the event listeners group
+                (see <<_kie_grouping_listeners,'Defining a Group
+                of listeners'>> section below).
+|no
+|===
+
+.ksession definition example
+====
+[source,xml]
+----
+<kie:kmodule id="sample-kmodule">
+  <kie:kbase name="drl_kiesample3" packages="drl_kiesample3">
+    <kie:ksession name="ksession1" type="stateless"/>
+    <kie:ksession name="ksession2"/>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Spring Bean Scope (for KieBase and KieSession)
+
+
+When defining a KieBase or a KieSession, you have the option of declaring a scope for that bean.
+For example, To force Spring to produce a new bean instance each time one is needed, you should declare the bean's scope attribute to be 'prototype'. Similar way if you want Spring to return the same bean instance each time one is needed, you should declare the bean's scope attribute to be 'singleton'.
+
+=== Kie:ReleaseId
+
+
+
+==== <kie:releaseId>'s parameters as attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+|id
+|Bean's _id_ is the name to be
+                  referenced from other beans. Standard Spring ID semantics
+                  apply.
+|Yes
+
+|groupId
+|groupId from Maven GAV
+|Yes
+
+|artifactId
+|artifactId from Maven GAV
+|Yes
+
+|version
+|version from Maven GAV
+|Yes
+|===
+
+.releaseId definition example
+====
+[source,xml]
+----
+<kie:releaseId id="beanId" groupId="org.kie.spring"
+            artifactId="named-artifactId" version="1.0.0-SNAPSHOT"/>
+----
+====
+
+=== Kie:Import
+
+
+Starting with version 6.2, kie-spring allows for importing of kie objects from kjars found on the classpath.
+Two modes of importing the kie objects are currently supported.
+
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Description
+| Required
+
+
+|releaseId
+|Reference to a Bean ID. Standard Spring ID semantics
+                apply.
+|No
+
+|enableScanner
+|Enable Scanner. This attribute is used only if 'releaseId' is specified.
+|No
+
+|scannerInterval
+|Scanning Interval in milli seconds. This attribute is used only if 'releaseId' is specified.
+|No
+|===
+
+==== Global Import
+
+
+The _import_ tag will force the automatic scan of all the jars on the classpath, initialize the Kie Objects (Kbase/KSessions) and import these objects into the spring context.
+
+.Global Import
+[source,xml]
+----
+<kie:import />
+----
+
+==== Specific Import - ReleaseId
+
+
+Using the _releaseId-ref_ attribute on the import tag will initialize the specific Kie Objects (Kbase/KSessions) and import these objects into the spring context.
+
+.Import Kie Objects using a releaseId
+[source,xml,subs="verbatim,attributes"]
+----
+<kie:import releaseId-ref="namedKieSession"/>
+<kie:releaseId id="namedKieSession" groupId="org.drools"
+            artifactId="named-kiesession" version="{revnumber}"/>
+----
+
+
+Kie Scanning feature can be enabled for KieBase's imported with a specific releaseId.
+This feature is currently not available for global imports.
+
+.Import Kie Objects using a releaseId - Enable Scanner
+[source,xml,subs="verbatim,attributes"]
+----
+<kie:import releaseId-ref="namedKieSession"
+            enableScanner="true" scannerInterval="1000"/>
+
+<kie:releaseId id="namedKieSession" groupId="org.drools"
+            artifactId="named-kiesession" version="{revnumber}"/>
+----
+
+
+If the scanner is defined and enabled, an implicit _KieScanner_ object is created and inserted into the spring context.
+It can be retrieved from the spring context.
+
+.Retrieving the KieScanner from Spring Context
+[source,java]
+----
+
+// the implicit name would be releaseId#scanner
+KieScanner releaseIdScanner = context.getBean("namedKieSession#scanner", KieScanner.class);
+releaseIdScanner.scanNow();
+----
+
+[NOTE]
+====
+
+kie-ci must be available on the classpath for the releaseId importing feature to work.
+====
+
+=== Annotations
+
+
+@KContainer, @KBase and @KSession all support an optional 'name' attribute.
+Spring typically does "get" when it injects, all injections receive the same instance for the same set of annotations.
+the 'name' annotation forces a unique instance for each name, although all instance for that name will be identity equals.
+
+==== @KReleaseId
+
+
+Used to bind an instance to a specific version of a KieModule.
+If kie-ci is on the classpath this will resolve dependencies automatically, downloading from remote repositories.
+
+==== @KContainer
+
+.Injects Classpath KieContainer
+[source,java]
+----
+@KContainer
+private KieContainer kContainer;
+----
+
+.Injects KieContainer for Dynamic KieModule
+[source,java]
+----
+@KContainer
+@KReleaseId(groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieContainer kContainer;
+----
+
+.Injects named KieContainer for Dynamic KieModule
+[source,java]
+----
+@KContainer(name = "kc1")
+@KReleaseId(groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieContainer kContainer;
+----
+
+==== @KBase
+
+
+The default argument, if given, maps to the value attribute and specifies the name of the KieBase from the spring xml file.
+
+.Injects the Default KieBase from the Classpath KieContainer
+[source,java]
+----
+@KBase
+private KieBase kbase;
+----
+
+.Injects the Default KieBase from a Dynamic KieModule
+[source,java]
+----
+@KBase
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieBase kbase;
+----
+
+.Side by side version loading for 'jar1.KBase1' KieBase
+[source,java]
+----
+@KBase("kbase1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieBase kbase1v10;
+
+@KBase("kbase1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieBase kbase1v11;
+----
+
+.Side by side version loading for 'jar1.ksession1' KieSession
+[source,java]
+----
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksession11kb2;
+
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieSession ksession11kb2;
+----
+
+==== @KSession for KieSession
+
+
+The default argument, if given, maps to the value attribute and specifies the name of the KieSession from the kmodule.xml or spring xml file
+
+.Injects the Default KieSession from the Classpath KieContainer
+[source,java]
+----
+@KSession
+private KieSession ksession;
+----
+
+.Injects the Default KieSession from a Dynamic KieModule
+[source,java]
+----
+@KSession
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksession;
+----
+
+.Side by side version loading for 'jar1.KBase1' KieBase
+[source,java]
+----
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksessionv10;
+
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieSession ksessionv11;
+----
+
+.Use 'name' attribute to force new Instance for 'jar1.KBase1' KieSession
+[source,java]
+----
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksession1ks1
+
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksession1ks2
+----
+
+==== @KSession for StatelessKieSession
+
+
+The default argument, if given, maps to the value attribute and specifies the name of the KieSession from the kmodule.xml or spring xml file.
+
+.Injects the Default StatelessKieSession from the Classpath KieContainer
+[source,java]
+----
+@KSession
+private StatelessKieSession ksession;
+----
+
+.Injects the Default StatelessKieSession from a Dynamic KieModule
+[source,java]
+----
+@KSession
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksession;
+----
+
+.Side by side version loading for 'jar1.KBase1' KieBase
+[source,java]
+----
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksessionv10;
+
+@KSession("ksession1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private StatelessKieSession ksessionv11;
+----
+
+
+[source,java]
+----
+@KSession(value="ksession1", name="ks1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksession1ks1
+
+@KSession(value="ksession1", name="ks2")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksession1ks2
+----
+
+==== IMPORTANT NOTE
+
+
+When annotations are used, For proper initialization of the kmodule objects (kbase/ksession), it is mandatory for either a bean of type `org.kie.spring.annotations.KModuleAnnotationPostProcessor` be defined
+
+.kie-spring annotations post processor bean definition
+====
+[source,xml]
+----
+<bean id="kiePostProcessor"
+            class="org.kie.spring.annotations.KModuleAnnotationPostProcessor"/>
+----
+====
+
+.kie-spring annotations - Component Scanning
+====
+[source,xml]
+----
+<context:component-scan base-package="org.kie.spring.annotations"/>
+----
+====
+
+[NOTE]
+====
+The post processor is different when annotations are used.
+====
+
+=== Event Listeners
+
+
+Drools supports adding 3 types of listeners to KieSessions - __AgendaListener__, __WorkingMemoryListener__, _ProcessEventListener_
+
+The kie-spring module allows you to configure these listeners to KieSessions using XML tags.
+These tags have identical names as the actual listener interfaces i.e., <kie:agendaEventListener....>, <kie:ruleRuntimeEventListener....> and <kie:processEventListener....>.
+
+kie-spring provides features to define the listeners as standalone (individual) listeners and also to define them as a group.
+
+==== Defining Stand alone Listeners:
+
+==== Attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Required
+| Description
+
+|ref
+|No
+|A reference to another declared bean.
+|===
+
+.Listener configuration example - using a bean:ref.
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-rr-listener" class="mocks.MockRuleRuntimeEventListener"/>
+<bean id="mock-process-listener" class="mocks.MockProcessEventListener"/>
+
+<kie:kmodule id="listeners_kmodule">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksession2">
+      <kie:agendaEventListener ref="mock-agenda-listener"/>
+      <kie:processEventListener ref="mock-process-listener"/>
+      <kie:ruleRuntimeEventListener ref="mock-rr-listener"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Nested Elements:
+
+* bean
+** class = String
+** name = String (optional)
+
+
+.Listener configuration example - using nested bean.
+====
+[source,xml]
+----
+<kie:kmodule id="listeners_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+   <kie:ksession name="ksession1">
+	  <kie:agendaEventListener>
+      <bean class="mocks.MockAgendaEventListener"/>
+      </kie:agendaEventListener>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Empty Tag : Declaration with no 'ref' and without a nestedbean
+
+
+When a listener is defined without a reference to a implementing bean and does not contain a nested bean, _<drools:ruleRuntimeEventListener/>_ the underlying implementation adds the Debug version of the listener defined in the API.
+
+The debug listeners print the corresponding Event toString message to _System.err. _
+
+.Listener configuration example - defaulting to the debugversions provided by the Knowledge-API .
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-rr-listener" class="mocks.MockRuleRuntimeEventListener"/>
+<bean id="mock-process-listener" class="mocks.MockProcessEventListener"/>
+
+<kie:kmodule id="listeners_module">
+ <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksession2">
+      <kie:agendaEventListener />
+      <kie:processEventListener />
+      <kie:ruleRuntimeEventListener />
+    </kie:ksession>
+ </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Mix and Match of different declaration styles
+
+
+The drools-spring module allows you to mix and match the different declarative styles within the same KieSession.
+The below sample provides more clarity.
+
+.Listener configuration example - mix and match of'ref'/nested-bean/empty styles.
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-rr-listener" class="mocks.MockRuleRuntimeEventListener"/>
+<bean id="mock-process-listener" class="mocks.MockProcessEventListener"/>
+
+<kie:kmodule id="listeners_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksession1">
+      <kie:agendaEventListener>
+          <bean class="org.kie.spring.mocks.MockAgendaEventListener"/>
+      </kie:agendaEventListener>
+    </kie:ksession>
+    <kie:ksession name="ksession2">
+      <kie:agendaEventListener ref="mock-agenda-listener"/>
+      <kie:processEventListener ref="mock-process-listener"/>
+      <kie:ruleRuntimeEventListener ref="mock-rr-listener"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Defining multiple listeners of the same type
+
+
+It is also valid to define multiple beans of the same event listener types for a KieSession.
+
+.Listener configuration example - multiple listeners of the same type.
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+
+<kie:kmodule id="listeners_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksession1">
+      <kie:agendaEventListener ref="mock-agenda-listener"/>
+      <kie:agendaEventListener>
+          <bean class="org.kie.spring.mocks.MockAgendaEventListener"/>
+      </kie:agendaEventListener>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+[[_kie_grouping_listeners]]
+==== Defining a Group of listeners:
+
+
+drools-spring allows for grouping of listeners.
+This is particularly useful when you define a set of listeners and want to attach them to multiple sessions.
+The grouping feature is also very useful, when we define a set of listeners for 'testing' and then want to switch them for 'production' use.
+
+==== Attributes:
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Required
+| Description
+
+|ID
+|yes
+|Unique identifier
+|===
+
+==== Nested Elements:
+
+* kie:agendaEventListener...
+* kie:ruleRuntimeEventListener...
+* kie:processEventListener...
+
+
+[NOTE]
+====
+
+The above mentioned child elements can be declared in any order.
+Only one declaration of each type is allowed in a group.
+====
+
+==== Example:
+
+.Group of listeners - example
+====
+[source,xml]
+----
+<bean id="mock-agenda-listener" class="mocks.MockAgendaEventListener"/>
+<bean id="mock-rr-listener" class="mocks.MockRuleRuntimeEventListener"/>
+<bean id="mock-process-listener" class="mocks.MockProcessEventListener"/>
+
+<kie:kmodule id="listeners_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="statelessWithGroupedListeners" type="stateless"
+             listeners-ref="debugListeners"/>
+  </kie:kbase>
+</kie:kmodule>
+
+  <kie:eventListeners id="debugListeners">
+  <kie:agendaEventListener ref="mock-agenda-listener"/>
+  <kie:processEventListener ref="mock-process-listener"/>
+  <kie:ruleRuntimeEventListener ref="mock-rr-listener"/>
+</kie:eventListeners>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+=== Loggers
+
+
+Drools supports adding 2 types of loggers to KieSessions - __ConsoleLogger__, _FileLogger._
+
+The kie-spring module allows you to configure these loggers to KieSessions using XML tags.
+These tags have identical names as the actual logger interfaces i.e., <kie:consoleLogger....> and <kie:fileLogger....>.
+
+==== Defining a console logger:
+
+
+A console logger can be attached to a KieSession by using the _<kie:consoleLogger/>_ tag.
+This tag has no attributes and must be present directly under a <kie:ksession....> element.
+
+.Defining a console logger - example
+====
+[source,xml]
+----
+<kie:kmodule id="loggers_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ConsoleLogger-statefulSession" type="stateful">
+      <kie:consoleLogger/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Defining a file logger:
+
+
+A file logger can be attached to a KieSession by using the _<kie:fileLogger/>_ tag.
+This tag has the following attributes and must be present directly under a <kie:ksession....> element.
+
+.Sample
+[cols="1,1,1", options="header"]
+|===
+| Attribute
+| Required
+| Description
+
+|ID
+|yes
+|Unique identifier
+
+|file
+|yes
+|Path to the actual file on the disk
+
+|threaded
+|no
+|Defaults to false. Valid values are 'true' or
+                'false'
+
+|interval
+|no
+|Integer. Specifies the interval for flushing the
+                contents from memory to the disk.
+|===
+
+.Defining a file logger - example
+====
+[source,xml]
+----
+<kie:kmodule id="loggers_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ConsoleLogger-statefulSession" type="stateful">
+      <kie:fileLogger id="fl_logger" file="#{ systemProperties['java.io.tmpdir'] }/log1"/>
+      <kie:fileLogger id="tfl_logger" file="#{ systemProperties['java.io.tmpdir'] }/log2"
+                          threaded="true" interval="5"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+==== Closing a FileLogger
+
+
+To prevent leaks, it is advised to close the _<kie:fileLogger ...> _ programmatically.
+
+[source,java]
+----
+LoggerAdaptor adaptor = (LoggerAdaptor) context.getBean("fl_logger");
+adaptor.close();
+----
+
+=== Defining Batch Commands
+
+
+A _<kie:batch>_ element can be used to define a set of batch commands for a given ksession. This tag has no attributes and must be present directly under a <kie:ksession....> element.
+The commands supported are
+
+.Initialization Batch Commands
+* insert-object
+** ref = String (optional)
+** Anonymous bean
+* set-global
+** identifier = String (required)
+** reg = String (optional)
+** Anonymous bean
+* fire-all-rules
+** max : n
+* fire-until-halt
+* start-process
+** parameter
+*** identifier = String (required)
+*** ref = String (optional)
+*** Anonymous bean
+* signal-event
+** ref = String (optional)
+** event-type = String (required)
+** process-instance-id =n (optional)
+
+
+.Batch commands - example
+====
+[source,xml]
+----
+<kie:kmodule id="batch_commands_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ksessionForCommands" type="stateful">
+      <kie:batch>
+        <kie:insert-object ref="person2"/>
+        <kie:set-global identifier="persons" ref="personsList"/>
+        <kie:fire-all-rules max="10"/>
+      </kie:batch>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+=== Persistence
+
+.Persistence Configuration Options
+* jpa-persistence
+** transaction-manager
+*** ref = String
+** entity-manager-factory
+*** ref = String
+
+
+.ksession JPA configuration example
+====
+[source,xml]
+----
+<kie:kstore id="kstore" /> <!-- provides KnowledgeStoreService implementation -->
+
+<bean id="myEmf"
+       class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+   <property name="dataSource" ref="ds" />
+   <property name="persistenceUnitName"
+       value="org.drools.persistence.jpa.local" />
+</bean>
+
+<bean id="txManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+   <property name="entityManagerFactory" ref="myEmf" />
+</bean>
+
+<kie:kmodule id="persistence_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="jpaSingleSessionCommandService">
+      <kie:configuration>
+         <kie:jpa-persistence>
+           <kie:transaction-manager ref="txManager"/>
+           <kie:entity-manager-factory ref="myEmf"/>
+         </kie:jpa-persistence>
+      </kie:configuration>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+          class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+====
+
+=== Leveraging Other Spring Features
+
+
+This section provides details on leveraging other standard spring features when integrating with Drools Expert.
+
+==== Using Spring Expressions (Spel)
+
+
+
+[source,xml]
+----
+<kie:kmodule id="batch_commands_module">
+  <kie:kbase name="drl_kiesample" packages="#{packageRepository.packages}">
+    <kie:ksession name="ksessionForCommands" type="stateful"/>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+      class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+
+<bean id="packageRepository" class="sample.package.class.PackageRepo">
+  <property name="packages" value="drl_kiesample3">
+</bean>
+----
+
+
+
+[source,xml]
+----
+<kie:kmodule id="loggers_module">
+  <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+    <kie:ksession name="ConsoleLogger-statefulSession" type="stateful">
+      <kie:fileLogger id="fl" file="#{ systemProperties['java.io.tmpdir'] }/log1"/>
+      <kie:fileLogger id="tfl" file="#{ systemProperties['java.io.tmpdir'] }/log2"
+            threaded="true" interval="5"/>
+    </kie:ksession>
+  </kie:kbase>
+</kie:kmodule>
+
+<bean id="kiePostProcessor"
+            class="org.kie.spring.KModuleBeanFactoryPostProcessor"/>
+----
+
+==== Using Spring Profiles
+
+
+Spring 3.1 introduces a new profile attribute to the beans element of the spring-beans schema.
+This attribute acts as a switch when enabling and disabling profiles in different environments.
+One potential use of this attribute can be to have the same kbase defined with debug loggers in 'dev' environment and without loggers in 'prod' environment.
+
+The below code snippet illustrates the concept of 'profiles'.
+
+[source,xml]
+----
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns:kie="http://drools.org/schema/kie-spring"
+xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+http://drools.org/schema/kie-spring http://drools.org/schema/kie-spring.xsd">
+  <beans profile="development">
+    <kie:kmodule id="test-kmodule">
+      <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+        <kie:ksession name="ksession1" type="stateless">
+            <kie:consoleLogger />
+        </kie:ksession>
+      </kie:kbase>
+    </kie:kmodule>
+    ...
+  </beans>
+
+  <beans profile="production">
+    <kie:kmodule id="test-kmodule">
+      <kie:kbase name="drl_kiesample" packages="drl_kiesample">
+        <kie:ksession name="ksession1" type="stateless"/>
+      </kie:kbase>
+    </kie:kmodule>
+    ...
+  </beans>
+</beans>
+----
+
+
+As shown above, the Spring XML contains the definition of the profiles.
+While loading the _ApplicationContext_ you have to tell Spring which profile you`'re loading.
+
+There are several ways of selecting your profile and the most useful is by using the "spring.profiles.active" system property.
+
+[source]
+----
+System.setProperty("spring.profiles.active", "development");
+ApplicationContext ctx = new ClassPathXmlApplicationContext("beans.xml");
+----
+
+
+Obviously, it is not a good practice to hard code things as shown above and the recommended practice is to keep the system properties definitions independent of the application.
+
+[source]
+----
+-Dspring.profiles.active="development"
+----
+
+
+The profiles can also be loaded and enabled programmatically
+
+[source]
+----
+...
+GenericXmlApplicationContext ctx = new GenericXmlApplicationContext("beans.xml");
+ConfigurableEnvironment env = ctx.getEnvironment();
+env.setActiveProfiles("development");
+ctx.refresh();
+...
+----
+
+== Integration with jBPM Human Task
+
+
+This chapter describes the infrastructure used when configuring a human task server with Spring as well as a little bit about the infrastructure used when doing this.
+
+=== How to configure Spring with jBPM Human task
+
+
+The jBPM human task server can be configured to use Spring persistence. The following is a dependency graph for a configuration that uses local transactions and Spring's thread-safe EntityManager proxy:
+
+.Spring Human Task integration injection dependencies
+image::Spring/ht-spring-deps.png[align="center"]
+
+
+A `TaskService` instance is dependent on two other bean types: a drools `SystemEventListener` bean as well as a `TaskSessionSpringFactoryImpl` bean.
+The `TaskSessionSpringFactoryImpl` bean is howerver _not_ injected into the `TaskService` bean because this would cause a circular dependency.
+To solve this problem, when the `TaskService` bean is injected into the `TaskSessionSpringFactoryImpl` bean, the setter method used secretly injects the `TaskSessionSpringFactoryImpl` instance back into the `TaskService` bean and initializes the `TaskService` bean as well.
+
+The `TaskSessionSpringFactoryImpl` bean is responsible for creating all the internal instances in human task that deal with transactions and persistence context management.
+Besides a `TaskService` instance, this bean also requires a transaction manager and a persistence context to be injected.
+Specifically, it requires an instance of a `HumanTaskSpringTransactionManager` bean (as a transaction manager) and an instance of a `SharedEntityManagerBean` bean (as a persistence context instance).
+
+We also use some of the standard Spring beans in order to configure persistence: there's a bean to hold the `EntityManagerFactory` instance as well as the `SharedEntityManagerBean` instance.
+The `SharedEntityManagerBean` provides a shared, thread-safe proxy for the actual ``EntityManager``.
+
+The `HumanTaskSpringTransactionManager` bean serves as a wrapper around the Spring transaction manager, in this case the ``JpaTransactionManager``.
+An instance of a `JpaTransactionManager` bean is also instantiated because of this.
+
+.Configuring Human Task with Spring
+====
+[source,xml]
+----
+include::{shared-dir}/Spring/examples/spring-human-task-example.xml[]
+----
+====
+
+When using the `SharedEntityManagerBean` instance, it's important to configure the Spring transaction manager to use nested transactions.
+This is because the `SharedEntityManagerBean` is a _transactional_ persistence context and will close the persistence context after every operation.
+However, the human task server needs to be able to access (persisted) entities after operations.
+Nested transactions allow us to still have access to entities that otherwise would have been detached and are no longer accessible, especially when using an ORM framework that uses lazy-initialization of entities.
+
+Also, while the `TaskSessionSpringFactoryImpl` bean takes an "`useJTA`"
+ parameter, at the moment, JTA transactions with Spring have not yet been fully tested.

@@ -1,0 +1,80 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-kie-session-ref_{context}']
+= KIE session assets
+
+// The {KIE_SERVER} REST API supports the following endpoint for managing assets in KIE sessions. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+== [POST] /server/containers/instances/{containerId}
+
+Executes one or more runtime commands provided with {PRODUCT} for asset-related operations, such as inserting or retracting objects in a KIE session or firing all rules. The full list of supported runtime commands is located in the `org.drools.core.command.runtime` package in your {PRODUCT} instance.
+
+// For more information about using {PRODUCT} runtime commands, see xref:runtime-commands-con_kie-apis[].
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the commands will be run
+|String
+|Required
+
+|*body*
+|A `commands` object with one or more {PRODUCT} runtime commands
+|Request body
+|Required
+|===
+
+.Example batch request body to insert an object and fire all rules (JSON)
+[source,json]
+----
+{
+  "lookup": "ksession1",
+  "commands": [ {
+      "insert": {
+        "object": {
+          "org.drools.compiler.test.Person": {
+            "name": "john",
+            "age": 25
+          }
+        }
+      }
+    },
+    {
+      "fire-all-rules": {
+        "max": 10,
+        "out-identifier": "firedActivations"
+      }
+    }
+  ]
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Container command-script-container successfully called.",
+      "result": {
+        "execution-results": {
+          "results": [
+            {
+              "value": 0,
+              "key": "firedActivations"
+            }
+          ],
+          "facts": []
+        }
+      }
+    }
+  ]
+}
+----

@@ -1,0 +1,225 @@
+[id='prometheus-monitoring-custom-proc_{context}']
+
+= Extending Prometheus metrics monitoring in {KIE_SERVER} with custom metrics
+
+After you configure your {KIE_SERVER} instance to use Prometheus metrics monitoring, you can extend the Prometheus functionality in {KIE_SERVER} to use custom metrics according to your business needs. Prometheus then collects and stores your custom metrics along with the default metrics that {KIE_SERVER} exposes with Prometheus.
+
+As an example, this procedure defines custom Decision Model and Notation (DMN) metrics to be collected and stored by Prometheus.
+
+.Prerequisites
+* Prometheus metrics monitoring is configured for your {KIE_SERVER} instance. For information about Prometheus configuration with {KIE_SERVER} on-premise, see
+ifdef::DM,PAM[]
+<<prometheus-monitoring-proc_execution-server>>. For information about Prometheus configuration with {KIE_SERVER} on {OPENSHIFT}, see <<prometheus-monitoring-ocp-proc_execution-server>>.
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+<<prometheus-monitoring-proc_kie-apis>>.
+endif::[]
+
+.Procedure
+. Create an empty Maven project and define the following packaging type and dependencies in the `pom.xml` file for the project:
++
+.Example pom.xml file in the sample project
+[source,xml,subs="attributes+"]
+----
+<packaging>jar</packaging>
+
+<properties>
+  <version.org.kie>{MAVEN_ARTIFACT_VERSION}</version.org.kie>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-common</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-drools</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-prometheus</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-dmn-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-dmn-core</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jbpm</groupId>
+    <artifactId>jbpm-services-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.jbpm</groupId>
+    <artifactId>jbpm-executor</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.optaplanner</groupId>
+    <artifactId>optaplanner-core</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>io.prometheus</groupId>
+    <artifactId>simpleclient</artifactId>
+    <version>0.5.0</version>
+  </dependency>
+</dependencies>
+----
+. Implement the relevant listener from the `org.kie.server.services.prometheus.PrometheusMetricsProvider` interface as part of the custom listener class that defines your custom Prometheus metrics, as shown in the following example:
++
+--
+.Sample implementation of the `DMNRuntimeEventListener` listener in a custom listener class
+[source,java]
+----
+package org.kie.server.ext.prometheus;
+
+import io.prometheus.client.Gauge;
+import org.kie.dmn.api.core.ast.DecisionNode;
+import org.kie.dmn.api.core.event.AfterEvaluateBKMEvent;
+import org.kie.dmn.api.core.event.AfterEvaluateContextEntryEvent;
+import org.kie.dmn.api.core.event.AfterEvaluateDecisionEvent;
+import org.kie.dmn.api.core.event.AfterEvaluateDecisionServiceEvent;
+import org.kie.dmn.api.core.event.AfterEvaluateDecisionTableEvent;
+import org.kie.dmn.api.core.event.BeforeEvaluateBKMEvent;
+import org.kie.dmn.api.core.event.BeforeEvaluateContextEntryEvent;
+import org.kie.dmn.api.core.event.BeforeEvaluateDecisionEvent;
+import org.kie.dmn.api.core.event.BeforeEvaluateDecisionServiceEvent;
+import org.kie.dmn.api.core.event.BeforeEvaluateDecisionTableEvent;
+import org.kie.dmn.api.core.event.DMNRuntimeEventListener;
+import org.kie.server.api.model.ReleaseId;
+import org.kie.server.services.api.KieContainerInstance;
+
+public class ExampleCustomPrometheusMetricListener implements DMNRuntimeEventListener {
+
+    private final KieContainerInstance kieContainer;
+
+    private final Gauge randomGauge = Gauge.build()
+            .name("random_gauge_nanosecond")
+            .help("Random gauge as an example of custom KIE Prometheus metric")
+            .labelNames("container_id", "group_id", "artifact_id", "version", "decision_namespace", "decision_name")
+            .register();
+
+    public ExampleCustomPrometheusMetricListener(KieContainerInstance containerInstance) {
+        kieContainer = containerInstance;
+    }
+
+    public void beforeEvaluateDecision(BeforeEvaluateDecisionEvent e) {
+    }
+
+    public void afterEvaluateDecision(AfterEvaluateDecisionEvent e) {
+        DecisionNode decisionNode = e.getDecision();
+        ReleaseId releaseId = kieContainer.getResource().getReleaseId();
+        randomGauge.labels(kieContainer.getContainerId(), releaseId.getGroupId(),
+                           releaseId.getArtifactId(), releaseId.getVersion(),
+                           decisionNode.getModelName(), decisionNode.getModelNamespace())
+                .set((int) (Math.random() * 100));
+    }
+
+    public void beforeEvaluateBKM(BeforeEvaluateBKMEvent event) {
+    }
+
+    public void afterEvaluateBKM(AfterEvaluateBKMEvent event) {
+    }
+
+    public void beforeEvaluateContextEntry(BeforeEvaluateContextEntryEvent event) {
+    }
+
+    public void afterEvaluateContextEntry(AfterEvaluateContextEntryEvent event) {
+    }
+
+    public void beforeEvaluateDecisionTable(BeforeEvaluateDecisionTableEvent event) {
+    }
+
+    public void afterEvaluateDecisionTable(AfterEvaluateDecisionTableEvent event) {
+    }
+
+    public void beforeEvaluateDecisionService(BeforeEvaluateDecisionServiceEvent event) {
+    }
+
+    public void afterEvaluateDecisionService(AfterEvaluateDecisionServiceEvent event) {
+    }
+}
+----
+
+The `PrometheusMetricsProvider` interface contains the required listeners for collecting Prometheus metrics. The interface is incorporated by the `kie-server-services-prometheus` dependency that you declared in your project `pom.xml` file.
+
+In this example, the `ExampleCustomPrometheusMetricListener` class implements the `DMNRuntimeEventListener` listener (from the `PrometheusMetricsProvider` interface) and defines the custom DMN metrics to be collected and stored by Prometheus.
+--
+. Implement the `PrometheusMetricsProvider` interface as part of a custom metrics provider class that associates your custom listener with the `PrometheusMetricsProvider` interface, as shown in the following example:
++
+--
+.Sample implementation of the `PrometheusMetricsProvider` interface in a custom metrics provider class
+[source,java]
+----
+package org.kie.server.ext.prometheus;
+
+import org.jbpm.executor.AsynchronousJobListener;
+import org.jbpm.services.api.DeploymentEventListener;
+import org.kie.api.event.rule.AgendaEventListener;
+import org.kie.api.event.rule.DefaultAgendaEventListener;
+import org.kie.dmn.api.core.event.DMNRuntimeEventListener;
+import org.kie.server.services.api.KieContainerInstance;
+import org.kie.server.services.prometheus.PrometheusMetricsProvider;
+import org.optaplanner.core.impl.phase.event.PhaseLifecycleListener;
+import org.optaplanner.core.impl.phase.event.PhaseLifecycleListenerAdapter;
+
+public class MyPrometheusMetricsProvider implements PrometheusMetricsProvider {
+
+    public DMNRuntimeEventListener createDMNRuntimeEventListener(KieContainerInstance kContainer) {
+        return new ExampleCustomPrometheusMetricListener(kContainer);
+    }
+
+    public AgendaEventListener createAgendaEventListener(String kieSessionId, KieContainerInstance kContainer) {
+        return new DefaultAgendaEventListener();
+    }
+
+    public PhaseLifecycleListener createPhaseLifecycleListener(String solverId) {
+        return new PhaseLifecycleListenerAdapter() {
+        };
+    }
+
+    public AsynchronousJobListener createAsynchronousJobListener() {
+        return null;
+    }
+
+    public DeploymentEventListener createDeploymentEventListener() {
+        return null;
+    }
+}
+----
+
+In this example, the `MyPrometheusMetricsProvider` class implements the `PrometheusMetricsProvider` interface and includes your custom `ExampleCustomPrometheusMetricListener` listener class.
+--
+. To make the new metrics provider discoverable for {KIE_SERVER}, create a `META-INF/services/org.kie.server.services.prometheus.PrometheusMetricsProvider` file in your Maven project and add the fully qualified class name of the `PrometheusMetricsProvider` implementation class within the file. For this example, the file contains the single line `org.kie.server.ext.prometheus.MyPrometheusMetricsProvider`.
+. Build your project and copy the resulting JAR file into the `~/kie-server.war/WEB-INF/lib` directory of your project.
+ifdef::DM,PAM[]
+For example, on {EAP}, the path to this directory is `_EAP_HOME_/standalone/deployments/kie-server.war/WEB-INF/lib`.
++
+If you are deploying {PRODUCT} on {OPENSHIFT}, create a custom {KIE_SERVER} image and add this JAR file to the image. For more information about creating a custom {KIE_SERVER} image with an additional JAR file, see {URL_DEPLOYING_ON_OPENSHIFT}#customimage-jar-proc_openshift-operator[_{DEPLOYING_OPENSHIFT_OPERATOR}_].
++
+endif::[]
+. Start the {KIE_SERVER} and deploy the built project to the running {KIE_SERVER}. You can deploy the project using the {CENTRAL} interface or the {KIE_SERVER} REST API (a `PUT` request to `\http://SERVER:PORT/kie-server/services/rest/server/containers/{containerId}`).
++
+--
+After your project is deployed on a running {KIE_SERVER}, Prometheus begins collecting metrics and {KIE_SERVER} publishes the metrics to the REST API endpoint `\http://HOST:PORT/SERVER/services/rest/metrics` (or on Spring Boot, to `\http://HOST:PORT/rest/metrics`).
+--

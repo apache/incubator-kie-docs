@@ -1,0 +1,80 @@
+[id='knowledge-store-rest-api-con_{context}']
+= Knowledge Store REST API for {CENTRAL} spaces and projects
+
+{PRODUCT} provides a Knowledge Store REST API that you can use to interact with your projects and spaces in {PRODUCT} without using the {CENTRAL} user interface. The Knowledge Store is the artifact repository for assets in {PRODUCT}. This API support enables you to facilitate and automate maintenance of {CENTRAL} projects and spaces.
+
+With the Knowledge Store REST API, you can perform the following actions:
+
+* Retrieve information about all projects and spaces
+* Create, update, or delete projects and spaces
+* Build, deploy, and test projects
+* Retrieve information about previous Knowledge Store REST API requests, or _jobs_
+
+Knowledge Store REST API requests require the following components:
+
+Authentication::
+The Knowledge Store REST API requires HTTP Basic authentication or token-based authentication for the user role `rest-all`. To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
++
+--
+To add a user with the `rest-all` role, navigate to `~/$SERVER_HOME/bin` and run the following command:
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['rest-all'])"
+----
+
+For more information about user roles and {PRODUCT} installation options, see
+ifdef::PAM,DM[]
+{URL_INSTALLING_AND_CONFIGURING}#assembly-planning[_{PLANNING_INSTALL}_].
+endif::[]
+ifdef::DROOLS,JBPM[]
+<<_installing_the_kie_server>>.
+endif::[]
+--
+
+HTTP headers::
+The Knowledge Store REST API requires the following HTTP headers for API requests:
++
+* `Accept`: Data format accepted by your requesting client:
+** `application/json` (JSON)
+* `Content-Type`: Data format of your `POST` or `PUT` API request data:
+** `application/json` (JSON)
+
+HTTP methods::
+The Knowledge Store REST API supports the following HTTP methods for API requests:
++
+* `GET`: Retrieves specified information from a specified resource endpoint
+* `POST`: Creates or updates a resource
+* `PUT`: Updates a resource
+* `DELETE`: Deletes a resource
+
+Base URL::
+The base URL for Knowledge Store REST API requests is `\http://SERVER:PORT/{URL_COMPONENT_CENTRAL}/rest/`, such as  `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/`.
++
+NOTE: The REST API base URL for the Knowledge Store and for the {CONTROLLER} built in to {CENTRAL} are the same because both are considered part of {CENTRAL} REST services.
+
+Endpoints::
+Knowledge Store REST API endpoints, such as `/spaces/{spaceName}` for a specified space, are the URIs that you append to the Knowledge Store REST API base URL to access the corresponding resource or type of resource in {PRODUCT}.
++
+--
+.Example request URL for `/spaces/{spaceName}` endpoint
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/spaces/MySpace`
+--
+
+Request data::
+HTTP `POST` requests in the Knowledge Store REST API may require a JSON request body with data to accompany the request.
++
+--
+.Example POST request URL and JSON request body data
+`\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/spaces/MySpace/projects`
+
+[source,json]
+----
+{
+  "name": "Employee_Rostering",
+  "groupId": "employeerostering",
+  "version": "1.0.0-SNAPSHOT",
+  "description": "Employee rostering problem optimisation using Planner. Assigns employees to shifts based on their skill."
+}
+----
+--

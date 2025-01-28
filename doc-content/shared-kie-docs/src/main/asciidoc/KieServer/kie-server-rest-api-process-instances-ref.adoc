@@ -1,0 +1,1385 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-process-instances-ref_{context}']
+= Process instances
+
+// The {KIE_SERVER} REST API supports the following endpoints for managing process instances. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+== [GET] /server/containers/{containerId}/processes
+
+Returns a list of process definitions in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the processes reside
+|String
+|Required
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|`sort`
+|Sort column for results
+|String
+|Optional
+
+|`sortOrder`
+|Ascending (`true`) or descending (`false`) sort order for results
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/employee-rostering/processes?page=0&pageSize=10&sort=Test&sortOrder=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "processes": [
+    {
+      "associatedEntities": null,
+      "serviceTasks": null,
+      "processVariables": null,
+      "reusableSubProcesses": null,
+      "process-id": "Employee_Rostering.Process1",
+      "process-name": "Process1",
+      "process-version": "1.0",
+      "package": "employeerostering.employeerostering",
+      "container-id": "employee-rostering",
+      "dynamic": false
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances
+
+Returns a list of process instances in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instances reside
+|String
+|Required
+
+|`status`
+|Active (`1`), completed (`2`), or aborted (`3`) process instances (default: `1`, active)
+|Array [integer]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|`sort`
+|Sort column for results
+|String
+|Optional
+
+|`sortOrder`
+|Ascending (`true`) or descending (`false`) sort order for results
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/employee-rostering/processes/instances?status=1&page=0&pageSize=10&sortOrder=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-instance": [
+    {
+      "process-instance-id": 1,
+      "process-id": "Employee_Rostering.Process1",
+      "process-name": "Process1",
+      "process-version": "1.0",
+      "process-instance-state": 1,
+      "container-id": "employee-rostering",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1539184095041
+      },
+      "process-instance-desc": "Process1",
+      "correlation-key": "1",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    },
+    {
+      "process-instance-id": 2,
+      "process-id": "Employee_Rostering.Process2",
+      "process-name": "Process2",
+      "process-version": "1.0",
+      "process-instance-state": 1,
+      "container-id": "employee-rostering",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1539184303976
+      },
+      "process-instance-desc": "Process2",
+      "correlation-key": "2",
+      "parent-instance-id": -1,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    }
+  ]
+}
+----
+
+== [DELETE] /server/containers/{containerId}/processes/instances
+
+Aborts multiple specified process instances in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`instanceId`
+|IDs of the process instances to be aborted
+|Array [integer]
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Process instances successfully aborted."
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}
+
+Returns information about a specified process instance in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance to be retrieved
+|Integer
+|Required
+
+|`withVars`
+|Returns variable information for the process instance when set to `true` (default: `null`)
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/employee-rostering/processes/instances/1?withVars=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-instance-id": 1,
+  "process-id": "Employee_Rostering.Process1",
+  "process-name": "Process1",
+  "process-version": "1.0",
+  "process-instance-state": 1,
+  "container-id": "employee-rostering",
+  "initiator": "baAdmin",
+  "start-date": {
+    "java.util.Date": 1539184095041
+  },
+  "process-instance-desc": "Process1",
+  "correlation-key": "1",
+  "parent-instance-id": -1,
+  "sla-compliance": 0,
+  "sla-due-date": null,
+  "active-user-tasks": null,
+  "process-instance-variables": {
+    "initiator": "baAdmin"
+  }
+}
+----
+
+== [DELETE] /server/containers/{containerId}/processes/instances/{processInstanceId}
+
+Aborts a specified process instance in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance to be aborted
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Process instance successfully aborted."
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/nodes/instances
+
+Returns node instances for the specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+
+|`activeOnly`
+|Active nodes only
+|Integer
+|Optional
+
+|`completedOnly`
+|Completed nodes only
+|Integer
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/employee-rostering/processes/instances/2/nodes/instances?activeOnly=true&page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "node-instance": [
+    {
+      "node-instance-id": 1,
+      "node-name": "Task",
+      "process-instance-id": 2,
+      "work-item-id": 2,
+      "container-id": "employee-rostering",
+      "start-date": {
+        "java.util.Date": 1539184095048
+      },
+      "node-id": "_5F8EED98-433C-4E7B-97BC-0E70615F13CB",
+      "node-type": "HumanTaskNode",
+      "node-connection": "_E89FEB0F-B8E1-4138-9DF0-397C9F9A6512",
+      "node-completed": false,
+      "reference-id": null,
+      "sla-compliance": 0,
+      "sla-due-date": null
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/variables
+
+Retrieves all variables for a specified process instance as a map in which the key is the variable name and the value is the variable value.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "application": {
+    "com.myspace.mortgage_app.Application": {
+      "applicant": {
+        "com.myspace.mortgage_app.Applicant": {
+          "name": "",
+          "annualincome": 0,
+          "address": null,
+          "ssn": 0,
+          "creditrating": null
+        }
+      },
+      "property": {
+        "com.myspace.mortgage_app.Property": {
+          "age": 0,
+          "address": "",
+          "locale": "",
+          "saleprice": 0
+        }
+      },
+      "downpayment": 0,
+      "amortization": 0,
+      "mortgageamount": null
+    }
+  },
+  "initiator": "baAdmin"
+}
+----
+
+== [POST] /server/containers/{containerId}/processes/instances/{processInstanceId}/variables
+
+Updates the values of one or more variable for a specified process instance. The request is a map in which the key is the variable name and the value is the new variable value.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+
+|*body*
+|Map containing each variable name and updated value in a `key: value` format
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "application": {
+    "com.myspace.mortgage_app.Application": {
+      "applicant": {
+        "com.myspace.mortgage_app.Applicant": {
+          "name": "NewName",
+          "annualincome": 0,
+          "address": null,
+          "ssn": 0,
+          "creditrating": null
+        }
+      },
+      "property": {
+        "com.myspace.mortgage_app.Property": {
+          "age": 0,
+          "address": "NewAddress",
+          "locale": "",
+          "saleprice": 0
+        }
+      },
+      "downpayment": 0,
+      "amortization": 0,
+      "mortgageamount": null
+    }
+  },
+  "initiator": "baAdmin"
+}
+----
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Variables for process instance 2 successfully updated."
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/variables/instances
+
+Returns the current variable values of a specified process instance in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "variable-instance": [
+    {
+      "name": "initiator",
+      "old-value": "",
+      "value": "baAdmin",
+      "process-instance-id": 2,
+      "modification-date": {
+        "java.util.Date": 1539610491992
+      }
+    },
+    {
+      "name": "application",
+      "old-value": "com.myspace.mortgage_app.Application@bd449b3",
+      "value": "com.myspace.mortgage_app.Application@bd449b3",
+      "process-instance-id": 2,
+      "modification-date": {
+        "java.util.Date": 1539610492006
+      }
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/variables/instances/{variableName}
+
+Returns the history of a specified variable in a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+
+|`variableName`
+|Name of the process instance variable to be retrieved
+|String
+|Required
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with variable name and optional parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/mortgage-process_1.0.0-SNAPSHOT/processes/instances/2/variables/instances/application?page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "variable-instance": [
+    {
+      "name": "application",
+      "old-value": "com.myspace.mortgage_app.Application@bd449b3",
+      "value": "com.myspace.mortgage_app.Application@bd449b3",
+      "process-instance-id": 2,
+      "modification-date": {
+        "java.util.Date": 1539610492006
+      }
+    },
+    {
+      "name": "application",
+      "old-value": "",
+      "value": "com.myspace.mortgage_app.Application@bd449b3",
+      "process-instance-id": 1,
+      "modification-date": {
+        "java.util.Date": 1539610491978
+      }
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/variable/{variableName}
+
+Returns the value of a specified variable in a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+
+|`variableName`
+|Name of the process instance variable to be retrieved
+|String
+|Required
+|===
+
+.Example GET endpoint with variable name
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/mortgage-process_1.0.0-SNAPSHOT/processes/instances/2/variable/application
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "com.myspace.mortgage_app.Application": {
+    "applicant": {
+      "com.myspace.mortgage_app.Applicant": {
+        "name": "",
+        "annualincome": 0,
+        "address": null,
+        "ssn": 0,
+        "creditrating": null
+      }
+    },
+    "property": {
+      "com.myspace.mortgage_app.Property": {
+        "age": 0,
+        "address": "",
+        "locale": "",
+        "saleprice": 0
+      }
+    },
+    "downpayment": 0,
+    "amortization": 0,
+    "mortgageamount": null
+  }
+}
+----
+
+== [PUT] /server/containers/{containerId}/processes/instances/{processInstanceId}/variable/{variableName}
+
+Creates or updates a variable for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance
+|Integer
+|Required
+
+|`varName`
+|Name of the process instance variable to be created or updated
+|String
+|Required
+
+|*body*
+|Map containing each new or updated variable name and value in a `key: value` format
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "applicationNew": {
+    "com.myspace.mortgage_app.Application": {
+      "applicant": {
+        "com.myspace.mortgage_app.Applicant": {
+          "name": "NewName2",
+          "annualincome": 0,
+          "address": null,
+          "ssn": 0,
+          "creditrating": null
+        }
+      },
+      "propertyNew": {
+        "com.myspace.mortgage_app.Property": {
+          "age": 0,
+          "address": "NewAddress2",
+          "locale": "",
+          "saleprice": 0
+        }
+      },
+      "downpayment": 0,
+      "amortization": 0,
+      "mortgageamount": null
+    }
+  },
+  "initiatorNew": "baAdmin2"
+}
+----
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Variables for process instance 2 successfully updated."
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/processes
+
+Returns a list of process instances for which a specified process instance is a parent process instance
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the parent process instance
+|Integer
+|Required
+
+|`status`
+|Active (`1`), completed (`2`), or aborted (`3`) process instances (default: `1`, active)
+|Array [integer]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+
+|`sort`
+|Sort column for results
+|String
+|Optional
+
+|`sortOrder`
+|Ascending (`true`) or descending (`false`) sort order for results
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/containers/mortgage-process_1.0.0-SNAPSHOT/processes/instances/2/processes?page=0&pageSize=10&sortOrder=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "process-instance": [
+    {
+      "process-instance-id": 1,
+      "process-id": "Employee_Rostering.Process1",
+      "process-name": "Process1",
+      "process-version": "1.0",
+      "process-instance-state": 1,
+      "container-id": "employee-rostering",
+      "initiator": "baAdmin",
+      "start-date": {
+        "java.util.Date": 1539184095041
+      },
+      "process-instance-desc": "Process1",
+      "correlation-key": "1",
+      "parent-instance-id": 2,
+      "sla-compliance": 0,
+      "sla-due-date": null,
+      "active-user-tasks": null,
+      "process-instance-variables": null
+    }
+  ]
+}
+----
+
+== [POST] /server/containers/{containerId}/processes/{processId}/instances
+
+Starts a new process instance of a specified process.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process is located
+|String
+|Required
+
+|`processId`
+|ID of the process for which you are starting a process instance
+|String
+|Required
+
+|*body*
+|Optional map containing process instance variable names and values in a `key: value` format
+|Request body
+|Optional
+|===
+
+.Example request body with optional process instance variables (JSON)
+[source,json]
+----
+{
+  "application": {
+    "com.myspace.mortgage_app.Application": {
+      "applicant": {
+        "com.myspace.mortgage_app.Applicant": {
+          "name": "NewName",
+          "annualincome": 0,
+          "address": null,
+          "ssn": 0,
+          "creditrating": null
+        }
+      },
+      "property": {
+        "com.myspace.mortgage_app.Property": {
+          "age": 0,
+          "address": "NewAddress",
+          "locale": "",
+          "saleprice": 0
+        }
+      },
+      "downpayment": 0,
+      "amortization": 0,
+      "mortgageamount": null
+    }
+  },
+  "initiator": "baAdmin"
+}
+----
+
+*<@Maciej/@Tiho: The server responds with only the new process instance number (example: 4). It should respond more fully and say something like the response below.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Process instance 4 successfully started."
+    }
+  ]
+}
+----
+
+== [POST] /server/containers/{containerId}/processes/{processId}/instances/correlation/{correlationKey}
+
+Starts a new process instance of a specified process and assigns a new correlation key to the process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process is located
+|String
+|Required
+
+|`processId`
+|ID of the process for which you are starting a process instance
+|String
+|Required
+
+|`correlationKey`
+|Correlation key to be assigned to the new process instance
+|String
+|Required
+
+|*body*
+|Optional map containing process instance variable names and values in a `key: value` format
+|Request body
+|Optional
+|===
+
+.Example request body with optional process instance variables (JSON)
+[source,json]
+----
+{
+  "application": {
+    "com.myspace.mortgage_app.Application": {
+      "applicant": {
+        "com.myspace.mortgage_app.Applicant": {
+          "name": "NewName",
+          "annualincome": 0,
+          "address": null,
+          "ssn": 0,
+          "creditrating": null
+        }
+      },
+      "property": {
+        "com.myspace.mortgage_app.Property": {
+          "age": 0,
+          "address": "NewAddress",
+          "locale": "",
+          "saleprice": 0
+        }
+      },
+      "downpayment": 0,
+      "amortization": 0,
+      "mortgageamount": null
+    }
+  },
+  "initiator": "baAdmin"
+}
+----
+
+*<@Maciej/@Tiho: The server responds with only the new process instance number (example: 5). It should respond more fully and say something like the response below.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Process instance 5 successfully started."
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/workitems
+
+Returns all work items for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the work items
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "work-item-instance": [
+    {
+      "work-item-id": 4,
+      "work-item-name": "Human Task",
+      "work-item-state": 0,
+      "work-item-params": {
+        "application": {
+          "com.myspace.mortgage_app.Application": {
+            "applicant": {
+              "com.myspace.mortgage_app.Applicant": {
+                "name": "NewName",
+                "annualincome": 0,
+                "address": null,
+                "ssn": 0,
+                "creditrating": null
+              }
+            },
+            "property": {
+              "com.myspace.mortgage_app.Property": {
+                "age": 0,
+                "address": "NewAddress",
+                "locale": "",
+                "saleprice": 0
+              }
+            },
+            "downpayment": 0,
+            "amortization": 0,
+            "mortgageamount": null
+          }
+        },
+        "TaskName": "CorrectData",
+        "NodeName": "Correct Data",
+        "Skippable": "false",
+        "GroupId": "broker"
+      },
+      "process-instance-id": 4,
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "node-instance-id": 5,
+      "node-id": 6
+    }
+  ]
+}
+----
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/workitems/{workItemId}
+
+Returns information about a specified work item for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the work item
+|Integer
+|Required
+
+|`workItemId`
+|ID of the work item to be retrieved
+|Integer
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "work-item-instance": [
+    {
+      "work-item-id": 4,
+      "work-item-name": "Human Task",
+      "work-item-state": 0,
+      "work-item-params": {
+        "application": {
+          "com.myspace.mortgage_app.Application": {
+            "applicant": {
+              "com.myspace.mortgage_app.Applicant": {
+                "name": "NewName",
+                "annualincome": 0,
+                "address": null,
+                "ssn": 0,
+                "creditrating": null
+              }
+            },
+            "property": {
+              "com.myspace.mortgage_app.Property": {
+                "age": 0,
+                "address": "NewAddress",
+                "locale": "",
+                "saleprice": 0
+              }
+            },
+            "downpayment": 0,
+            "amortization": 0,
+            "mortgageamount": null
+          }
+        },
+        "TaskName": "CorrectData",
+        "NodeName": "Correct Data",
+        "Skippable": "false",
+        "GroupId": "broker"
+      },
+      "process-instance-id": 4,
+      "container-id": "mortgage-process_1.0.0-SNAPSHOT",
+      "node-instance-id": 5,
+      "node-id": 6
+    }
+  ]
+}
+----
+
+== [PUT] /server/containers/{containerId}/processes/instances/{processInstanceId}/workitems/{workItemId}/aborted
+
+Aborts a specified work item for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the work item
+|Integer
+|Required
+
+|`workItemId`
+|ID of the work item to be aborted
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Work item 4 successfully aborted."
+    }
+  ]
+}
+----
+
+== [PUT]  /containers/{containerId}/processes/instances/{processInstanceId}/workitems/{workItemId}/completed
+
+Completes a specified work item for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the work item
+|Integer
+|Required
+
+|`workItemId`
+|ID of the work item to be completed
+|Integer
+|Required
+
+|*body*
+|Optional map containing work item outcome data in a `key: value` format
+|Request body
+|Optional
+|===
+
+*<@Maciej/@Tiho: Example JSON request body with the optional map containing the work item outcome data. Struggling to validate.>*
+
+.Example request body with optional outcome data (JSON)
+[source,json]
+----
+
+----
+
+*<@Maciej/@Tiho: Even if the request works the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Work item 4 successfully completed."
+    }
+  ]
+}
+----
+
+
+== [GET] /server/containers/{containerId}/processes/instances/{processInstanceId}/signals
+
+Returns all available signal names for a specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance associated with the signals
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: Example JSON server response below. I can't get an example to return signals.>*
+
+.Example server response (JSON)
+[source,json]
+----
+
+----
+
+== [POST] /server/containers/{containerId}/processes/instances/{processInstanceId}/signal/{signalName}
+
+Signals a specified process instance with a specified signal name and optional signal data.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|ID of the process instance to be signaled
+|Integer
+|Required
+
+|`signalName`
+|Name of the signal to be sent to the process instance
+|String
+|Required
+
+|*body*
+|Optional event data of any type
+|Request body
+|Optional
+|===
+
+*<@Maciej/@Tiho: Example JSON request body with the optional event data. Struggling to validate.>*
+
+.Example request body with optional event data (JSON)
+[source,json]
+----
+
+----
+
+*<@Maciej/@Tiho: Example JSON server response below. I can't get an example to work. If the response is "undocumented" in swagger, then needs to be a successful response similar to what I've proposed for other "undocumented" responses in this section.>*
+
+.Example server response (JSON)
+[source,json]
+----
+
+----
+
+== [POST] /server/containers/{containerId}/processes/instances/signal/{signalName}
+
+Signals multiple process instances with a specified signal name.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the process instance is located
+|String
+|Required
+
+|`processInstanceId`
+|IDs of multiple process instances to be signaled
+|Array [integer]
+|Required
+
+|`signalName`
+|Name of the signal to be sent to the process instances
+|String
+|Required
+
+|*body*
+|Optional event data of any type
+|Request body
+|Optional
+|===
+
+*<@Maciej/@Tiho: Example JSON request body with the optional event data. Struggling to validate.>*
+
+.Example request body with optional event data (JSON)
+[source,json]
+----
+
+----
+
+*<@Maciej/@Tiho: Example JSON server response below. I can't get an example to work. If the response is "undocumented" in swagger, then needs to be a successful response similar to what I've proposed for other "undocumented" responses in this section.>*
+
+.Example server response (JSON)
+[source,json]
+----
+
+----
