@@ -9,8 +9,6 @@ If either of the two badges above are not green, please get in contact with engi
 
 Kogito is a cloud-native business automation technology for building cloud-ready business applications. Kogito includes components that are based on well-known business automation projects in the Knowledge Is Everything (KIE) community, specifically [Drools](https://drools.org), [jBPM](https://jbpm.org), and [OptaPlanner](https://optaplanner.org), to offer dependable, open source solutions for business rules, business processes, and constraint solving.
 
-This `main-kogito` branch of the `kie-docs` repository contains the source of the Kogito documentation for both KIE community and Red Hat Business Automation enterprise publications. The latest version of the Kogito documentation for the KIE community is published at https://docs.jboss.org/kogito/release/latest/html_single/.
-
 As a Kogito user, developer, or technical writer, you can contribute to Kogito documentation by forking and cloning this repository, updating or adding content, and submitting a pull request for review.
 
 Contents
@@ -96,8 +94,6 @@ The file structure contains the following core folders:
   * **Chapter files**: Chapter files (prefix `chap-`) formatted to accommodate a modular documentation structure that is generated separately from this source repository for Red Hat enterprise documentation. For more information about modular documentation conventions, see the Red Hat [`modular-docs`](https://github.com/redhat-documentation/modular-docs) repository in GitHub. If any formatting conventions are unclear to you, use existing content as a starting template and write what makes sense to you. The `kie-docs` documentation team can work with the content that you contribute.
   * **Index file**: Single index file (`index.adoc`) that lists chapter files with `include` statements and contains any additional introductory content for the Kogito documentation as a whole.
 
-* `titles-enterprise`: Directory for testing Red Hat enterprise documentation. This directory is used internally by Red Hat technical writers only.
-
 # Contributing to Kogito documentation
 
 After you install the required documentation tools, you can begin contributing to Kogito documentation in the `main-kogito` branch of the `kie-docs` repository. The `kie-docs` documentation workflow follows the standard [GitHub flow](https://guides.github.com/introduction/flow/), which requires your own GitHub fork of the upstream source repository and a local clone of your fork.
@@ -166,8 +162,8 @@ The following is a high-level view of the content workflow between the upstream 
 
     In your pull request, include the following components:
     * **Description**: Summarize your changes and include any links to JIRA tasks or document previews, if available
-    * **Reviewers**: Assign two reviewers: a developer from the KIE development team and a writer from the Red Hat Business Automation team. If you do not know who to assign, leave this field empty and the documentation team can assign the reviewers.  
+    * **Reviewers**: Assign two reviewers from the Apache KIE community. If you do not know who to assign ask on Zulip channels.
 
-# Contributing to Kogito software
+# Contributing to Apache KIE Kogito software
 
-To contribute to Kogito software, see the [`kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
+To contribute to Kogito software, see the [`incubator-kie-kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
