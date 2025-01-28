@@ -3,7 +3,7 @@
 
 If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
 
-# jBPM documentation
+# Apache KIE Kogito documentation
 
 <p align="center"><img width=55% height=55% src="_images/logos/kogitoLogo.png"_></p>
 
@@ -12,8 +12,6 @@ Kogito is a cloud-native business automation technology for building cloud-ready
 This `main-kogito` branch of the `kie-docs` repository contains the source of the Kogito documentation for both KIE community and Red Hat Business Automation enterprise publications. The latest version of the Kogito documentation for the KIE community is published at https://docs.jboss.org/kogito/release/latest/html_single/.
 
 As a Kogito user, developer, or technical writer, you can contribute to Kogito documentation by forking and cloning this repository, updating or adding content, and submitting a pull request for review.
-
->**NOTE**: The other branches in the `kie-docs` repository contain the source of the Drools, jBPM, and OptaPlanner documentation, which are the basis for [Red Hat Decision Manager](https://access.redhat.com/documentation/en-us/red_hat_decision_manager/) and [Red Hat Process Automation Manager](https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/).
 
 Contents
 =================
@@ -84,7 +82,6 @@ The files in the `main-kogito` branch of the `kie-docs` repository are organized
                     ├── ...
                     └── index.adoc
         └── pom.xml
-├── titles-enterprise  // For Red Hat enterprise documentation testing only
 ├── ...
 ├── pom.xml    
 └── README.md
