@@ -1,0 +1,90 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+name: Apache KIE Documentation Preview - Publish
+
+on:
+  workflow_run:
+    workflows: ["Apache KIE Documentation Preview - Build"]
+    types:
+      - completed
+
+jobs:
+  preview:
+    name: "Publishing WebSite with Surge.sh"
+    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Download Kogito PR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kogito-site
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: ./doc-content/apache-kie-kogito/target/generated-docs
+
+      - name: Download JBPM PR Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: jbpm-site
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: ./doc-content/apache-kie-jbpm/target/generated-docs
+
+      - name: Store PR id as variable
+        id: pr
+        run: |
+          echo "id=$(<./build/site/pr-id.txt)" >> $GITHUB_OUTPUT
+          rm -f pr-id.txt
+
+      - name: Publish to Surge for Kogito preview
+        id: deploy
+        run: npx surge ./doc-content/apache-kie-kogito/target/generated-docs --domain https://apache-kie-kogito-docs-preview-pr-${{ steps.pr.outputs.id }}.surge.sh --token ${{ secrets.SURGE_LOCAL_TOKEN }}
+
+      - name: Publish to Surge for JBPM preview
+        id: deploy
+        run: npx surge ./doc-content/apache-kie-jbpm/target/generated-docs --domain https://apache-kie-jbpm-docs-preview-pr-${{ steps.pr.outputs.id }}.surge.sh --token ${{ secrets.SURGE_LOCAL_TOKEN }}
+
+      - name: Update PR status comment on success
+        if: success()
+        uses: actions-cool/maintain-one-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            🎊 PR Preview ${{ github.sha }} has been successfully built and deployed. See the documentation preview: 
+             Kogito: https://apache-kie-kogito-docs-preview-pr-${{ steps.pr.outputs.id }}.surge.sh
+             jBPM: https://apache-kie-jbpm-docs-preview-pr-${{ steps.pr.outputs.id }}.surge.sh
+            <!-- Sticky Pull Request Comment -->
+          body-include: "<!-- Sticky Pull Request Comment -->"
+          number: ${{ steps.pr.outputs.id }}
+          emojis: "heart"
+
+      - name: Update PR status comment on failure
+        if: failure()
+        uses: actions-cool/maintain-one-comment@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            😭 Deploy PR Preview failed.
+            <img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png">
+            <!-- Sticky Pull Request Comment -->
+          body-include: "<!-- Sticky Pull Request Comment -->"
+          number: ${{ steps.pr.outputs.id }}
+          emojis: "confused"
