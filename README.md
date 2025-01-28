@@ -51,7 +51,7 @@ To work with the `kie-docs` documentation source, you need the following softwar
 
   For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Atom documentation](http://flight-manual.atom.io/).
 
-* **Apache Maven 3.5.4 or later**: Used for building the KIE community version of Kogito documentation. To install Maven on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
+* **Apache Maven 3.9.6**: Used for building the KIE community version of Kogito documentation. To install Maven on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
 
   ```
   # yum install maven
