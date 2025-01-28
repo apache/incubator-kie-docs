@@ -1,0 +1,376 @@
+= Business Application with ElasticSearch
+
+== What will you do
+
+You will build business application that pushes out information about your business
+automation (processes, cases, tasks) directly to an ElasticSearch server. You can then use
+ElasticSearch REST api to perform advanced queries on top of your business data.
+
+== What do you need
+
+* About 20 minutes of your time
+* Java (JDK) 8 or later
+* Maven 3.5.x
+* IDE of your choice
+* Access to the Internet
+* {CENTRAL} deployed - see single distribution for instructions
+
+== What should I do
+
+=== Install ElasticSearch
+
+To get quickly up and running with ElasticSearch, make use of docker images provided by ElasticSearch.
+
+[source, bash]
+----
+docker pull docker.elastic.co/elasticsearch/elasticsearch:6.4.2
+----
+
+Once pulled, start it with basic settings recommended for development and test.
+
+[source, bash]
+----
+docker run -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:6.4.2
+----
+
+Wait a bit and your ElasticSearch will be up and running, to verify if it is working as expected, open
+you browser at http://localhost:9200[http://localhost:9200] and you should see similar content
+
+[source, json]
+----
+{
+  "name" : "IKXT4Z_",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "G7q7D2zgQy6JzLZBCzbtTQ",
+  "version" : {
+    "number" : "6.4.2",
+    "build_flavor" : "default",
+    "build_type" : "tar",
+    "build_hash" : "04711c2",
+    "build_date" : "2018-09-26T13:34:09.098244Z",
+    "build_snapshot" : false,
+    "lucene_version" : "7.4.0",
+    "minimum_wire_compatibility_version" : "5.6.0",
+    "minimum_index_compatibility_version" : "5.0.0"
+  },
+  "tagline" : "You Know, for Search"
+}
+----
+
+NOTE: when prompted for user name and password use elastic/changeme
+
+=== Build business application
+
+To get started with business applications the easiest way is to generate it using maven archetype commands. Please refer <<../../jbpm-docs/src/main/asciidoc/BusinessApplications/CreateApplication-section.adoc#_sect_BA_create_application, Create your business application section>>.
+
+Now the directory  will consists of three projects
+
+* business-application-model
+* business-application-kjar
+* business-application-service
+
+Go into `business-application-service` directory. There you will find launch scripts
+(for both linux/unix and windows).
+
+Start {CENTRAL} (if not already started) and open your browser at
+http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
+user `wbadmin` with password `wbadmin`
+
+=== Import your business assets project into {CENTRAL}
+
+if not already imported proceed with points below to import business asset project
+
+* Go into business assets project - `business-application-kjar`
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "my business assets project"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Click import and confirm project to be imported
+
+=== Create Business Process
+
+In browser where you logged into {CENTRAL} go to Projects. You will see your newly imported
+project named business-application-kjar, go into that project.
+
+* go into business-application-kjar project
+* click `Add asset` button
+* select Business Process asset
+* provide name for this asset
+* create your business process
+
+Sample business process could be a single user task that will be assigned to user `wbadmin`.
+
+image::BusinessApplications/tutorial-5-process.png[Business process - sample]
+
+
+=== Configure service project to use the ElasticSearch
+
+* Import business-application-service project into IDE of your choice
+* Add dependency to the jbpm-event-emitters-elasticsearch in your service pom.xml
+
+[source, xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-event-emitters-elasticsearch</artifactId>
+  <version>${version.org.kie}</version>
+</dependency>
+----
+
+There are several configuration parameters that define how business application
+will connect to ElasticSearch server
+
+* jbpm.addons.event.emitters.elasticsearch.url - location of the ElasticSearch server, defaults to http://localhost:9200
+* jbpm.addons.event.emitters.elasticsearch.date_format - date format to be used for dates defaults to yyyy-MM-dd'T'hh:mm:ss.SSSZ
+* jbpm.addons.event.emitters.elasticsearch.user - optional user name to be used to authenticate in ElasticSearch server
+* jbpm.addons.event.emitters.elasticsearch.password - optional password to be used to authenticate in ElasticSearch server
+
+If the defaults fit your ElasticSearch setup then you don't need to set any properties in application.properties.
+
+For the default setup we use in this tutorial, user and password need to be set
+
+* Edit application.properties file (that is located in src/main/resources)
+* Add `jbpm.addons.event.emitters.elasticsearch.user=elastic` into the file
+* Add `jbpm.addons.event.emitters.elasticsearch.password=changeme` into the file
+
+
+NOTE: Add the same entry into `application-dev.properties` file
+
+=== Run the application
+
+At this point all development effort is done, the last remaining thing is to pull
+back the business assets project into the business-application-kjar project
+
+* Go to business-application-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar` (if not already added)
+* Execute `git pull origin master` - when prompted enter `wbadmin` as password
+
+Go to `business-application-service` directory and launch the application
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+== Results
+
+Once the build and launch is complete you can open your browser
+http://localhost:8090[http://localhost:8090] to see your business
+application up and running.
+
+It presents with a welcome screen that is mainly for verification purpose
+to illustrate that application started successfully.
+
+You can point the browser to http://localhost:8090/rest/server[http://localhost:8090/rest/server]
+to see the actual Business Automation capability services
+
+NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
+authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
+
+Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/processes[http://localhost:8090/rest/server/containers/business-application-kjar/processes]
+to see business processes available for execution. You should see just one.
+
+=== Execute business process
+
+You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/processes/{processid}/instances`
+
+HTTP method: POST
+
+HTTP headers:
+
+* Accept: application/json
+* Content-Type: application/json
+
+Body:
+
+[source, json]
+----
+{
+  "name":"wbadmin",
+  "age":25
+}
+----
+
+{processid} needs to be replaced with actual process id that is returned from the endpoint http://localhost:8090/rest/server/containers/business-application-kjar/processes
+
+NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
+
+Once executed you can verify the integration with ElasticSearch simply by pointing your browser to
+http://localhost:9200/processes/_search?pretty=true[http://localhost:9200/processes/_search?pretty=true]
+and the result should be as follows
+
+[source, json]
+----
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 5,
+    "successful" : 5,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : 1,
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "processes",
+        "_type" : "process",
+        "_id" : "business-application-service-dev_1",
+        "_score" : 1.0,
+        "_source" : {
+          "compositeId" : "business-application-service-dev_1",
+          "id" : 1,
+          "processId" : "usertaskprocess",
+          "processName" : "usertaskprocess",
+          "processVersion" : "1.0",
+          "state" : 1,
+          "containerId" : "business-application-kjar_1.0-SNAPSHOT",
+          "initiator" : "wbadmin",
+          "date" : "2018-10-25T02:41:55.205+0200",
+          "processInstanceDescription" : "usertaskprocess",
+          "correlationKey" : "1",
+          "parentId" : -1,
+          "variables" : {
+            "initiator" : "wbadmin",
+            "name" : "wbadmin",
+            "age" : 25
+          }
+        }
+      }
+    ]
+  }
+}
+----
+
+and to see user tasks stored in ElasticSearch point your browser to
+http://localhost:9200/tasks/_search?pretty=true[http://localhost:9200/tasks/_search?pretty=true]
+
+[source, json]
+----
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 5,
+    "successful" : 5,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : 1,
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "tasks",
+        "_type" : "task",
+        "_id" : "business-application-service-dev_1",
+        "_score" : 1.0,
+        "_source" : {
+          "compositeId" : "business-application-service-dev_1",
+          "id" : 1,
+          "priority" : 8,
+          "name" : "Complete me",
+          "subject" : "TaskSubject",
+          "description" : "Here is a task for wbadmin",
+          "taskType" : null,
+          "formName" : "CompleteMe",
+          "status" : "Reserved",
+          "actualOwner" : "wbadmin",
+          "createdBy" : "wbadmin",
+          "createdOn" : "2018-10-25T02:41:54.942+0200",
+          "activationTime" : "2018-10-25T02:41:54.942+0200",
+          "expirationDate" : null,
+          "skipable" : false,
+          "workItemId" : 1,
+          "processInstanceId" : 1,
+          "parentId" : -1,
+          "processId" : "usertaskprocess",
+          "containerId" : "business-application-kjar_1.0-SNAPSHOT",
+          "potentialOwners" : [
+            "wbadmin"
+          ],
+          "excludedOwners" : [ ],
+          "businessAdmins" : [
+            "Administrator",
+            "Administrators"
+          ],
+          "inputData" : {
+            "Comment" : "TaskSubject",
+            "Description" : "Here is a task for wbadmin",
+            "TaskName" : "CompleteMe",
+            "NodeName" : "Complete me",
+            "Priority" : "8",
+            "name" : "wbadmin",
+            "Skippable" : "false",
+            "ActorId" : "wbadmin",
+            "age" : 25
+          },
+          "outputData" : null
+        }
+      }
+    ]
+  }
+}
+----
+
+When you complete a task or abort a process instance data in ElasticSearch will be
+immediately updated.
+
+[source, json]
+----
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 5,
+    "successful" : 5,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : 1,
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "processes",
+        "_type" : "process",
+        "_id" : "business-application-service-dev_2",
+        "_score" : 1.0,
+        "_source" : {
+          "compositeId" : "business-application-service-dev_2",
+          "id" : 2,
+          "processId" : "usertaskprocess",
+          "processName" : "usertaskprocess",
+          "processVersion" : "1.0",
+          "state" : 3,
+          "containerId" : "business-application-kjar_1.0-SNAPSHOT",
+          "initiator" : "wbadmin",
+          "date" : "2018-10-25T03:01:02.557+0200",
+          "processInstanceDescription" : "usertaskprocess",
+          "correlationKey" : "2",
+          "parentId" : -1,
+          "variables" : {
+            "initiator" : "wbadmin",
+            "name" : "bartek",
+            "age" : 5
+          }
+        }
+      }
+    ]
+  }
+}
+----
+
+== Summary
+
+Congratulations! you have integrated your business application with ElasticSearch. Now you
+can take advantage of all the good things ElasticSearch provides you with such as
+full text search by process variables, task assignees, case participants and more.
+
+== Source code of the tutorial
+
+https://github.com/business-applications/05-elasticsearch-business-application[Here] is the complete source code of the tutorial.

@@ -1,0 +1,45 @@
+[id='set-doc-marshalling']
+
+= Setting the document marshalling strategy
+
+The document marshalling strategy for your project determines where documents are stored for use with forms and processes. The default document marshalling strategy in {PRODUCT} is `org.jbpm.document.marshalling.DocumentMarshallingStrategy`. This strategy uses a `DocumentStorageServiceImpl` class that stores documents locally in your `_PROJECT_HOME_/.docs` folder. You can set this document marshalling strategy or a custom document marshalling strategy for your project in {CENTRAL} or in the `kie-deployment-descriptor.xml` file.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects*.
+. Select a project. The project *Assets* window opens.
+. Click the *Settings* tab.
++
+.Settings tab
+image::processes/settings-tab.png[Selecting the settings tab]
+. Click *Deployments* -> *Marshalling Strategies*-> *Add Marshalling Strategy*.
+. In the *Name* field, enter the identifier of a document marshalling strategy, and in the *Resolver* drop-down menu, select the corresponding resolver type:
++
+--
+* For single documents: Enter `org.jbpm.document.marshalling.DocumentMarshallingStrategy` as the document marshalling strategy and set the resolver type to *Reflection*.
+* For multiple documents: Enter `new org.jbpm.document.marshalling.DocumentCollectionImplMarshallingStrategy(new org.jbpm.document.marshalling.DocumentMarshallingStrategy())` as the document marshalling strategy and set the resolver type to *MVEL*.
+* For custom document support: Enter the identifier of the custom document marshalling strategy and select the relevant resolver type.
+--
+. Click *Test* to validate your deployment descriptor file.
+. Click *Deploy* to build and deploy the updated project.
++
+Alternatively, if you are not using {CENTRAL}, you can navigate to `_PROJECT_HOME_/src/main/resources/META_INF/kie-deployment-descriptor.xml` (if applicable) and edit the deployment descriptor file with the required `<marshalling-strategies>` elements.
+. Click *Save*.
+
+.Example deployment descriptor file with document marshalling strategy for multiple documents
+[source,xml]
+----
+<deployment-descriptor
+    xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <persistence-unit>org.jbpm.domain</persistence-unit>
+  <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+  <audit-mode>JPA</audit-mode>
+  <persistence-mode>JPA</persistence-mode>
+  <runtime-strategy>SINGLETON</runtime-strategy>
+  <marshalling-strategies>
+    <marshalling-strategy>
+      <resolver>mvel</resolver>
+      <identifier>new org.jbpm.document.marshalling.DocumentCollectionImplMarshallingStrategy(new org.jbpm.document.marshalling.DocumentMarshallingStrategy());</identifier>
+    </marshalling-strategy>
+  </marshalling-strategies>
+----

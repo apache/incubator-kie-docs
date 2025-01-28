@@ -1,0 +1,54 @@
+[id='integration-elasticsearch-proc_{context}']
+= Configuring {KIE_SERVER} to send information to ElasticSearch when a transaction is committed
+
+You can configure {KIE_SERVER} to send information to ElasticSearch automatically. In this case, {KIE_SERVER} writes an ElasticSearch index entry every time a task, process, case, or variable is created, updated, or deleted. The index entry contains information about the modified object. {KIE_SERVER} writes the index entry when it commits the transaction with the change.
+
+You can use this functionality with any business process or case. You do not need to change anything in the process design.
+
+This configuration is also available if you run your process service using Spring Boot.
+
+{KIE_SERVER} serializes the process, case, and task information as JSON documents. It uses the following ElasticSearch indexes:
+
+* `processes` for process information
+* `cases` for case information
+* `tasks` for task information
+
+
+.Prerequisites
+
+* You created a business process or a case.
+ifdef::PAM,DM[]
+For more information about creating a business process or case, see {URL_DEVELOPING_PROCESS_SERVICES}[_{DEVELOPING_PROCESS_SERVICES}_].
+endif::PAM,DM[]
+
+.Procedure
+
+. To enable sending information to ElasticSearch, complete one of the following steps:
+.. If you deployed {KIE_SERVER} on {EAP} or another application server, complete the following steps:
+ifdef::PAM,DM[]
+... Download the `{PRODUCT_FILE}-maven-repository.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal.
+... Extract the contents of the file.
+... Copy the `maven-repository/org/jbpm/jbpm-event-emitters-elasticsearch/{MAVEN_ARTIFACT_VERSION}/jbpm-event-emitters-elasticsearch-{MAVEN_ARTIFACT_VERSION}.jar` file into the `deployments/kie-server.war/WEB-INF/lib` subdirectory of the application server.
+endif::PAM,DM[]
+ifdef::JBPM,DROOLS,OP[]
+... Retrieve the `org.jbpm.jbpm-event-emitters-elasticsearch` JAR file version `{MAVEN_ARTIFACT_VERSION}` from the public Maven repository.
+... Copy the file into the `deployments/kie-server.war/WEB-INF/lib` subdirectory of the application server.
+endif::JBPM,DROOLS,OP[]
++
+.. If you deployed the application using Spring Boot, add the following lines to the `<dependencies>` list in the `pom.xml` file of your service:
++
+[source,xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-event-emitters-elasticsearch</artifactId>
+  <version>${version.org.kie}</version>
+</dependency>
+----
++
+. Configure any of the following {KIE_SERVER} system properties as necessary:
+* `org.jbpm.event.emitters.elasticsearch.url`: The URL of the ElasticSearch server. The default value is `\http://localhost:9200`.
+* `org.jbpm.event.emitters.elasticsearch.date_format`: The timestamp format for the information. The default value is `yyyy-MM-dd'T'HH:mm:ss.SSSZ` .
+* `org.jbpm.event.emitters.elasticsearch.user`: The user name for authenticating to the ElasticSearch server.
+* `org.jbpm.event.emitters.elasticsearch.password`: The password for authenticating the user to the ElasticSearch server.
+* `org.jbpm.event.emitters.elasticsearch.ignoreNull`: If this property is `true`, null values are not written into the JSON output for ElasticSearch.

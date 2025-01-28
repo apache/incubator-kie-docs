@@ -1,0 +1,196 @@
+[id='create-service-task-proc']
+
+= Creating service tasks
+A service task is a task that executes an action based on a web service call or in a Java class method. Examples of service tasks include sending emails and logging messages when performing these tasks. You can define the parameters (input) and results (output) associated with a service task. You can also define wrapped parameters that contain all inputs into a single object. To define wrapped parameters, create a new work item handler using ``Wrapped` : `True`` in the data assignment. A Service Task should have one incoming connection and one outgoing connection.
+
+.Procedure
+. In {CENTRAL}, select the *Admin* icon in the top-right corner of the screen and select *Artifacts*.
+. Click *Upload* to open the *Artifact upload* window.
+. Choose the `.jar` file and click image:processes/upload-button.png[].
++
+[IMPORTANT]
+====
+The `.jar` file contains data types (data objects) and Java classes for web service and Java service tasks respectively.
+====
+. Create a project you want to use.
+. Go to your project *Settings -> Dependencies*.
+. Click *Add from repository*, locate the uploaded `.jar` file, and click *Select*.
+. Open your project *Settings -> Work Item Handler*.
+. Enter the following values in the given fields:
++
+* *Name* - `Service Task`
+* *Value* - `new org.jbpm.process.workitem.bpmn2.ServiceTaskHandler(ksession, classLoader)`
+
+. Save the project.
++
+--
+.Example of creating web service task
+The default implementation of a service task in the BPMN2 specification is a web service. The web service support is based on the Apache CXF dynamic client, which provides a dedicated service task handler that implements the `WorkItemHandler` interface:
+
+`org.jbpm.process.workitem.bpmn2.ServiceTaskHandler`
+
+To create a service task using web service, you must configure the web service:
+
+.. Create a business process.
+.. If necessary, in the upper-right corner of the screen, click the *Properties* icon.
+.. Click image:processes/import-property-icon.png[] in the *Imports* property to open the *Imports* window.
+.. Click *+Add* next to the *WSDL Imports* to import the required WSDL (Web Services Description Language) values. For example:
++
+* *Location*: `\http://localhost:8080/sample-ws-1/SimpleService?wsdl`
++
+The location points to the WSDL file of your service.
++
+* *Namespace*: `\http://bpmn2.workitem.process.jbpm.org/`
++
+The namespace must match `targetNamespace` from your WSDL file.
+
+.. In the process designer, select the *Activities* tool from the tool palette.
+.. Select *Service Task*.
+.. Click a blank area of the process designer canvas.
+.. Add or define the task information listed in the following table as required.
++
+.Web service task parameters
+[cols="30%,70%", options="header"]
+|===
+|Label
+|Description
+
+| *Name*
+| The name of the service task. You can also double-click the service task shape to edit the name.
+
+| *Documentation*
+| Enter a description of the task. The text in this field is included in the process documentation. Click the *Documentation* tab in the upper-left side of the process designer canvas to view the process documentation.
+
+| *Implementation*
+| Specify a web service.
+
+| *Interface*
+| The service used to implement the script, such as `CountriesPortService`.
+
+| *Operation*
+| The operation that is called by the interface, such as `getCountry`.
+
+| *Assignments*
+| Click to add local variables.
+
+| *AdHoc Autostart*
+| Select if this is an ad hoc task that should be started automatically. *AdHoc Autostart* enables the task to automatically start when the process or case instance is created instead of being starting by a start task. It is often used in case management.
+
+| *Is Async*
+|  Select if this task should be invoked asynchronously. Make tasks asynchronous if they cannot be executed instantaneously, for example a task performed by an outside service.
+
+| *Is Multiple Instance*
+| Select if this task has multiple instances.
+
+| *MI Execution mode*
+| Select if the multiple instances execute in parallel or sequentially.
+
+| *MI Collection input*
+| Specify a variable that represents a collection of elements for which new instances are created, such as `inputCountryNames`.
+
+| *MI Data Input*
+| Specify the input data assignment that is transferred to a web service, such as `Parameter`.
+
+| *MI Collection output*
+| The array list in which values returned from the web service task is stored, such as `outputCountries`.
+
+| *MI Data Output*
+| Specify the output data assignment for the web service task, which stores the result of class execution on the server, such as `Result`.
+
+| *MI Completion Condition (mvel)*
+| Specify the MVEL expression that is evaluated on each completed instance to check if the specified multiple instance node can complete.
+
+| *On Entry Action*
+| A Java, JavaScript, or MVEL script that specifies an action at the start of the task.
+
+| *On Exit Action*
+| A Java, JavaScript, or MVEL script that specifies an action at the end of the task.
+
+| *SLA Due Date*
+| The date that the service level agreement (SLA) expires.
+
+| *Metadata Attributes*
+a| Add any custom metadata attribute name and value that you want to use for custom event listeners, such as a listener to implement some action when a metadata attribute is present.
+
+The *Metadata Attributes* enable the new `metaData` extensions to BPMN diagrams and modify the behavior of the overall task.
+
+|===
+
+.Example of creating Java service task
+When you create a service task using Java method, then the method can only contain one parameter and returns a single value. To create a service task using a Java method, you must add the Java class to the dependencies of the project:
+
+.. Create a business process.
+.. In the process designer, select the *Activities* tool from the tool palette.
+.. Select *Service Task*.
+.. Click a blank area of the process designer canvas.
+.. If necessary, in the upper-right corner of the screen, click the *Properties* icon.
+.. Add or define the task information listed in the following table as required.
++
+.Java service task parameters
+[cols="30%,70%", options="header"]
+|===
+|Label
+|Description
+
+| *Name*
+| The name of the service task. You can also double-click the service task shape to edit the name.
+
+| *Documentation*
+| Enter a description of the task. The text in this field is included in the process documentation. Click the *Documentation* tab in the upper-left side of the process designer canvas to view the process documentation.
+
+| *Implementation*
+| Specify the task is implemented in Java.
+
+| *Interface*
+| The class used to implement the script, such as `org.xyz.HelloWorld`.
+
+| *Operation*
+| The method that is called by the interface, such as `sayHello`.
+
+| *Assignments*
+| Click to add local variables.
+
+| *AdHoc Autostart*
+| Select if this is an ad hoc task that should be started automatically. *AdHoc Autostart* enables the task to automatically start when the process or case instance is created instead of being starting by a start task. It is often used in case management.
+
+| *Is Async*
+|  Select if this task should be invoked asynchronously. Make tasks asynchronous if they cannot be executed instantaneously, for example a task performed by an outside service.
+
+| *Is Multiple Instance*
+| Select if this task has multiple instances.
+
+| *MI Execution mode*
+| Select if the multiple instances execute in parallel or sequentially.
+
+| *MI Collection input*
+| Specify a variable that represents a collection of elements for which new instances are created, such as `InputCollection`.
+
+| *MI Data Input*
+| Specify the input data assignment that is transferred to a Java class. For example, you can set the input data assignments as `Parameter` and `ParameterType`. `ParameterType` represents the type of `Parameter` and sends arguments to the execution of Java method.
+
+| *MI Collection output*
+| The array list in which values returned from the Java class is stored, such as `OutputCollection`.
+
+| *MI Data Output*
+| Specify the output data assignment for Java service task, which stores the result of class execution on the server, such as `Result`.
+
+| *MI Completion Condition (mvel)*
+| Specify the MVEL expression that is evaluated on each completed instance to check if the specified multiple instance node can complete. For example, `OutputCollection.size() \<= 3` indicates more than three people are not addressed.
+
+| *On Entry Action*
+| A Java, JavaScript, or MVEL script that specifies an action at the start of the task.
+
+| *On Exit Action*
+| A Java, JavaScript, or MVEL script that specifies an action at the end of the task.
+
+| *SLA Due Date*
+| The date that the service level agreement (SLA) expires.
+
+| *Metadata Attributes*
+a| Add any custom metadata attribute name and value that you want to use for custom event listeners, such as a listener to implement some action when a metadata attribute is present.
+
+The *Metadata Attributes* enable the new `metaData` extensions to BPMN diagrams and modify the behavior of the overall task.
+
+|===
+--
+. Click *Save*.

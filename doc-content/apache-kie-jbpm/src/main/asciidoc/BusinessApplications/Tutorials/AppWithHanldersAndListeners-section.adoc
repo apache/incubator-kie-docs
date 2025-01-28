@@ -1,0 +1,345 @@
+= Business Application with custom work item handlers and event listeners
+
+== What will you do
+
+You will enhance your business application with business assets that execute custom
+business logic and monitors execution via event listeners.
+
+* business process (BPMN2) with custom service task (aka work item)
+* develop work item handler for the custom service task
+* develop process event listener that will receive events from the {PROCESS_ENGINE}
+
+and execute this business assets
+
+* via REST api of your business application
+* via {CENTRAL} UI
+
+== What do you need
+
+* About 20 minutes of your time
+* Java (JDK) 8 or later
+* Maven 3.5.x
+* IDE of your choice
+* Access to the Internet
+* {CENTRAL} deployed - see single distribution for instructions
+
+== What should I do
+
+If you haven't done it already, complete tutorial `Business Application with Business Assets`.
+
+NOTE: If you would like directly start with this tutorial you can get
+complete source of the `Business Application with Business Assets` tutorial from
+https://github.com/business-applications/02-tutorial-business-assets-application[here]
+
+Start {CENTRAL} (if not already started) and open your browser at
+http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
+user `wbadmin` with password `wbadmin`
+
+=== Import your business assets project into {CENTRAL}
+
+if not already imported proceed with points below to import business asset project
+
+* Go into business assets project - `business-application-kjar`
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "my business assets project"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Click import and confirm project to be imported
+
+=== Create custom service task in {CENTRAL}
+
+* Go to Projects -> business-application-kjar project
+* Click Add asset and select WorkItem Definition
+* Give it a name `CustomTask`
+
+It should look like the following snippet
+
+[source, plain]
+----
+[
+  [
+    "name" : "MyTask",
+    "parameters" : [
+        "MyFirstParam" : new StringDataType(),
+        "MySecondParam" : new StringDataType(),
+        "MyThirdParam" : new ObjectDataType()
+    ],
+    "results" : [
+        "Result" : new ObjectDataType("java.util.Map")
+    ],
+    "displayName" : "My Task",
+    "icon" : ""
+  ]
+]
+----
+
+* Save and close the editor
+
+=== Create new process with service task (`MyTask`)
+
+* Click Add Asset button and select Business Process
+* Give it a name `CustomTaskProcess`
+* Open `Service Tasks` on the palette (cogs icon)
+* Drag and Drop the MyTask service task into the canvas
+* Connect it with start event and finish it with end event
+
+It should look like this
+
+image::BusinessApplications/tutorial-3-process-with-custom-task.png[]
+
+* Save and close the editor
+
+=== Implement custom work item handler
+
+* Import business-application-service project into IDE of your choice
+* Create new class MyTaskWorkItemHandler that implements `org.kie.api.runtime.process.WorkItemHandler`
+* Implement the `executeWorkItemHandler` by simply printing out work item and complete the work item
+
+[source, java]
+----
+@Override
+public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
+    System.out.println("Work item being executed " + workItem);
+    manager.completeWorkItem(workItem.getId(), null);
+}
+----
+
+* annotate the class with `@Component` annotation with name that matches the work item
+defined in {CENTRAL}
+
+Complete class of the handler should look like this
+
+[source, java]
+----
+package com.company.service.handlers;
+
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkItemHandler;
+import org.kie.api.runtime.process.WorkItemManager;
+import org.springframework.stereotype.Component;
+
+@Component("MyTask")
+public class MyTaskWorkItemHandler implements WorkItemHandler {
+
+    @Override
+    public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
+        System.out.println("Work item being executed " + workItem);
+        manager.completeWorkItem(workItem.getId(), null);
+    }
+
+    @Override
+    public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
+
+    }
+
+}
+----
+
+=== Implement custom event listener
+
+To be able to monitor execution of our business assets such as business process
+an event listener can be implemented. In this tutorial we focus on ProcessEventListener
+but there are other types such as:
+
+* TaskLifeCycleEventListener
+* CaseEventListener
+* RuleRuntimeEventListener
+* AgendaEventListener
+
+Go back to IDE where the business-application-service is imported
+
+* Create class MyProcessEventListener that implements `org.kie.api.event.process.ProcessEventListener`
+* Implement methods with simple print outs
+* Annotate the class with `Component` - in this case the name is not relevant
+
+Complete class of the event listener should look like this
+
+[source, java]
+----
+package com.company.service.listeners;
+
+import org.kie.api.event.process.ProcessCompletedEvent;
+import org.kie.api.event.process.ProcessEventListener;
+import org.kie.api.event.process.ProcessNodeLeftEvent;
+import org.kie.api.event.process.ProcessNodeTriggeredEvent;
+import org.kie.api.event.process.ProcessStartedEvent;
+import org.kie.api.event.process.ProcessVariableChangedEvent;
+import org.springframework.stereotype.Component;
+
+@Component
+public class MyProcessEventListener implements ProcessEventListener {
+
+    @Override
+    public void beforeProcessStarted(ProcessStartedEvent event) {
+        System.out.println("beforeProcessStarted " + event);
+    }
+
+    @Override
+    public void afterProcessStarted(ProcessStartedEvent event) {
+        System.out.println("afterProcessStarted " + event);
+    }
+
+    @Override
+    public void beforeProcessCompleted(ProcessCompletedEvent event) {
+        System.out.println("beforeProcessCompleted " + event);
+    }
+
+    @Override
+    public void afterProcessCompleted(ProcessCompletedEvent event) {
+        System.out.println("afterProcessCompleted " + event);
+    }
+
+    @Override
+    public void beforeNodeTriggered(ProcessNodeTriggeredEvent event) {
+        System.out.println("beforeNodeTriggered " + event);
+    }
+
+    @Override
+    public void afterNodeTriggered(ProcessNodeTriggeredEvent event) {
+        System.out.println("afterNodeTriggered " + event);
+    }
+
+    @Override
+    public void beforeNodeLeft(ProcessNodeLeftEvent event) {
+        System.out.println("beforeNodeLeft " + event);
+    }
+
+    @Override
+    public void afterNodeLeft(ProcessNodeLeftEvent event) {
+        System.out.println("afterNodeLeft " + event);
+    }
+
+    @Override
+    public void beforeVariableChanged(ProcessVariableChangedEvent event) {
+        System.out.println("beforeVariableChanged " + event);
+    }
+
+    @Override
+    public void afterVariableChanged(ProcessVariableChangedEvent event) {
+        System.out.println("afterVariableChanged " + event);
+    }
+
+}
+----
+
+=== Run the application
+
+At this point all development effort is done, the last remaining thing is to pull
+back the business assets project into the business-application-kjar project
+
+* Go to business-application-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar` (if not already added)
+* Execute `git pull origin master` - when prompted enter `wbadmin` as password
+
+Go to `business-application-service` directory and launch the application
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+== Results
+
+Once the build and launch is complete you can open your browser
+http://localhost:8090[http://localhost:8090]
+
+Next, point the browser to http://localhost:8090/rest/server/containers[http://localhost:8090/rest/server/containers]
+to see that your business assets project has been properly deployed and is running.
+
+NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
+authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
+
+Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/processes[http://localhost:8090/rest/server/containers/business-application-kjar/processes]
+to see business processes available for execution. You should see two of them.
+
+=== Execute business process
+
+You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/processes/{processid}/instances`
+HTTP method: POST
+
+Optionally HTTP headers can be set to change the format of data returned
+
+* Accept: application/json for JSON format
+* Accept: application/xml for XML (JAXB based) format
+* X-KIE-ContentType: XSTREAM for XML (XStream based) format
+
+{processid} needs to be replaced with actual process id that is returned from the endpoint http://localhost:8090/rest/server/containers/business-application-kjar/processes
+
+NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
+
+In response to this request, a process instance id should be returned.
+
+[source, xml]
+----
+<long-type>
+    <value>1</value>
+</long-type>
+----
+
+You can examine details of that process instance by pointing your browser to
+http://localhost:8090/rest/server/containers/business-application-kjar/processes/instances/1[http://localhost:8090/rest/server/containers/business-application-kjar/processes/instances/1]
+
+[source, xml]
+----
+<process-instance>
+  <process-instance-id>1</process-instance-id>
+  <process-id>business-application-kjar.CustomTaskProcess</process-id>
+  <process-name>CustomTaskProcess</process-name>
+  <process-version>1.0</process-version>
+  <process-instance-state>2</process-instance-state>
+  <container-id>business-application-kjar-1_0-SNAPSHOT</container-id>
+  <initiator>wbadmin</initiator>
+  <start-date>2018-10-11T13:29:55.807+02:00</start-date>
+  <process-instance-desc>CustomTaskProcess</process-instance-desc>
+  <correlation-key>1</correlation-key>
+  <parent-instance-id>-1</parent-instance-id>
+  <sla-compliance>0</sla-compliance>
+</process-instance>
+----
+
+Looking into the application logs (console) you should see that both the handler has
+been executed and event listener was notified about various events
+
+[source, plain]
+----
+beforeVariableChanged ==>[ProcessVariableChanged(id=initiator; instanceId=initiator; oldValue=null; newValue=wbadmin; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterVariableChanged ==>[ProcessVariableChanged(id=initiator; instanceId=initiator; oldValue=null; newValue=wbadmin; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+beforeProcessStarted ==>[ProcessStarted(name=CustomTaskProcess; id=business-application-kjar.CustomTaskProcess)]
+beforeNodeTriggered ==>[ProcessNodeTriggered(nodeId=3; id=0; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+beforeNodeLeft ==>[ProcessNodeLeft(nodeId=3; id=0; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+beforeNodeTriggered ==>[ProcessNodeTriggered(nodeId=1; id=1; nodeName=My Task; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+
+Work item being executed WorkItem 1 [name=MyTask, state=0, processInstanceId=1, parameters{}]
+
+beforeNodeLeft ==>[ProcessNodeLeft(nodeId=1; id=1; nodeName=My Task; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+beforeNodeTriggered ==>[ProcessNodeTriggered(nodeId=2; id=2; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+beforeNodeLeft ==>[ProcessNodeLeft(nodeId=2; id=2; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+beforeProcessCompleted ==>[ProcessCompleted(name=CustomTaskProcess; id=business-application-kjar.CustomTaskProcess)]
+afterProcessCompleted ==>[ProcessCompleted(name=CustomTaskProcess; id=business-application-kjar.CustomTaskProcess)]
+afterNodeLeft ==>[ProcessNodeLeft(nodeId=2; id=2; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterNodeTriggered ==>[ProcessNodeTriggered(nodeId=2; id=2; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterNodeLeft ==>[ProcessNodeLeft(nodeId=1; id=1; nodeName=My Task; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterNodeTriggered ==>[ProcessNodeTriggered(nodeId=1; id=1; nodeName=My Task; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterNodeLeft ==>[ProcessNodeLeft(nodeId=3; id=0; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterNodeTriggered ==>[ProcessNodeTriggered(nodeId=3; id=0; nodeName=null; processName=CustomTaskProcess; processId=business-application-kjar.CustomTaskProcess)]
+afterProcessStarted ==>[ProcessStarted(name=CustomTaskProcess; id=business-application-kjar.CustomTaskProcess)]
+----
+
+=== Execute business process from {CENTRAL} UI
+
+Follow the same procedure as described in
+ <<BusinessApplications/Tutorials/AppWithProcesses-section.adoc#_execute_business_process_from_jbpm_console_ui,Execute business process from {CENTRAL} UI>>
+
+== Summary
+
+Congratulations! you have enhanced your business application to take advantage of custom service tasks
+and you learned how to keep an eye on what is actually being executed by your business
+application. With this knowledge you can start doing more advanced service tasks that will
+integrate your application with the outside world.
+
+
+== Source code of the tutorial
+
+https://github.com/business-applications/03-tutorial-handler-listener-business-application[Here] is the complete source code of the tutorial.

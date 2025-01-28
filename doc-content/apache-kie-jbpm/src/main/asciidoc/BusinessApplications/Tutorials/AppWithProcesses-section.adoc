@@ -1,0 +1,214 @@
+= Business Application with Business Assets
+
+== What will you do
+
+You will enhance your business application with some business assets
+
+* business process (BPMN2)
+
+and execute this business assets
+
+* via REST api of your business application
+* via {CENTRAL} UI
+
+== What do you need
+
+* About 15 minutes of your time
+* Java (JDK) 8 or later
+* Maven 3.5.x
+* Access to the Internet
+* {CENTRAL} deployed - see single distribution for instructions
+
+== What should I do
+
+If you haven't done it already, complete tutorial `My First Business Application`.
+
+Start {CENTRAL} (if not already started) and open your browser at
+http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
+user `wbadmin` with password `wbadmin`
+
+=== Import your business assets project into {CENTRAL}
+
+* Go into business assets project - `business-application-kjar`
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "my business assets project"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Click import and confirm project to be imported
+
+=== Create Business Process
+
+In browser where you logged into {CENTRAL} go to Projects. You will see your newly imported
+project named business-application-kjar, go into that project.
+
+* go into business-application-kjar project
+* click `Add asset` button
+* select Business Process asset
+* provide name for this asset
+* create your business process
+
+Sample business process could be a single user task that will be assigned to user `wbadmin`.
+
+image::BusinessApplications/tutorial-2-process.png[Business process - sample]
+
+=== Pull back your business assets to business application source code
+
+* Go to business-application-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar`
+* Execute `git pull origin master` - when prompted enter `wbadmin` as password
+
+Go to `business-application-service` directory and launch the application
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+== Results
+
+Once the build and launch is complete you can open your browser
+http://localhost:8090[http://localhost:8090]
+
+Next, point the browser to http://localhost:8090/rest/server/containers[http://localhost:8090/rest/server/containers]
+to see that your business assets project has been properly deployed and is running.
+
+NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
+authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
+
+Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/processes[http://localhost:8090/rest/server/containers/business-application-kjar/processes]
+to see business processes available for execution.
+
+=== Execute business process
+
+You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/processes/{processid}/instances`
+HTTP method: POST
+
+Optionally HTTP headers can be set to change the format of data returned
+
+* Accept: application/json for JSON format
+* Accept: application/xml for XML (JAXB based) format
+* X-KIE-ContentType: XSTREAM for XML (XStream based) format
+
+{processid} needs to be replaced with actual process id that is returned from the endpoint http://localhost:8090/rest/server/containers/business-application-kjar/processes
+
+NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
+
+In response to this request, a process instance id should be returned.
+
+[source, xml]
+----
+<long-type>
+    <value>1</value>
+</long-type>
+----
+
+You can examine details of that process instance by pointing your browser to
+http://localhost:8090/rest/server/containers/business-application-kjar/processes/instances/1[http://localhost:8090/rest/server/containers/business-application-kjar/processes/instances/1]
+
+[source, xml]
+----
+<process-instance>
+  <process-instance-id>1</process-instance-id>
+  <process-id>business-application-kjar.process</process-id>
+  <process-name>process</process-name>
+  <process-version>1.0</process-version>
+  <process-instance-state>1</process-instance-state>
+  <container-id>business-application-kjar-1_0-SNAPSHOT</container-id>
+  <initiator>wbadmin</initiator>
+  <start-date>2018-09-14T11:39:39.622+02:00</start-date>
+  <process-instance-desc>process</process-instance-desc>
+  <correlation-key>1</correlation-key>
+  <parent-instance-id>-1</parent-instance-id>
+  <sla-compliance>0</sla-compliance>
+  <active-user-tasks>
+    <task-summary>
+      <task-id>1</task-id>
+      <task-name>Task</task-name>
+      <task-description/>
+      <task-status>Reserved</task-status>
+      <task-priority>0</task-priority>
+      <task-actual-owner>wbadmin</task-actual-owner>
+      <task-created-by>wbadmin</task-created-by>
+      <task-created-on>2018-09-14T11:39:39.661+02:00</task-created-on>
+      <task-activation-time>2018-09-14T11:39:39.661+02:00</task-activation-time>
+      <task-proc-inst-id>1</task-proc-inst-id>
+      <task-proc-def-id>business-application-kjar.process</task-proc-def-id>
+      <task-container-id>business-application-kjar-1_0-SNAPSHOT</task-container-id>
+    </task-summary>
+  </active-user-tasks>
+</process-instance>
+----
+
+=== Execute business process from {CENTRAL} UI
+
+Stop the application if it's running.
+
+Go to `business-application-service` directory and launch the application in development mode
+
+`./launch-dev.sh clean install` for Linux/Unix
+
+`./launch-dev.bat clean install` for Windows
+
+this will connect your business application to {CENTRAL} so can be administered
+from within its UI.
+
+Go to {CENTRAL} in the browser and navigate to servers (from the home screen).
+
+image::BusinessApplications/tutorial-2-empty-server.png[]
+
+As you can see the `business-application-service Dev` is there and connected. Although
+it does not have any kjars deployed. This is because it's now running in managed mode
+meaning it's {CENTRAL} that decides what kjars it should run.
+
+So let's deploy the business-application-kjar to our running application.
+
+* Go to projects from home screen of {CENTRAL}
+* Go into business-application-kjar project
+* Click `Deploy` button
+* Make sure that `Server configuration` is set to `business-application-service-dev` and click ok
+
+The project should be successfully deployed and you can examine that state by going back to servers
+from home screen.
+
+Next, go to process definitions (in Manage section of the Home screen) and select server configuration
+(top right corner) - again it should be `business-application-service-dev` the list of available
+process definition will be loaded and you should see your single process definition from the project
+`business-application-kjar`.
+
+image::BusinessApplications/tutorial-2-process-def.png[]
+
+Examine details of that process definition by clicking on the row in the table. Switch to
+`Diagram` tab to see the visual representation of your process definition.
+
+Start new instance of the business process by clicking on `New instance` button. This will bring up
+form (depending on your process definition) it might or might not have any fields. Just click on
+`Submit` button to start process instance.
+
+Once started process instance details will be opened, you can examine different sections to learn more about your active
+process instance
+
+image::BusinessApplications/tutorial-2-process-instance.png[]
+
+* Instance details - base information about process instance
+* Process variables - latest values for process variables
+* Documents - list of documents managed by the process
+* Logs - detailed logs about what has been done within the process instance
+* Diagram - annotated diagram with completed (greyed out) and active (red borders) nodes
+
+To look at user tasks, go to task inbox (in Track section of the Home screen). List of available
+tasks will be presented. This time there is no need to select server configuration
+because {CENTRAL} keeps track of recently selected configuration on different screens.
+
+image::BusinessApplications/tutorial-2-task-list.png[]
+
+== Summary
+
+Congratulations! you have enhanced your business application to actually do something - execute
+business processes. At the same time you have created your first business process and
+made successful integration between your business application and {CENTRAL}.
+
+== Source code of the tutorial
+
+https://github.com/business-applications/02-tutorial-business-assets-application[Here] is the complete source code of the tutorial.

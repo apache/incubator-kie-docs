@@ -1,0 +1,43 @@
+[id='cdi-deployment-service-con_{context}']
+
+= Deployment service for CDI
+
+The `DeploymentService` service  deploys and undeploys deployment units in the runtime environment. When you deploy a unit using this service, the deployment unit becomes ready for execution and a `RuntimeManager` instance is created for it. You can also use the `DeploymentService` to retrieve the following objects:
+
+* The `RuntimeManager` instance for a given deployment ID
+* The `DeployedUnit` instance that represents the complete deployment unit for the given deployment ID
+* The list of all deployed units known to the deployment service
+
+By default, the deployment service does not save information about deployed units to any persistent storage. In the CDI framework, the component that uses the service can save and restore deployment unit information, for example, using a database, file, system, or repository.
+
+The deployment service fires CDI events on deployment and undeployment. The component that uses the service can process these events to store deployments and remove them from the store when they are undeployed.
+
+* A `DeploymentEvent` with the `@Deploy` qualifier is fired on deployment of a unit
+* A `DeploymentEvent` with the `@Undeploy` qualifier is fired on undeployment of a unit
+
+You can use the CDI observer mechanism to get notification on these events.
+
+The following example receives notification on deployment of a unit and can save the deployment:
+
+.Example of processing of a deployment event
+[source,java]
+----
+    public void saveDeployment(@Observes @Deploy DeploymentEvent event) {
+        // Store deployed unit information 
+        DeployedUnit deployedUnit = event.getDeployedUnit();
+    }
+----
+
+The following example receives notification on deployment of a unit and can remove the deployment from storage:
+
+.Example of processing of an undeployment event
+[source,java]
+----
+    public void removeDeployment(@Observes @Undeploy DeploymentEvent event) {
+        // Remove deployment with the ID event.getDeploymentId()
+    }
+----
+
+Several implementations of the `DeploymentService` service are possible, so you must use qualifiers to instruct the CDI container to inject a particular implementation. A matching implementation of `DeploymentUnit` must exist for every implementation of `DeploymentService`. 
+
+The {PROCESS_ENGINE} provides the `KmoduleDeploymentService` implementation. This implementation is designed to work with `KmoduleDeploymentUnits`, which are small descriptors that are included in a KJAR file. This implementation is the typical solution for most use cases. The qualifier for this implementation is `@Kjar`.

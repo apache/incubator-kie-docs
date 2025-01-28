@@ -1,0 +1,91 @@
+
+= Process Fluent API
+
+While it is recommended to define processes using the graphical editor or the underlying XML, it is also possible to define a process using FluentProcess API, located at org.kie.api.fluent package
+This API allows you to easily construct processes in a readable manner using factories.
+Once done, you can use the generate process definition to build a Resource, which in turn can be used to build a KieBase and KieSession to execute the manually
+defined process 
+
+== Example
+
+This is a simple example of a basic process with a script task, an exception handler and a variable:
+
+[source,java]
+----
+        ProcessBuilderFactory factory = ProcessBuilderFactories.get();
+        Process process =
+                factory
+                   // start process definition
+                    .processBuilder(processId)
+                   // package and name 
+                   .packageName(packageName)
+                   .name(processName).setMetadata("pepe", true)
+                   // start node
+                   .startNode(1).name("Start").done()
+                   // Add variable of type string
+                   .variable(var("pepe", String.class))
+                   // Add exception handler
+                   .exceptionHandler(IllegalArgumentException.class, Dialect.JAVA, "System.out.println(\"Exception\");")
+                   // script node in Java language that prints "action"
+                   .actionNode(2).name("Action")
+                   .action(Dialect.JAVA,
+                           "System.out.println(\"Action\");").done()
+                   // end node
+                   .endNode(3).name("End").done()
+                   // connections
+                   .connection(1,
+                               2)
+                   .connection(2,
+                               3)
+                   .build();
+
+
+----
+
+We start by obtaining a `ProcessBuilderFactory` reference. Then, using `processBuilder(String processId)` method, we create a `ProcessBuilder` instance associated with  the given process id. This instance will allow us to build a definition of our process using fluent API. 
+A typical process consists of three parts:
+The header part comprises global elements like the name of the process, imports, variables,  etc.
+The nodes section contains all the different nodes that are part of the process.
+The connections section finally links these nodes to each other to create a flow chart.
+
+In this example, the header contains the name and the version of the process and the package name.
+After that, you can start adding nodes to the current process.
+If you have auto-completion you can see that you have different methods to create each of the supported node types at your disposal.
+
+When you start adding nodes to the process, in this example by calling the `startNode()`, `actionNode()` and `endNode()` methods, you can see that these methods return a specific ``NodeBuilder`` specialization, that allows you to set specific behavior for that particular node type.
+Once you have finished configuring that specific node, the `done()` method returns you to the current `NodeContainerBuilder` (please note that `ProcessBuilder` is an specialization of `NodeContainerBuilder`) so you can add more nodes, if necessary.
+
+When you are finished adding nodes, you must connect them by creating connections between them.
+This can be done by calling the  method ``connection()``, which will link previously created nodes.
+
+Finally, you can obtain the generated process definition by calling `build()` method (if the process definition is not valid, an exception will be thrown, in other words, `build()` method only returns valid process)
+
+== Process to KieSession Example
+
+Once you have a valid `Process` definition instance, you can execute it by using a combination of public and internal KIE APIs. First step is to create a `Resource` (in this example we use `ProcessBuilderFactory.toBytes(process)` to create a `ByteArrayResource`). With that `Resource`, you can create a `KieBase` and, by using it, creates a `KieSession` to execute the process. 
+
+[source,java]
+----
+        
+        // Build resource from Process 
+        KieResources resources = ServiceRegistry.getInstance().get(KieResources.class);
+        Resource res = resources
+                                .newByteArrayResource(factory.toBytes(process))
+                                .setSourcePath("/tmp/processFactory.bpmn2"); // source path or target path must be set to be added into kbase
+        
+       // Build kie base from this resource using KIE API
+        KieServices ks = KieServices.Factory.get();
+        KieRepository kr = ks.getRepository();
+        KieFileSystem kfs = ks.newKieFileSystem();
+        kfs.write(res);
+        KieBuilder kb = ks.newKieBuilder(kfs);
+        kb.buildAll(); // kieModule is automatically deployed to KieRepository if successfully built.
+        KieContainer kContainer = ks.newKieContainer(kr.getDefaultReleaseId());
+        KieBase kbase = kContainer.getKieBase();
+        // Create kie session using KieBase 
+        KieSessionConfiguration conf = ...;
+        Environment env = ....; 
+        KieSession ksession = kbase.newKieSession(conf,env);
+        // execute process using same process id that was used to obtain ProcessBuilder instance
+        ksession.startProcess(processId);
+----

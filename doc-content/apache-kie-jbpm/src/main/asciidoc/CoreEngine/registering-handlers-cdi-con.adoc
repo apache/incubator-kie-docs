@@ -1,0 +1,70 @@
+[id='registering-handlers-cdi-con_{context}']
+= Registration of handlers and listeners in a CDI environment
+
+If your application uses the runtime manager API and runs in a CDI environment, your classes can implement the dedicated producer interfaces to provide custom work item handlers and event listeners to all runtime engines.
+
+To create a work item handler, you must implement the `WorkItemHandlerProducer` interface.
+
+.Definition of the `WorkItemHandlerProducer` interface
+[source,java]
+----
+public interface WorkItemHandlerProducer {
+
+    /**
+     * Returns a map of work items (key = work item name, value=  work item handler instance)
+     * to be registered on the KieSession
+     * <br/>
+     * The following parameters are accepted:
+     * <ul>
+     *  <li>ksession</li>
+     *  <li>taskService</li>
+     *  <li>runtimeManager</li>
+     * </ul>
+     *
+     * @param identifier - identifier of the owner - usually RuntimeManager that allows the producer to filter out
+     * and provide valid instances for given owner
+     * @param params - the owner might provide some parameters, usually KieSession, TaskService, RuntimeManager instances
+     * @return map of work item handler instances (recommendation is to always return new instances when this method is invoked)
+     */
+    Map<String, WorkItemHandler> getWorkItemHandlers(String identifier, Map<String, Object> params);
+}
+----
+
+To create an event listener, you must implement the `EventListenerProducer` interface. Annotate the event listener producer with the proper qualifier to indicate the type of listeners that it provides. Use one of the following annotations:
+
+* `@Process` for `ProcessEventListener`
+* `@Agenda` for `AgendaEventListener`
+* `@WorkingMemory` for `WorkingMemoryEventListener`
+
+.Definition of the `EventListenerProducer` interface 
+[source,java]
+----
+public interface EventListenerProducer<T> {
+
+    /**
+     * Returns a list of instances for given (T) type of listeners
+     * <br/>
+     * The following parameters are accepted:
+     * <ul>
+     *  <li>ksession</li>
+     *  <li>taskService</li>
+     *  <li>runtimeManager</li>
+     * </ul>
+     * @param identifier - identifier of the owner - usually RuntimeManager that allows the producer to filter out
+     * and provide valid instances for given owner
+     * @param params - the owner might provide some parameters, usually KieSession, TaskService, RuntimeManager instances
+     * @return list of listener instances (recommendation is to always return new instances when this method is invoked)
+     */
+    List<T> getEventListeners(String identifier, Map<String, Object>  params);
+}
+----
+
+Package your implementations of these interfaces as a bean archive by including `beans.xml` in the `META-INF` subdirectory. Place the bean archive on the application class path, for example, in `WEB-INF/lib` for a web application. The CDI-based runtime manager discovers the packages and registers the work item handlers and event listeners in every `KieSession` that it creates or loads from the data store.
+
+The {PROCESS_ENGINE} provides certain parameters to the producers to enable stateful and advanced operation. For example, the handlers or listeners can use the parameters to signal the {PROCESS_ENGINE} or the process instance in case of an error. The {PROCESS_ENGINE} provides the following components as parameters:
+
+* `KieSession`
+* `TaskService`
+* `RuntimeManager`
+
+In addition, the identifier of the `RuntimeManager` class instance is provided as a parameter. You can apply filtering to the identifier to decide whether this `RuntimeManager` instance receives the handlers and listeners.

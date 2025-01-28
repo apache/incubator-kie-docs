@@ -1,0 +1,367 @@
+= Business Application with JPA entity
+
+== What will you do
+
+You will enhance your business application with JPA entity that will be used both by
+your business application service and business assets.
+
+* develop JPA entity as part of your business-application-model project
+* business process (BPMN2) with user task that will display JPA entity
+
+and execute this business assets
+
+* via REST api of your business application
+* via {CENTRAL} UI
+
+== What do you need
+
+* About 20 minutes of your time
+* Java (JDK) 8 or later
+* Maven 3.5.x
+* IDE of your choice
+* Access to the Internet
+* {CENTRAL} deployed - see single distribution for instructions
+
+== What should I do
+
+If you haven't done it already, complete tutorial `Business Application with Business Assets`.
+
+NOTE: If you would like directly start with this tutorial you can get
+complete source of the `Business Application with Business Assets` tutorial from
+https://github.com/business-applications/02-tutorial-business-assets-application[here]
+
+Start {CENTRAL} (if not already started) and open your browser at
+http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
+user `wbadmin` with password `wbadmin`
+
+=== Import your business assets project into {CENTRAL}
+
+if not already imported proceed with points below to import business asset project
+
+* Go into business assets project - `business-application-kjar`
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "my business assets project"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Click import and confirm project to be imported
+
+
+=== Implement JPA entity
+
+* Import business-application-model project into IDE of your choice
+* Add to pom.xml of the model project dependency to JPA api (in scope provided)
+
+[source, xml]
+----
+<dependencies>
+  <dependency>
+    <groupId>org.hibernate.javax.persistence</groupId>
+    <artifactId>hibernate-jpa-2.1-api</artifactId>
+    <version>1.0.0.Final</version>
+    <scope>provided</scope>
+  </dependency>
+</dependencies>
+----
+
+* Implement class as JPA Entity `Person`
+* Create three fields in the class
+** id (of type Long)
+** firstName (of type String)
+** lastName (of type String)
+* Annotate the class with `@Entity`
+* Annotate the `id` field with `@Id` and `@GeneratedValue(strategy = GenerationType.AUTO)`
+
+Complete class of the entity should look like this
+
+[source, java]
+----
+package com.company.model;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+
+@Entity
+public class Person {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
+    private String firstName;
+
+    private String lastName;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    @Override
+    public String toString() {
+        return "Person [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + "]";
+    }
+
+}
+----
+
+=== Configure service project to use the JPA entity
+
+* Import business-application-service project into IDE of your choice
+* Add dependency to the business-application-model in your service pom.xml
+
+[source, xml]
+----
+<dependency>
+  <groupId>com.company</groupId>
+  <artifactId>business-application-model</artifactId>
+  <version>1.0-SNAPSHOT</version>
+</dependency>
+----
+
+* Edit application.properties file (that is located in src/main/resources)
+* Add `spring.jpa.properties.entity-scan-packages=com.company.model` into the file
+
+NOTE: Adjust the package if you did not use the default com.company.model package
+
+* Add the same entry into `application-dev.properties` file
+
+=== Create new process that use JPA entity
+
+* Log in to {CENTRAL}
+* Go to Projects -> business-application-kjar project
+* Go to Settings tab
+* Go to Dependencies
+* Add dependency to business-application-model - make sure it is in provided scope
+* Go to Deployment -> Marshalling strategy
+* Add new marshalling strategy with following value `new org.drools.persistence.jpa.marshaller.JPAPlaceholderResolverStrategy(entityManagerFactory)`
+* Go back to assets
+* Click Add Asset button and select Business Process
+* Give it a name `JPAProcess`
+* Open `Tasks` on the palette
+* Drag and Drop the User Task into the canvas
+* Connect it with start event and finish it with end event
+* Create variable named person with type (custom) `com.company.model.Person`
+
+It should look like this
+
+image::BusinessApplications/tutorial-4-process-with-jpa-user-task.png[]
+
+* Map the variable as input and output of user task - use same name for input and output variable
+
+image::BusinessApplications/tutorial-4-process-with-jpa-user-task-vars.png[]
+
+* Save and close the editor
+
+
+=== Run the application
+
+At this point all development effort is done, the last remaining thing is to pull
+back the business assets project into the business-application-kjar project
+
+* Go to business-application-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar` (if not already added)
+* Execute `git pull origin master` - when prompted enter `wbadmin` as password
+
+Go to `business-application-service` directory and launch the application
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+== Results
+
+Once the build and launch is complete you can open your browser
+http://localhost:8090[http://localhost:8090]
+
+Next, point the browser to http://localhost:8090/rest/server/containers[http://localhost:8090/rest/server/containers]
+to see that your business assets project has been properly deployed and is running.
+
+NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
+authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
+
+Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/processes[http://localhost:8090/rest/server/containers/business-application-kjar/processes]
+to see business processes available for execution. You should see two of them.
+
+=== Execute business process
+
+You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/processes/{processid}/instances`
+
+HTTP method: POST
+
+HTTP headers:
+
+* Accept: application/json
+* Content-Type: application/json
+
+Body:
+
+[source, json]
+----
+{
+  "person" : {
+    "Person" : {
+      "firstName":"WB",
+      "lastName":"Admin"
+    }
+  }
+}
+----
+
+{processid} needs to be replaced with actual process id that is returned from the endpoint http://localhost:8090/rest/server/containers/business-application-kjar/processes
+
+NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
+
+In response to this request, a process instance id should be returned.
+
+[source, xml]
+----
+1
+----
+
+You can examine details of that process instance by pointing your browser to
+http://localhost:8090/rest/server/containers/business-application-kjar/processes/instances/1?withVars=true[http://localhost:8090/rest/server/containers/business-application-kjar/processes/instances/1?withVars=true]
+
+[source, xml]
+----
+<process-instance>
+  <process-instance-id>1</process-instance-id>
+  <process-id>business-application-kjar.JPAProcess</process-id>
+  <process-name>JPAProcess</process-name>
+  <process-version>1.0</process-version>
+  <process-instance-state>1</process-instance-state>
+  <container-id>business-application-kjar-1_0-SNAPSHOT</container-id>
+  <initiator>wbadmin</initiator>
+  <start-date>2018-10-11T14:42:23.053+02:00</start-date>
+  <process-instance-desc>JPAProcess</process-instance-desc>
+  <correlation-key>1</correlation-key>
+  <parent-instance-id>-1</parent-instance-id>
+  <sla-compliance>0</sla-compliance>
+  <active-user-tasks>
+    <task-summary>
+      <task-id>1</task-id>
+      <task-name>Task</task-name>
+      <task-description/>
+      <task-status>Reserved</task-status>
+      <task-priority>0</task-priority>
+      <task-actual-owner>wbadmin</task-actual-owner>
+      <task-created-by>wbadmin</task-created-by>
+      <task-created-on>2018-10-11T14:42:23.058+02:00</task-created-on>
+      <task-activation-time>2018-10-11T14:42:23.058+02:00</task-activation-time>
+      <task-proc-inst-id>2</task-proc-inst-id>
+      <task-proc-def-id>business-application-kjar.JPAProcess</task-proc-def-id>
+      <task-container-id>business-application-kjar-1_0-SNAPSHOT</task-container-id>
+    </task-summary>
+  </active-user-tasks>
+  <variables>
+    <entry>
+      <key>person</key>
+      <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="person">
+        <firstName>WB</firstName>
+        <id>1</id>
+        <lastName>Admin</lastName>
+      </value>
+    </entry>
+    <entry>
+      <key>initiator</key>
+      <value xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">wbadmin</value>
+    </entry>
+  </variables>
+</process-instance>
+----
+
+This illustrates that an instance has been created, it has one user task assigned
+(the owner is wbadmin) and it has two process variables
+
+* initiator - set to the user who initiated the request
+* person - our JPA entity that was created based on the payload - but note that the id
+was generated automatically by the database
+
+You can also examine user task by opening following URL in your browser
+http://localhost:8090/rest/server/containers/business-application-kjar/tasks/1?withInputData=true[http://localhost:8090/rest/server/containers/business-application-kjar/tasks/1?withInputData=true]
+
+[source, xml]
+----
+<task-instance>
+  <task-id>1</task-id>
+  <task-priority>0</task-priority>
+  <task-name>Task</task-name>
+  <task-subject/>
+  <task-description/>
+  <task-form>Task</task-form>
+  <task-status>Reserved</task-status>
+  <task-actual-owner>wbadmin</task-actual-owner>
+  <task-created-by>wbadmin</task-created-by>
+  <task-created-on>2018-10-11T14:42:23.058+02:00</task-created-on>
+  <task-activation-time>2018-10-11T14:42:23.058+02:00</task-activation-time>
+  <task-skippable>false</task-skippable>
+  <task-workitem-id>1</task-workitem-id>
+  <task-process-instance-id>1</task-process-instance-id>
+  <task-parent-id>-1</task-parent-id>
+  <task-process-id>business-application-kjar.JPAProcess</task-process-id>
+  <task-container-id>business-application-kjar-1_0-SNAPSHOT</task-container-id>
+  <inputData>
+    <entry>
+      <key>TaskName</key>
+      <value xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">Task</value>
+    </entry>
+    <entry>
+      <key>NodeName</key>
+      <value xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">Task</value>
+    </entry>
+    <entry>
+      <key>person</key>
+      <value xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="person">
+        <firstName>WB</firstName>
+        <id>1</id>
+        <lastName>Admin</lastName>
+      </value>
+    </entry>
+    <entry>
+      <key>Skippable</key>
+      <value xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">false</value>
+    </entry>
+    <entry>
+      <key>ActorId</key>
+      <value xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="xs:string">wbadmin</value>
+    </entry>
+  </inputData>
+</task-instance>
+----
+
+Same person JPA entity is available on the task assigned to wbadmin
+
+== Summary
+
+Congratulations! you have enhanced your business application to take advantage of a JPA entity
+as shared model between your business assets and service projects.
+With the power of business automation and JPA you learned how to externalise data managed by
+automated by business processes.
+
+
+== Source code of the tutorial
+
+https://github.com/business-applications/04-tutorial-jpa-business-application[Here] is the complete source code of the tutorial.

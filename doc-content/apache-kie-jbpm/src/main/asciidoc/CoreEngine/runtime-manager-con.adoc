@@ -1,0 +1,109 @@
+[id='runtime-manager-con_{context}']
+= Runtime manager
+
+The `RuntimeManager` class provides a layer in the {PROCESS_ENGINE} API that simplifies and empowers its usage. This class encapsulates and manages the KIE base and KIE session, as well as the task service that provides handlers for all tasks in the process. The KIE session and the task service within the runtime manager are already configured to work with each other and you do not need to provide such configuration. For example, you do not need to register a human task handler and to ensure that it is connected to the required service.
+
+The runtime manager manages the KIE session according to a predefined strategy. The following strategies are available:
+
+* _Singleton_: The runtime manager maintains a single `KieSession` and uses it for all the requested processes.
+* _Per Request_: The runtime manager creates a new `KieSession` for every request.
+* _Per Process Instance_: The runtime manager maintains mapping between process instance and `KieSession` and always provides the same `KieSession` whenever working with a given process instance.
+
+Regardless of the strategy, the `RuntimeManager` class ensures the same capabilities in initialization and configuration of the {PROCESS_ENGINE} components:
+
+* `KieSession` instances are loaded with the same factories (either in memory or JPA based).
+* Work item handlers are registered on every `KieSession` instance (either loaded from the database or newly created).
+* Event listeners (`Process`, `Agenda`, `WorkingMemory`) are registered on every KIE session, whether the session is loaded from the database or newly created.
+* The task service is configured with the following required components:
+** The JTA transaction manager
+** The same entity manager factory as the one used for `KieSession` instances
+** The `UserGroupCallback` instance that can be configured in the environment
+
+The runtime manager also enables disposing the {PROCESS_ENGINE} cleanly. It provides dedicated methods to dispose a `RuntimeEngine` instance when it is no longer needed, releasing any resources it might have acquired.
+
+The following code shows the definition of the `RuntimeManager` interface:
+
+.Definition of the `RuntimeManager` interface
+[source,java]
+----
+public interface RuntimeManager {
+
+	/**
+	 * Returns a <code>RuntimeEngine</code> instance that is fully initialized:
+	 * <ul>
+	 * 	<li>KieSession is created or loaded depending on the strategy</li>
+	 * 	<li>TaskService is initialized and attached to the KIE session (through a listener)</li>
+	 * 	<li>WorkItemHandlers are initialized and registered on the KIE session</li>
+	 * 	<li>EventListeners (process, agenda, working memory) are initialized and added to the KIE session</li>
+	 * </ul>
+	 * @param context the concrete implementation of the context that is supported by given <code>RuntimeManager</code>
+	 * @return instance of the <code>RuntimeEngine</code>
+	 */
+    RuntimeEngine getRuntimeEngine(Context<?> context);
+
+    /**
+     * Unique identifier of the <code>RuntimeManager</code>
+     * @return
+     */
+    String getIdentifier();
+
+    /**
+     * Disposes <code>RuntimeEngine</code> and notifies all listeners about that fact.
+     * This method should always be used to dispose <code>RuntimeEngine</code> that is not needed
+     * anymore. <br/>
+     * Do not use KieSession.dispose() used with RuntimeManager as it will break the internal
+     * mechanisms of the manager responsible for clear and efficient disposal.<br/>
+     * Disposing is not needed if <code>RuntimeEngine</code> was obtained within an active JTA transaction,
+     * if the getRuntimeEngine method was invoked during active JTA transaction, then disposing of
+     * the runtime engine will happen automatically on transaction completion.
+     * @param runtime
+     */
+    void disposeRuntimeEngine(RuntimeEngine runtime);
+
+    /**
+     * Closes <code>RuntimeManager</code> and releases its resources. Call this method when
+     * a runtime manager is not needed anymore. Otherwise it will still be active and operational.
+     */
+    void close();
+
+}
+----
+
+The `RuntimeManager` class also provides the `RuntimeEngine` class, which includes methods to get access to underlying {PROCESS_ENGINE} components:
+
+.Definition of the `RuntimeEngine` interface
+[source,java]
+----
+public interface RuntimeEngine {
+
+	/**
+	 * Returns the <code>KieSession</code> configured for this <code>RuntimeEngine</code>
+	 * @return
+	 */
+    KieSession getKieSession();
+
+    /**
+	 * Returns the <code>TaskService</code> configured for this <code>RuntimeEngine</code>
+	 * @return
+	 */
+    TaskService getTaskService();
+}
+----
+
+[NOTE]
+====
+An identifier of the `RuntimeManager` class is used as `deploymentId` during runtime execution. For example, the identifier is persisted as `deploymentId` of a `Task` when the `Task` is persisted. The `deploymentID` of a `Task` associates it with the `RuntimeManager` when the `Task` is completed and the process instance is resumed.
+
+The same `deploymentId` is also persisted as `externalId` in history log tables.
+
+If you don't specify an identifier when creating a `RuntimeManager` instance, a default value is applied, depending on the strategy (for example, `default-per-pinstance` for `PerProcessInstanceRuntimeManager`). That means your application uses the same deployment of the `RuntimeManager` class in its entire lifecycle.
+
+If you maintain multiple runtime managers in your application, you must specify a unique identifier for every `RuntimeManager` instance.
+
+For example, the deployment service maintains multiple runtime managers and uses the GAV value of the KJAR file as an identifier. The same logic is used in {CENTRAL} and in {KIE_SERVER}, because they depend on the deployment service.
+====
+
+[NOTE]
+====
+When you need to interact with the {PROCESS_ENGINE} or task service from within a handler or a listener, you can use the `RuntimeManager` interface to retrieve the `RuntimeEngine` instance for the given process instance, and then use the `RuntimeEngine` instance to retrieve the `KieSession` or `TaskService` instance. This approach ensures that the proper state of the engine, managed according to the selected strategy, is preserved.
+====

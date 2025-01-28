@@ -1,0 +1,178 @@
+[id='integration-maven-dependency-con_{context}']
+= Dependency management with Maven
+
+When you build projects that embed the {PROCESS_ENGINE}, use Apache Maven to configure all dependencies required by the {PROCESS_ENGINE}.
+
+The {PROCESS_ENGINE} provides a set of BOMs (Bills of Material) to simplify declaring artifact dependencies.
+
+Use the top-level `pom.xml` file of your project to define dependency management for embedding the {PROCESS_ENGINE}, as shown in the following example. The example includes the main runtime dependencies, which are applicable  whether the application is deployed on an application server, in a servlet container, or as a standalone application.
+
+This example also includes version properties for components that applications using the {PROCESS_ENGINE} commonly need. Adjust the list of components and versions as necessary. You can view the third-party dependency versions that the product team tests in the https://github.com/kiegroup/droolsjbpm-build-bootstrap/blob/{COMMUNITY_VERSION_FINAL}/pom.xml[parent `pom.xml` file in the Github repository].
+
+.Maven dependency management settings for embedding the {PROCESS_ENGINE}
+[source,xml,subs="attributes,verbatim,macros,quotes"]
+----
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.org.drools>
+    </version.org.drools>
+    <version.org.jbpm>{MAVEN_ARTIFACT_VERSION}</version.org.jbpm>
+    <hibernate.version>5.3.17.Final</hibernate.version>
+    <hibernate.core.version>5.3.17.Final</hibernate.core.version>
+    <slf4j.version>1.7.26</slf4j.version>
+    <jboss.javaee.version>1.0.0.Final</jboss.javaee.version>
+    <logback.version>1.2.9</logback.version>
+    <h2.version>1.3.173</h2.version>
+    <narayana.version>5.9.0.Final</narayana.version>
+    <jta.version>1.0.1.Final</jta.version>
+    <junit.version>4.13.1</junit.version>
+  </properties>
+  <dependencyManagement>
+    <dependencies>
+      <!-- define Drools BOM -->
+      <dependency>
+        <groupId>org.drools</groupId>
+        <artifactId>drools-bom</artifactId>
+        <type>pom</type>
+        <version>${version.org.drools}</version>
+        <scope>import</scope>
+      </dependency>
+      <!-- define jBPM BOM -->
+      <dependency>
+        <groupId>org.jbpm</groupId>
+        <artifactId>jbpm-bom</artifactId>
+        <type>pom</type>
+        <version>${version.org.jbpm}</version>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+----
+
+In modules that use the {PROCESS_ENGINE} Java API (KIE API), declare the necessary {PROCESS_ENGINE} dependencies and other components that the modules require, as in the following example:
+
+.Dependencies for modules that use the KIE API
+[source,xml]
+----
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-flow</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-flow-builder</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-bpmn2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-persistence-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-human-task-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-runtime-manager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+----
+
+If your application uses persistence and transactions, you must add artifacts that implement the JTA and JPA frameworks. Additional dependencies are required for testing the workflow components before actual deployment.
+
+The following example defines the dependencies that include Hibernate for JPA, the H2 database for persistence, Narayana for JTA, and the components needed for testing. This example uses the `test` scope. Adjust this example as necessary for your application. For production use, remove the `test` scope.
+
+.Example test module dependencies for the {PROCESS_ENGINE}
+[source,xml]
+----
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>org.jbpm</groupId>
+      <artifactId>jbpm-shared-services</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-entitymanager</artifactId>
+      <version>${hibernate.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>${hibernate.core.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.h2database</groupId>
+      <artifactId>h2</artifactId>
+      <version>${h2.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>jboss-transaction-api_1.2_spec</groupId>
+      <artifactId>org.jboss.spec.javax.transaction</artifactId>
+      <version>${jta.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.narayana.jta</groupId>
+      <artifactId>narayana-jta</artifactId>
+      <version>${narayana.version}</version>
+      <scope>test</scope>
+    </dependency>
+----
+
+
+With this configuration you can embed the {PROCESS_ENGINE} in your application and use the KIE API to interact with processes, rules, and events.
+
+[discrete]
+== Maven repositories
+
+ifdef::PAM,DM[]
+To use Red Hat product versions of Maven dependencies, you must configure the Red Hat JBoss Enterprise Maven repository in the top-level `pom.xml` file. For information about this repository, see https://access.redhat.com/maven-repository[JBoss Enterprise Maven Repository].
+
+Alternatively, download the `{PRODUCT_FILE}-maven-repository.zip` product deliverable file from the {PRODUCT_DOWNLOAD_LINK}[Software Downloads] page of the Red Hat Customer Portal and make the contents of this file available as a local Maven repository.
+endif::PAM,DM[]
+ifdef::JBPM,DROOLS,OP[]
+The release versions of {PROCESS_ENGINE} Maven dependencies are available in the public Maven Central repository.
+
+If you want to use `SNAPSHOT` versions, configure the JBoss Maven repository in the top-level `pom.xml` file:
+
+.Definition of the JBoss Maven repository
+[source,xml]
+----
+  <repositories>
+    <repository>
+      <id>jboss-public-repository-group</id>
+      <name>JBoss Public Repository Group</name>
+      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+      <releases>
+        <updatePolicy>never</updatePolicy>
+      </releases>
+      <snapshots>
+        <updatePolicy>daily</updatePolicy>
+      </snapshots>
+    </repository>
+  </repositories>
+----
+endif::JBPM,DROOLS,OP[]

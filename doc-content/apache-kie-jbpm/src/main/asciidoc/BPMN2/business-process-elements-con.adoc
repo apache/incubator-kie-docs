@@ -1,0 +1,350 @@
+[id='business_process-elements']
+
+//Processes can be created with the following methods:
+
+//* Using the {CENTRAL} process designer.
+//* As an XML file, according to the XML process format as defined in the XML Schema Definition in the BPMN 2.0 specification.
+//* By directly creating a process using the Process API.
+
+[[_process_nodes]]
+== Process nodes
+
+Executable processes consist of different types of nodes which are connected to each other. The BPMN 2.0 specification defines three main types of nodes:
+
+* Events: Represent a particular event that occurs or can occur during process run time.
+
+* Activities: Represent relatively atomic pieces of work that need to be performed as part of the process execution.
+
+* Gateways: Represent the forking or merging of workflows during process execution.
+
+//[[_sect_events]]
+//=== Events
+
+//Events are triggers, which when occur, impact a business process. Events are classified as start events, end events, and intermediate events. A start event indicates the beginning of a business process. An end event indicates the completion of a business process. And intermediate events drive the flow of a business process. Every event has an event ID and a name. You can implement triggers for each of these event types to identify the conditions under which an event is triggered. If the conditions of the triggers are not met, the events are not initialized, and hence the process flow does not complete.
+
+//==== Start Events
+
+//A start event is a flow element in a business process that indicates the beginning of a business process flow. The execution of a business process starts at this node, so a process flow can only have one start event. A start event can have only one outgoing connection which connects to another node to take the process flow ahead. Start events are of the following types:
+
+//.Types of Start Events in Object Library
+//[cols="25%,10%,65%a", frame="all", options="header"]
+|===
+|Event
+|Icon
+|Description
+
+|*None*
+|image:processes/6620.png[]
+|Use the `None` start events when your processes do not need a trigger to be initialized.
+
+* You can use the start event if your process does not depend on any condition to begin.
+* The start event is mostly used to initialize a sub-process or a process that needs to trigger by default or the trigger for the process is irrelevant.
+
+|*Message*
+|image:processes/6621.png[]
+|Use the `Message` start event when you require your process to start, on receiving a particular message.
+
+* You can have multiple `Message` start events in your process.
+* A single message can trigger multiple `Message` start events that instantiates multiple processes.
+
+|*Timer*
+|image:processes/6622.png[]
+|Use the `Timer` start event when you require your process to initialize at a specific time, specific points in time, or after a specific time span.
+
+* The `Timer` start event is mostly used in cases where a waiting state is required, for example, in cases involving a Human Task.
+
+|*Escalation*
+|image:processes/6623.png[]
+|Use the `Escalation` start event in your sub-processes when you require your sub-process to initialize as a response to an escalation.
+
+* An escalation is identified by an escalation object in the main process, which is inserted into the main process by an Escalation Intermediate event or/and Escalation end event. An Escalation Intermediate event or/and Escalation end event produce an escalation object, which can be consumed by an Escalation Start event or an Escalation intermediate catch event.
+* A process flow can have one or more `Escalation` start events and the process flow does not complete until all the escalation objects are caught and handled in sub-processes.
+
+|*Conditional*
+|image:processes/6624.png[]
+|Use the `Conditional` start event to start a process instance based on a business condition.
+
+* A condition output is a Boolean value and when a condition is evaluated as `true`, the process flow is initialized.
+* You can have one or more `Conditional` start events in your business process.
+
+|*Error*
+|image:processes/6625.png[]
+|Use the `Error` start event in a sub-process when you require your sub-process to trigger as a response to a specific error object.
+
+* An error object indicates an incorrect process ending and must be handled for the process flow to complete.
+* An error object is inserted into a business process by an `Error` end event and can be handled by a Error intermediate catch event, or Error start event depending on the scope of the error in a process flow.
+
+|*Compensation*
+|image:processes/6626.png[]
+|Use the `Compensation` start event in a sub-process when you require to handle a compensation.
+
+* A compensation means undoing the results of an already completed action. Note that this is different than an error. An error suspends a process at the location where it occurs, however, a compensation compensates the results of an action the process has already committed and needs to be undone.
+* A `Compensation` start event starts a sub-process and is the target Activity of a Compensation intermediate event.
+
+|*Signal*
+|image:processes/6627.png[]
+|Use the `Signal` start event to start a process instance based on specific signals received from other processes.
+
+* A signal is identified by a signal object. A signal object defines a unique reference ID that is unique in a session.
+* A signal object is inserted in a process by a throw signal intermediate event as an action of an activity.
+|===
+
+[[_end_events]]
+==== End Events
+
+An end event marks the end of a business process. Your business process may have more than one end event. An end event has one incoming connection and no outgoing connections. End events are of the following types:
+
+.Types of End Events in Object Library
+[cols="25%,10%,65%a", frame="all", options="header"]
+|===
+|Event
+|Icon
+|Description
+
+|*None*
+|image:processes/6628.png[]
+|Use the `None` error end event to mark the end of your process or a sub-process flow. Note that this does not influence the workflow of any parallel sub-processes.
+
+|*Message*
+|image:processes/6629.png[]
+|Use the `Message` end event to end your process flow with a message to an element in another process. An intermediate catch message event or a start message event in another process can catch this message to further process the flow.
+
+|*Escalation*
+|image:processes/6630.png[]
+|Use the `Escalation` end event to mark the end of a process as a result of which the case in hand is escalated. This event creates an escalation signal that further triggers the escalation process.
+
+|*Error*
+|image:processes/6631.png[]
+|Use the Error end event in your process or sub-process to end the process in an error state and throw a named error, which can be caught by a Catching Intermediate event.
+
+|*Compensation*
+|image:processes/6633.png[]
+|Use the `Compensation` end event to end the current process and trigger compensation as the final step.
+
+|*Signal*
+|image:processes/6634.png[]
+|Use the `Signal` end event to end a process with a signal thrown to an element in one or more other processes. Another process can catch this signal using Catch intermediate events.
+
+|*Terminate*
+|image:processes/6635.png[]
+|Use the `Terminate` end event to terminate the entire process instance immediately. Note that this terminates all the other parallel execution flows and cancels any running activities.
+|===
+
+[[_sect_intermediate_events]]
+==== Intermediate events
+Intermediate events occur during the execution of a process flow, and they drive the flow of the process. Some specific situations in a process may trigger these intermediate events. Intermediate events can occur in a process with one or no incoming flow and an outgoing flow. Intermediate events can further be classified as:
+
+* Throwing intermediate events
+* Catching intermediate events
+
+[[_throwing_intermediate_events]]
+==== Throwing intermediate events
+
+Throwing intermediate events comprises events which produce a specified trigger in the form of a message, escalation, or signal, to drive the flow of a process. Throwing intermediate events are of the following types:
+
+* `Signal`: Use the `Signal` throwing intermediate events to produces a signal object. Once it creates a signal object, the process execution continues. The signal object is consumed by a `Signal` start event or a Signal catching intermediate event, which is looking for this specific signal object.
+* `Compensation`: Use the `Compensation` intermediate event to handle compensation in case of partially failed operations. A `Compensation` intermediate event is a boundary event that is attached to an activity in a transaction sub-process that may finish with a `Compensation` end event or a `Cancel` end event. The `Compensation` intermediate event must have one outgoing flow that connects to an activity that defines the compensation action needed to compensate for the action performed by the activity.
+* `Escalation`: Use the `Escalation` throw intermediate event to produce an escalation object. Once it creates an escalation object, the process execution continues. The escalation object can be consumed by an `Escalation` start event or an `Escalation` intermediate catch event, which is looking for this specific escalation object.
+* `Message`: Use the `Message` throw intermediate event to produce and send a message to a communication partner (such as an element in another process). Once it sends a message, the process execution continues.
+
+[[_catching_intermediate_events]]
+==== Catching intermediate events
+Catching intermediate events comprises intermediate events which implement a response to specific indication of a situation from the main process workflow. Catching intermediate events are of the following types:
+
+* `Timer`: Use the `Timer` intermediate event to delay the workflow execution until a specified point or duration. A `Timer` intermediate event has one incoming flow and one outgoing flow and its execution starts when the incoming flow transfers to the event. When placed on an activity boundary, the execution is triggered at the same time as the activity execution.
+* `Error`: Use the Error catching intermediate event in your process to execute a workflow when it received a specific error object defined in its properties.
+* `Conditional`: Use the `Conditional` intermediate event to execute a workflow when a specific business Boolean condition that it defines, evaluates to true. When placed in the process workflow, a `Conditional` intermediate event has one incoming flow and one outgoing flow and its execution starts when the incoming flow transfers to the event. When placed on an activity boundary, the execution is triggered at the same time as the activity execution. Note that if the event is non-interrupting, it triggers continuously while the condition is true.
+* `Compensation`: Use the `Compensation` intermediate event to handle compensation in case of partially failed operations. A `Compensation` intermediate event is a boundary event that is attached to an activity in a transaction sub-process that may finish with a `Compensation` end event or a `Cancel` end event. The `Compensation` intermediate event must have one outgoing flow that connects to an activity that defines the compensation action needed to compensate for the action performed by the activity.
+
+
+[[_sect_activities]]
+=== Activities
+An activity is an action performed inside a business process. Activities are classified based on the type of tasks they perform:
+
+* Task: Use this activity type in your business process to implement a single task which can not be further broken into subtasks.
+* sub-process: Use this activity type in your business process when you have a group of tasks to be processed in a sequential order in order to achieve a single result.
+
+Each activity has one incoming and one outgoing connection.
+
+==== Tasks
+A task is an action that is executed inside a business process. Tasks can be of the following types:
+
+.Types of Tasks in Object Library
+[cols="1,1,3a", frame="all", options="header"]
+|===
+|Task
+|Icon
+|Description
+
+|*Business Rule*
+|image:processes/6612.png[]
+|Use the `Business Rule` task when you want a set of rules to be executed as a task in your business process flow.
+
+* During the execution of your process flow, when the engine reaches the `Business Rule` task, all the rules associated with this task are fired and evaluated.
+* The `DataInputSet` and `DataOutputSet` properties define the input to the rule engine and the calculated output received from the rule engine respectively.
+* The set of rules that this task runs are defined in `.drl` format.
+* All the rules that belong to a `Business Rule` task must belong to a specific ruleflow group. You can assign a rule its ruleflow group using the `ruleflow-group` attribute in the header of the rule. So when a `Business Rule` task executes, all the rules that belong to the `ruleflow-group` specified in the `ruleflow-group` property of the task are executed.
+
+|*User*
+|image:processes/6607.png[]
+|Use the `User` task activity type in your business process when you require a human actor to execute your task.
+
+* The `User` task defines within it, the type of task that needs to be executed. You must pass the data that a human actor may require to execute this task as the content of the task.
+* The `User` task has one incoming and one outgoing connection. You can use the `User` tasks in combination with `Swimlanes` to assign multiple human tasks to similar human actors.
+
+|*Script*
+|image:processes/6613.png[]
+|Use the `Script` task in your business process when you want a script to be executed within the task.
+
+* A `Script` task has an associated action that contains the action code and the language that the action is written in.
+* When a `Script` task is reached in the process, it executes the action and then continues to the next node.
+* Use a `Script` task in your process to for modeling low level behavior such as manipulating variables. For a complex model, use a `Service` task.
+* Ensure that the script associated with a `Script` task is executed as soon as the task is reached in a business process. If that is not possible, use an asynchronous `Service` task instead.
+* Ensure that your script does not contact an external service as the process engine has no visibility of the external services that a script may call.
+* Ensure that any exception that your script may throw must be caught within the script itself.
+
+// |*Send*
+// |image:processes/6608.png[]
+// |Use the `Send` task to send a message.
+
+// * A `Send` task has a message associated with it.
+// * When a `Send` task is activated, the message data is assigned to the data input property of the `Send` task. A `Send` task completes when this message is sent.
+
+// |*Receive*
+// |image:processes/6609.png[]
+// |Use the `Receive` task in your process when your process is relying on a specific message to continue.
+
+// * When a `Receive` task receives the specified message, the data from the message is transferred to the Data Output property of the `Receive` task and the task completes.
+
+// |*Manual*
+// |image:processes/6610.png[]
+// |Use the `Manual` task when you require a task to be executed by a human actor that need not be managed by your process.
+
+// * The difference between a `Manual` task and a `User` task is that a `User` task is executed in the context of the process, requires system interaction to accomplish the task, and are assigned to specific human actors. The `Manual` tasks on the other hand, execute without the need to interact with the system and not managed by the process.
+
+// |*Service*
+// |image:processes/6611.png[]
+// |Use the `Service` task in your business process for specifying the tasks use a service (such as a web service) that must execute outside the process engine.
+
+// * The `Service` task may use any service such as email server, message logger, or any other automated service.
+// * You can specify the required input parameters and expected results of this task in its properties. When the associated work is executed and specified result is received, the `Service` task completes.
+
+// |*None*
+// |image:processes/6614.png[]
+// |A `None` task type is an abstract undefined task type.
+|===
+
+[[_subprocesses]]
+==== sub-processes
+
+A sub-process is a process within another process. When a parent process calls a child process (sub-process), the child process executes in a sequential manner and once complete, the execution control then transfers to the main parent process. sub-process can be of the following types:
+
+.Types of sub-processes in Object Library
+[cols="1,1,3a", frame="all", options="header"]
+|===
+|sub-process
+|Icon
+|Description
+
+|*Embedded*
+|image:processes/6617.png[]
+|Use the `Embedded` sub-process if you want a decomposable activity inside your process flow that encapsulates a part of your main process.
+
+When you expand an `Embedded` sub-process, you can see a valid BPMN diagram inside that comprises a `Start Event` and at least one `End Event`.
+
+An `Embedded` sub-process allows you to define local sub-process variables that are accessible to all elements inside this sub-process.
+
+|*Adhoc*
+|image:processes/6618.png[]
+|Use the `Adhoc` sub-process when you want to execute activities inside your process, for which the execution order is irrelevant. An `Adhoc` sub-process is a group of activities that have no required sequence relationships.
+
+You can define a set of activities for this sub-process, but the sequence and number of performances for the activities is determined by the performers of the activities.
+
+Use an `Adhoc` sub-processes for example when executing a list of tasks that have no dependencies between them and can be executed in any order.
+
+|*Reusable*
+|image:processes/6615.png[]
+|Use the `Reusable` sub-process to invoke another process from the parent process.
+
+The `Reusable` sub-process is independent from its parent process.
+
+|*Event*
+|image:processes/6619.png[]
+|Use the `Event` sub-process in your process flow when you want to handle events that occur within the boundary of a sub-process. This sub-process becomes active when its start event gets triggered.
+
+The `Event` sub-process differs from the other sub-process as they are not a part of the regular process flow and occur only in the context of a sub-process.
+
+An `Event` sub-process can be _interrupting_ or _non-interrupting_. The interrupting `Event` sub-process interrupts the parent process unlike the non-interrupting `Event` sub-process.
+
+|*Multiple Instances*
+|image:processes/6616.png[]
+|Use the `Multiple Instances` sub-process when you want to execute the contained sub-process elements multiple number of times.
+
+When the engine reaches a `Multiple Instance` sub-process in your process flow, the sub-process instances are executed in a sequential manner.
+
+A `Multiple Instances` sub-process is completed when the condition specified in the `MI completion condition` property is satisfied.
+|===
+
+NOTE: Only the `Reusable` sub-process can contain `Swimlanes`.
+
+[[_sect_gateways]]
+=== Gateways
+
+Gateways are used to control how sequence flows interact as they converge and diverge within a Process. For more information, see http://www.omg.org/spec/BPMN/2.0].
+
+Gateways are used to create or synchronize branches in the workflow using a set of conditions which is called the gating mechanism. Gateways are either converging (multiple flows into one flow) or diverging (one flow into multiple flows).
+
+One Gateway cannot have multiple incoming and multiple outgoing flows.
+
+Depending on the gating mechanism you want to apply, you can use the following types of gateways:
+
+* *Parallel* (AND): in a converging gateway, waits for all incoming flows. In a diverging gateway, takes all outgoing flows simultaneously.
+* *Exclusive* (XOR): in a converging gateway, only the first incoming flow whose condition evaluates to true is chosen. In a diverging gateway only one outgoing flow is chosen.
+* *Inclusive* (OR): in a converging gateway, waits for all incoming flows whose condition evaluates to true. In a diverging gateway takes all outgoing flows whose condition evaluates to `true`.
+* *Event-based*: used only in diverging gateways for reacting to events. See <<_event_based_gateway>>.
+* *Data-based Exclusive*: used in both diverging and converging gateways to make decisions based on available data. See <<_complex_gateway>>.
+
+[[_parallel_gateway]]
+==== Parallel gateways
+A parallel gateway is used to synchronize (combine) parallel flows and to create parallel flows. For more information, see http://www.omg.org/spec/BPMN/2.0].
+
+* Diverging: Once the incoming flow is processed, all outgoing flows are processed simultaneously.
+
+* Converging: The gateway waits until all incoming flows have entered and only then triggers the outgoing flow.
+
+[[_inclusive_gateway]]
+==== Inclusive gateways
+* Diverging: Once the incoming flow is taken, all outgoing flows whose condition evaluates to true are taken. Connections with lower priority numbers are triggered before triggering higher priority ones; priorities are evaluated but the BPMN2 specification doesn't guarantee this. So for portability reasons it is recommended that you do not depend on this.
++
+IMPORTANT: Make sure that at least one of the outgoing flow evaluates to true at runtime; otherwise, the process instance terminates with a runtime exception.
+
+* Converging: The gateway merges all incoming flows previously created by a diverging Inclusive Gateway; that is, it serves as a synchronizing entry point for the Inclusive gateway branches.
+
+===== Attributes
+* *Default gate*: The outgoing flow taken by default if no other flow can be taken.
+
+[[_event_based_gateway]]
+==== Event-based gateway
+
+The Event-Based Gateway has pass-through semantics for a set of incoming branches (merging behavior). Exactly one of the outgoing branches is activated afterwards (branching behavior), depending on which of events of the Gateway configuration is first triggered. For more information, see http://www.omg.org/spec/BPMN/2.0].
+
+The Gateway is only diverging and allows you to react to possible events as opposed to the Data-based Exclusive Gateway, which reacts to the process data. It is the event that actually occurs that decides which outgoing flow is taken. As it provides the mechanism to react to exactly one of the possible events, it is exclusive, that is, only one outgoing flow is taken.
+
+The Gateway might act as a start event, where the process is instantiated only if one the Intermediate Events connected to the Event-Based Gateway occurs.
+
+[[_complex_gateway]]
+==== Data-based exclusive gateways
+Data-based exclusive gateways, which can be both diverging and converging, and are used to make decisions based on available data.
+
+* Diverging: The gateway triggers exactly one outgoing flow: the flow with the constraint evaluated to true and the _lowest_ priority is taken. After evaluating the constraints that are linked to the outgoing flows: the constraint with the lowest priority number that evaluates to true is selected.
++
+[IMPORTANT]
+.Possible runtime exception
+====
+Make sure that at least one of the outgoing flows evaluates to true at runtime: if no flow can be taken, the execution returns a runtime exception.
+====
+
+* Converging: The gateway allows a workflow branch to continue to its outgoing flow as soon as it reaches the gateway; that is, whenever one of the incoming flows triggers the gateway, the workflow is sent to the outgoing flow of the gateway; if it is triggered from more than one incoming connection, it triggers the next node for each trigger.
+
+==== Gateway attributes
+* *Default gate*: The outgoing flow taken by default if no other flow can be taken.

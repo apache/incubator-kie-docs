@@ -1,0 +1,93 @@
+[id='case-management-using-rules-proc']
+= Using rules to drive cases
+
+Refer to the case management *IT_Orders* sample project in {CENTRAL}.
+
+Suppose that the particular hardware specification provided by the supplier is incorrect or invalid. The supplier needs to provide a new, valid order so that the case can continue. Rather than wait for the manager to reject the invalid specification and create a new request for the supplier, you can create a business rule that will react immediately when the case data indicates that the provided specification is invalid. It can then create a new hardware specification request for the supplier.
+
+The following procedure demonstrates how to create and use a business rule to execute this scenario.
+
+.Prerequisites
+* The *IT_Orders* sample project is open in {CENTRAL}, but it is not deployed to {KIE_SERVER}.
+* The `ServiceRegistry` is part of the `jbpm-services-api` module, and must be available on the class path.
++
+[NOTE]
+====
+If building the project outside of {CENTRAL}, the following dependencies must be added to the project:
+
+* `org.jbpm:jbpm-services-api`
+* `org.jbpm:jbpm-case-mgmt-api`
+====
+
+.Procedure
+. Create the following business rule file called `validate-document.drl`:
++
+[source,java]
+----
+package defaultPackage;
+
+import java.util.Map;
+import java.util.HashMap;
+import org.jbpm.casemgmt.api.CaseService;
+import org.jbpm.casemgmt.api.model.instance.CaseFileInstance;
+import org.jbpm.document.Document;
+import org.jbpm.services.api.service.ServiceRegistry;
+
+rule "Invalid document name - reupload"
+when
+    $caseData : CaseFileInstance()
+    Document(name == "invalid.pdf") from $caseData.getData("hwSpec")
+
+then
+
+    System.out.println("Hardware specification is invalid");
+    $caseData.remove("hwSpec");
+    update($caseData);
+    CaseService caseService = (CaseService) ServiceRegistry.get().service(ServiceRegistry.CASE_SERVICE);
+    caseService.triggerAdHocFragment($caseData.getCaseId(), "Prepare hardware spec", null);
+end
+----
+
++
+This business rule detects when a file named `invalid.pdf` is uploaded to the case file. It then removes the `invalid.pdf` document and creates a new instance of the `Prepare hardware spec` user task.
+. Click *Deploy* to build the *IT_Orders* project and deploy it to a {KIE_SERVER}.
++
+[NOTE]
+====
+You can also select the *Build & Install* option to build the project and publish the KJAR file to the configured Maven repository without deploying to a {KIE_SERVER}. In a development environment, you can click *Deploy* to deploy the built KJAR file to a {KIE_SERVER} without stopping any running instances (if applicable), or click *Redeploy* to deploy the built KJAR file and replace all instances. The next time you deploy or redeploy the built KJAR, the previous deployment unit (KIE container) is automatically updated in the same target {KIE_SERVER}. In a production environment, the *Redeploy* option is disabled and you can click *Deploy* only to deploy the built KJAR file to a new deployment unit (KIE container) on a {KIE_SERVER}.
+
+To configure the {KIE_SERVER} environment mode, set the `org.kie.server.mode` system property to `org.kie.server.mode=development` or `org.kie.server.mode=production`. To configure the deployment behavior for a corresponding project in {CENTRAL}, go to project *Settings* -> *General Settings* -> *Version* and toggle the *Development Mode* option. By default, {KIE_SERVER} and all new projects in {CENTRAL} are in development mode. You cannot deploy a project with *Development Mode* turned on or with a manually added `SNAPSHOT` version suffix to a {KIE_SERVER} that is in production mode.
+====
+
+. Create a file called `invalid.pdf` and save it locally.
+. Create a file called `valid-spec.pdf` and save it locally.
+. In {CENTRAL}, go to *Menu* -> *Projects* -> *IT_Orders* to open the *IT_Orders* project.
+. Click *Import Asset* in the upper-right corner of the page.
+. Upload the `validate-document.drl` file to the `default` package (`src/main/resources`) and click *Ok*.
++
+image::cases/case-management-validate-document-upload.png[]
++
+The `validate-document.drl` rule is shown in the rule editor. Click *Save* or close to exit the rule editor.
+
+. Open the Showcase application by either clicking the *Apps launcher* (if it is installed), or go to `http://localhost:8080/rhpam-case-mgmt-showcase/jbpm-cm.html`.
+. Click *Start Case* for the *IT_Orders* project.
++
+In this example, Aimee is the case `owner`, Katy is the `manager`, and the supplier group is `supplier`.
++
+image::cases/showcase-start-case.png[]
+. Log out of {CENTRAL}, and log back in as a user that belongs to the `supplier` group.
+. Go to *Menu* -> *Track* -> *Task Inbox*.
+. Open the `Prepare hardware spec` task and click *Claim*. This assigns the task to the logged in user.
+. Click *Start* and click image:cases/choose-file-button.png[choose file] to locate the `invalid.pdf` hardware specification file. Click image:cases/upload-button.png[the upload button] to upload the file.
++
+image::cases/case-management-invalid-spec.png[]
++
+. Click *Complete*.
++
+The value in the *Task Inbox* for the `Prepare hardware spec` is `Ready`.
+. In Showcase, click *Refresh* in the upper-right corner. Notice that a `Prepare hardware task` message appears in the *Completed* column and another appears in the *In Progress* column.
++
+image::cases/case-management-new-spec-task.png[]
++
+This is because the first `Prepare hardware spec` task has been completed with the specification file `invalid.pdf`. As a result, the business rule causes the task and file to be discarded, and a new user task created.
+. In the {CENTRAL} *Task Inbox*, repeat the previous steps to upload the `valid-spec.pdf` file instead of `invalid.pdf`.

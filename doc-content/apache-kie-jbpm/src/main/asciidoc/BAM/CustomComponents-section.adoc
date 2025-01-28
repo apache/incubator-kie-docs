@@ -1,0 +1,103 @@
+[[_sect_bam_custom_components]]
+= Custom Components
+
+It is possible to extend {CENTRAL} capabilities by creating custom components and using them in pages.
+
+image::BAM/Displayers.png[List of existing components that can be used to create reports]
+
+== Creating Custom Components
+
+Components are disabled by default. To enable components, change the system property `dashbuilder.components.enable` value to **true**. The custom external component location is set with the `dashbuilder.components.dir` system property. The default value is `/tmp/dashbuilder/components`. This must be set when using a Windows environment.
+
+The component should be placed under components directory with a parent directory, which will be the component's id. For example, if the component id is *mycomp* and the components dir is */tmp/dashbuilder/components* then the component base directory is */tmp/dashbuilder/components/mycomp*. 
+
+{CENTRAL} then scans all components directory looking for files named `manifest.json`. Manifest files must have at least the text parameter called "name", but other parameters are supported:
+
+* *name*: The component name that will be displayed in the component pallet;
+* *icon*: Icon that will be displayed in the component pallet;
+* *noData*: A flag that indicates that the component does not require a dataset;
+* *parameters*: A list of parameters that the components need to be collected by the user.
+
+The list of parameters supported by the component uses ComponentParameter type, which has the following:
+
+* *name*: The parameter internal name;
+* *type*: Parameter type. Possible values are: text, natural_number, combo and color. When using combo type you must set **comboValues**;
+* *category*: The category which the field property will be grouped into;
+* *defaultValue*: The initial value presented to the user;
+* *label*: The label used in the component parameters UI;
+* *comboValues*: A list of text values for combo parameters;
+* *mandatory*: A flag that indicates that this parameter is mandatory;
+
+....
+{
+    "name": "Heat Map Experiment",
+    "icon": "fa fa-bell-o",
+    "parameters": [
+        {
+            "name": "svg",
+            "type": "text",
+            "defaultValue": "",
+            "label": "SVG XML",
+            "category": "SVG Content",
+            "mandatory": true
+        },
+        {
+            "name": "svgUrl",
+            "type": "text",
+            "defaultValue": "",
+            "label": "SVG URL",
+            "category": "SVG URL"
+        }
+        ,
+        {
+            "name": "ksContainer",
+            "type": "text",
+            "defaultValue": "",
+            "label": "Container ID",
+            "category": "Kie Server"
+        }
+        ,
+        {
+            "name": "ksProcessId",
+            "type": "text",
+            "defaultValue": "",
+            "label": "Process ID",
+            "category": "Kie Server"
+        }
+    ]
+}
+....
+
+All the properties declared in manifest file will then be available so users can fill it when dragging external components to a page.
+
+image::BAM/CustomComponentsProperties.png[Properties displayed to the user]
+
+Once the component is scanned by {CENTRAL} then an index.html file will be used as the entry point to render the component. 
+
+
+== Custom Components API
+
+The information coming from {CENTRAL} can be consumed by listening messages coming to the page iframe. The event data type is https://github.com/kiegroup/appformer/blob/master/dashbuilder/dashbuilder-shared/dashbuilder-displayer-api/src/main/java/org/dashbuilder/displayer/external/ExternalComponentMessage.java[ExternalComponentMessage], which has a map in property `properties`, which you can retrieve all the values set by the user when the component was added to the page. This translates to the following javascript code:
+
+....
+window.addEventListener("message", receiveMessage, false);
+function receiveMessage(event) {
+    // consume the message
+    const params = new Map(event.data.properties);
+} 
+....
+
+In the above code `params` contains all the properties set by the user, so if a property name was declared in component's `manifest.json`, then the value can be retrieved using `params.get('name')`. 
+
+If the component supports data, i.e. `noData=false`, then it will be sent in the parameter `dataSet`, which type is https://github.com/kiegroup/appformer/blob/master/dashbuilder/dashbuilder-shared/dashbuilder-displayer-api/src/main/java/org/dashbuilder/displayer/external/ExternalDataSet.java[ExternalDataSet] and it basically contains all the dataset values in a string two-dimensional array and a list with all columns information represented by Java type https://github.com/kiegroup/appformer/blob/master/dashbuilder/dashbuilder-shared/dashbuilder-displayer-api/src/main/java/org/dashbuilder/displayer/external/ExternalColumn.java[ExternalColumn].
+
+== Exporting Components 
+
+In {CENTRAL} the Data Transfer export will include all components living in the component directory. It can be imported in another {CENTRAL} installation or in Dashbuilder Runtime, where components will be partioned by import, avoiding conflicts.
+
+WARNING: Do not share the `components` directory between Dashbuilder Runtime and {CENTRAL}.
+
+[NOTE]
+====
+Components will override existing files in {CENTRAL}. If a ZIP file contains components that are already imported in {CENTRAL} is imported again then the existing components will be overridden after the import operation.
+====

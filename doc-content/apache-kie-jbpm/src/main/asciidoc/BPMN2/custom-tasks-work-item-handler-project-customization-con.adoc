@@ -1,0 +1,70 @@
+[id='custom-tasks-work-item-handler-project-customization-con-{context}']
+= Work item handler project customization
+
+You can customize the code of a work item handler project. There are two Java methods required by a work item handler, `executeWorkItem` and `abortWorkItem`.
+
+.Java method descriptions
+[cols="40%,60%a", frame="all", options="header"]
+|===
+|Java Method
+|Description
+|`executeWorkItem(WorkItem workItem, WorkItemManager manager)`
+|Executed by default when the work item handler is run.
+|`abortWorkItem(WorkItem workItem, WorkItemManager manager)`
+|Executed when the work item is aborted.
+|===
+
+In both methods, the `WorkItemDefinition` parameter contains any of the parameters entered into the custom task through a GUI or API call, and the `WorkItem` parameter is responsible for tracking the state of the custom task.
+
+.Example code structure
+[source,java,options="nowrap"]
+----
+public class MyWorkItemWorkItemHandler extends AbstractLogOrThrowWorkItemHandler {
+
+  public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
+    try {
+      RequiredParameterValidator.validate(this.getClass(), workItem);
+
+      // sample parameters
+      String sampleParam = (String) workItem.getParameter("SampleParam");
+      String sampleParamTwo = (String) workItem.getParameter("SampleParamTwo");
+
+      // complete workitem impl...
+
+      // return results
+      String sampleResult = "sample result";
+      Map<String, Object> results = new HashMap<String, Object>();
+      results.put("SampleResult", sampleResult);
+      manager.completeWorkItem(workItem.getId(), results);
+    } catch(Throwable cause) {
+      handleException(cause);
+    }
+	}
+
+	@Override
+	public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
+    // similar
+	}
+}
+----
+
+.Parameter descriptions
+[cols="40%,60%a", frame="all", options="header"]
+|===
+|Parameter
+|Description
+|`RequiredParameterValidator.validate(this.getClass(), workItem);`
+|Checks that all parameters marked “required” are present. If they are not, an `IllegalArgumentException` is thrown.
+|`String sampleParam = (String) workItem.getParameter("SampleParam");`
+|Example of getting a parameter from the `WorkItem` class. The name is always a string. For example, `WorkItem`. In the example, `SampleParam` is always a string but the object associated with it can be many things and require a cast in order to avoid errors.
+|`// complete workitem impl…`
+|Executes the custom Java code when a parameter is received.
+|`results.put("SampleResult", sampleResult);`
+|Passes results to the custom task. The results are placed in the data output areas of the custom task.
+|`manager.completeWorkItem(workItem.getId(), results);`
+|Marks the work item handler as complete. The `WorkItemManager` controls the state of the work item and is responsible for getting the `WorkItem` ID and associate the results with the correct custom task.
+|`abortWorkItem()`
+|Aborts the custom Java code. May be left blank if the work item is not designed to be aborted
+|===
+
+NOTE: {PRODUCT} includes a limited set of supported custom tasks. Custom tasks that are not included in {PRODUCT} are not supported.

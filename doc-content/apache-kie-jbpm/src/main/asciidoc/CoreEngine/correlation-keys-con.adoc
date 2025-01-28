@@ -1,0 +1,53 @@
+[id='correlation-keys-con_{context}']
+= Correlation Keys
+
+When working with processes, you might need to assign a business identifier to a process instance and then use the identifier to reference the instance  without storing the generated instance ID.
+
+To provide such capabilities, the {PROCESS_ENGINE} uses the `CorrelationKey` interface, which can define `CorrelationProperties`. A class that implements `CorrelationKey` can have either a single property describing it or a multi-property set. The value of the property or a combination of values of several properties refers to a unique instance.
+
+The `KieSession` class implements the `CorrelationAwareProcessRuntime` interface to support correlation capabilities. This interface  exposes the following methods:
+
+.Methods of the `CorrelationAwareProcessRuntime` interface
+[source,java]
+----
+
+      /**
+      * Start a new process instance.  Use the process (definition) that 
+      * is referenced by the given process ID.  You can pass parameters
+      * to the process instance (as name-value pairs), and these parameters set
+      * variables of the process instance.
+      *
+      * @param processId  the ID of the process to start
+      * @param correlationKey custom correlation key that can be used to identify the process instance
+      * @param parameters  the process variables to set when starting the process instance
+      * @return the ProcessInstance that represents the instance of the process that was started
+      */
+      ProcessInstance startProcess(String processId, CorrelationKey correlationKey, Map<String, Object> parameters);
+
+      /**
+      * Create a new process instance (but do not yet start it).  Use the process
+      * (definition) that is referenced by the given process ID.
+      * You can pass to the process instance (as name-value pairs),
+      * and these parameters set variables of the process instance.  
+      * Use this method if you need a reference to the process instance before actually
+      * starting it.  Otherwise, use startProcess.
+      *
+      * @param processId  the ID of the process to start
+      * @param correlationKey custom correlation key that can be used to identify the process instance
+      * @param parameters  the process variables to set when creating the process instance
+      * @return the ProcessInstance that represents the instance of the process that was created (but not yet started)
+      */
+      ProcessInstance createProcessInstance(String processId, CorrelationKey correlationKey, Map<String, Object> parameters);
+
+      /**
+      * Returns the process instance with the given correlationKey.  Note that only active process instances
+      * are returned.  If a process instance has been completed already, this method will return
+      * null.
+      *
+      * @param correlationKey the custom correlation key assigned when the process instance was created
+      * @return the process instance identified by the key or null if it cannot be found
+      */
+      ProcessInstance getProcessInstance(CorrelationKey correlationKey);
+----
+
+Correlation is usually used with long-running processes. You must enable persistence if you want to store correlation information permanently.

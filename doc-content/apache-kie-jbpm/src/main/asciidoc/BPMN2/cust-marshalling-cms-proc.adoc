@@ -1,0 +1,261 @@
+[id='cust-marshalling-cms']
+
+= Using a custom document marshalling strategy for a content management system (CMS)
+
+The document marshalling strategy for your project determines where documents are stored for use with forms and processes. The default document marshalling strategy in {PRODUCT} is `org.jbpm.document.marshalling.DocumentMarshallingStrategy`. This strategy uses a `DocumentStorageServiceImpl` class that stores documents locally in your `_PROJECT_HOME_/.docs` folder. If you want to store form and process documents in a custom location, such as in a centralized content management system (CMS), add a custom document marshalling strategy to your project. You can set this document marshalling strategy in {CENTRAL} or in the `kie-deployment-descriptor.xml` file directly.
+
+.Procedure
+. Create a custom marshalling strategy `.java` file that includes an implementation of the `org.kie.api.marshalling.ObjectMarshallingStrategy` interface. This interface enables you to implement the variable persistence required for your custom document marshalling strategy.
++
+--
+The following methods in this interface help you create your strategy:
+
+* `boolean accept(Object object)`: Determines if the specified object can be marshalled by the strategy
+* `byte[] marshal(Context context, ObjectOutputStream os, Object object)`: Marshals the specified object and returns the marshalled object as `byte[]`
+* `Object unmarshal(Context context, ObjectInputStream is, byte[] object, ClassLoader classloader)`: Reads the object received as `byte[]` and returns the unmarshalled object
+* `void write(ObjectOutputStream os, Object object)`: Same as the `marshal` method, provided for backward compatibility
+* `Object read(ObjectInputStream os)`: Same as the `unmarshal` method, provided for backward compatibility
+
+The following code sample is an example `ObjectMarshallingStrategy` implementation for storing and retrieving data from a Content Management Interoperability Services (CMIS) system:
+
+.Example implementation for storing and retrieving data from a CMIS system
+[source,java]
+----
+package org.jbpm.integration.cmis.impl;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.HashMap;
+
+import org.apache.chemistry.opencmis.client.api.Folder;
+import org.apache.chemistry.opencmis.client.api.Session;
+import org.apache.chemistry.opencmis.commons.data.ContentStream;
+import org.apache.commons.io.IOUtils;
+import org.drools.core.common.DroolsObjectInputStream;
+import org.jbpm.document.Document;
+import org.jbpm.integration.cmis.UpdateMode;
+
+import org.kie.api.marshalling.ObjectMarshallingStrategy;
+
+public class OpenCMISPlaceholderResolverStrategy extends OpenCMISSupport implements ObjectMarshallingStrategy {
+
+	private String user;
+	private String password;
+	private String url;
+	private String repository;
+	private String contentUrl;
+	private UpdateMode mode = UpdateMode.OVERRIDE;
+
+	public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository) {
+		this.user = user;
+		this.password = password;
+		this.url = url;
+		this.repository = repository;
+	}
+
+	public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository, UpdateMode mode) {
+		this.user = user;
+		this.password = password;
+		this.url = url;
+		this.repository = repository;
+		this.mode = mode;
+	}
+
+	   public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository, String contentUrl) {
+	        this.user = user;
+	        this.password = password;
+	        this.url = url;
+	        this.repository = repository;
+	        this.contentUrl = contentUrl;
+	    }
+
+	    public OpenCMISPlaceholderResolverStrategy(String user, String password, String url, String repository, String contentUrl, UpdateMode mode) {
+	        this.user = user;
+	        this.password = password;
+	        this.url = url;
+	        this.repository = repository;
+	        this.contentUrl = contentUrl;
+	        this.mode = mode;
+	    }
+
+	public boolean accept(Object object) {
+		if (object instanceof Document) {
+			return true;
+		}
+		return false;
+	}
+
+	public byte[] marshal(Context context, ObjectOutputStream os, Object object) throws IOException {
+		Document document = (Document) object;
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			if (document.getContent() != null) {
+				String type = getType(document);
+				if (document.getIdentifier() == null || document.getIdentifier().isEmpty()) {
+					String location = getLocation(document);
+
+					Folder parent = findFolderForPath(session, location);
+					if (parent == null) {
+						parent = createFolder(session, null, location);
+					}
+					org.apache.chemistry.opencmis.client.api.Document doc = createDocument(session, parent, document.getName(), type, document.getContent());
+					document.setIdentifier(doc.getId());
+					document.addAttribute("updated", "true");
+				} else {
+					if (document.getContent() != null && "true".equals(document.getAttribute("updated"))) {
+						org.apache.chemistry.opencmis.client.api.Document doc = updateDocument(session, document.getIdentifier(), type, document.getContent(), mode);
+
+						document.setIdentifier(doc.getId());
+						document.addAttribute("updated", "false");
+					}
+				}
+			}
+			ByteArrayOutputStream buff = new ByteArrayOutputStream();
+	        ObjectOutputStream oos = new ObjectOutputStream( buff );
+	        oos.writeUTF(document.getIdentifier());
+	        oos.writeUTF(object.getClass().getCanonicalName());
+	        oos.close();
+	        return buff.toByteArray();
+		} finally {
+			session.clear();
+		}
+	}
+
+	public Object unmarshal(Context context, ObjectInputStream ois, byte[] object, ClassLoader classloader) throws IOException, ClassNotFoundException {
+		DroolsObjectInputStream is = new DroolsObjectInputStream( new ByteArrayInputStream( object ), classloader );
+		String objectId = is.readUTF();
+		String canonicalName = is.readUTF();
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			org.apache.chemistry.opencmis.client.api.Document doc = (org.apache.chemistry.opencmis.client.api.Document) findObjectForId(session, objectId);
+			Document document = (Document) Class.forName(canonicalName).newInstance();
+			document.setAttributes(new HashMap<String, String>());
+
+			document.setIdentifier(objectId);
+			document.setName(doc.getName());
+			document.setLastModified(doc.getLastModificationDate().getTime());
+			document.setSize(doc.getContentStreamLength());
+			document.addAttribute("location", getFolderName(doc.getParents()) + getPathAsString(doc.getPaths()));
+			if (doc.getContentStream() != null && contentUrl == null) {
+				ContentStream stream = doc.getContentStream();
+				document.setContent(IOUtils.toByteArray(stream.getStream()));
+				document.addAttribute("updated", "false");
+				document.addAttribute("type", stream.getMimeType());
+			} else {
+			    document.setLink(contentUrl + document.getIdentifier());
+			}
+			return document;
+		} catch(Exception e) {
+			throw new RuntimeException("Cannot read document from CMIS", e);
+		} finally {
+			is.close();
+			session.clear();
+		}
+	}
+
+	public Context createContext() {
+		return null;
+	}
+
+	// For backward compatibility with previous serialization mechanism
+	public void write(ObjectOutputStream os, Object object) throws IOException {
+		Document document = (Document) object;
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			if (document.getContent() != null) {
+				String type = document.getAttribute("type");
+				if (document.getIdentifier() == null) {
+					String location = document.getAttribute("location");
+
+					Folder parent = findFolderForPath(session, location);
+					if (parent == null) {
+						parent = createFolder(session, null, location);
+					}
+					org.apache.chemistry.opencmis.client.api.Document doc = createDocument(session, parent, document.getName(), type, document.getContent());
+					document.setIdentifier(doc.getId());
+					document.addAttribute("updated", "false");
+				} else {
+					if (document.getContent() != null && "true".equals(document.getAttribute("updated"))) {
+						org.apache.chemistry.opencmis.client.api.Document doc = updateDocument(session, document.getIdentifier(), type, document.getContent(), mode);
+
+						document.setIdentifier(doc.getId());
+						document.addAttribute("updated", "false");
+					}
+				}
+			}
+			ByteArrayOutputStream buff = new ByteArrayOutputStream();
+	        ObjectOutputStream oos = new ObjectOutputStream( buff );
+	        oos.writeUTF(document.getIdentifier());
+	        oos.writeUTF(object.getClass().getCanonicalName());
+	        oos.close();
+		} finally {
+			session.clear();
+		}
+	}
+
+	public Object read(ObjectInputStream os) throws IOException, ClassNotFoundException {
+		String objectId = os.readUTF();
+		String canonicalName = os.readUTF();
+		Session session = getRepositorySession(user, password, url, repository);
+		try {
+			org.apache.chemistry.opencmis.client.api.Document doc = (org.apache.chemistry.opencmis.client.api.Document) findObjectForId(session, objectId);
+			Document document = (Document) Class.forName(canonicalName).newInstance();
+
+			document.setIdentifier(objectId);
+			document.setName(doc.getName());
+			document.addAttribute("location", getFolderName(doc.getParents()) + getPathAsString(doc.getPaths()));
+			if (doc.getContentStream() != null) {
+				ContentStream stream = doc.getContentStream();
+				document.setContent(IOUtils.toByteArray(stream.getStream()));
+				document.addAttribute("updated", "false");
+				document.addAttribute("type", stream.getMimeType());
+			}
+			return document;
+		} catch(Exception e) {
+			throw new RuntimeException("Cannot read document from CMIS", e);
+		} finally {
+			session.clear();
+		}
+	}
+
+}
+----
+--
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects*.
+. Click the project name and click *Settings*.
++
+.Settings tab
+image::processes/settings-tab.png[Selecting the settings tab]
+. Click *Deployments* -> *Marshalling Strategies*-> *Add Marshalling Strategy*.
+. In the *Name* field, enter the identifier of the custom document marshalling strategy, such as `org.jbpm.integration.cmis.impl.OpenCMISPlaceholderResolverStrategy` in this example.
+. Select the relevant option from the *Resolver* drop-down menu, such as *Reflection* in this example.
+. Click *Test* to validate your deployment descriptor file.
+. Click *Deploy* to build and deploy the updated project.
++
+Alternatively, if you are not using {CENTRAL}, you can navigate to `_PROJECT_HOME_/src/main/resources/META_INF/kie-deployment-descriptor.xml` (if applicable) and edit the deployment descriptor file with the required `<marshalling-strategies>` elements.
++
+.Example deployment descriptor file with custom document marshalling strategy
+[source,xml]
+----
+<deployment-descriptor
+    xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <persistence-unit>org.jbpm.domain</persistence-unit>
+  <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+  <audit-mode>JPA</audit-mode>
+  <persistence-mode>JPA</persistence-mode>
+  <runtime-strategy>SINGLETON</runtime-strategy>
+  <marshalling-strategies>
+    <marshalling-strategy>
+      <resolver>reflection</resolver>
+      <identifier>
+        org.jbpm.integration.cmis.impl.OpenCMISPlaceholderResolverStrategy
+      </identifier>
+    </marshalling-strategy>
+  </marshalling-strategies>
+----
+
+. To enable documents stored in a custom location to be attached to forms and processes, create a document variable in the relevant processes and map task inputs and outputs to that document variable in {CENTRAL}.

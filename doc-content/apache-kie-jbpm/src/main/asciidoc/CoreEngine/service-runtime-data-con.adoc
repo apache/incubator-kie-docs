@@ -1,0 +1,565 @@
+[id='service-runtime-data-con_{context}']
+= Runtime Data Service
+
+You can use the runtime data service to retrieve all runtime information about processes, such as started process instances and executed node instances.
+
+For example, you can build a list-based UI to show process definitions, process instances, tasks for a given user, and other data, based on information provided by the runtime data service.
+
+This service is optimized to be as efficient as possible while providing all required information.
+
+The following examples show various usage of this service.
+
+.Retrieving all process definitions
+[source,java]
+----
+Collection definitions = runtimeDataService.getProcesses(new QueryContext());
+----
+
+.Retrieving active process instances
+[source,java]
+----
+Collection<processinstancedesc> instances = runtimeDataService.getProcessInstances(new QueryContext());
+----
+
+.Retrieving active nodes for a particular process instance
+[source,java]
+----
+Collection<nodeinstancedesc> instances = runtimeDataService.getProcessInstanceHistoryActive(processInstanceId, new QueryContext());
+----
+
+.Retrieving tasks assigned to the user `john`
+[source,java]
+----
+List<tasksummary> taskSummaries = runtimeDataService.getTasksAssignedAsPotentialOwner("john", new QueryFilter(0, 10));
+----
+
+The runtime data service methods support two important parameters, `QueryContext` and `QueryFilter`. `QueryFilter` is an extension of `QueryContext`. You can use these parameters to manage the result set, providing pagination, sorting, and ordering. You can also use them to apply additional filtering when searching for user tasks.
+
+The following definition shows the methods of the `RuntimeDataService` interface:
+
+.Definition of the `RuntimeDataService` interface
+[source,java]
+----
+public interface RuntimeDataService {
+	/**
+	 * Represents type of node instance log entries
+	 *
+	 */
+	enum EntryType {
+
+        START(0),
+        END(1),
+        ABORTED(2),
+        SKIPPED(3),
+        OBSOLETE(4),
+        ERROR(5);
+	}
+
+    // Process instance information
+
+    /**
+     * Returns a list of process instance descriptions
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the available process instances
+     */
+    Collection<ProcessInstanceDesc> getProcessInstances(QueryContext queryContext);
+
+    /**
+     * Returns a list of all process instance descriptions with the given statuses and initiated by <code>initiator</code>
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have
+     * @param initiator the initiator of the {@link ProcessInstance}
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given criteria (states and initiator)
+     */
+    Collection<ProcessInstanceDesc> getProcessInstances(List<Integer> states, String initiator, QueryContext queryContext);
+
+    /**
+     * Returns a list of process instance descriptions found for the given process ID and statuses and initiated by <code>initiator</code>
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have
+     * @param processId ID of the {@link Process} (definition) used when starting the process instance
+     * @param initiator initiator of the {@link ProcessInstance}
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given criteria (states, processId, and initiator)
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessId(List<Integer> states, String processId, String initiator, QueryContext queryContext);
+
+    /**
+    * Returns a list of process instance descriptions found for the given process name and statuses and initiated by <code>initiator</code>
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have
+     * @param processName name (not ID) of the {@link Process} (definition) used when starting the process instance
+     * @param initiator initiator of the {@link ProcessInstance}
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given criteria (states, processName and initiator)
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessName(List<Integer> states, String processName, String initiator, QueryContext queryContext);
+
+    /**
+     * Returns a list of process instance descriptions found for the given deployment ID and statuses
+     * @param deploymentId deployment ID of the runtime
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given criteria (deploymentId and states)
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByDeploymentId(String deploymentId, List<Integer> states, QueryContext queryContext);
+
+    /**
+     * Returns process instance descriptions found for the given processInstanceId. If no descriptions are found, null is returned. At the same time, the method
+     * fetches all active tasks (in status: Ready, Reserved, InProgress) to provide the information about what user task is keeping each instance
+     * and who owns the task (if the task is already claimed by a user)
+     * @param processInstanceId ID of the process instance to be fetched
+     * @return process instance information, in the form of a {@link ProcessInstanceDesc} instance
+     */
+    ProcessInstanceDesc getProcessInstanceById(long processInstanceId);
+
+    /**
+     * Returns the active process instance description found for the given correlation key. If none is found, returns null. At the same time it
+     * fetches all active tasks (in status: Ready, Reserved, InProgress) to provide information about which user task is keeping each instance
+     * and who owns the task (if the task is already claimed by a user)
+     * @param correlationKey correlation key assigned to the process instance
+     * @return process instance information, in the form of a {@link ProcessInstanceDesc} instance
+     */
+    ProcessInstanceDesc getProcessInstanceByCorrelationKey(CorrelationKey correlationKey);
+
+    /**
+     * Returns process instances descriptions (regardless of their states) found for the given correlation key. If no descriptions are found, an empty list is returned
+     * This query uses 'LIKE' to match correlation keys so it accepts partial keys. Matching
+     * is performed based on a 'starts with' criterion
+     * @param correlationKey correlation key assigned to the process instance
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given correlation key
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByCorrelationKey(CorrelationKey correlationKey, QueryContext queryContext);
+
+    /**
+     * Returns process instance descriptions, filtered by their states, that were found for the given correlation key. If none are found, returns an empty list
+     * This query uses 'LIKE' to match correlation keys so it accepts partial keys. Matching
+     * is performed based on a 'starts with' criterion
+     * @param correlationKey correlation key assigned to process instance
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given correlation key
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByCorrelationKeyAndStatus(CorrelationKey correlationKey, List<Integer> states, QueryContext queryContext);
+
+    /**
+     * Returns a list of process instance descriptions found for the given process definition ID
+     * @param processDefId ID of the process definition
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given criteria (deploymentId and states)
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessDefinition(String processDefId, QueryContext queryContext);
+
+    /**
+     * Returns a list of process instance descriptions found for the given process definition ID, filtered by state
+     * @param processDefId ID of the process definition
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that match
+     *         the given criteria (deploymentId and states)
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByProcessDefinition(String processDefId, List<Integer> states, QueryContext queryContext);
+
+    /**
+     * Returns process instance descriptions that match process instances that have the given variable defined, filtered by state
+     * @param variableName name of the variable that process instance should have
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have. If null, returns only active instances
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that have the given variable defined
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByVariable(String variableName, List<Integer> states, QueryContext queryContext);
+
+    /**
+     * Returns process instance descriptions that match process instances that have the given variable defined and the value of the variable matches the given variableValue
+     * @param variableName name of the variable that process instance should have
+     * @param variableValue value of the variable to match
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have. If null, returns only active instances
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the process instances that have the given variable defined with the given value
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByVariableAndValue(String variableName, String variableValue, List<Integer> states, QueryContext queryContext);
+
+    /**
+     * Returns a list of process instance descriptions that have the specified parent
+     * @param parentProcessInstanceId ID of the parent process instance
+     * @param states list of possible state (int) values that the {@link ProcessInstance} can have. If null, returns only active instances
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessInstanceDesc} instances representing the available process instances
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesByParent(Long parentProcessInstanceId, List<Integer> states, QueryContext queryContext);
+
+    /**
+     * Returns a list of process instance descriptions that are subprocesses of the specified process, or subprocesses of those subprocesses, and so on. The list includes the full hierarchy of subprocesses under the specified parent process
+     * @param processInstanceId ID of the parent process instance
+     * @return list of {@link ProcessInstanceDesc} instances representing the full hierarchy of this process
+     */
+    Collection<ProcessInstanceDesc> getProcessInstancesWithSubprocessByProcessInstanceId(Long processInstanceId, List<Integer> states, QueryContext queryContext);
+
+    // Node and Variable instance information
+
+    /**
+     * Returns the active node instance descriptor for the given work item ID, if the work item exists and is active
+     * @param workItemId identifier of the work item
+     * @return NodeInstanceDesc for work item if it exists and is still active, otherwise null is returned
+     */
+    NodeInstanceDesc getNodeInstanceForWorkItem(Long workItemId);
+
+    /**
+     * Returns a trace of all active nodes for the given process instance ID
+     * @param processInstanceId unique identifier of the process instance
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return
+     */
+    Collection<NodeInstanceDesc> getProcessInstanceHistoryActive(long processInstanceId, QueryContext queryContext);
+
+    /**
+     * Returns a trace of all executed (completed) nodes for the given process instance ID
+     * @param processInstanceId unique identifier of the process instance
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return
+     */
+    Collection<NodeInstanceDesc> getProcessInstanceHistoryCompleted(long processInstanceId, QueryContext queryContext);
+
+    /**
+     * Returns a complete trace of all executed (completed) and active nodes for the given process instance ID
+     * @param processInstanceId unique identifier of the process instance
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return {@link NodeInstance} information, in the form of a list of {@link NodeInstanceDesc} instances,
+     *         that come from a process instance that matches the given criteria (deploymentId, processId)
+     */
+    Collection<NodeInstanceDesc> getProcessInstanceFullHistory(long processInstanceId, QueryContext queryContext);
+
+    /**
+     * Returns a complete trace of all events of the given type (START, END, ABORTED, SKIPPED, OBSOLETE or ERROR) for the given process instance
+     * @param processInstanceId unique identifier of the process instance
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @param type type of events to be returned (START, END, ABORTED, SKIPPED, OBSOLETE or ERROR). To return all events, use {@link #getProcessInstanceFullHistory(long, QueryContext)}
+     * @return collection of node instance descriptions
+     */
+    Collection<NodeInstanceDesc> getProcessInstanceFullHistoryByType(long processInstanceId, EntryType type, QueryContext queryContext);
+
+
+    /**
+     * Returns a trace of all nodes for the given node types and process instance ID
+     * @param processInstanceId unique identifier of the process instance
+     * @param nodeTypes list of node types to filter nodes of the process instance
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return collection of node instance descriptions
+     */
+    Collection<NodeInstanceDesc> getNodeInstancesByNodeType(long processInstanceId, List<String> nodeTypes, QueryContext queryContext);
+
+    /**
+     * Returns a trace of all nodes for the given node types and correlation key
+     * @param correlationKey correlation key
+     * @param states list of states
+     * @param nodeTypes list of node types to filter nodes of process instance
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return collection of node instance descriptions
+     */
+    Collection<NodeInstanceDesc> getNodeInstancesByCorrelationKeyNodeType(CorrelationKey correlationKey,  List<Integer> states, List<String> nodeTypes, QueryContext queryContext);
+
+
+    /**
+     * Returns a collection of all process variables and their current values for the given process instance
+     * @param processInstanceId process instance ID
+     * @return information about variables in the specified process instance,
+     *         represented by a list of {@link VariableDesc} instances
+     */
+    Collection<VariableDesc> getVariablesCurrentState(long processInstanceId);
+
+    /**
+     * Returns a collection of changes to the given variable within the scope of a process instance
+     * @param processInstanceId unique identifier of the process instance
+     * @param variableId ID of the variable
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return information about the variable with the given ID in the specified process instance,
+     *         represented by a list of {@link VariableDesc} instances
+     */
+    Collection<VariableDesc> getVariableHistory(long processInstanceId, String variableId, QueryContext queryContext);
+
+
+    // Process information
+
+
+    /**
+     * Returns a list of process definitions for the given deployment ID
+     * @param deploymentId deployment ID of the runtime
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessDefinition} instances representing processes that match
+     *         the given criteria (deploymentId)
+     */
+    Collection<ProcessDefinition> getProcessesByDeploymentId(String deploymentId, QueryContext queryContext);
+
+    /**
+     * Returns a list of process definitions that match the given filter
+     * @param filter regular expression
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of {@link ProcessDefinition} instances with a name or ID that matches the given regular expression
+     */
+    Collection<ProcessDefinition> getProcessesByFilter(String filter, QueryContext queryContext);
+
+    /**
+     * Returns all process definitions available
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of all available processes, in the form a of a list of {@link ProcessDefinition} instances
+     */
+    Collection<ProcessDefinition> getProcesses(QueryContext queryContext);
+
+    /**
+     * Returns a list of process definition identifiers for the given deployment ID
+     * @param deploymentId deployment ID of the runtime
+     * @param queryContext control parameters for the result, such as sorting and paging
+     * @return list of all available process id's for a particular deployment/runtime
+     */
+    Collection<String> getProcessIds(String deploymentId, QueryContext queryContext);
+
+    /**
+     * Returns process definitions for the given process ID regardless of the deployment
+     * @param processId ID of the process
+     * @return collection of {@link ProcessDefinition} instances representing the {@link Process}
+     *         with the specified process ID
+     */
+    Collection<ProcessDefinition> getProcessesById(String processId);
+
+    /**
+     * Returns the process definition for the given deployment and process identifiers
+     * @param deploymentId ID of the deployment (runtime)
+     * @param processId ID of the process
+     * @return {@link ProcessDefinition} instance, representing the {@link Process}
+     *         that is present in the specified deployment with the specified process ID
+     */
+    ProcessDefinition getProcessesByDeploymentIdProcessId(String deploymentId, String processId);
+
+	// user task query operations
+
+	/**
+	 * Return a task by its workItemId
+	 * @param workItemId
+	 * @return @{@link UserTaskInstanceDesc} task
+	 */
+    UserTaskInstanceDesc getTaskByWorkItemId(Long workItemId);
+
+	/**
+	 * Return a task by its taskId
+	 * @param taskId
+	 * @return @{@link UserTaskInstanceDesc} task
+	 */
+	UserTaskInstanceDesc getTaskById(Long taskId);
+
+	/**
+	 * Return a task by its taskId with SLA data if the withSLA param is true
+	 * @param taskId
+	 * @param withSLA
+	 * @return @{@link UserTaskInstanceDesc} task
+	 */
+	UserTaskInstanceDesc getTaskById(Long taskId, boolean withSLA);
+
+	/**
+	 * Return a list of assigned tasks for a Business Administrator user. Business
+	 * administrators play the same role as task stakeholders but at task type
+	 * level. Therefore, business administrators can perform the exact same
+	 * operations as task stakeholders. Business administrators can also observe
+	 * the progress of notifications
+	 *
+	 * @param userId identifier of the Business Administrator user
+	 * @param filter filter for the list of assigned tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksAssignedAsBusinessAdministrator(String userId, QueryFilter filter);
+
+	/**
+     * Return a list of assigned tasks for a Business Administrator user for with one of the listed
+     * statuses
+     * @param userId identifier of the Business Administrator user
+     * @param statuses the statuses of the tasks to return
+     * @param filter filter for the list of assigned tasks
+     * @return list of @{@link TaskSummary} task summaries
+     */
+	List<TaskSummary> getTasksAssignedAsBusinessAdministratorByStatus(String userId, List<Status> statuses, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks that a user is eligible to own
+	 *
+	 * @param userId identifier of the user
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksAssignedAsPotentialOwner(String userId, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user or user groups are eligible to own
+	 *
+	 * @param userId identifier of the user
+	 * @param groupIds a list of identifiers of the groups
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksAssignedAsPotentialOwner(String userId, List<String> groupIds, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user is eligible to own and that are in one of the listed
+	 * statuses
+	 *
+	 * @param userId identifier of the user
+	 * @param status filter for the task statuses
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksAssignedAsPotentialOwnerByStatus(String userId, List<Status> status, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user or groups are eligible to own and that are in one of the listed
+	 * statuses
+	 * @param userId identifier of the user
+	 * @param groupIds filter for the identifiers of the groups
+	 * @param status filter for the task statuses
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksAssignedAsPotentialOwner(String userId, List<String> groupIds, List<Status> status, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user is eligible to own, that are in one of the listed
+	 * statuses, and that have an expiration date starting at <code>from</code>. Tasks that do not have expiration date set
+	 * will also be included in the result set
+	 *
+	 * @param userId identifier of the user
+	 * @param status filter for the task statuses
+	 * @param from earliest expiration date for the tasks
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksAssignedAsPotentialOwnerByExpirationDateOptional(String userId, List<Status> status, Date from, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user has claimed, that are in one of the listed
+	 * statuses, and that have an expiration date starting at <code>from</code>. Tasks that do not have expiration date set
+	 * will also be included in the result set
+	 *
+	 * @param userId identifier of the user
+	 * @param strStatuses filter for the task statuses
+	 * @param from earliest expiration date for the tasks
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksOwnedByExpirationDateOptional(String userId, List<Status> strStatuses, Date from, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user has claimed
+	 *
+	 * @param userId identifier of the user
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksOwned(String userId, QueryFilter filter);
+
+	/**
+	 * Return a list of tasks the user has claimed with one of the listed
+	 * statuses
+	 *
+	 * @param userId identifier of the user
+	 * @param status filter for the task statuses
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksOwnedByStatus(String userId, List<Status> status, QueryFilter filter);
+
+	/**
+	 * Get a list of tasks the Process Instance is waiting on
+	 *
+	 * @param processInstanceId identifier of the process instance
+	 * @return list of task identifiers
+	 */
+	List<Long> getTasksByProcessInstanceId(Long processInstanceId);
+
+	/**
+	 * Get filter for the tasks the Process Instance is waiting on that are in one of the
+	 * listed statuses
+	 *
+	 * @param processInstanceId identifier of the process instance
+	 * @param status filter for the task statuses
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link TaskSummary} task summaries
+	 */
+	List<TaskSummary> getTasksByStatusByProcessInstanceId(Long processInstanceId, List<Status> status, QueryFilter filter);
+
+    /**
+	 * Get a list of task audit logs for all tasks owned by the user, applying a query filter to the list of tasks
+	 *
+	 *
+	 * @param userId identifier of the user that owns the tasks
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link AuditTask} task audit logs
+	 */
+    List<AuditTask> getAllAuditTask(String userId, QueryFilter filter);
+
+    /**
+		* Get a list of task audit logs for all tasks that are active and owned by the user, applying a query filter to the list of tasks
+	 *
+	 * @param userId identifier of the user that owns the tasks
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link AuditTask} audit tasks
+	 */
+    List<AuditTask> getAllAuditTaskByStatus(String userId, QueryFilter filter);
+
+    /**
+	 * Get a list of task audit logs for group tasks (actualOwner == null) for the user, applying a query filter to the list of tasks
+	 *
+	 * @param userId identifier of the user that is associated with the group tasks
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link AuditTask} audit tasks
+	 */
+    List<AuditTask> getAllGroupAuditTask(String userId, QueryFilter filter);
+
+
+    /**
+	 * Get a list of task audit logs for tasks that are assigned to a Business Administrator user, applying a query filter to the list of tasks
+	 *
+	 * @param userId identifier of the Business Administrator user
+	 * @param filter filter for the list of tasks
+	 * @return list of @{@link AuditTask} audit tasks
+	 */
+    List<AuditTask> getAllAdminAuditTask(String userId, QueryFilter filter);
+
+    /**
+     * Gets a list of task events for the given task
+     * @param taskId identifier of the task
+     * @param filter for the list of events
+	 * @return list of @{@link TaskEvent} task events
+     */
+    List<TaskEvent> getTaskEvents(long taskId, QueryFilter filter);
+
+    /**
+     * Query on {@link TaskSummary} instances
+     * @param userId the user associated with the tasks queried
+     * @return {@link TaskSummaryQueryBuilder} used to create the query
+     */
+    TaskSummaryQueryBuilder taskSummaryQuery(String userId);
+
+    /**
+     * Gets a list of {@link TaskSummary} instances for tasks that define a given variable
+     * @param userId the ID of the user associated with the tasks
+     * @param variableName the name of the task variable
+     * @param statuses the list of statuses that the task can have
+     * @param queryContext the query context
+     * @return a {@link List} of {@link TaskSummary} instances
+     */
+    List<TaskSummary> getTasksByVariable(String userId, String variableName, List<Status> statuses, QueryContext queryContext);
+
+    /**
+     * Gets a list of {@link TaskSummary} instances for tasks that define a given variable and the variable is set to the given value
+     * @param userId the ID of the user associated with the tasks
+     * @param variableName the name of the task variable
+     * @param variableValue the value of the task variable
+     * @param statuses the list of statuses that the task can have
+     * @param context the query context
+     * @return a {@link List} of {@link TaskSummary} instances
+     */
+    List<TaskSummary> getTasksByVariableAndValue(String userId, String variableName, String variableValue, List<Status> statuses, QueryContext context);
+
+}
+----

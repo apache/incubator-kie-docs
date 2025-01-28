@@ -1,0 +1,89 @@
+[id='registering-custom-tasks-proc-{context}']
+= Registering custom tasks
+
+{PRODUCT} must know how to associate a custom task work item with the code executed by the work item handler. The work item definition file links the custom task with the work item handler by name and Java class. The work item handler’s Java class has to be registered as usable in {PRODUCT}.
+
+NOTE: Service repositories contain domain-specific services that provide integration of your processes with different types of systems. Registering a custom task is not necessary when using a service repository because the import process registers the custom task.
+
+{PRODUCT} creates a WID file by default for projects that contain at least one business process. You can create a WID file when registering a work item handler or edit the default WID file.
+ifdef::DM,PAM[]
+For more information about WID file locations or formatting, see xref:custom-tasks-work-item-definitions-con-{context}[].
+endif::[]
+
+For non-service repository deployments, work item handlers can be registered in two ways:
+
+* Registering using the deployment descriptor.
+* Registering using the spring component registration.
+
+== Registering custom tasks using the deployment descriptor inside {CENTRAL}
+
+You can register a custom task work item with the work item handler using the deployment descriptor in {CENTRAL}.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* and select the project name.
+. In the project pane, select *Settings* -> *Deployments* -> *Work Item Handlers*.
+. Click *Add Work Item Handler*.
+. In the *Name* field, enter the display name for the custom task.
+. From the *Resolver* list, select *MVEL*, *Reflection* or *Spring*.
+. In the *Value* field, enter the value based on the resolver type:
++
+[NOTE]
+====
+The value fields may be filled automatically.
+====
+* For MVEL, use the format `new <full Java package>.<Java work item handler class name>()`
++
+Example: `new com.redhat.MyWorkItemWorkItemHandler()`
+* For Reflection, use the format `<full Java package>.<Java work item handler class name>`
++
+Example: `com.redhat.MyWorkItemWorkItemHandler`
+* For Spring, use the format `<Spring bean identifier>`
++
+Example: `workItemSpringBean`
+
+. Click *Save* to save your changes
+
+== Registering custom tasks using the deployment descriptor outside {CENTRAL}
+
+You can register a custom task work item with the work item handler using the deployment descriptor outside {CENTRAL}.
+
+.Procedure
+. In your Git project directory, open the file `src/main/resources/META-INF/kie-deployment-descriptor.xml`.
+. Add the following content based on the resolver type under `<work-item-handlers>`:
+* For MVEL, add the following:
++
+----
+<work-item-handler>
+  <resolver>mvel</resolver>
+  <identifier>new com.redhat.MyWorkItemWorkItemHandler()</identifier>
+  <parameters/>
+  <name>MyWorkItem</name>
+</work-item-handler>
+----
+* For Reflections, add the following:
++
+----
+<work-item-handler>
+  <resolver>reflection</resolver>
+  <identifier>com.redhat.MyWorkItemWorkItemHandler</identifier>
+  <parameters/>
+  <name>MyWorkItem</name>
+</work-item-handler>
+----
+* For Spring, add the following and ensure the identifier is the identifier of a Spring bean:
++
+----
+<work-item-handler>
+  <resolver>spring</resolver>
+  <identifier>beanIdentifier</identifier>
+  <parameters/>
+  <name>MyWorkItem</name>
+</work-item-handler>
+----
++
+[NOTE]
+====
+If you are using Spring to discover and configure Spring beans, it is possible to use an annotation of the `org.springframework.stereotype.Component` class to automatically register work item handlers.
+
+Within a work item handler, add the annotation `@Component("<Name>")` before the declaration of the work item handler class. For example: `@Component("MyWorkItem") public class MyWorkItemWorkItemHandler extends AbstractLogOrThrowWorkItemHandler {`
+====

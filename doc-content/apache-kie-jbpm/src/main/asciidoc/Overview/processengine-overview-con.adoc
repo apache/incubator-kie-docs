@@ -1,0 +1,55 @@
+[id='processengine-overview-con']
+= {PROCESS_ENGINE_CAP} in {PRODUCT}
+
+The {PROCESS_ENGINE} implements the Business Process Management (BPM) paradigm in {PRODUCT}. BPM is a business methodology that enables modeling, measuring, and optimizing processes within an enterprise. 
+
+In BPM, a repeatable business process is represented as a workflow diagram. The Business Process Model and Notation (BPMN) specification defines the available elements of this diagram. The {PROCESS_ENGINE} implements a large subset of the BPMN 2.0 specification.
+
+With the {PROCESS_ENGINE}, business analysts can develop the diagram itself. Developers can implement the business logic of every element of the flow in code, making an executable business process. Users can execute the business process and interact with it as necessary. Analysts can generate metrics that reflect the efficiency of the process.
+
+The workflow diagram consists of a number of nodes. The BPMN specification defines many kinds of nodes, including the following principal types:
+
+* _Event_: Nodes representing something happening in the process or outside of the process. Typical events are the start and the end of a process. An event can throw messages to other processes and catch such messages. Circles on the diagram represent events.
+* _Activity_: Nodes representing an action that must be taken (whether automatically or with user involvement). Typical events are a task, which represents an action taken within the process, and a call to a sub-process. Rounded rectangles on the diagram represent activities.
+* _Gateway_: A branching or merging node. A typical gateway evaluates an expression and, depending on the result, continues to one of several execution paths. Diamond shapes on the diagram represent gateways.
+
+When a user starts the process, a process instance is created. The process instance contains a set of data, or _context_, stored in process variables. The _state_ of a process instance includes all the context data and also the current active node (or, in some cases, several active nodes). 
+
+Some of these variables can be initialized when a user starts the process. An activity can read from process variables and write to process variables. A gateway can evaluate process variables to determine the execution path.
+
+For example, a purchase process in a shop can be a business process. The content of the user’s cart can be the initial process context. At the end of execution, the process context can contain the payment confirmation and shipment tracking details. 
+
+Optionally, you can use the BPMN data modeler in {CENTRAL} to design the model for the data in process variables.
+
+The workflow diagram is represented in code by an XML _business process definition_. The logic of events, gateways, and sub-process calls are defined within the business process definition. 
+
+Some task types (for example, script tasks and the standard decision engine rule task) are implemented in the engine. For other task types, including all custom tasks, when the task must be executed the {PROCESS_ENGINE} executes a call using the _Work Item Handler API_. Code external to the engine can implement this API, providing a flexible mechanism for implementing various tasks. 
+
+The {PROCESS_ENGINE} includes a number of predefined types of tasks. These types include a script task that runs user Java code, a service task that calls a Java method or a Web Service, a decision task that calls a decision engine service, and other custom tasks (for example, REST and database calls).
+
+Another predefined type of task is a _user task_, which includes interaction with a user. User tasks in the process can be assigned to users and groups. 
+
+The {PROCESS_ENGINE} uses the _KIE API_ to interact with other software components. You can run business processes as services on a {KIE_SERVER} and interact with them using a REST implementation of the KIE API. Alternatively, you can embed business processes in your application and interact with them using KIE API Java calls. In this case, you can run the {PROCESS_ENGINE} in any Java environment.
+
+{CENTRAL} includes a user interface for users executing human tasks and a form modeler for creating the web forms for human tasks. However, you can also implement a custom user interface that interacts with the {PROCESS_ENGINE} using the KIE API.
+
+The {PROCESS_ENGINE} supports the following additional features:
+
+* Support for persistence of the process information using the JPA standard. Persistence preserves the state and context (data in process variables) of every process instance, so that they are not lost in case any components are restarted or taken offline for some time. You can use an SQL database engine to store the persistence information.
+* Pluggable support for transactional execution of process elements using the JTA standard. If you use a JTA transaction manager, every element of the business process starts as a transaction. If the element does not complete, the context of the process instance is restored to the state in which it was before the element started.
+* Support for custom extension code, including new node types and other process languages.
+* Support for custom listener classes that are notified about various events.
+* Support for migrating running process instances to a new version of their process definition
+
+The {PROCESS_ENGINE} can also be integrated with other independent core services:
+
+* The _human task service_ can manage user tasks when human actors need to participate in the process. It is fully pluggable and the default implementation is based on the WS-HumanTask specification. The human task service manages the lifecycle of the tasks, task lists, task forms, and some more advanced features like escalation, delegation, and rule-based assignments.
+* The _history log_ can store all information about the execution of all the processes in the {PROCESS_ENGINE}. While runtime persistence stores the current state of all active process instances, you need the history log to ensure access to historic information. The history log contains all current and historic states of all active and completed process instances. You can use the log to query for any information related to the execution of process instances for monitoring and analysis.
+
+ifdef::PAM,DM[]
+.Additional resources
+
+* {URL_DEVELOPING_PROCESS_SERVICES}#assembly-designing-business-processes[_{DESIGNING_BUSINESS_PROCESSES}_]
+* {URL_DEPLOYING_AND_MANAGING_SERVICES}#kie-server-commands-con_kie-apis[_{KIE_APIS}_] 
+* https://docs.jboss.org/drools/release/{COMMUNITY_VERSION_FINAL}/kie-api-javadoc/index.html[Java documentation] for the public KIE API
+endif::PAM,DM[]

@@ -1,0 +1,389 @@
+= Business Application with JMS
+
+== What will you do
+
+You will build business application that uses JMS to send information between your
+business processes. It combines process logic and messaging to provide comprehensive
+solution to common problems such as - how to notify other participants of particular
+event.
+
+== What do you need
+
+* About 20 minutes of your time
+* Java (JDK) 8 or later
+* Maven 3.5.x
+* IDE of your choice
+* Access to the Internet
+* {CENTRAL} deployed - see single distribution for instructions
+
+== What should I do
+
+=== Install Apache Artemis
+
+https://activemq.apache.org/artemis/download.html[Download] and unzip Apache Artemis distribution.
+Refer to the location where you unzip it as `${ARTEMIS_HOME}`.
+
+Once downloaded, navigate to the location where you want to store your broker data and create new broker
+
+[source, bash]
+----
+${ARTEMIS_HOME}/bin/artemis create business-app-broker
+----
+
+You will be prompted for some required information during creation, that should look like this
+
+[source, bash]
+----
+Creating ActiveMQ Artemis instance at: /.../business-app-broker
+
+--user: is a mandatory property!
+Please provide the default username:
+admin
+
+--password: is mandatory with this configuration:
+Please provide the default password:
+
+
+--allow-anonymous | --require-login: is a mandatory property!
+Allow anonymous access?, valid values are Y,N,True,False
+Y
+----
+
+Next, start the broker instance, go to business-app-broker/bin and issue following command
+
+[source, bash]
+----
+./artemis run
+----
+
+Open your browser at http://localhost:8161/console[http://localhost:8161/console] to logon to
+management console of Apache Artemis with user name and password provided at the time you created the broker.
+
+NOTE: For more detailed instruction on how to configure Apache Artemis https://activemq.apache.org/artemis/docs/latest/using-server.html[visit its website]
+
+Last step in configuring JMS service is to create a queue (or an address as it's called in Apache Artemis).
+
+Once logged into Management Console
+
+* Go to Artemis in the menu
+* Expand the tree view and click `addresses`
+* On right hand side click `Create`
+* Create new address with name `ExternalSignalQueue`
+* Select `Anycast`
+
+All steps are done for installing and configuring Apache Artemis for this tutorial.
+
+=== Build business application
+
+To get started with business applications the easiest way is to generate it using maven archetype commands. Please refer <<../../jbpm-docs/src/main/asciidoc/BusinessApplications/CreateApplication-section.adoc#_sect_BA_create_application, Create your business application section>>.
+
+Now the directory  will consists of three projects
+
+* business-application-model
+* business-application-kjar
+* business-application-service
+
+Go into `business-application-service` directory. There you will find launch scripts
+(for both linux/unix and windows).
+
+Start {CENTRAL} (if not already started) and open your browser at
+http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
+user `wbadmin` with password `wbadmin`
+
+=== Import your business assets project into {CENTRAL}
+
+if not already imported proceed with points below to import business asset project
+
+* Go into business assets project - `business-application-kjar`
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "my business assets project"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Click import and confirm project to be imported
+
+=== Create Business Processes
+
+In browser where you logged into {CENTRAL} go to Projects. You will see your newly imported
+project named business-application-kjar, go into that project.
+
+* go into business-application-kjar project
+* click `Add asset` button
+* select Business Process asset
+* provide name for this asset (`throwsignalprocess`)
+* create your business process
+
+Sample business process should be a single script task and end signal event. Signal event
+should use external scope and define a signal `IamDone`
+
+image::BusinessApplications/tutorial-6-throw-process-event.png[Business process - sample]
+
+Process should define single process variable `input` that is then mapped as data output of the end event.
+
+image::BusinessApplications/tutorial-6-throw-process.png[Business process - sample]
+
+Next create another business process that will receive that signal.
+
+* go into business-application-kjar project
+* click `Add asset` button
+* select Business Process asset
+* provide name for this asset (`catchsignalprocess`)
+* create your business process
+
+Sample business process should be a signal catch event and single user task assigned to `wbadmin`.
+The catch signal event should use the signal same as throwing one and that is `IamDone`
+
+image::BusinessApplications/tutorial-6-catch-process-event.png[Business process - sample]
+
+Process should define single process variable `data` that is then mapped as data input of the catch event.
+
+image::BusinessApplications/tutorial-6-catch-process.png[Business process - sample]
+
+=== Configure service project to use the Apache Artemis
+
+* Import business-application-service project into IDE of your choice
+* Add dependency to the spring-boot-starter-artemis in your service pom.xml
+
+[source, xml]
+----
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-artemis</artifactId>
+</dependency>
+----
+
+* Add dependency to the jbpm-workitems-jms in your service pom.xml
+
+[source, xml]
+----
+<dependency>
+  <groupId>org.jbpm</groupId>
+  <artifactId>jbpm-workitems-jms</artifactId>
+  <version>${version.org.kie}</version>
+</dependency>
+----
+
+There are several configuration parameters that define how business application
+will connect to Apache Artemis
+
+* Edit application.properties file (that is located in src/main/resources)
+
+[source, plain]
+----
+spring.artemis.mode=native
+spring.artemis.host=localhost
+spring.artemis.port=61616
+spring.artemis.user=admin
+spring.artemis.password=admin
+----
+
+NOTE: Use the user credentials you provided when creating the broker in the configuration
+
+NOTE: Add the same entry into `application-dev.properties` file
+
+=== Develop JMS components of your Business Application
+
+First of all, you need to enable jms on the service level.
+
+* Open Application class (located in src/main/java/com/company/service directory)
+* Add `@EnableJms` on the class level (next to @SpringBootApplication)
+
+Then create a new class that will be responsible for sending signals over JMS. This will
+be really small extension to out of the box JMS work item handler.
+`ConfiguredJMSSendTaskWorkItemHandler` needs to extend `org.jbpm.process.workitem.jms.JMSSendTaskWorkItemHandler`
+and this is where the most of the logic comes from.
+
+This class needs to autowire
+
+* ConnectionFactory - used to connect to Apache Artemis
+* JmsTemplate - used to send messages
+
+Overload executeWorkItem method to take advantage of JmsTemplate instead of direct JMS API.
+
+Last but not least, annotate the class with `@Component` annotation so it will be automatically registered as
+work item handler. Below is the complete source code of the handler implementation.
+
+[source, java]
+----
+package com.company.service.jms;
+
+import javax.jms.ConnectionFactory;
+
+import org.jbpm.process.workitem.jms.JMSSendTaskWorkItemHandler;
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkItemManager;
+import org.springframework.jms.core.JmsTemplate;
+import org.springframework.stereotype.Component;
+
+@Component("External Send Task")
+public class ConfiguredJMSSendTaskWorkItemHandler extends JMSSendTaskWorkItemHandler {
+
+    private JmsTemplate jmsTemplate;
+
+    public ConfiguredJMSSendTaskWorkItemHandler(ConnectionFactory connectionFactory, JmsTemplate jmsTemplate) {
+        super(connectionFactory, null);
+        this.jmsTemplate = jmsTemplate;
+    }
+
+    @Override
+    public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
+        try {
+            jmsTemplate.send("ExternalSignalQueue", (session) -> createMessage(workItem, session));
+            manager.completeWorkItem(workItem.getId(), null);
+        } catch (Exception e) {
+            handleException(e);
+        }
+    }
+}
+----
+
+Last development activity is to create the message receiver. This is even easier than sender
+as there is out of the box receiver from jBPM - `org.jbpm.process.workitem.jms.JMSSignalReceiver`
+
+[source, java]
+----
+package com.company.service.jms;
+
+import javax.jms.BytesMessage;
+
+import org.jbpm.process.workitem.jms.JMSSignalReceiver;
+import org.springframework.jms.annotation.JmsListener;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ReceiveJMSEvents extends JMSSignalReceiver {
+
+    @JmsListener(destination = "ExternalSignalQueue")
+    public void processMessage(BytesMessage content) {
+        super.onMessage(content);
+    }
+
+}
+----
+
+And that's it, you're all set to communicate between business processes via JMS.
+
+
+=== Run the application
+
+At this point all development effort is done, the last remaining thing is to pull
+back the business assets project into the business-application-kjar project
+
+* Go to business-application-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar` (if not already added)
+* Execute `git pull origin master` - when prompted enter `wbadmin` as password
+
+Go to `business-application-service` directory and launch the application
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+== Results
+
+Once the build and launch is complete you can open your browser
+http://localhost:8090[http://localhost:8090] to see your business
+application up and running.
+
+It presents with a welcome screen that is mainly for verification purpose
+to illustrate that application started successfully.
+
+You can point the browser to http://localhost:8090/rest/server[http://localhost:8090/rest/server]
+to see the actual Business Automation capability services
+
+NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
+authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
+
+Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/processes[http://localhost:8090/rest/server/containers/business-application-kjar/processes]
+to see business processes available for execution. You should see two processes:
+
+* catchsignalprocess
+* throwsignalprocess
+
+=== Execute business process
+
+You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
+
+First start process instance that will wait for a signal
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/processes/catchsignalprocess/instances`
+
+HTTP method: POST
+
+HTTP headers:
+
+* Accept: application/json
+* Content-Type: application/json
+
+
+And then start process instance that will throw (send) signal via JMS
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/processes/throwsignalprocess/instances`
+
+HTTP method: POST
+
+HTTP headers:
+
+* Accept: application/json
+* Content-Type: application/json
+
+Body:
+
+[source, json]
+----
+{
+  "input":"hello"
+}
+----
+
+NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
+
+Verify that there is a user task assigned to `wbadmin` user with information coming from second process instance - `hello`
+
+
+=== Execute business process from {CENTRAL} UI
+
+Stop the application if it's running.
+
+Go to `business-application-service` directory and launch the application in development mode
+
+`./launch-dev.sh clean install` for Linux/Unix
+
+`./launch-dev.bat clean install` for Windows
+
+this will connect your business application to {CENTRAL} so can be administered
+from within its UI.
+
+Go to {CENTRAL} in the browser and navigate to servers (from the home screen).
+
+Let's deploy the business-application-kjar to our running application.
+
+* Go to projects from home screen of {CENTRAL}
+* Go into business-application-kjar project
+* Click `Deploy` button
+* Make sure that `Server configuration` is set to `business-application-service-dev` and click ok
+
+The project should be successfully deployed and you can examine that state by going back to servers
+from home screen.
+
+Next, go to process definitions (in Manage section of the Home screen) and select server configuration
+(top right corner) - again it should be `business-application-service-dev` the list of available
+process definition will be loaded and you should see your single process definitions from the project
+`business-application-kjar`.
+
+First start process instance that will wait for a signal (`catchsignalprocess`),
+then start process instance that will throw (send) signal via JMS (`throwsignalprocess`).
+When starting second process specify the input you want to send together with signal.
+
+Go to Task inbox from home screen to see that task is created with input provided on the
+second process instance.
+
+== Summary
+
+Congratulations! you have integrated your business application with JMS. Moreover, you
+made business processes to talk to each other (over signals). This allows you to build
+more advanced interactions based on your business logic.
+
+== Source code of the tutorial
+
+https://github.com/business-applications/06-jms-business-application[Here] is the complete source code of the tutorial.

@@ -1,0 +1,25 @@
+[id='threads-process-con_{context}']
+= Threads in the {PROCESS_ENGINE}
+
+We can refer to two types of multi-threading:  _logical_ and _technical_. _Technical multi-threading_ involves multiple threads or processes that are started, for example, by a Java or  C program. _Logical multi-threading_ happens in a BPM process, for example, after the process reaches a parallel gateway. In execution logic, the original process splits into two processes that run in a parallel fashion.
+
+{PROCESS_ENGINE_CAP} code implements logical multi-threading using one technical thread.
+
+The reason for this design choice is that multiple (technical) threads must be able to communicate state information to each other if they are working on the same process. This requirement brings a number of complications. The extra logic required for safe communication between threads, as well as the extra overhead required to avoid race conditions and deadlocks, can negate any performance benefit of using such threads.
+
+In general, the {PROCESS_ENGINE} executes actions in series. For example, when the {PROCESS_ENGINE} encounters a script task in a process, it executes the script synchronously and waits for it to complete before continuing execution. In the same way, 
+if a process encounters a parallel gateway, the {PROCESS_ENGINE} sequentially triggers each of the outgoing branches, one after the other.
+
+This is possible because execution is almost always instantaneous, meaning that it is extremely  fast and produces almost no overhead. As a result, sequential execution does not create any effects that a user can notice.
+
+Any code in a process that you supply is also executed synchronously and the {PROCESS_ENGINE} waits for it to finish before continuing the process. For example, if you use a `Thread.sleep(...)` as part of a custom script, the {PROCESS_ENGINE} thread is blocked during the sleep period.
+
+When a process reaches a service task, the {PROCESS_ENGINE} also invokes the handler for the task synchronously and waits for the `completeWorkItem(...)` method to return before continuing execution. If your service handler is not instantaneous, implement the asynchronous execution independently in your code.
+
+For example, your service task might invoke an external service. The delay in invoking this service remotely and waiting for the results might be significant. Therefore, invoke this service asynchronously. Your handler must only invoke the service and then return from the method, then notify the {PROCESS_ENGINE} later when the results are available. In the meantime, the {PROCESS_ENGINE} can continue execution of the process.
+
+// there really should be more technical details here about the methods for notification, we need to do this later
+
+Human tasks are a typical example of a service that needs to be invoked asynchronously. A human task requires a human actor to respond to a request, and the {PROCESS_ENGINE} must not wait for this response.
+
+When a human task node is triggered, the human task handler only creates a new task on the task list of the assigned actor. The {PROCESS_ENGINE} is then able to continue execution on the rest of the process, if necessary. The handler notifies the {PROCESS_ENGINE} asynchronously when the user has completed the task.

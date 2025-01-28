@@ -1,0 +1,82 @@
+[id='con-timer_{context}']
+= Timers
+
+You can use timers to trigger logic after a certain period or to repeat specific actions at regular intervals. Timers wait for a predefined amount of time before triggering once or repeatedly.
+
+== Supported timers for {PRODUCT} 
+{PRODUCT} supports two types of timers:
+
+* Quartz: Recommended for use with Spring Boot and Tomcat
+* EJB: Recommended for use with {EAP}, both on-premise and {OPENSHIFT}
+
+[NOTE]
+====
+Do not use timers for the following business strategies:
+
+* Do not use timers as your process polling strategy. For example, instead of directly calling the external service and adding a 1 second timer, use {FUSE} to register an asynchronous route. Use the {FUSE} callback to fire an event for the process to move on once the expected response is received. Create a work item handler as part of your business strategy outside of your Business Process Model and Notation (BPMN) process model and move the timer to the work item handler.
+
+* Do not use timers to enforce safe points or commits during process execution. Timers are designed to represent a period of time (duration) in a business process and not for enforcing engine-specific behavior.
+====
+
+== Configuring timers with delay and period
+
+You can set a timer with delay and a certain period. The delay specifies the waiting time after the node activation, and the period defines the time between the subsequent trigger activation. The period value `0` results in a one-shot timer. You can specify the delay and period expression in `[\#d][#h][#m][#s][#[ms]]` form, indicating the number of days, hours, minutes, seconds, and milliseconds (default). For example, the expression `1h` indicates one hour waiting time before triggering the timer again.
+
+== Configuring timers with ISO-8601 date format
+
+You can configure timers with ISO-8601 date format that supports both one-shot timers and repeatable timers. You can define timers as date and time representation, time duration, or repeating intervals. For example:
+
+* Date `2020-12-24T20:00:00.000+02:00` signifies that timer is triggered exactly on Christmas at 8:00 p.m.
+* Duration `PT1S` signifies that timer is triggered once after one second.
+* Repeating intervals `R/PT1S` signifies that timer is triggered every second with any limit. Alternatively, `R5/PT1S` triggers the timer five times every second.
+
+== Configuring timers with process variables
+
+You can also specify timers using process variables, consisting of the string representation of delay and period or ISO8601 date format. When you specify `#{variable}`, the engine parses the expression and replaces the expression value with the variable. In a process, you can use timers using the following ways:
+
+* Add a timer event to a process flow. The process activation starts the timer and when the timer is triggered (once or repeatedly), it activates the successor of the timer node. Subsequently, the outgoing connection of a timer with a positive period value is triggered multiple times. When a timer node is canceled, the associated timer is also canceled and no more triggers occur.
+
+* Associate timer as a boundary event with a sub-process or task.
+
+== Updating timers in a running process instance
+
+In some cases, the scheduled timer needs to be rescheduled to accommodate the new requirements, such as changing delay, period, or repeat limit. Updating a timer includes many low-level operations, therefore, {PRODUCT} provides the following command to perform the low-level operations related to updating a timer as an atomic operation. The following command ensures that all the operations are performed within the same transaction.
+
+`org.jbpm.process.instance.command.UpdateTimerCommand`
+
+NOTE: Only boundary timer events and intermediate timer events are supported to update.
+
+You can reschedule the timer by specifying the two mandatory parameters and one of the three optional parameter sets of the `UpdateTimerCommand` class.
+
+.Parameters and parameter sets of `UpdateTimerCommand` class
+[cols="50%,50%", options="header"]
+|===
+|Parameter or parameter set
+|Type
+
+|process instance ID (Mandatory)
+|`long`
+
+|timer node name (Mandatory)
+|`String`
+
+|delay (Optional)
+|`long`
+
+|period (Optional)
+|`long`
+
+|repeat limit (Optional)
+|`init`
+
+|===
+
+.Example rescheduling time event
+[source,java]
+----
+// Start the process instance and record its ID:
+long id = kieSession.startProcess(BOUNDARY_PROCESS_NAME).getId();
+
+// Set the timer delay to 3 seconds:
+kieSession.execute(new UpdateTimerCommand(id, BOUNDARY_TIMER_ATTACHED_TO_NAME, 3));
+----

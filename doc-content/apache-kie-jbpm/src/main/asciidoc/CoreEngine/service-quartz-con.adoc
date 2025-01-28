@@ -1,0 +1,53 @@
+[id='service-quartz-con_{context}']
+= Quartz-based timer service
+
+The {PROCESS_ENGINE} provides a cluster-ready timer service using Quartz. You can use the service to dispose or load your KIE session at any time. The service can manage how long a KIE session is active in order to fire each timer appropriately.
+
+The following example shows a basic Quartz configuration file for a clustered environment:
+
+.Quartz configuration file for a clustered environment
+[source,xml]
+----
+#============================================================================
+# Configure Main Scheduler Properties
+#============================================================================
+
+org.quartz.scheduler.instanceName = jBPMClusteredScheduler
+org.quartz.scheduler.instanceId = AUTO
+
+#============================================================================
+# Configure ThreadPool
+#============================================================================
+
+org.quartz.threadPool.class = org.quartz.simpl.SimpleThreadPool
+org.quartz.threadPool.threadCount = 5
+org.quartz.threadPool.threadPriority = 5
+
+#============================================================================
+# Configure JobStore
+#============================================================================
+
+org.quartz.jobStore.misfireThreshold = 60000
+
+org.quartz.jobStore.class=org.quartz.impl.jdbcjobstore.JobStoreCMT
+org.quartz.jobStore.driverDelegateClass=org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+org.quartz.jobStore.useProperties=false
+org.quartz.jobStore.dataSource=managedDS
+org.quartz.jobStore.nonManagedTXDataSource=nonManagedDS
+org.quartz.jobStore.tablePrefix=QRTZ_
+org.quartz.jobStore.isClustered=true
+org.quartz.jobStore.clusterCheckinInterval = 20000
+
+#=========================================================================
+# Configure Datasources
+#=========================================================================
+org.quartz.dataSource.managedDS.jndiURL=jboss/datasources/psbpmsDS
+org.quartz.dataSource.nonManagedDS.jndiURL=jboss/datasources/quartzNonManagedDS
+
+----
+
+You must modify the previous example to fit your environment. 
+
+ifdef::JBPM,DROOLS,OP[]
+For more information about configuring a Quartz scheduler, see the documentation for the Quartz 1.8.5 distribution archive.
+endif::JBPM,DROOLS,OP[]

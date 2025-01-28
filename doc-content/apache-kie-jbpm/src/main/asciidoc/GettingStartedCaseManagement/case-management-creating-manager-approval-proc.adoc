@@ -1,0 +1,95 @@
+[id='case-management-create-manager-approval-proc']
+= Creating the Manager approval business process
+The manager approval process determines whether or not the order will be placed or rejected.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* -> *IT_Orders_New* -> *orderhardware Business Processes*.
+. Create and configure the `Prepare hardware spec` user task:
+.. Expand *Tasks* in the *Object Library* and drag a user task onto the canvas and convert the new task to a user task.
+.. Click the new user task and click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. Input `Prepare hardware spec` in the *Name* field.
+.. Expand *Implementation/Execution*, click *Add* below the *Groups* menu, click *Select* -> *New*, and input `supplier`.
+.. Input `PrepareHardwareSpec` in the *Task Name* field.
+.. Select the *Skippable* check box and enter the following text in the *Description* field:
++
+`Prepare hardware specification for #{initiator} (order number #{CaseId})`
+.. click image:getting-started/diagram_properties.png[the Properties icon] in the *Assignments* field and add the following:
++
+image::cases/hardware-spec-data.png[Prepare hardware I/O values]
+
+.. Click *OK*.
+. Create and configure the manager approval user task:
+.. Click the *Prepare hardware spec* user task and create a new user task.
+.. Click the new user task and click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. Click the user task and in the *Properties* panel input `Manager approval` in the *Name* field.
+.. Expand *Implementation/Execution*, click *Add* below the *Actors* menu, click *Select* -> *New*, and input `manager`.
+.. Input `ManagerApproval` in the *Task Name* field.
+.. click image:getting-started/diagram_properties.png[the Properties icon] in the *Assignments* field and add the following:
++
+image::cases/manager-approval-data.png[Manager approval I/O values]
+
+.. Click *OK*.
+.. Select the *Skippable* check box and enter the following text in the *Description* field:
++
+`Approval request for new hardware for #{initiator} (order number #{CaseId})`
+.. Enter the following Java expression in the *On Exit Action* field:
++
+`kcontext.setVariable("caseFile_managerDecision", approved);`
+.. Click *Save*.
+. Click the *Manager approval* user task and create a Data-based Exclusive (XOR) gateway.
++
+image::cases/xor-gateway.png[Creating a gateway]
++
+image::cases/xor-gateway2.png[Creating a Data-based Exclusive (XOR) gateway]
+
+. Create and configure the `Place order` reusable sub-process:
+.. From the *Object Library*, expand *sub-processes*, click *Reusable*, and drag the new element to the canvas on the right side of the Data-based Exclusive (XOR) gateway.
++
+image::cases/reusablegtwy.png[Creating a reusable task]
+
+.. Connect the Data-based Exclusive (XOR) gateway to the sub-process.
++
+image::cases/connect-sub.png[Creating a Data-based Exclusive (XOR) gateway to sub-process]
+
+.. Click the new sub task and click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. Input `Place order` in the *Name* field.
+.. Expand *Data Assignments* and click image:getting-started/diagram_properties.png[the Properties icon] in the *Assignments* field and add the following:
++
+image::cases/place-order-io.png[Place order I/O values]
+
+.. Click *OK*.
+.. Click the connection from the Data-based Exclusive (XOR) gateway to the sub-process and click the *Properties* image:getting-started/diagram_properties.png[] icon.
+.. Expand *Implementation/Execution*, select *Condition*, and set the following condition expressions.
++
+image::cases/seq-flow-conds.png[Sequence flow conditions]
+
+.. Click the *Place order* user task and create an end event.
+. Create and configure the order rejected user task:
+.. Click the Data-based Exclusive (XOR) gateway and create a new user task.
+.. Drag the new task to align it below the *Place order* task.
++
+image::cases/second-task.png[Align new task]
+
+.. Click the new user task and click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. Input `Order rejected` in the *Name* field.
+.. Expand *Implementation/Execution* and input `OrderRejected` in the *Task Name* field.
+.. Click *Add* below the *Actors* menu, click *Select* -> *New*, and input `owner`.
+.. click image:getting-started/diagram_properties.png[the Properties icon] in the *Assignments* field and add the following:
++
+image::cases/order-rejected-io.png[Order rejected I/O values]
+
+.. Click *OK*.
+.. Select the *Skippable* check box and enter the following text in the *Description* field:
++
+`Order #{CaseId} has been rejected by manager`
+.. Click the *Order rejected* user task and create an end event.
+.. Click *Save*.
+. Click the connection from the Data-based Exclusive (XOR) gateway to the *Order rejected* user task and click the *Properties* image:getting-started/diagram_properties.png[] icon.
+. Expand *Implementation/Execution*, select *Condition*, and set the following condition expressions.
++
+image::cases/seq-flow-false-cond.png[Sequence flow conditions]
+
+. Click *Save*.
++
+.Manager approval business process
+image::cases/prep-spec-flow.png[Manager approval business process]

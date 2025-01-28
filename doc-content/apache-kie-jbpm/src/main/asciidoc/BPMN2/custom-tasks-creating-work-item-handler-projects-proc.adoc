@@ -1,0 +1,134 @@
+[id='custom-tasks-creating-work-item-handler-projects-proc-{context}']
+= Creating work item handler projects
+
+Create the software project to contain all configurations, mappings, and executable code for the custom task.
+
+You can create a work item handler from scratch or use a Maven archetype to create an example project. {PRODUCT} provides the `jbpm-workitems-archetype` from the Red Hat Maven repository for this purpose.
+
+.Procedure
+
+. Open the command line and create a directory where you will build your work item handler such as `workitem-home`:
++
+----
+$ mkdir workitem-home
+----
+
+. Check the Maven `settings.xml` file and ensure that the Red Hat Maven repository is included in the repository list.
++
+[NOTE]
+====
+Setting up Maven is outside the scope of this guide.
+====
++
+For example, to add the online Red Hat Maven repository to your Maven `settings.xml` file:
++
+----
+<settings>
+  <profiles>
+    <profile>
+      <id>my-profile</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+          <id>redhat-ga</id>
+          <url>http://maven.repository.redhat.com/ga/</url>
+          <snapshots>
+            <enabled>false</enabled>
+          </snapshots>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+        </repository>
+        ...
+      </repositories>
+    </profile>
+  </profiles>
+  ...
+</settings>
+----
+
+. Find the Red Hat library version and perform one of the following tasks:
+* To find the library version online, see https://access.redhat.com/solutions/3405361[What is the mapping between {PRODUCT} and the Maven library version?].
+* To find the library version offline, check `Implementation-Version` in `business-central.war/META-INF/MANIFEST.MF` or `Implementation-Version` in `kie-server.war/META-INF/MANIFEST.MF`.
+
+. In the `workitem-home` directory, execute the following command:
++
+----
+$ mvn archetype:generate \
+-DarchetypeGroupId=org.jbpm \
+-DarchetypeArtifactId=jbpm-workitems-archetype \
+-DarchetypeVersion=<redhat-library-version> \
+-Dversion=1.0.0-SNAPSHOT \
+-DgroupId=com.redhat \
+-DartifactId=myworkitem \
+-DclassPrefix=MyWorkItem
+----
++
+.Parameter descriptions
+[cols="40%,60%a", frame="all", options="header"]
+|===
+|Parameter
+|Description
+|`-DarchetypeGroupId`
+|Specific to the archetype and must remain unchanged.
+|`-DarchetypeArtifactId`
+|Specific to the archetype and must remain unchanged.
+|`-DarchetypeVersion`
+|Red Hat library version that is searched for when Maven attempts to download the `jbpm-workitems-archetype` artifact.
+|`-Dversion`
+|Version of your specific project. For example, `1.0.0-SNAPSHOT`.
+|`-DgroupId`
+|Maven group of your specific project. For example, `com.redhat`.
+|`-DartifactId`
+|Maven ID of your specific project. For example, `myworkitem`.
+|`-DclassPrefix`
+|String added to the beginning of Java classes when Maven generates the classes for easier identification. For example, `MyWorkItem`.
+|===
++
+A `myworkitem` folder is created in the `workitem-home` directory. For example:
++
+----
+assembly/
+  assembly.xml
+src/
+  main/
+    java/
+      com/
+        redhat/
+          MyWorkItemWorkItemHandler.java
+    repository/
+    resources/
+  test/
+    java/
+      com/
+        redhat/
+          MyWorkItemWorkItemHandlerTest.java
+          MyWorkItemWorkItemIntegrationTest.java
+    resources/
+      com/
+        redhat/
+pom.xml
+----
+
+. Add any Maven dependencies required by the work item handler class to the `pom.xml` file.
+
+. To create a deployable JAR for this project, in the parent project folder where the pom.xml file is located, execute the following command:
++
+----
+$ mvn clean package
+----
++
+Several files are created in the `target/` directory which include the following two main files:
++
+.File descriptions
+[cols="40%,60%a", frame="all", options="header"]
+|===
+|Parameter
+|Description
+|`myworkitems-<version>.jar`
+|Used for direct deployment to {PRODUCT}.
+|`myworkitems-<version>.zip`
+|Used for deployment using a service repository.
+|===

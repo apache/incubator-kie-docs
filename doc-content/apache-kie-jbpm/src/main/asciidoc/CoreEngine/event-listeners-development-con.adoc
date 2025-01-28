@@ -1,0 +1,17 @@
+[id='event-listeners-development-con_{context}']
+= Practices for development of event listeners
+
+The {PROCESS_ENGINE} calls event listeners during processing of events or tasks. The calls happen within {PROCESS_ENGINE} transactions and block execution. Therefore, the event listener can affect the logic and performance of the {PROCESS_ENGINE}.
+
+To ensure minimal disruption, follow the following guidelines:
+
+* Any action must be as short as possible.
+* A listener class must not have a state. The {PROCESS_ENGINE} can destroy and re-create a listener class at any time.
+* If the listener modifies any resource that exists outside the scope of the listener method, ensure that the resource is enlisted in the current transaction. The transaction might be rolled back. In this case, if the modified resource is not a part of the transaction, the state of the resource becomes inconsistent.
++
+Database-related resources provided by {EAP} are always enlisted in the current transaction. In other cases, check the JTA information for the runtime environment that you are using.
++
+* Do not use logic that relies on the order of execution of different event listeners.
+* Do not include interactions with different entities outside the {PROCESS_ENGINE} within a listener. For example, do not include REST calls for notification of events. Instead, use process nodes to complete such calls. An exception is the output of logging information; however, a logging listener must be as simple as possible.
+* You can use a listener to modify the state of the process or task that is involved in the event, for example, to change its variables.
+* You can use a listener to interact with the {PROCESS_ENGINE}, for example, to send signals or to interact with process instances that are not involved in the event.

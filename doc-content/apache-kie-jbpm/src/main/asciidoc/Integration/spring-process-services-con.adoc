@@ -1,0 +1,56 @@
+[id='spring-process-services-con_{CONTEXT}']
+
+= {PROCESS_ENGINE_CAP} services with Spring
+
+You might want to create a dynamic Spring application, where you can add and remove business assets such as process definitions, data models, rules, and forms without restarting the application.
+
+In this case, use {PROCESS_ENGINE} services. {PROCESS_ENGINE_CAP} services are designed as framework-agnostic, and separate modules bring in the required framework-specific addons. 
+
+The `jbpm-kie-services` module contains the code logic of the services. A Spring application can consume these pure Java services.
+
+The only code you must add to your Spring application to configure {PROCESS_ENGINE} services is the implementation of the `IdentityProvider` interface. This implementation depends on your security configuration. The following example implementation uses Spring Security, though it might not cover all available security features for a Spring application.
+
+.Implementation of the `IdentityProvider` interface using Spring Security
+[source,java]
+----
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.kie.internal.identity.IdentityProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+public class SpringSecurityIdentityProvider implements IdentityProvider {
+
+	public String getName() {
+
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null && auth.isAuthenticated()) {
+			return auth.getName();
+		}
+		return "system";
+	}
+
+	public List<String> getRoles() {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		if (auth != null && auth.isAuthenticated()) {
+			List<String> roles = new ArrayList<String>();
+
+			for (GrantedAuthority ga : auth.getAuthorities()) {
+				roles.add(ga.getAuthority());
+			}
+
+			return roles;
+		}
+
+		return Collections.emptyList();
+	}
+
+	public boolean hasRole(String role) {
+		return false;
+	}
+
+}
+----

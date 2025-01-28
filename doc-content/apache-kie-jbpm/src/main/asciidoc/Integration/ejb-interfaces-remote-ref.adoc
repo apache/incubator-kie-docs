@@ -1,0 +1,62 @@
+[id='ejb-interfaces-remote-ref_{context}']
+= Remote EJB interfaces
+
+The following dedicated remote EJB interfaces extend core services:
+
+* `org.jbpm.services.ejb.api.DefinitionServiceEJBRemote`
+* `org.jbpm.services.ejb.api.DeploymentServiceEJBRemote`
+* `org.jbpm.services.ejb.api.ProcessServiceEJBRemote`
+* `org.jbpm.services.ejb.api.RuntimeDataServiceEJBRemote`
+* `org.jbpm.services.ejb.api.UserTaskServiceEJBRemote`
+
+You can use these interfaces in the same way as local interfaces, with the exception of handling custom types.
+
+You can define custom types in two ways. _Globally_ defined types are available on application classpath and included in the enterprise application. If you define a type _locally to the deployment unit_, the type is declared in a project dependency (for example, in a KJAR file) and is resolved at deployment time.
+
+Globally available types do not require any special handling. The EJB container automatically marshalls the data when handling remote requests. However, local custom types are not visible to the EJB container by default. 
+
+The {PROCESS_ENGINE} EJB services provide a mechanism to work with custom types. They provide the following two additional types:
+
+* `org.jbpm.services.ejb.remote.api.RemoteObject`: A serializable wrapper class for single-value parameters
+* `org.jbpm.services.ejb.remote.api.RemoteMap`: A dedicated `java.util.Map` implementation to simplify remote invocation of service methods that accept custom object input. The internal implementation of the map holds content that is already serialized, in order to avoid additional serialization at sending time. 
++
+This implementation does not include some of the methods of `java.util.Map` that are usually not used when sending data.
+
+These special objects perform eager serialization to bytes using an `ObjectInputStream` object. They remove the need for serialization of data in the EJB client/container. Because no serialization is needed, it is not necessary to share the custom data model with the EJB container.
+
+The following example code works with local types and remote EJB services:
+
+.Using local types with remote EJB services
+[source,java]
+----
+// Start a process with custom types via remote EJB
+
+Map<String, Object> parameters = new RemoteMap();
+Person person = new org.jbpm.test.Person("john", 25, true);
+parameters.put("person", person);
+
+Long processInstanceId = processService.startProcess(deploymentUnit.getIdentifier(), "custom-data-project.work-on-custom-data", parameters);
+
+// Fetch task data and complete a task with custom types via remote EJB
+Map<String, Object> data = userTaskService.getTaskInputContentByTaskId(taskId);
+        
+Person fromTaskPerson = data.get("_person");
+fromTaskPerson.setName("John Doe");
+        
+RemoteMap outcome = new RemoteMap();
+outcome.put("person_", fromTaskPerson);
+        
+userTaskService.complete(taskId, "john", outcome);
+----
+
+In a similar way, you can use the `RemoteObject` class to send an event to a process instance:
+
+[source,java]
+----
+// Send an event with a custom type via remote EJB
+Person person = new org.jbpm.test.Person("john", 25, true);
+
+RemoteObject myObject = new RemoteObject(person);
+
+processService.signalProcessInstance(processInstanceId, "MySignal", myObject);
+----

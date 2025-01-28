@@ -1,0 +1,225 @@
+[id='con_custom-tasks-overview']
+= BPMN2 custom tasks in process designer
+
+The BPMN2 specification supports the ability to extend the `bpmn2:task` element to create custom tasks in a software implementation. Similar to standard BPMN tasks, custom tasks identify actions to be completed in a business process model, but they also include specialized functionality, such as compatibility with an external service of a specific type (REST, email, or web service) or checkpoint behavior within a process (milestone).
+
+{PRODUCT} provides the following predefined custom tasks under *Custom Tasks* in the BPMN modeler palette:
+
+.Supported custom tasks
+[cols="2", options="header"]
+|===
+
+|Custom task type
+|Custom task node
+
+|Rest
+|image:BPMN2/bpmn-rest-custom-task.png[]
+
+|Email
+|image:BPMN2/bpmn-email-custom-task.png[]
+
+|Log
+|image:BPMN2/bpmn-log-custom-task.png[]
+
+|WebService
+|image:BPMN2/bpmn-webservice-custom-task.png[]
+
+|Milestone
+|image:BPMN2/bpmn-milestone.png[]
+
+|DecisionTask
+|image:BPMN2/bpmn-decision-task-custom.png[]
+
+|BusinessRuleTask
+|image:BPMN2/bpmn-business-rule-custom-task.png[]
+
+|KafkaPublishMessages
+|image:BPMN2/bpmn-kafkapublishmessages-task.png[]
+
+|===
+
+For more information about enabling or disabling custom tasks in {CENTRAL}, see
+ifdef::PAM,DM[]
+<<manage-service-tasks-proc_custom-tasks>>.
+endif::[]
+ifdef::JBPM,DROOLS,OP[]
+https://docs.jboss.org/jbpm/release/latest/jbpm-docs/html_single/#jBPMDomainSpecificProcesses[Domain Specific Processes] in the {PRODUCT_JBPM} documentation.
+endif::[]
+
+In the BPMN modeler, you can configure the following general properties for a selected custom task:
+
+.General custom task properties
+[cols="30%,70%", options="header"]
+|===
+|Label
+|Description
+
+|*Name*
+|Identifies the name of the task. You can also double-click the task node to edit the name.
+
+|*Documentation*
+|Describes the task. The text in this field is included in the process documentation, if applicable.
+
+|*Is Async*
+|Determines whether this task is invoked asynchronously.
+
+|*AdHoc Autostart*
+|Determines whether this is an ad hoc task that is started automatically. This option enables the task to automatically start when the process is created instead of being started by a signal event.
+
+|*On Entry Action*
+|Defines a Java, JavaScript, or MVEL script that directs an action at the start of the task.
+
+|*On Exit Action*
+|Defines a Java, JavaScript, or MVEL script that directs an action at the end of the task.
+
+|*SLA Due Date*
+|Specifies the duration (string type) when the service level agreement (SLA) expires. You can specify the duration in days, minutes, seconds, and milliseconds. For example, `1m` value in *SLA due date* field indicates one minute.
+
+|*Assignments*
+|Defines data input and output for the task.
+
+| *Metadata Attributes*
+a| Defines the custom metadata attribute name and value that you want to use for custom event listeners, such as a listener to implement some action when a metadata attribute is present.
+
+The *Metadata Attributes* enable the new `metaData` extensions to BPMN diagrams and modify the behavior of the overall task.
+
+|===
+
+.Rest
+A rest custom task is used to invoke a remote RESTful service or perform an HTTP request from a process.
+
+image::BPMN2/bpmn-rest-custom-task.png[]
+
+To use the rest custom task, you can set the URL, HTTP method, and credentials in the process modeler. When a process reaches a rest custom task, it generates an HTTP request and returns the response as a string.
+
+You can click *Assignments* in the *Properties* panel to open the *REST Data I/O* window. In the *REST Data I/O* window, you can configure the data input and output as required. For example, to execute a rest custom task, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Url*: Endpoint URL for the REST service. This attribute is mandatory.
+* *Method*: Method of the endpoint called, such as `GET`, and `POST`. The default value is `GET`.
+* *ContentType*: Data type when sending data. This attribute is mandatory for `POST` and `PUT` requests.
+* *ContentTypeCharset*: Character set for the `ContentType`.
+* *Content*: Data you want to send. This attribute supports backward compatibility, use the *ContentData* attribute instead.
+* *ContentData*: Data you want to send. This attribute is mandatory for `POST` and `PUT` requests.
+* *ConnectTimeout*: Connection timeout (in seconds). The default value is 60000 milliseconds. You must provide the input value in milliseconds.
+* *ReadTimeout*: Timeout (in seconds) on response. The default value is 60000 milliseconds. You must provide the input value in milliseconds.
+* *Username*: User name for authentication.
+* *Password*: Password for authentication.
+* *AuthUrl*: URL that is handling authentication.
+* *AuthType*: Type of URL that is handling authentication.
+* *HandleResponseErrors* (Optional): Instructs handler to throw errors in case of an unsuccessful response codes (except 2XX).
+* *ResultClass*: Valid name of the class to which the response is unmarshalled. If not provided, then the raw response is returned in a string format.
+* *AcceptHeader*: Value of the accept header.
+* *AcceptCharset*: Character set of the accept header.
+* *Headers*: Headers to pass for REST call, such as `content-type=text/html`.
+
+You can add the following data output in *Data Outputs and Assignments* to store the output of the task execution:
+
+* *Result*: Output variable (object type) of the rest custom task.
+
+.Email
+An email custom task is used to send an email from a process. It contains email body associated with it.
+
+image::BPMN2/bpmn-email-custom-task.png[]
+
+When an email custom task is activated, the email data is assigned to the data input property of the task. An email custom task completes when the associated email is sent.
+
+You can click *Assignments* in the *Properties* panel to open the *Email Data I/O* window. In the *Email Data I/O* window, you can configure the data input as required. For example, to execute an email custom task, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Body*: Body of the email.
+* *From*: Email address of the sender.
+* *Subject*: Subject of the email.
+* *To*: Email address of the recipient. You can specify multiple email addresses separated by semicolon (;).
+* *Template* (Optional): Template to generate body of the email. The `Template` attribute overrides the `Body` parameter, if entered.
+* *Reply-To*: Email address to which reply message is sent.
+* *Cc*: Email address of the copied recipient. You can specify multiple email addresses separated by semicolon (;).
+* *Bcc*:  Email address of the blind copied recipient. You can specify multiple email addresses separated by semicolon (;).
+* *Attachments*: Email attachment to send along with the email.
+* *Debug*: Flag to enable the debug logging.
+
+.Log
+A log custom task is used to log a message from a process. When a business process reaches a log custom task, the message data is assigned to the data input property.
+
+image::BPMN2/bpmn-log-custom-task.png[]
+
+A log custom task completes when the associated message is logged. You can click *Assignments* in the *Properties* panel to open the *Log Data I/O* window. In the *Log Data I/O* window, you can configure the data input as required. For example, to execute a log custom task, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Message*: Log message from the process.
+
+.WebService
+A web service custom task is used to invoke a web service from a process. This custom task serves as a web service client with the web service response stored as a string.
+
+image::BPMN2/bpmn-webservice-custom-task.png[]
+
+To invoke a web service from a process, you must use the correct task type. You can click *Assignments* in the *Properties* panel to open the *WS Data I/O* window. In the *WS Data I/O* window, you can configure the data input and output as required. For example, to execute a web service task, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Endpoint*: Endpoint location of the web service to invoke.
+* *Interface*: Name of a service, such as `Weather`.
+* *Mode*: Mode of a service, such as `SYNC`, `ASYNC`, or `ONEWAY`.
+* *Namespace*: Namespace of the web service, such as `\http://ws.cdyne.com/WeatherWS/`.
+* *Operation*: Method name to call.
+* *Parameter*: Object or array to be sent for the operation.
+* *Url*: URL of the web service, such as `\http://wsf.cdyne.com/WeatherWS/Weather.asmx?WSDL`.
+
+You can add the following data output in *Data Outputs and Assignments* to store the output of the task execution:
+
+* *Result*: Output variable (object type) of the web service task.
+
+.Milestone
+A milestone represents a single point of achievement within a process instance. You can use milestones to flag certain events to trigger other tasks or track the progress of the process.
+
+image::BPMN2/bpmn-milestone.png[]
+
+Milestones are useful for Key Performance Indicator (KPI) tracking or for identifying the tasks that are still to be completed. Milestones can occur at the end of a stage in a process or they can be the result of achieving other milestones.
+
+Milestones can reach the following states during process execution:
+
+* `Active`: A milestone condition has been defined for the milestone node but it has not been met.
+* `Completed`: A milestone condition has been met (if applicable), the milestone has been achieved, and the process can proceed to the next task or can end.
+
+You can click *Assignments* in the *Properties* panel to open the *Milestone Data I/O* window. In the *Milestone Data I/O* window, you can configure the data input as required. For example, to execute a milestone, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Condition*: Condition for the milestone to meet. For example, you can enter a Java expression (string data type) that uses a process variable.
+
+.DecisionTask
+A decision task is used to execute a DMN diagram and invoke a decision engine service from a process. By default, a decision task maps to the DMN decision.
+
+image::BPMN2/bpmn-decision-task-custom.png[]
+
+You can use decision tasks to make an operational decision in a process. Decision tasks are useful for identifying key decisions in a process that need to be made.
+
+You can click *Assignments* in the *Properties* panel to open the *Decision Task Data I/O* window. In the *Decision Task Data I/O* window, you can configure the data input as required. For example, to execute a decision task, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Decision*: Decision for a process to make.
+* *Language*: Language of the decision task, defaults to DMN.
+* *Model*: Name of the DMN model.
+* *Namespace*: Namespace of the DMN model.
+
+.BusinessRuleTask
+A business rule task is used to evaluate a DRL rule and invoke a decision engine service from a process. By default, a business rule task maps to the DRL rules.
+
+image::BPMN2/bpmn-business-rule-custom-task.png[]
+
+You can use business rule tasks to evaluate key business rules in a business process. You can click *Assignments* in the *Properties* panel to open the *Business Rule Task Data I/O* window. In the *Business Rule Task Data I/O* window, you can configure the data input as required. For example, to execute a business rule task, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *KieSessionName*: Name of the KIE session.
+* *KieSessionType*: Type of the KIE session.
+* *Language*: Language of the business rule task, defaults to DRL.
+
+.KafkaPublishMessages
+A Kafka work item is used to send events to a Kafka topic. This custom task includes a work item handler, which uses the Kafka producer to send messages to a specific Kafka server topic. For example, `KafkaPublishMessages` task publishes messages from a process to a Kafka topic.
+
+image::BPMN2/bpmn-kafkapublishmessages-task.png[]
+
+You can click *Assignments* in the *Properties* panel to open the *KafkaPublishMessages Data I/O* window. In the *KafkaPublishMessages Data I/O* window, you can configure the data input and output as required. For example, to execute a Kafka work item, enter the following data inputs in *Data Inputs and Assignments* fields:
+
+* *Key*: Key of the Kafka message to be sent.
+* *Topic*: Name of a Kafka topic.
+* *Value*: Value of the Kafka message to be sent.
+
+You can add the following data output in *Data Outputs and Assignments* to store the output of the work item execution:
+
+* *Result*: Output variable (string type) of the work item.
+
+ifdef::DM,PAM[]
+For more information about `KafkaPublishMessages` in a business process, see {URL_INTEGRATING}#assembly-integrating-amq-streams[_{INTEGRATING_AMQ_STREAMS}_].
+endif::DM,PAM[]

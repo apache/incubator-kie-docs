@@ -1,0 +1,234 @@
+[id='business-process-proc_{context}']
+
+= Creating the business process
+The following procedures guide you through the creation of tasks, connections, and gateways that make up the *MortgageApprovalProcess* business process. The mortgage validation business process determines whether a mortgage application contains all required data. If the specified data requirements are met, the application proceeds on to the mortgage calculation business process.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* -> *mortgage-process*.
+. Click *Add Asset* -> *Business Process*.
+. Enter the following values:
++
+* *Business Process*: `MortgageApprovalProcess`
+* *Package*: Select `com.myspace.mortgage_process`
++
+The *Package* specifies the location inside the existing project where the asset will be created. In this example, it is created in `com/myspace/mortgage_process`.
+
+. Click *Ok*. The diagram editor opens.
+. In the upper-right corner, click the *Properties* image:getting-started/diagram_properties.png[] icon.
+. Scroll down and expand *Process Data* and click image:getting-started/btn_plus.png[the plus sign icon] in the *Process Variables* section.
+. Enter the following values:
++
+* *Name*: `application`
+* *Data Type*: `Application [com.myspace.mortgage_process]`
+
+== Creating outgoing connections and exclusive gateways
+This section shows you how to create outgoing connections, exclusive gateways, and business rule tasks. Use exclusive gateways to make decisions and react to events based on the available data.
+
+{PRODUCT} contains a predefined selection of node types to simplify business process creation. The predefined node panel is located on the left side of the diagram editor.
+
+image:getting-started/node_panel.png[]
+
+.Procedure
+. Drag a start event node onto the canvas.
+. Create an outgoing connection from the start event to an exclusive gateway:
+.. On the canvas, click the start event node and click the *Create Parallel* icon.
++
+image::getting-started/create-parallel.png[]
+.. Hover over the image:getting-started/config-icon.png[] icon of the parallel and click the *Convert into Exclusive* icon.
++
+image::getting-started/exclusive-gateway.png[]
+
+. Create an outgoing connection from the exclusive gateway to a business rule task:
+.. On the canvas, click the exclusive gateway and click the *Create Task* icon.
+.. Hover over the image:getting-started/config-icon.png[] icon of the task and click the *Convert into Business Rule* icon.
++
+image::getting-started/bus-rule-task.png[]
+
+. Configure the business rule task:
+
+.. Click the business rules task.
+.. If the *Properties* panel is not open, click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. In the *Properties* panel, enter `Validation` in the *Name* field.
+.. Expand *Implementation/Execution*, select *New* from the *Rule Flow Group* menu, and input *validation*.
+.. In the *On Exit Action* field, enter the following Java expression:
++
+[source,java]
+----
+System.out.println(application.getProperty());
+----
+.. Expand *Data Assignments* and click image:getting-started/btn_assign.png[] next to *Assignments*.
+.. In the *Validation Data I/O* window, click *Add* and create the following assignments:
+* Data Inputs and Assignements
+** Name: application
+** Data Type: Application [com.myspace.mortgage_app]
+** Source: application
+
+* Data Outputs and Assignements
+** Name: application
+** Data Type: Application [com.myspace.mortgage_app]
+** Target: application
++
+.Validation Data I/O assignments
+image::getting-started/val-data-io.png[Screen capture of the Validation Data I/O assignments]
+
+. Above the canvas, click *Save* to confirm your changes.
+
+== Defining the validation data
+This section shows you how to define the validation data that determines whether the application data is correct, contains an error, or has missing information.
+
+.Procedure
+
+. Create an outgoing connection from the *Validation* task to an exclusive gateway:
+.. Click the *Validation* task and click the *Create Parallel* icon.
+.. Hover over the image:getting-started/config-icon.png[] icon of the parallel and click the *Convert into Exclusive* icon.
++
+image::getting-started/exclusive_gateway.png[]
+
+. Create an outgoing connection from the exclusive gateway to a new business rule task:
+.. Click the exclusive gateway and click the *Create Task* icon.
+.. Drag the new task below the exclusive gateway as shown in the following image.
+.. Hover over the image:getting-started/config-icon.png[] icon of the task and click the *Convert into Business Rule* icon.
++
+image::getting-started/new_br_task.png[]
+.. If the *Properties* panel is not open, click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. In the *Properties* panel, enter `Retract Validation` in the *Name* field.
+.. Expand *Implementation/Execution*, select *New* from the *Rule Flow Group* menu, and input `error`.
+
+. Configure the connection between the exclusive gateway and the business rule task:
+.. Click the connection.
++
+image::getting-started/created-connection.png[]
+.. If the *Properties* panel is not open, click the *Properties* image:getting-started/diagram_properties.png[] icon in the upper-right corner.
+.. In the *Properties* panel, enter `Invalid` in the *Name* field.
+.. Expand *Implementation/Execution* and select *Expression* in the *Condition Expression* section.
+.. From the list, select *drools* and enter `ValidationErrorDO()` in the *Condition Expression* field.
++
+image::getting-started/languagedropdown.png[]
+
+. Create an outgoing connection from the *Retract Validation* task to a new user task:
+.. Click the *Retract Validation* task and click the *Create Task* icon.
+.. Drag the new task below the *Validation* task as shown below.
+.. Hover over the image:getting-started/config-icon.png[] icon of the task and click the *Convert into User* icon.
++
+image::getting-started/user_task.png[]
+.. Click the new user task and in the *Properties* panel, enter `Correct Data` in the *Name* field.
+.. Expand *Implementation/Execution* and enter `CorrectData` in the *Task Name* field.
+.. Select *New* from the *Groups* menu, and input `broker`.
+.. Click image:getting-started/btn_assign.png[] next to *Assignments*.
+.. In the *Correct Data Data I/O* window, click *Add* and create the following assignments:
+** Name: application
+** Data Type: Application [com.myspace.mortgage_app]
+** Source: application
+
+* Data Outputs and Assignements
+** Name: application
+** Data Type: Application [com.myspace.mortgage_app]
+** Target: application
++
+.Correct Data Data I/O assignments
+image::getting-started/correct-data-io.png[Screen capture of the Correct Data Data I/O assignments]
+.. Above the canvas, click *Save*.
+
+. Click the *Correct Data* user task then click the *Create sequence Flow* icon and drag it back to the first exclusive gateway. Your workflow should look similar to the following diagram:
++
+image::getting-started/workflow1.png[]
+
+== Calculating the mortgage
+The mortgage calculation business process determines the applicant's mortgage borrowing limit.
+
+.Procedure
+. Return to the second exclusive gateway and create an outgoing connection to a new business rule task.
+. Click the created connection and in the *Properties* panel, input `Valid` in the *Name* field.
+.. Expand *Implementation/Execution* and select *Expression* in the *Condition Expression* section.
+.. From the list, select *drools* and enter `not ValidationErrorDO()` in the *Condition Expression* field.
+. Click the new business rule task and in the *Properties* panel, input `Mortgage Calculation` in the *Name* field.
++
+image::getting-started/validconnection.png[]
+
+.. Expand *Implementation/Execution*, select *New* from the *Rule Flow Group* menu, and input `mortgagecalculation`.
+. Expand *Data Assignments* and click image:getting-started/btn_assign.png[] next to *Assignments*.
+. In the *Mortgage Calculation Data I/O* window, click *Add* to create the following assignments and click *Save*.
++
+.Mortgage Calculation Data I/O assignments
+image::getting-started/mortgage-calc-assignments.png[screen capture of the Mortgage Calculation Data I/O assignments]
+
+. Click an empty space on the canvas, scroll down, expand *Process Data*, and click image:getting-started/btn_plus.png[the plus sign icon] next to *Process Variables*. Enter the following values:
+
+* *Name*: `inlimit`
+* *Data Type*: `Boolean`
+
+. Create an outgoing connection from the *Mortgage Calculation* task to a new user task.
+. Click the user task, enter `Qualify` in the *Name* field.
+. Expand *Implementation/Execution* and enter `Qualify` in the *Task Name* field.
+. Select *New* from the *Groups* menu, and input `approver`.
+. Click image:getting-started/btn_assign.png[] next to *Assignments*. In the *Qualify Data I/O* window, click *Add* to create the following assignments:
++
+.Qualify Data I/O assignments
+image::getting-started/qualify-io.png[Screen capture of the Qualify Data I/O assignments]
+
+. Above the canvas, click *Save* to confirm your changes.
+. Click the *Qualify* user task, click the *Create parallel* menu icon, and convert it to an exclusive gateway.
+. Drag the new exclusive gateway below the *Qualify* user task.
+. Create an outgoing connection from the exclusive gateway and connect it to a new user task.
+. Click the connection and input `In Limit` in the *Name* field of the *Properties* panel.
+. Expand *Implementation/Execution* and select *Condition* in the *Condition Expression* section.
+. Select *inlimit* from the *Process Variable* drop-down menu and select *Is true* from the *Condition* drop-down menu.
++
+image::getting-started/inlimit-true.png[]
+
+. Click the user task, enter `Final Approval` in the *Name* field.
+. Expand *Implementation/Execution* and enter `FinalApproval` in the *Task Name* field.
+. Select *New* from the *Groups* menu, and input `manager`.
+. Click image:getting-started/btn_assign.png[] next to *Assignments*. In the *Final Approval Data I/O* window, click *Add* to create the following assignments:
++
+.Final Approval Data I/O assignments
+image::getting-started/approval-io.png[Screen capture of the Final Approval Data I/O assignments]
+
+. Above the canvas, click *Save* to confirm your changes.
+
+== Increasing the down payment
+The Increasing the Down Payment business process checks to see if the applicant qualifies for the loan by increasing their down payment. The final result is either the final loan approval, or loan denial based on the applicant's inability to increase the down payment.
+
+.Procedure
+. Click the *Final Approval* user task and select *Create End* from the user task quick menu.
+. Move the end event below the *Final Approval* user task.
++
+image::getting-started/create_end.png[]
+
+. Return to the exclusive gateway that connects with the *Final Approval* user task. Create a second outgoing connection and connect it to a new user task.
++
+image::getting-started/new-task.png[]
+
+. Click the connection and input `Not in Limit` in the *Name* field of the *Properties* panel.
+. Expand *Implementation/Execution* and select *Condition* in the *Condition Expression* section.
+. Select *inlimit* from the *Process Variable* drop-down menu and select *Is false* from the *Condition* drop-down menu.
+. Click an empty space on the canvas, scroll down, expand *Process Data*, and click image:getting-started/btn_plus.png[the plus sign icon] next to *Process Variables*. Enter the following values:
++
+* *Name*: `incdownpayment`
+* *Data Type*: `Boolean`
++
+image::getting-started/proc-var-new.png[]
+
+. Click the new user task and in the *Properties* panel, input `Increase Down Payment` in the *Name* field.
+. Expand *Implementation/Execution* and enter `IncreaseDownPayment` in the *Task Name* field.
+. Select *New* from the *Groups* menu, and input `broker`.
+. Click image:getting-started/btn_assign.png[] next to *Assignments*. In the *Increase Down Payment Data I/O* window, click *Add* to create the following assignments:
++
+.Increase Down Payment Data I/O assignments
+image::getting-started/increase-down-io.png[Screen capture of the Increase Down Payment Data I/O assignments]
+
+. Above the canvas, click *Save* to confirm your changes.
+. Click the *Increase Down Payment* user task, click the *Create parallel* menu icon, and convert it to an exclusive gateway.
+. Drag the new exclusive gateway below the *Increase Down Payment* user task.
+. Create an outgoing connection from the exclusive gateway to an end event.
+. Click the connection and input `Down payment not increased` in the *Name* field of the *Properties* panel.
+. Expand *Implementation/Execution* and select *Expresssion* in the *Condition Expression* section.
+. Input *return !incdownpayment;* and select *java* from the drop-down menu.
+. Create an outgoing connection from the exclusive gateway and connect it to the first exclusive gateway.
+. Click the connection and input `Down payment increased` in the *Name* field of the *Properties* panel.
+. Expand *Implementation/Execution* and select *Expresssion* in the *Condition Expression* section.
+. Input *return incdownpayment;* and select *java* from the drop-down menu.
+. Above the canvas, click *Save* to confirm your changes and save the entire business process.
+
+.Final version of the business process
+image::getting-started/finalBP.png[Screen capture of the Final version of the business process]

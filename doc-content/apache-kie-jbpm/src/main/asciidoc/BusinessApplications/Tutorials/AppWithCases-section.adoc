@@ -1,0 +1,302 @@
+= Business Application with Dynamic Assets
+
+== What will you do
+
+You will enhance your business application with some dynamic assets that allow more adaptive
+approach to business logic compared with structured business processes.
+
+Next execute these dynamic assets
+
+* via REST api of your business application
+* via jBPM Case Management showcase
+
+== What do you need
+
+* About 15 minutes of your time
+* Java (JDK) 8 or later
+* Maven 3.5.x
+* Access to the Internet
+* {CENTRAL} deployed - see single distribution for instructions
+
+== What should I do
+
+To get started with business applications the easiest way is to generate it using maven archetype commands.It is required to add Dynamic assets in the maven command to work with Case Management. Please refer <<../../jbpm-docs/src/main/asciidoc/BusinessApplications/CreateApplication-section.adoc#_sect_BA_create_application, Create your business application section>>.
+
+Start {CENTRAL} (if not already started) and open your browser at
+http://localhost:8080/business-central[http://localhost:8080/business-central] and logon as
+user `wbadmin` with password `wbadmin`
+
+=== Import your business assets project into {CENTRAL}
+
+* Go into business assets project - `business-application-kjar`
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "my business assets project"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/business-application-kjar`
+* Click import and confirm project to be imported
+
+=== Create Dynamic Asset - Case definition
+
+In browser where you logged into {CENTRAL} go to Projects. You will see your newly imported
+project named business-application-kjar.
+
+* go into business-application-kjar project
+* click `Add asset` button
+* select `Case definition` asset
+* provide name for this asset e.g. `myfirstcase`
+* optionally you can provide prefix for case ids - if not given it will default to CASE-XXX where XXX is generated number
+* create your case definition
+
+NOTE: Case definition is designed in the so-called legacy process designer.
+
+You can now create your dynamic case definition that does not have to have connected process activities.
+
+Sample case definition could be a two user tasks that will be assigned to user `wbadmin` and not connected to anything else.
+
+image::BusinessApplications/tutorial-7-case-definition.png[Case definition - sample]
+
+This sample case definition consists of two user tasks
+
+* `Dynamic User Task`
+* `Another task that is started automatically`
+
+Both of them are assigned to `wbadmin` user although only one (second) will be created automatically
+when case instance is created. This is because it is marked as `autostart` and thus will be directly created.
+
+The first one can be dynamically created on ad hoc basis.
+
+
+=== Pull back your business assets to business application source code
+
+* Go to business-application-kjar
+* Execute `git remote add origin ssh://wbadmin@localhost:8001/MySpace/business-application-kjar`
+* Execute `git pull origin master` - when prompted enter `wbadmin` as password
+
+Go to `business-application-service` directory and launch the application
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+== Results
+
+Once the build and launch is complete you can open your browser
+http://localhost:8090[http://localhost:8090]
+
+Next, point the browser to http://localhost:8090/rest/server/containers[http://localhost:8090/rest/server/containers]
+to see that your business assets project has been properly deployed and is running.
+
+NOTE: By default all REST endpoints (url pattern /rest/*) are secured and require
+authentication. Default user that can be used to logon is `wbadmin` with password `wbadmin`
+
+Next, point the browser to http://localhost:8090/rest/server/containers/business-application-kjar/cases/definitions[http://localhost:8090/rest/server/containers/business-application-kjar/cases/definitions]
+to see dynamic assets (cases) available for execution.
+
+=== Execute business process
+
+You can execute business process via REST api exposed by your business application (in fact by Business Automation capability).
+
+URL: `http://localhost:8090/rest/server/containers/business-application-kjar/cases/{casedefid}/instances`
+HTTP method: POST
+
+HTTP headers can be set to change the format of data returned
+
+* Accept: application/json for JSON format
+* Accept: application/xml for XML (JAXB based) format
+* X-KIE-ContentType: XSTREAM for XML (XStream based) format
+
+{casedefid} needs to be replaced with actual case definition id that is returned from the endpoint http://localhost:8090/rest/server/containers/business-application-kjar/cases/definitions
+
+NOTE: Remember that endpoints are protected so make sure you provide user name and password when making the request.
+
+In response to this request, a case instance id should be returned.
+
+[source, xml]
+----
+<string-type>
+    <value>CASE-0000000001</value>
+</string-type>
+----
+
+You can examine details of that case instance by pointing your browser to
+http://localhost:8090/rest/server/containers/business-application-kjar/cases/instances/CASE-0000000001[http://localhost:8090/rest/server/containers/business-application-kjar/cases/instances/CASE-0000000001]
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<case-instance>
+    <case-id>CASE-0000000001</case-id>
+    <case-description>myfirstcase</case-description>
+    <case-owner>wbadmin</case-owner>
+    <case-status>1</case-status>
+    <case-definition-id>myfirstcase</case-definition-id>
+    <container-id>business-application-kjar-1_0-SNAPSHOT</container-id>
+    <case-started-at>2018-10-30T09:54:45.747+01:00</case-started-at>
+    <case-completion-msg></case-completion-msg>
+    <case-sla-compliance>0</case-sla-compliance>
+</case-instance>
+----
+
+
+Load tasks for given case instance that are assigned to `wbadmin` user
+
+http://localhost:8090/rest/server/queries/cases/instances/CASE-0000000001/tasks/instances/pot-owners
+
+you should see second task from case definition
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<task-summary-list>
+    <task-summary>
+        <task-id>1</task-id>
+        <task-name>Another task that is started automatically</task-name>
+        <task-subject></task-subject>
+        <task-description></task-description>
+        <task-status>Reserved</task-status>
+        <task-priority>0</task-priority>
+        <task-is-skipable>true</task-is-skipable>
+        <task-actual-owner>wbadmin</task-actual-owner>
+        <task-created-by>wbadmin</task-created-by>
+        <task-created-on>2018-10-30T09:54:45.790+01:00</task-created-on>
+        <task-activation-time>2018-10-30T09:54:45.790+01:00</task-activation-time>
+        <task-proc-inst-id>1</task-proc-inst-id>
+        <task-proc-def-id>myfirstcase</task-proc-def-id>
+        <task-container-id>business-application-kjar-1_0-SNAPSHOT</task-container-id>
+        <task-parent-id>-1</task-parent-id>
+    </task-summary>
+</task-summary-list>
+----
+
+
+You can trigger dynamically the other user task by issuing request to
+
+* URL: http://localhost:8090/rest/server/containers/business-application-kjar/cases/instances/CASE-0000000001/tasks/Dynamic%20User%20Task
+* HTTP method: PUT
+
+Optionally you can send data as payload of the request.
+
+Load tasks again for given case instance that are assigned to `wbadmin` user
+
+http://localhost:8090/rest/server/queries/cases/instances/CASE-0000000001/tasks/instances/pot-owners
+
+you should see both tasks from case definition
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<task-summary-list>
+    <task-summary>
+        <task-id>1</task-id>
+        <task-name>Another task that is started automatically</task-name>
+        <task-subject></task-subject>
+        <task-description></task-description>
+        <task-status>Reserved</task-status>
+        <task-priority>0</task-priority>
+        <task-is-skipable>true</task-is-skipable>
+        <task-actual-owner>wbadmin</task-actual-owner>
+        <task-created-by>wbadmin</task-created-by>
+        <task-created-on>2018-10-30T09:54:45.790+01:00</task-created-on>
+        <task-activation-time>2018-10-30T09:54:45.790+01:00</task-activation-time>
+        <task-proc-inst-id>1</task-proc-inst-id>
+        <task-proc-def-id>myfirstcase</task-proc-def-id>
+        <task-container-id>business-application-kjar-1_0-SNAPSHOT</task-container-id>
+        <task-parent-id>-1</task-parent-id>
+    </task-summary>
+    <task-summary>
+        <task-id>3</task-id>
+        <task-name>Dynamic User Task</task-name>
+        <task-subject></task-subject>
+        <task-description></task-description>
+        <task-status>Reserved</task-status>
+        <task-priority>0</task-priority>
+        <task-is-skipable>true</task-is-skipable>
+        <task-actual-owner>wbadmin</task-actual-owner>
+        <task-created-by>wbadmin</task-created-by>
+        <task-created-on>2018-10-30T10:08:01.257+01:00</task-created-on>
+        <task-activation-time>2018-10-30T10:08:01.257+01:00</task-activation-time>
+        <task-proc-inst-id>1</task-proc-inst-id>
+        <task-proc-def-id>myfirstcase</task-proc-def-id>
+        <task-container-id>business-application-kjar-1_0-SNAPSHOT</task-container-id>
+        <task-parent-id>-1</task-parent-id>
+    </task-summary>
+</task-summary-list>
+----
+
+=== Execute business process from jBPM Case Management Showcase
+
+There is a need to repoint the jBPM Case Management Showcase application to use business application
+instead of the KIE Server bundled with single zip distribution of jBPM.
+To do so, edit standalone.xml file of jbpm server (`JBPM_SERVER/standalone/configuration`) and change the value of
+`org.kie.server.location` system property
+
+[source, xml]
+----
+<property name="org.kie.server.location" value="http://localhost:8090/rest/server"/>
+----
+
+Once done, restart jBPM server.
+
+Stop the application if it's running.
+
+Go to `business-application-service` directory and launch the application in development mode
+
+`./launch-dev.sh clean install` for Linux/Unix
+
+`./launch-dev.bat clean install` for Windows
+
+this will connect your business application to {CENTRAL} so can be administered
+from within its UI.
+
+Go to {CENTRAL} in the browser and navigate to servers (from the home screen).
+
+image::BusinessApplications/tutorial-7-empty-server.png[]
+
+As you can see the `business-application-service Dev` is there and connected. Although
+it does not have any kjars deployed. This is because it's now running in managed mode
+meaning it's {CENTRAL} that decides what kjars it should run.
+
+So let's deploy the business-application-kjar to our running application.
+
+* Go to projects from home screen of {CENTRAL}
+* Go into business-application-kjar project
+* Click `Deploy` button
+* Make sure that `Server configuration` is set to `business-application-service-dev` and click ok
+
+The project should be successfully deployed and you can examine that state by going back to servers
+from home screen.
+
+Next, go to process definitions (in Manage section of the Home screen) and select server configuration
+(top right corner) - again it should be `business-application-service-dev` the list of available
+process definition will be loaded and you should see your single case definition from the project
+`business-application-kjar`.
+
+image::BusinessApplications/tutorial-7-process-defs.png[]
+
+Examine details of that case definition by clicking on the row in the table. Switch to
+`Diagram` tab to see the visual representation of your case definition.
+
+{CENTRAL} does not allow to start case instances and thus you need to switch to
+Case Management showcase application. It is accessible from the Apps launcher icon
+(top right corner) next to logout button.
+
+Launch the application and login with `wbadmin`. Once logged in you can start a new case instance.
+
+image::BusinessApplications/tutorial-7-case-app.png[]
+
+Go into newly started case instance by clicking on the row of the active cases list.
+
+image::BusinessApplications/tutorial-7-case-instance.png[]
+
+From there you can start a new instance of `Dynamic User Task` as the other one is already there.
+
+== Summary
+
+Congratulations! you have enhanced your business application to take advantage of dynamic and
+adaptive business assets that allow to do much more than structured processes. You could
+see how easy it is to add additional user tasks and that's just the beginning.
+
+== Source code of the tutorial
+
+https://github.com/business-applications/07-tutorial-dynamic-assets-business-application[Here] is the complete source code of the tutorial.

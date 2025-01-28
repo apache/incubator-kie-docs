@@ -1,0 +1,92 @@
+[id='integration-maven-kjar-con_{context}']
+= Maven artifacts as deployment units
+
+ifdef::JBPM,DROOLS,OP[]
+Since version 6, jBPM
+endif::JBPM,DROOLS,OP[]
+ifdef::PAM,DM[]
+The {PROCESS_ENGINE}
+endif::PAM,DM[]
+provides a mechanism to deploy processes from Apache Maven artifacts. These artifacts are in the JAR file format and are known as _KJAR files_, or informally _KJARs_. A KJAR file includes a descriptor that defines a KIE base and KIE session. It also contains the business assets, including process definitions, that the {PROCESS_ENGINE} can load into the KIE base.
+
+The descriptor of a KJAR file is represented by an XML file named `kie-deployment-descriptor.xml`. The descriptor can be empty, in which case the default configuration applies. It can also provide custom configuration for the KIE base and KIE session.
+
+.An empty `kie-deployment-descriptor.xml` descriptor
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<deployment-descriptor xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <persistence-unit>org.jbpm.domain</persistence-unit>
+    <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+    <audit-mode>JPA</audit-mode>
+    <persistence-mode>JPA</persistence-mode>
+    <runtime-strategy>SINGLETON</runtime-strategy>
+    <marshalling-strategies/>
+    <event-listeners/>
+    <task-event-listeners/>
+    <globals/>
+    <work-item-handlers />
+    <environment-entries/>
+    <configurations/>
+    <required-roles/>
+    <remoteable-classes/>
+</deployment-descriptor>
+----
+
+With an empty `kie-deployment-descriptor.xml` descriptor, the following default configuration applies:
+
+* A single default KIE base is created with the following characteristics:
+** It contains all assets from all packages in the KJAR file
+** Its event processing mode is set to `cloud`
+** Its equality behaviour is set to `identity`
+** Its declarative agenda is disabled
+** For CDI applications, its scope is set to `ApplicationScope`
+* A single default stateless KIE session is created with the following characteristics:
+** It is bound to the single KIE base
+** Its clock type is set to `real time`
+** For CDI applications, its scope is set to `ApplicationScope`
+* A single default stateful KIE session is created with the following characteristics:
+** It is bound to the single KIE base
+** Its clock type is set to `real time`
+** For CDI applications, its scope is set to `ApplicationScope`
+
+If you do not want to use the defaults, you can change all configuration settings using the `kie-deployment-descriptor.xml` file. You can find the complete specification of all elements for this file in the https://github.com/kiegroup/droolsjbpm-knowledge/blob/{COMMUNITY_VERSION_FINAL}/kie-internal/src/main/resources/deployment-descriptor.xsd[XSD schema].
+
+The following sample shows a custom `kie-deployment-descriptor.xml` file that configures the runtime engine. This example configures the most common options and includes a single work item handler. You can also use the `kie-deployment-descriptor.xml` file to configure other options.
+
+.Sample custom `kie-deployment-descriptor.xml` file
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<deployment-descriptor xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <persistence-unit>org.jbpm.domain</persistence-unit>
+    <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+    <audit-mode>JPA</audit-mode>
+    <persistence-mode>JPA</persistence-mode>
+    <runtime-strategy>SINGLETON</runtime-strategy>
+    <marshalling-strategies/>
+    <event-listeners/>
+    <task-event-listeners/>
+    <globals/>
+    <work-item-handlers>
+        <work-item-handler>
+            <resolver>mvel</resolver>
+            <identifier>new org.jbpm.process.workitem.bpmn2.ServiceTaskHandler(ksession, classLoader)</identifier>
+            <parameters/>
+            <name>Service Task</name>
+        </work-item-handler>
+    </work-item-handlers>
+    <environment-entries/>
+    <configurations/>
+    <required-roles/>
+    <remoteable-classes/>
+</deployment-descriptor>
+----
+
+
+[NOTE]
+====
+If you use the `RuntimeManager` class, this class creates `KieSession` instances, not the `KieContainer` class. However, the `kie-deployment-descriptor.xml` model is always used as a base of the construction process. The `KieContainer` class always creates the `KieBase` instance.
+====
+
+You can reference KJAR artifacts, like any other Maven artifacts, using the GAV (group, artifact, version) value. When deploying units from KJAR files, the {PROCESS_ENGINE} uses the GAV value as the release ID in the KIE API. You can use the GAV value to deploy KJAR artifacts into a runtime environment, for example, a {KIE_SERVER}.

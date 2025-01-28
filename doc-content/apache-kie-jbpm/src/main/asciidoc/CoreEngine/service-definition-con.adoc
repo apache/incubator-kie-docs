@@ -1,0 +1,61 @@
+[id='service-definition-con_{context}']
+= Definition service
+
+When you deploy a process definition using the deployment service, the definition service automatically scans the definition, parses the process, and extracts the information that the {PROCESS_ENGINE} requires.
+
+You can use the definition service API to retrieve information about the process definition. The service extracts this information directly from the BPMN2 process definition. The following information is available:
+
+* _Process definition_ such as ID, name, and description
+* _Process variables_ including the name and type of every variable
+* _Reusable sub-processes_ used in the process (if any)
+* _Service tasks_ that represent domain-specific activities
+* _User tasks_ including assignment information
+* _Task data_ with input and output information
+
+The following code sample shows simple use of the definition service. The `processID` must correspond to the ID of a process definition in a KJAR file that you already deployed using the deployment service.
+
+.Using the definition service
+[source,java]
+----
+String processId = "org.jbpm.writedocument";
+
+Collection<UserTaskDefinition> processTasks =
+bpmn2Service.getTasksDefinitions(deploymentUnit.getIdentifier(), processId);
+
+Map<String, String> processData =
+bpmn2Service.getProcessVariables(deploymentUnit.getIdentifier(), processId);
+
+Map<String, String> taskInputMappings =
+bpmn2Service.getTaskInputMappings(deploymentUnit.getIdentifier(), processId, "Write a Document" );
+----
+
+
+You can also use the definition service to scan a definition that you provide as BPMN2-compliant XML content, without the use of a KJAR file. The `buildProcessDefinition` method provides this capability.
+
+The following definition shows the complete `DefinitionService` interface:
+
+.Definition of the `DefinitionService` interface
+[source,java]
+----
+public interface DefinitionService {
+
+    ProcessDefinition buildProcessDefinition(String deploymentId, String bpmn2Content, ClassLoader classLoader, boolean cache) throws IllegalArgumentException;
+
+    ProcessDefinition getProcessDefinition(String deploymentId, String processId);
+
+    Collection<String> getReusableSubProcesses(String deploymentId, String processId);
+
+    Map<String, String> getProcessVariables(String deploymentId, String processId);
+
+    Map<String, String> getServiceTasks(String deploymentId, String processId);
+
+    Map<String, Collection<String>> getAssociatedEntities(String deploymentId, String processId);
+
+    Collection<UserTaskDefinition> getTasksDefinitions(String deploymentId, String processId);
+
+    Map<String, String> getTaskInputMappings(String deploymentId, String processId, String taskName);
+
+    Map<String, String> getTaskOutputMappings(String deploymentId, String processId, String taskName);
+
+}
+----

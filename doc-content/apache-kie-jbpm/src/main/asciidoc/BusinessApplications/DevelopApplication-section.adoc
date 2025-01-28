@@ -1,0 +1,358 @@
+= Develop your business application
+
+Developing custom logic in business application strictly depends on your specific requirements. In this guide
+we will provide some common steps that developers might need to get started.
+
+== Data model
+
+The data model project in your generated business application promotes
+the idea (and best practice in fact) of designing data models with reuse in mind. At the same time
+it avoids putting too much in the model (which usually happens when model is colocated with the service itself).
+
+Data model project should be seen as the API of the business application or one of its services. In case of
+application that is composed of several services it's recommended that each service exposes its own
+data model (API).
+
+That API then can be used by both service project and the business assets project.
+
+NOTE: Generated application model is not added as dependency to service nor business assets projects.
+
+== Business assets development
+
+Business assets are usually developed in {CENTRAL}, where developers can create
+different assets types such as
+
+* Business processes
+* Case definitions
+* Rules
+* Decision tables
+* Data objects
+* Forms
+* Others
+
+Before these assets can be created the business assets project needs to be imported into {CENTRAL}
+as described in <<BusinessApplications/RunApplication-section.adoc#_import_your_business_assets_project_into_jbpm_console,Import your business assets project into {CENTRAL}>>
+
+Whenever working with business assets you can easily try them out in your business application by
+running the application in development mode. That allows developer to build and deploy the assets
+project directly to a running application.
+Moreover {CENTRAL} can also be used to quickly interact with processes, tasks and cases. To learn more
+see  <<BusinessApplications/RunApplication-section.adoc#_launch_application_in_development_mode,Launch application in development mode>>
+
+Once the work on business assets is finished it should be fetch back to your business application source.
+
+* go into business assets project - _{your business application name}-kjar_
+* execute `git fetch origin`
+* execute `git rebase origin/master`
+
+With this your business assets are now part of the business application source tree and
+can be launched in standalone mode - without {CENTRAL} as {CONTROLLER}.
+
+To launch your application just go into service project (_{your business application name}-service_)
+and invoke
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+NOTE: In case the version of your business assets project changes you will have to update that information
+in the service project. Locate the configuration file that is used for standalone mode _{your business application name}-service.xml_
+Edit it and update the version for the specific container.
+
+Business assets project has two special files
+
+* pom.xml
+* src/main/resources/META-INF/kie-deployment-descriptor.xml
+
+The first one is Apache Maven project file and is managed via _Project Settings_ in {CENTRAL}.
+It allows to define project information (group id, artifact id, version, name, description). In
+addition it allows to define dependencies the project will have e.g. data model project.
+
+[NOTE]
+===================
+Whenever dependencies are added from the following group ids they should be marked as scope provided
+
+* org.kie
+* org.drools
+* org.jbpm
+* org.optaplanner
+
+===================
+
+Deployment descriptor allows to configure various components of the business automation capability
+such as
+
+* Persistence for jBPM
+* Runtime strategy
+* Event listeners
+* Work item handlers
+* Marshalling strategies
+* And more
+
+for complete description of the deployment descriptor see
+<<RuntimeManagement-chapter.adoc#_deployment_descriptors,Deployment descriptor>>
+
+== Work Item Handlers
+
+Business processes can take advantage of so-called domain specific services which are implemented
+as work items and their actual execution is carried out by work item handlers. Work items defined
+in the process or case definition are linked by name with work item handler (the implementation).
+
+Work item handlers can be registered in three ways
+
+* via *deployment descriptor* - use this approach if you want to decouple life cycle of the
+handler from your business application
+* via *auto registration of Spring Components* - use this when you have your handlers implemented
+as Spring beans (components) that are bound to the life cycle of the application
+* via *manual registration of any work handler implementation* - use this when the handler is not
+implemented by you and thus there is no way to use the Spring Component approach or it has advanced
+initialisation logic that does not fit the deployment descriptor approach
+
+
+=== Register Work Item Handler via deployment descriptor
+
+Registration in deployment descriptor can be done directly in {CENTRAL} via
+Project settings -> Deployments
+
+Add the work item handler mapped to the name of the work item
+
+image::BusinessApplications/deployment-descriptor-work-item-handler.png[]
+
+this will result in following source code of the deployment descriptor
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<deployment-descriptor xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <persistence-unit>org.jbpm.domain</persistence-unit>
+    <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+    <audit-mode>JPA</audit-mode>
+    <persistence-mode>JPA</persistence-mode>
+    <runtime-strategy>SINGLETON</runtime-strategy>
+    <marshalling-strategies/>
+    <event-listeners/>
+    <task-event-listeners/>
+    <globals/>
+    <work-item-handlers>
+        <work-item-handler>
+            <resolver>mvel</resolver>
+            <identifier>new org.jbpm.process.workitem.rest.RESTWorkItemHandler("user", "password", classLoader)</identifier>
+            <parameters/>
+            <name>Rest</name>
+        </work-item-handler>
+    </work-item-handlers>
+    <environment-entries/>
+    <configurations/>
+    <required-roles/>
+    <remoteable-classes/>
+    <limit-serialization-classes>true</limit-serialization-classes>
+</deployment-descriptor>
+----
+
+=== Register Work Item Handler via auto registration of Spring Components
+
+The easiest way to register work item handlers is to rely on Spring discovery and configuration
+of beans. It's enough to annotate your work item handler class with `@Component("WorkItemName")`
+and that bean will be automatically registered in jBPM.
+
+[source, java]
+----
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkItemHandler;
+import org.kie.api.runtime.process.WorkItemManager;
+import org.springframework.stereotype.Component;
+
+@Component("Custom")
+public class CustomWorkItemHandler implements WorkItemHandler {
+
+    @Override
+    public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
+
+        manager.completeWorkItem(workItem.getId(), null);
+    }
+
+    @Override
+    public void abortWorkItem(WorkItem workItem, WorkItemManager manager) {
+
+    }
+
+}
+----
+
+This will register CustomWorkItemHandler under `Custom` name so every work item named `Custom`
+will use that handler to execute it's logic.
+
+NOTE: The name attribute of `@Component` annotations is mandatory for registration to happen.
+In case the name is missing work item handler won't be registered and warning will be logged.
+
+=== Register Work Item Handler programmatically
+
+Last resort option is to get hold of DeploymentService and register handlers programmatically
+
+[source, java]
+----
+
+
+@Autowire
+private SpringKModuleDeploymentService deploymentService;
+
+...
+
+@PostConstruct
+public void configure() {
+
+    deploymentService.registerWorkItemHandler("Custom", new CustomWorkItemHandler());
+}
+
+----
+
+
+== Event listeners
+
+jBPM allows to register various event listeners that will be invoked upon various events
+triggered by the {PROCESS_ENGINE}. Supported event listener types are
+
+* ProcessEventListener
+* AgendaEventListener
+* RuleRuntimeEventListener
+* TaskLifeCycleEventListener
+* CaseEventListener
+
+Similar to work item handlers, event listeners can be registered in three ways
+
+* via *deployment descriptor* - use this approach if you want to decouple life cycle of the
+listener from your business application
+* via *auto registration of Spring Components* - use this when you have your listeners implemented
+as Spring beans (components) that are bound to the life cycle of the application
+* via *manual registration of any work handler implementation* - use this when the listener is not
+implemented by you and thus there is no way to use the Spring Component approach or it has advanced
+initialisation logic that does not fit the deployment descriptor approach
+
+=== Register event listener via deployment descriptor
+
+Registration in deployment descriptor can be done directly in {CENTRAL} via
+Project settings -> Deployments
+
+image::BusinessApplications/deployment-descriptor-event-listener.png[]
+
+this will result in following source code of the deployment descriptor
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<deployment-descriptor xsi:schemaLocation="http://www.jboss.org/jbpm deployment-descriptor.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <persistence-unit>org.jbpm.domain</persistence-unit>
+    <audit-persistence-unit>org.jbpm.domain</audit-persistence-unit>
+    <audit-mode>JPA</audit-mode>
+    <persistence-mode>JPA</persistence-mode>
+    <runtime-strategy>SINGLETON</runtime-strategy>
+    <marshalling-strategies/>
+    <event-listeners>
+        <event-listener>
+            <resolver>mvel</resolver>
+            <identifier>new org.jbpm.listeners.CustomProcessEventListener</identifier>
+            <parameters/>
+        </event-listener>
+    </event-listeners>
+    <task-event-listeners/>
+    <globals/>
+    <work-item-handlers/>
+    <environment-entries/>
+    <configurations/>
+    <required-roles/>
+    <remoteable-classes/>
+    <limit-serialization-classes>true</limit-serialization-classes>
+</deployment-descriptor>
+----
+
+=== Register event listener via auto registration of Spring Components
+
+The easiest way to register event listeners is to rely on Spring discovery and configuration
+of beans. It's enough to annotate your event listener implementation class with `@Component()`
+and that bean will be automatically registered in jBPM.
+
+[source, java]
+----
+import org.kie.api.event.process.ProcessCompletedEvent;
+import org.kie.api.event.process.ProcessEventListener;
+import org.kie.api.event.process.ProcessNodeLeftEvent;
+import org.kie.api.event.process.ProcessNodeTriggeredEvent;
+import org.kie.api.event.process.ProcessStartedEvent;
+import org.kie.api.event.process.ProcessVariableChangedEvent;
+import org.springframework.stereotype.Component;
+
+@Component
+public class CustomProcessEventListener implements ProcessEventListener {
+
+    @Override
+    public void beforeProcessStarted(ProcessStartedEvent event) {
+
+    }
+
+    ...
+
+}
+----
+
+TIP: Event listener can extend _default_ implementation of given event listener to avoid
+implementing all methods e.g. `org.kie.api.event.process.DefaultProcessEventListener`
+
+Type of the event listeners is determined by the interface (or super class) it implements.
+
+=== Register event listener programmatically
+
+Last resort option is to get hold of DeploymentService and register handlers programmatically
+
+[source, java]
+----
+@Autowire
+private SpringKModuleDeploymentService deploymentService;
+
+...
+
+@PostConstruct
+public void configure() {
+
+    deploymentService.registerProcessEventListener(new CustomProcessEventListener());
+}
+
+----
+
+== Custom REST endpoints
+
+In many (if not all) cases there will be a need to expose additional REST endpoints for your
+business application (in your service project). This can be easily achieved by creating a JAX-RS
+compatible class (with JAX-RS annotations). It will automatically be registered with the running
+service when the following scanning option is configured in your apps application.properties config file:
+
+[source, bash]
+----
+cxf.jaxrs.classes-scan=true
+cxf.jaxrs.classes-scan-packages=org.kie.server.springboot.samples.rest
+----
+
+The endpoint will be bound to the global REST api path defined in the `cxf.path` property.
+
+An example of a custom endpoint can be found below
+
+[source, java]
+----
+package org.kie.server.springboot.samples.rest;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+@Path("extra")
+public class AdditionalEndpoint {
+
+    @GET
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public Response listContainers() {
+
+        return Response.ok().build();
+    }
+}
+----

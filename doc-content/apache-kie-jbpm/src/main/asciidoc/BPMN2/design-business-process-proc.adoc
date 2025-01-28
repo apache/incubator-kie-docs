@@ -1,0 +1,127 @@
+[id='design-bus-proc']
+= Creating a business process in {CENTRAL}
+
+The process designer is the {PRODUCT} process modeler. The output of the modeler is a BPMN 2.0 process definition file. The definition is used as input for the {PRODUCT} {PROCESS_ENGINE}, which creates a process instance based on the definition.
+
+The procedures in this section provide a general overview of how to create a simple business process.
+ifdef::DM,PAM[]
+For a more detailed business process example, see {URL_GETTING_STARTED}#assembly-getting-started-process-services[_{GETTING_STARTED_PROCESSES}_].
+endif::[]
+
+.Prerequisites
+* You have created or imported a {PRODUCT} project.
+ifdef::DM,PAM[]
+For more information about creating projects, see {URL_DEPLOYING_AND_MANAGING_SERVICES}#assembly-managing-projects[_{MANAGING_PROJECTS}_].
+endif::[]
+* You have created the required users. User privileges and settings are controlled by the roles assigned to a user and the groups that a user belongs to.
+ifdef::DM,PAM[]
+For more information about creating users, see {URL_INSTALLING_AND_CONFIGURING}#eap-users-create-proc_install-on-eap[_{INSTALLING_ON_EAP}_].
+endif::[]
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects*.
+. Click the project name to open the project's asset list.
+. Click *Add Asset -> Business Process*.
+. In the *Create new Business Process* wizard, enter the following values:
+* *Business Process*: New business process name
+* *Package*: Package location for your new business process, for example `com.myspace.myProject`
+. Click *Ok* to open the process designer.
+. In the upper-right corner, click the *Properties* image:processes/diagram_properties.png[] icon and add your business process property information, such as process data and variables:
+.. Scroll down and expand *Process Data*.
+.. Click image:processes/btn_plus.png[] next to *Process Variables* and define the process variables that you want to use in your business process.
+
++
+--
+.General process properties
+[cols="30%,70%", options="header"]
+|===
+|Label
+|Description
+
+| *Name*
+| Enter the name of the process.
+
+| *Documentation*
+| Describes the process. The text in this field is included in the process documentation, if applicable.
+
+| *ID*
+| Enter an identifier for this process, such as `orderItems`.
+
+| *Package*
+| Enter the package location for this process in your {PRODUCT} project, such as `org.acme`.
+
+| *ProcessType*
+| Specify whether the process is public or private (or null, if not applicable).
+
+| *Version*
+| Enter the artifact version for the process.
+
+| *Ad hoc*
+| Select this option if this process is an ad hoc sub-process.
+
+| *Process Instance Description*
+| Enter a description of the purpose of the process.
+
+| *Imports*
+| Click to open the *Imports* window and add any data object classes required for your process.
+
+| *Executable*
+| Select this option to make the process executable part of your {PRODUCT} project.
+
+| *SLA Due Date*
+| Enter the service level agreement (SLA) expiration date.
+
+| *Process Variables*
+a| Add any process variables for the process. Process variables are visible within the specific process instance. Process variables are initialized at process creation and destroyed on process completion. Variable *Tags* provide greater control over variable behavior, for example whether the variable is `required` or `readonly`. For more information about variable tags, see xref:variables-con_{context}[].
+
+| *Metadata Attributes*
+| Add any custom metadata attribute name and value that you want to use for custom event listeners, such as a listener to implement some action when a metadata attribute is present.
+
+| *Global Variables*
+|  Add any global variables for the process. Global variables are visible to all process instances and assets in a project. Global variables are typically used by business rules and constraints, and are created dynamically by the rules or constraints.
+|===
+
+The *Metadata Attributes* entries are similar to *Process Variables* tags in that they enable new `metaData` extensions to BPMN diagrams. However, process variable tags modify the behavior of specific process variables, such as whether a certain variable is `required` or `readonly`, whereas metadata attributes are key-value definitions that modify the behavior of the overall process.
+
+For example, the following custom metadata attribute `riskLevel` and value `low` in a BPMN process correspond to a custom event listener for starting the process:
+
+.Example metadata attribute and value in the BPMN modeler
+image::BPMN2/bpmn-metadata-attributes-custom.png[Image of custom metadata attribute and value]
+
+.Example metadata attribute and value in the BPMN file
+[source,xml]
+----
+<bpmn2:process id="approvals" name="approvals" isExecutable="true" processType="Public">
+  <bpmn2:extensionElements>
+    <tns:metaData name="riskLevel">
+      <tns:metaValue><![CDATA[low]]></tns:metaValue>
+    </tns:metaData>
+  </bpmn2:extensionElements>
+----
+
+.Example event listener with metadata value
+[source,java]
+----
+public class MyListener implements ProcessEventListener {
+    ...
+    @Override
+    public void beforeProcessStarted(ProcessStartedEvent event) {
+        Map < String, Object > metadata = event.getProcessInstance().getProcess().getMetaData();
+        if (metadata.containsKey("low")) {
+            // Implement some action for that metadata attribute
+        }
+    }
+}
+----
+--
+
+. In the process designer canvas, use the left toolbar to drag and drop BPMN components to define your business process logic, connections, events, tasks, or other elements.
++
+[NOTE]
+====
+A task and event in {PRODUCT} expect one incoming and one outgoing flow. If you want to design a business process with multiple incoming and multiple outgoing flows, then consider redesigning the business process using gateways. Using gateways makes the logic apparent, which a sequence flow is executing. Therefore, gateways are considered as a best practice for multiple connections.
+
+However, if it is a must to use multiple connections for a task or an event, then you must set the JVM (Java virtual machine) system property `jbpm.enable.multi.con` to `true`. When {CENTRAL} and {KIE_SERVER} run on different servers, then ensure that both of them contains the `jbpm.enable.multi.con` system property as enabled otherwise, the {PROCESS_ENGINE} throws an exception.
+====
+
+. After you add and define all components of the business process, click *Save* to save the completed business process.

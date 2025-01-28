@@ -1,0 +1,57 @@
+[id='runtime-manager-usage-con_{context}']
+= Typical usage scenario for the runtime manager
+
+The typical usage scenario for the runtime manager consists of the following stages:
+
+* At application startup time, complete the following stage:
+** Build a `RuntimeManager` instance and keep it for the entire lifetime of the application, as it is thread-safe and can be accessed concurrently.
+
+* At request time, complete the following stages:
+** Get `RuntimeEngine` from the `RuntimeManager`, using the proper context instance as determined by the strategy that you configured for the `RuntimeManager` class.
+** Get the `KieSession` and `TaskService` objects from the `RuntimeEngine`.
+** Use the `KieSession` and `TaskService` objects for operations such as `startProcess` or `completeTask`.
+** After completing processing, dispose `RuntimeEngine` using the `RuntimeManager.disposeRuntimeEngine` method.
+
+* At application shutdown time, complete the following stage:
+** Close the `RuntimeManager` instance.
+
+[NOTE]
+====
+When `RuntimeEngine` is obtained from `RuntimeManager` within an active JTA transaction, you do not need to dispose `RuntimeEngine` at the end, as `RuntimeManager` automatically disposes the `RuntimeEngine` on transaction completion (regardless of the completion status: commit or rollback).
+====
+
+The following example shows how you can build a `RuntimeManager` instance and get a `RuntimeEngine` instance (that encapsulates `KieSession` and `TaskService` classes) from it:
+
+.Building a `RuntimeManager` instance and then getting `RuntimeEngine` and `KieSession`
+[source,java,subs="attributes+"]
+----
+
+    // First, configure the environment to be used by RuntimeManager
+    RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
+    .newDefaultInMemoryBuilder()
+    .addAsset(ResourceFactory.newClassPathResource("BPMN2-ScriptTask.bpmn2"), ResourceType.BPMN2)
+    .get();
+
+    // Next, create the RuntimeManager - in this case the singleton strategy is chosen
+    RuntimeManager manager = RuntimeManagerFactory.Factory.get().newSingletonRuntimeManager(environment);
+
+    // Then get RuntimeEngine from the runtime manager, using an empty context because singleton does not keep track
+    // of runtime engine as there is only one
+    RuntimeEngine runtime = manager.getRuntimeEngine(EmptyContext.get());
+
+    // Get the KieSession from the RuntimeEngine - already initialized with all handlers, listeners, and other requirements
+    // configured on the environment
+    KieSession ksession = runtimeEngine.getKieSession();
+
+    // Add invocations of the {PROCESS_ENGINE} here,
+    // for example, ksession.startProcess(processId);
+
+    // Finally, dispose the runtime engine
+    manager.disposeRuntimeEngine(runtimeEngine);
+----
+
+This example provides the simplest, or minimal, way of using `RuntimeManager` and `RuntimeEngine` classes. It has the following characteristics:
+
+* The `KieSession` instance is created in memory, using the `newDefaultInMemoryBuilder` builder.
+* A single process, which is added as an asset, is available for execution.
+* The `TaskService` class is configured and attached to the `KieSession` instance through the `LocalHTWorkItemHandler` interface to support user task capabilities within processes.
