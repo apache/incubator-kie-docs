@@ -1,0 +1,110 @@
+[id='cdi-runtime-manager-con_{context}']
+== Runtime manager as a CDI bean
+
+You can inject the `RuntimeManager` class as a CDI bean into any other CDI bean within your application. The `RuntimeEnvironment` class must be properly produced to enable correct initialization of the `RuntimeManager` instance.
+
+The following CDI qualifiers reference the existing runtime manager strategies:
+
+* `@Singleton`
+* `@PerRequest`
+* `@PerProcessInstance`
+
+For more information about the runtime manager, see xref:runtime-manager-con_{context}[].
+
+[NOTE]
+====
+Though you can inject the `RuntimeManager` class directly, the solution for most use cases for frameworks such as CDI, EJB, or Spring is using services. The {PROCESS_ENGINE} services implement many best practices for using the runtime manager.
+====
+
+To use the runtime manager, you must add the `RuntimeEnvironment` class to the producer that is defined in the xref:cdi-integration-configuration-con_{context}[] section. 
+
+.The producer bean that provides the `RuntimeEnvironment` class
+[source,java]
+----
+public class EnvironmentProducer { 
+   
+    //Add the same producers as for services
+
+    @Produces
+    @Singleton
+    @PerRequest
+    @PerProcessInstance
+    public RuntimeEnvironment produceEnvironment(EntityManagerFactory emf) {
+        
+        RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
+                .newDefaultBuilder()
+                .entityManagerFactory(emf)
+                .userGroupCallback(getUserGroupCallback())
+                .registerableItemsFactory(InjectableRegisterableItemsFactory.getFactory(beanManager, null))
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-ScriptTask.bpmn2"), ResourceType.BPMN2)
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-UserTask.bpmn2"), ResourceType.BPMN2)
+                .get();
+        return environment;
+    }
+}
+----
+
+In this example, a single producer method is capable of providing the `RuntimeEnvironment` class for all runtime manager strategies by specifying all qualifiers on the method level.
+
+When the complete producer is available, the `RuntimeManager` class can be injected into a CDI bean in the application:
+
+.Injecting the `RuntimeManager` class 
+[source,java]
+----
+public class ProcessEngine {
+
+    @Inject
+    @Singleton
+    private RuntimeManager singletonManager;
+
+    public void startProcess() {
+        
+        RuntimeEngine runtime = singletonManager.getRuntimeEngine(EmptyContext.get());
+        KieSession ksession = runtime.getKieSession();
+        
+        ProcessInstance processInstance = ksession.startProcess("UserTask");
+        
+        singletonManager.disposeRuntimeEngine(runtime);     
+    }
+}
+----
+
+If you inject the `RuntimeManager` class, only one instance of `RuntimeManager` might exist in the application. In typical cases, use the `DeploymentService` service, which creates `RuntimeManager` instances as necessary.
+
+As an alternative to `DeploymentService`, you can inject the `RuntimeManagerFactory` class and then the application can use it to create `RuntimeManager` instances. In this case, the `EnvironmentProducer` definition is still required. The following example shows a simple ProcessEngine bean.
+
+.Example ProcessEngine bean
+[source,java]
+----
+public class ProcessEngine {
+
+    @Inject
+    private RuntimeManagerFactory managerFactory;
+    
+    @Inject
+    private EntityManagerFactory emf;
+    
+    @Inject
+    private BeanManager beanManager;
+
+    public void startProcess() {
+        RuntimeEnvironment environment = RuntimeEnvironmentBuilder.Factory.get()
+                .newDefaultBuilder()
+                .entityManagerFactory(emf)
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-ScriptTask.bpmn2"), ResourceType.BPMN2)
+                .addAsset(ResourceFactory.newClassPathResource("BPMN2-UserTask.bpmn2"), ResourceType.BPMN2)
+                .registerableItemsFactory(InjectableRegisterableItemsFactory.getFactory(beanManager, null))
+                .get();
+        
+        RuntimeManager manager = managerFactory.newSingletonRuntimeManager(environment);
+        RuntimeEngine runtime = manager.getRuntimeEngine(EmptyContext.get());
+        KieSession ksession = runtime.getKieSession();
+        
+        ProcessInstance processInstance = ksession.startProcess("UserTask");
+        
+        manager.disposeRuntimeEngine(runtime);
+        manager.close();     
+    }
+
+}
+----

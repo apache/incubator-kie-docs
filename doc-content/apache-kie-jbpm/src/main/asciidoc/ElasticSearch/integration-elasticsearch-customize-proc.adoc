@@ -1,0 +1,43 @@
+[id='integration-elasticsearch-customize-proc_{context}']
+= Customizing data for ElasticSearch
+
+You can develop transformer classes to customize the data that {PRODUCT} sends to ElasticSearch.
+
+Information about processes, cases, tasks, and task operations is available as _views_. {PRODUCT} includes the following view types:
+
+* `CaseInstanceView`
+* `ProcessInstanceView`
+* `TaskInstanceView`
+* `TaskOperationView`
+
+You can see the definitions of these views in the https://github.com/kiegroup/jbpm/tree/{COMMUNITY_VERSION_FINAL}/jbpm-persistence/jbpm-persistence-api/src/main/java/org/jbpm/persistence/api/integration/model[GitHub repository].
+
+Each view has a `getCompositeId()` method that returns an identifier. This identifier denotes a particular instance of a case, process, task, or task operation.
+
+Each time a process, case, task, or task operation is created, updated, or deleted, the {PROCESS_ENGINE} calls a _transformer_ and supplies the relevant view.
+
+The transformer must generate an `ESRequest` object. In the parameters of the constructor of this object, the transformer must supply the necessary information for the ElasticSearch request, including the index.
+
+The definitions of the transformer classes and the `ESRequest` class are available in the https://github.com/kiegroup/jbpm/tree/{COMMUNITY_VERSION_FINAL}/jbpm-event-emitters/jbpm-event-emitters-elasticsearch/src/main/java/org/jbpm/event/emitters/elasticsearch[GitHub repository].
+
+To create and use custom transformers, complete the following procedure.
+
+.Procedure
+
+. Create the Java source code for the following classes:
+** `ESInstanceViewTransformer`: The transformer class. It provides `index()` and `update()` methods. Both of the methods take a view as a parameter and return an `ESRequest` object.
++
+When a process, case, task, or task operation instance is first created, the {PROCESS_ENGINE} calls the `index()` method. For subsequent changes related to the same instance, the {PROCESS_ENGINE} calls the `update()` method.
++
+You can create different `ESInstanceViewTransformer` implementations for different view types.
++
+** `ESInstanceViewTransformerFactory`: The transformer factory class. It returns an instance of the `ESInstanceViewTransformer` class for every view type.
++
+. In {CENTRAL}, enter your project and click the *Settings* -> *Dependencies* tab.
+. Optional: Add any dependencies that your transformer classes require.
+. Click the *Assets* tab.
+. For each of the class source files, complete the following steps:
+.. Click *Import Asset*.
+.. In the *Please select a file to upload* field, select the location of the Java source file for the custom serializer class.
+.. Click *Ok* to upload the file.
+. For the {KIE_SERVER} instance that runs the service, set the `org.jbpm.event.emitters.elasticsearch.factory` system property to the fully qualified class name of your implementation of `ESInstanceViewTransformerFactory`.

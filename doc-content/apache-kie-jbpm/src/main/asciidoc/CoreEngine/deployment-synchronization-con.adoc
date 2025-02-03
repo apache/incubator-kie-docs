@@ -1,0 +1,44 @@
+[id='deployment-synchronization-con_{context}']
+= Deployment synchronization
+
+ifdef::DROOLS,JBPM,OP[]
+Prior to jBPM 6.2, jBPM services did not have a deployment store by default.
+When embedded in business-central/kie-wb, they utilized the `sistem.git` VFS repository to preserve deployed units across server restarts.
+While that approach works, it causes some drawbacks:
+
+* It is not available for custom systems that use services
+* It requires a complex setup process in a cluster deployment, involving `zookeeper` and `helix`
+
+Since version 6.2, jBPM services include a deployment synchronizer
+endif::DROOLS,JBPM,OP[]
+ifdef::PAM,DM[]
+{PROCESS_ENGINE_CAP} services include a deployment synchronizer
+endif::PAM,DM[]
+that stores available deployments into a database, including the deployment descriptor for every deployment.
+
+The synchronizer also monitors this table to keep it in sync with other installations that might be using the same data source.
+This functionality is especially important when running in a cluster or when {CENTRAL} and a custom application must operate on the same artifacts.
+
+By default, when running core services, you must configure synchronization. For EJB and CDI extensions, synchronization is enabled automatically.
+
+The following code sample configures synchronization:
+
+.Configuring synchronization
+[source,java]
+----
+TransactionalCommandService commandService = new TransactionalCommandService(emf);
+
+DeploymentStore store = new DeploymentStore();
+store.setCommandService(commandService);
+
+DeploymentSynchronizer sync = new DeploymentSynchronizer();
+sync.setDeploymentService(deploymentService);
+sync.setDeploymentStore(store);
+
+DeploymentSyncInvoker invoker = new DeploymentSyncInvoker(sync, 2L, 3L, TimeUnit.SECONDS);
+invoker.start();
+....
+invoker.stop();
+----
+
+With this configuration, deployments are synchronized every three seconds with an initial delay of two seconds.

@@ -1,0 +1,126 @@
+[id='controller-java-api-requests-proc_{context}']
+= Sending requests with the {CONTROLLER} Java client API
+
+The {CONTROLLER} Java client API enables you to connect to the {CONTROLLER} using REST or WebSocket protocols from your Java client application. You can use the {CONTROLLER} Java client API as an alternative to the {CONTROLLER} REST API to interact with your {KIE_SERVER} templates (configurations), {KIE_SERVER} instances (remote servers), and associated KIE containers (deployment units) in {PRODUCT} without using the {CENTRAL} user interface.
+
+.Prerequisites
+* {KIE_SERVER} is installed and running.
+* The {CONTROLLER} or {HEADLESS_CONTROLLER} is installed and running.
+* You have `rest-all` user role access to the {CONTROLLER} if you installed {CENTRAL}, or `kie-server` user role access to the {HEADLESS_CONTROLLER} installed separately from {CENTRAL}.
+* You have a Java project with {PRODUCT} resources.
+
+.Procedure
+. In your client application, ensure that the following dependencies have been added to the relevant classpath of your Java project:
++
+[source,xml,subs="attributes+"]
+----
+<!-- For remote execution on controller -->
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-controller-client</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- For REST client -->
+<dependency>
+  <groupId>org.jboss.resteasy</groupId>
+  <artifactId>resteasy-client</artifactId>
+  <version>${resteasy.version}</version>
+</dependency>
+
+<!-- For WebSocket client -->
+<dependency>
+  <groupId>io.undertow</groupId>
+  <artifactId>undertow-websockets-jsr</artifactId>
+  <version>${undertow.version}</version>
+</dependency>
+
+<!-- For debug logging (optional) -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+----
+ifdef::DM,PAM[]
+. Download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/droolsjbpm-integration-$VERSION/kie-server-parent/kie-server-controller/kie-server-controller-client/src/main/java/org/kie/server/controller/client` to access the {CONTROLLER} Java clients.
+endif::[]
+. In the `~/kie/server/controller/client` folder
+ifdef::DROOLS,JBPM,OP[]
+of the Java client API in https://github.com/kiegroup/droolsjbpm-integration/tree/main/kie-server-parent/kie-server-controller/kie-server-controller-client/src/main/java/org/kie/server/controller/client[GitHub]
+endif::[]
+, identify the relevant Java client implementation for the request you want to send, such as the `RestKieServerControllerClient` implementation to access client services for {KIE_SERVER} templates and KIE containers in REST protocol.
+. In your client application, create a `.java` class for the API request. The class must contain the necessary imports, the {CONTROLLER} location and user credentials, a `KieServerControllerClient` object, and the client method to execute, such as `createServerTemplate` and `createContainer` from the `RestKieServerControllerClient` implementation. Adjust any configuration details according to your use case.
++
+.Creating and interacting with a {KIE_SERVER} template and KIE containers
+[source,java,subs="attributes+"]
+----
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.api.model.KieContainerStatus;
+import org.kie.server.api.model.KieScannerStatus;
+import org.kie.server.api.model.ReleaseId;
+import org.kie.server.controller.api.model.spec.*;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+
+public class RestTemplateContainerExample {
+
+  private static final String URL = "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller";
+  private static final String USER = "baAdmin";
+  private static final String PASSWORD = "password@1";
+
+    private static KieServerControllerClient client;
+
+    public static void main(String[] args) {
+        KieServerControllerClient client = KieServerControllerClientFactory.newRestClient(URL,
+                                                                                          USER,
+                                                                                          PASSWORD,
+                                                                                          MarshallingFormat.JSON);
+        // Create server template and KIE container, start and stop KIE container, and delete server template
+        ServerTemplate serverTemplate = createServerTemplate();
+        ContainerSpec container = createContainer(serverTemplate);
+        client.startContainer(container);
+        client.stopContainer(container);
+        client.deleteServerTemplate(serverTemplate.getId());
+    }
+
+    // Re-create and configure server template
+    protected static ServerTemplate createServerTemplate() {
+        ServerTemplate serverTemplate = new ServerTemplate();
+        serverTemplate.setId("example-client-id");
+        serverTemplate.setName("example-client-name");
+        serverTemplate.setCapabilities(Arrays.asList(Capability.PROCESS.name(),
+                                                     Capability.RULE.name(),
+                                                     Capability.PLANNING.name()));
+
+        client.saveServerTemplate(serverTemplate);
+
+        return serverTemplate;
+    }
+
+    // Re-create and configure KIE containers
+    protected static ContainerSpec createContainer(ServerTemplate serverTemplate){
+        Map<Capability, ContainerConfig> containerConfigMap = new HashMap();
+
+        ProcessConfig processConfig = new ProcessConfig("PER_PROCESS_INSTANCE", "kieBase", "kieSession", "MERGE_COLLECTION");
+        containerConfigMap.put(Capability.PROCESS, processConfig);
+
+        RuleConfig ruleConfig = new RuleConfig(500l, KieScannerStatus.SCANNING);
+        containerConfigMap.put(Capability.RULE, ruleConfig);
+
+        ReleaseId releaseId = new ReleaseId("org.kie.server.testing", "stateless-session-kjar", "1.0.0-SNAPSHOT");
+
+        ContainerSpec containerSpec = new ContainerSpec("example-container-id", "example-client-name", serverTemplate, releaseId, KieContainerStatus.STOPPED, containerConfigMap);
+        client.saveContainerSpec(serverTemplate.getId(), containerSpec);
+
+        return containerSpec;
+    }
+}
+----
+. Run the configured `.java` class from your project directory to execute the request, and review the {CONTROLLER} response.
++
+If you enabled debug logging, {KIE_SERVER} responds with a detailed response according to your configured marshalling format, such as JSON. If you encounter request errors, review the returned error code messages and adjust your Java configurations accordingly.

@@ -1,0 +1,59 @@
+[id='case-management-dynamic-service-task-API-proc']
+= Creating a dynamic service task using the {KIE_SERVER} REST API
+
+Service tasks are usually less complex than user tasks, although they might need more data to execute properly. Service tasks require the following information:
+
+* `name`: The name of the activity
+* `nodeType`: The type of node that will be used to find the work item handler
+* `data`: The map of the data to properly deal with execution
+
+During case run time, you can create a dynamic service task with the same endpoint as a user task, but with a different body payload.
+
+Use the following procedure using the Swagger REST API to create a dynamic service task for the *IT_Orders* sample project available in {CENTRAL}. You can use the same endpoint for REST API without Swagger.
+
+.Prerequisites
+* You are logged in to {CENTRAL} and an IT Orders case instance has been started using the Showcase application. For more information about using Showcase, see {URL_DEVELOPING_PROCESS_SERVICES}#assembly-showcase-application[_{SHOWCASE_APPLICATION_CASE_MANAGEMENT}_].
+
+.Procedure
+
+. In a web browser, open the following URL:
++
+`http://localhost:8080/kie-server/docs`
+. Open the list of available endpoints under *Case instances :: Case Management*.
+. Click the following `POST` method endpoint to open the details:
++
+`/server/containers/{id}/cases/instances/{caseId}/stages/{caseStageId}/tasks`
++
+. Click *Try it out* and then enter the following parameters:
++
+.Parameters
+[cols="40%,60%",options="header"]
+|===
+|Name| Description
+|`id` | `itorders`
+|`caseId` | `IT-0000000001`
+|===
++
+.Request body
++
+[source]
+----
+{
+ "name" : "InvokeService",
+ "data" : {
+   "Parameter" : "Fixed hardware spec",
+   "Interface" : "org.jbpm.demo.itorders.services.ITOrderService",
+   "Operation" : "printMessage",
+   "ParameterType" : "java.lang.String"
+  },
+ "nodeType" : "Service Task"
+}
+----
+. In the Swagger application, click *Execute* to create the dynamic task.
+
+
+In this example, a Java-based service is executed. It consists of an interface with the public class `org.jbpm.demo.itorders.services.ITOrderService` and the public `printMessage` method with a single `String` argument. When executed, the parameter value is passed to the method for execution.
+
+Numbers, names, and other types of data given to create service tasks depend on the implementation of a service task's handler. In the example provided, the `org.jbpm.process.workitem.bpmn2.ServiceTaskHandler` handler is used.
+
+NOTE: For any custom service tasks, ensure the handler is registered in the deployment descriptor in the *Work Item Handlers* section, where the name is the same as the `nodeType` used for creating a dynamic service task. For more information about registering the deployment descriptor, see {URL_DEVELOPING_PROCESS_SERVICES}#registering_custom_tasks_using_the_deployment_descriptor_inside_business_central[_{DEVELOPING_PROCESS_SERVICES}_].

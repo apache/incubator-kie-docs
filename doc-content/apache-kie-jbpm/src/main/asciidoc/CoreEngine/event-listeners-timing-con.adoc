@@ -1,0 +1,21 @@
+[id='event-listeners-timing-con_{context}']
+= Timing of calls to event listeners
+
+A number of event listener calls are `before` and `after` events, for example, `beforeNodeLeft()` and `afterNodeLeft()`, `beforeTaskActivatedEvent()` and `afterTaskActivatedEvent()`.
+
+The `before` and `after` event calls typically act like a stack. If event A directly causes event B, the following sequence of calls happens:
+
+* Before A
+* Before B
+* After B
+* After A
+
+For example, if leaving node X triggers node Y, all event calls related to triggering node Y occur between the `beforeNodeLeft` and `afterNodeLeft` calls for node X.
+
+In the same way, if starting a process directly causes some nodes to start, all `nodeTriggered` and `nodeLeft` event calls occur between the `beforeProcessStarted` and `afterProcessStarted` calls.
+
+This approach reflects cause and effect relationships between events. However, the timing and order of `after` event calls are not always intuitive. For example, an `afterProcessStarted` call can happen after the `afterNodeLeft` calls for some nodes in the process.
+
+In general, to be notified when a particular event occurs, use the `before` call for the event. Use an `after` call only if you want to make sure that all processing related to this event has ended, for example, when you want to be notified when all steps associated with starting a particular process instance have been completed.
+
+Depending on the type of node, some nodes might only generate `nodeLeft` calls and others might only generate `nodeTriggered` calls. For example, catch intermediate event nodes do not generate `nodeTriggered` calls because they are not triggered by another process node. Similarly, throw intermediate event nodes do not generate `nodeLeft` calls because these nodes do not have an outgoing connection to another node.

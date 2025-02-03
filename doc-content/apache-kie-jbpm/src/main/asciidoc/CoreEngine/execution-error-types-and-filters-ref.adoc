@@ -1,0 +1,39 @@
+[id='execution-error-types-and-filters-ref_{context}']
+= Execution error types and filters
+
+Execution error handling attempts to catch and handle any kind of error. However, users might need to handle different errors in different ways. Also, different detailed information is available for different types of errors.
+
+The error handling mechanism supports pluggable _filters_. Every filter processes a particular type of error. You can add filters that process specific errors in different ways, overriding default processing.
+
+A filter is an implementation of the `ExecutionErrorFilter` interface. This interface builds instances of `ExecutionError`, which are later stored using the `ExecutionErrorStorage` class.
+
+The `ExecutionErrorFilter` interface has the following methods:
+
+* `accept`: Indicates if an error can be processed by the filter
+* `filter`: Processes an error and returns the `ExecutionError` instance
+* `getPriority`: Indicates the priority for this filter
+
+The execution error handler processes each error separately. For each error, it starts calling the `accept` method of all registered filters, starting with the filters that have a lower priority value. If the `accept` method of a filter returns `true`, the handler calls the `filter` method of the filter and does not call any other filters.
+
+Because of the priority system, only one filter processes any error. More specialized filters have lower priority values. An error that is not accepted by any specialized filters reaches generic filters that have higher priority values.
+
+The `ServiceLoader` mechanism provides `ExecutionErrorFilter` instances. To register custom filters, add their fully qualified class names to the `META-INF/services/org.kie.internal.runtime.error.ExecutionErrorFilter` file of your service project.
+
+{PRODUCT} ships with the following execution error filters:
+
+.ExecutionErrorFilters
+[cols="60%,20%,20%",options="header"]
+|===
+|Class name | Type | Priority
+|org.jbpm.runtime.manager.impl.error.filters.ProcessExecutionErrorFilter | Process | 100
+|org.jbpm.runtime.manager.impl.error.filters.TaskExecutionErrorFilter | Task | 80
+|org.jbpm.runtime.manager.impl.error.filters.DBExecutionErrorFilter | DB | 200
+|org.jbpm.executor.impl.error.JobExecutionErrorFilter | Job | 100
+|===
+
+Filters are given a higher execution order based on the lowest value of the priority. Therefore, the execution error handler invokes these filters in the following order:
+
+. Task
+. Process
+. Job
+. DB

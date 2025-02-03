@@ -1,0 +1,629 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-solvers-ref_{context}']
+= Planning solvers
+
+// The {KIE_SERVER} REST API supports the following solver endpoints for {PLANNER}. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+*<@Jiri: I struggled to create a working example :( so I need help with some example JSON request bodies and/or example JSON responses for some of the endpoints below.>*
+
+== [GET] /server/containers/{containerId}/solvers
+
+Returns a list of solvers in a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solvers reside
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "solver": [
+    {
+      "container-id": "employee-rostering",
+      "solver-id": "solver1",
+      "solver-config-file": "employeerostering/employeerostering/EmployeeRosteringSolverConfig.solver.xml",
+      "status": "NOT_SOLVING"
+    }
+  ]
+}
+----
+
+== [PUT] /server/containers/{containerId}/solvers/{solverId}
+
+Creates a solver within a specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is to be placed
+|String
+|Required
+
+|`solverId`
+|ID of the new solver
+|String
+|Required
+
+|*body*
+|A `solver-config-file` specification (for XML requests, a marshalled `SolverInstance` entity)
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "solver-config-file": "employeerostering/employeerostering/EmployeeRosteringSolverConfig.solver.xml"
+}
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "solver-instance": {
+    "container-id": "employee-rostering",
+    "solver-id": "solver1",
+    "solver-config-file": "employeerostering/employeerostering/EmployeeRosteringSolverConfig.solver.xml",
+    "status": "NOT_SOLVING",
+    "score": {
+      "value": null,
+      "scoreClass": null
+    },
+    "best-solution": null
+  }
+}
+----
+
+== [GET] /server/containers/{containerId}/solvers/{solverId}
+
+Returns the current state of the specified solver within the specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "solver-instance": {
+    "container-id": "employee-rostering",
+    "solver-id": "solver1",
+    "solver-config-file": "employeerostering/employeerostering/EmployeeRosteringSolverConfig.solver.xml",
+    "status": "NOT_SOLVING"
+  }
+}
+----
+
+== [DELETE] /server/containers/{containerId}/solvers/{solverId}
+
+⁠Disposes the specified solver within the specified KIE container. If the solver is still running, this request terminates the solver and then disposes it.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+|===
+
+*<@Jiri: The request works but the server responds "undocumented". This example JSON response body below is what the server needs to say.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Solver solver1 successfully disposed."
+    }
+  ]
+}
+----
+
+== [POST] /server/containers/{containerId}/solvers/{solverId}/state/solving
+
+Starts the specified solver within its KIE container to solve a given planning problem.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+
+|*body*
+|A marshalled planning problem, such as `EmployeeRoster`, to be optimized by the solver
+|Request body
+|Required
+|===
+
+NOTE: To get the best solution for the planning problem, you can first send a `GET` request to `\http://SERVER:PORT/kie-server/services/rest/server/containers/{containerId}/solvers/{solverId}/bestsolution` and then run this `POST` request accordingly.
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "employeerostering.employeerostering.EmployeeRoster": {
+    "employeeList": [
+      {
+        "name": "John",
+        "skills": {
+          "employeerostering.employeerostering.Skill": {
+            "name": "reading"
+          }
+        }
+      },
+      {
+        "name": "Mary",
+        "skills": {
+          "employeerostering.employeerostering.Skill": {
+            "name": "writing"
+          }
+        }
+      },
+      {
+        "name": "Petr",
+        "skills": {
+          "employeerostering.employeerostering.Skill": {
+            "name": "speaking"
+          }
+        }
+      }
+    ],
+    "shiftList": [
+      {
+        "timeslot": {
+          "startTime": "2017-01-01T00:00:00",
+          "endTime": "2017-01-01T01:00:00"
+        },
+        "requiredSkill": {
+          "-reference": "../../../employeeList/employeerostering.employeerostering.Employee/skills/employeerostering.employeerostering.Skill"
+        }
+      },
+      {
+        "timeslot": {
+          "-reference": "../../employeerostering.employeerostering.Shift/timeslot"
+        },
+        "requiredSkill": {
+          "-reference": "../../../employeeList/employeerostering.employeerostering.Employee[3]/skills/employeerostering.employeerostering.Skill"
+        }
+      },
+      {
+        "timeslot": {
+          "-reference": "../../employeerostering.employeerostering.Shift/timeslot"
+        },
+        "requiredSkill": {
+          "-reference": "../../../employeeList/employeerostering.employeerostering.Employee[2]/skills/employeerostering.employeerostering.Skill"
+        }
+      }
+    ],
+    "skillList": {
+      "employeerostering.employeerostering.Skill": [
+        {
+          "-reference": "../../employeeList/employeerostering.employeerostering.Employee/skills/employeerostering.employeerostering.Skill"
+        },
+        {
+          "-reference": "../../employeeList/employeerostering.employeerostering.Employee[3]/skills/employeerostering.employeerostering.Skill"
+        },
+        {
+          "-reference": "../../employeeList/employeerostering.employeerostering.Employee[2]/skills/employeerostering.employeerostering.Skill"
+        }
+      ]
+    },
+    "timeslotList": {
+      "employeerostering.employeerostering.Timeslot": {
+        "-reference": "../../shiftList/employeerostering.employeerostering.Shift/timeslot"
+      }
+    }
+  }
+}
+----
+
+*<@Jiri: Example response for the above request?>*
+
+.Example server response (JSON)
+[source,json]
+----
+
+----
+
+
+== [POST] /server/containers/{containerId}/solvers/{solverId}/state/terminating-early
+
+Stops the specified solver if it is running in the specified KIE container. This request does not delete the solver. The best solution can still be retrieved.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+|===
+
+*<@Jiri: Example JSON response body here. Can't get a solver to start so can't stop one to see.>*
+
+.Example server response (JSON)
+[source,json]
+----
+
+----
+
+== [GET] /server/containers/{containerId}/solvers/{solverId}/bestsolution
+
+Returns the best solution from a specified solver within the specified KIE container at the time the request is made. If the solver is still running (with a current status of `SOLVING`), then this request returns the best solution found up to the point of the latest completion. Future requests after the solver completes might return a better solution.⁠
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+|===
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "container-id": "employee-rostering",
+  "solver-id": "solver1",
+  "solver-config-file": "employeerostering/employeerostering/EmployeeRosteringSolverConfig.solver.xml",
+  "status": "NOT_SOLVING",
+  "score": {
+    "value": null,
+    "scoreClass": null
+  },
+  "best-solution": {
+    "employeerostering.employeerostering.EmployeeRoster": {
+      "employeeList": [
+        {
+          "name": "John",
+          "skills": [
+            {
+              "name": "reading"
+            }
+          ]
+        },
+        {
+          "name": "Mary",
+          "skills": [
+            {
+              "name": "writing"
+            }
+          ]
+        },
+        {
+          "name": "Petr",
+          "skills": [
+            {
+              "name": "speaking"
+            }
+          ]
+        }
+      ],
+      "shiftList": [
+        {
+          "timeslot": {
+            "startTime": {
+              "year": 2017,
+              "month": "JANUARY",
+              "dayOfYear": 1,
+              "dayOfWeek": "SUNDAY",
+              "dayOfMonth": 1,
+              "monthValue": 1,
+              "hour": 0,
+              "minute": 0,
+              "second": 0,
+              "nano": 0,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO"
+              }
+            },
+            "endTime": {
+              "year": 2017,
+              "month": "JANUARY",
+              "dayOfYear": 1,
+              "dayOfWeek": "SUNDAY",
+              "dayOfMonth": 1,
+              "monthValue": 1,
+              "hour": 1,
+              "minute": 0,
+              "second": 0,
+              "nano": 0,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO"
+              }
+            }
+          },
+          "requiredSkill": {
+            "name": "reading"
+          }
+        },
+        {
+          "timeslot": {
+            "startTime": {
+              "year": 2017,
+              "month": "JANUARY",
+              "dayOfYear": 1,
+              "dayOfWeek": "SUNDAY",
+              "dayOfMonth": 1,
+              "monthValue": 1,
+              "hour": 0,
+              "minute": 0,
+              "second": 0,
+              "nano": 0,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO"
+              }
+            },
+            "endTime": {
+              "year": 2017,
+              "month": "JANUARY",
+              "dayOfYear": 1,
+              "dayOfWeek": "SUNDAY",
+              "dayOfMonth": 1,
+              "monthValue": 1,
+              "hour": 1,
+              "minute": 0,
+              "second": 0,
+              "nano": 0,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO"
+              }
+            }
+          },
+          "requiredSkill": {
+            "name": "speaking"
+          }
+        },
+        {
+          "timeslot": {
+            "startTime": {
+              "year": 2017,
+              "month": "JANUARY",
+              "dayOfYear": 1,
+              "dayOfWeek": "SUNDAY",
+              "dayOfMonth": 1,
+              "monthValue": 1,
+              "hour": 0,
+              "minute": 0,
+              "second": 0,
+              "nano": 0,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO"
+              }
+            },
+            "endTime": {
+              "year": 2017,
+              "month": "JANUARY",
+              "dayOfYear": 1,
+              "dayOfWeek": "SUNDAY",
+              "dayOfMonth": 1,
+              "monthValue": 1,
+              "hour": 1,
+              "minute": 0,
+              "second": 0,
+              "nano": 0,
+              "chronology": {
+                "calendarType": "iso8601",
+                "id": "ISO"
+              }
+            }
+          },
+          "requiredSkill": {
+            "name": "writing"
+          }
+        }
+      ],
+      "skillList": [
+        {
+          "name": "reading"
+        },
+        {
+          "name": "speaking"
+        },
+        {
+          "name": "writing"
+        }
+      ],
+      "timeslotList": [
+        {
+          "startTime": {
+            "year": 2017,
+            "month": "JANUARY",
+            "dayOfYear": 1,
+            "dayOfWeek": "SUNDAY",
+            "dayOfMonth": 1,
+            "monthValue": 1,
+            "hour": 0,
+            "minute": 0,
+            "second": 0,
+            "nano": 0,
+            "chronology": {
+              "calendarType": "iso8601",
+              "id": "ISO"
+            }
+          },
+          "endTime": {
+            "year": 2017,
+            "month": "JANUARY",
+            "dayOfYear": 1,
+            "dayOfWeek": "SUNDAY",
+            "dayOfMonth": 1,
+            "monthValue": 1,
+            "hour": 1,
+            "minute": 0,
+            "second": 0,
+            "nano": 0,
+            "chronology": {
+              "calendarType": "iso8601",
+              "id": "ISO"
+            }
+          }
+        }
+      ],
+      "dayOffRequestList": [],
+      "shiftAssignmentList": [],
+      "score": "0hard/0soft"
+    }
+  }
+}
+----
+
+== [POST] /server/containers/{containerId}/solvers/{solverId}/problemfactchanges
+
+Adds one or more `ProblemFactChanges` updates to the data set that the specified solver currently optimizes.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+
+|*body*
+|A marshalled `ProblemFactChanges` entity with one or more changes to be applied
+|Request body
+|Required
+|===
+
+*<@Jiri: Example JSON request body and example JSON response.>*
+
+.Example request body (JSON)
+[source,json]
+----
+
+----
+
+.Example server response (JSON)
+[source,json]
+----
+
+----
+
+== [GET] /server/containers/{containerId}/solvers/{solverId}/problemfactchanges/processed
+
+Returns the status of all `ProblemFactChanges` updates that have been applied to the specified solver. The response status is `true` if the solver processed all problem fact changes, or `false` if the solver did not process the changes.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the solver is located
+|String
+|Required
+
+|`solverId`
+|ID of the solver
+|String
+|Required
+|===
+
+*<@Jiri: Example JSON response body.>*
+
+.Example server response (JSON)
+[source,json]
+----
+
+----

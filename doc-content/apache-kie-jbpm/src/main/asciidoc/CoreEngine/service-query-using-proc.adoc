@@ -1,0 +1,72 @@
+[id='service-query-using-proc_{context}']
+= Using the query service in a typical scenario
+
+The following procedure outlines the typical way in which your code might use the query service.
+
+.Procedure
+
+. Define the data set, which is a view of the data you want to use. Use the `QueryDefinition` class in the services API to complete this operation:
++
+.Defining the data set
+[source,java]
+----
+SqlQueryDefinition query = new SqlQueryDefinition("getAllProcessInstances", "java:jboss/datasources/ExampleDS");
+query.setExpression("select * from processinstancelog");
+----
++
+This example represents the simplest possible query definition.
++
+The constructor requires the following parameters:
++
+** A unique name that identifies the query at run time
+** A JNDI data source name to use for performing queries with this definition
++
+The parameter of the `setExpression()` method is the SQL statement that builds up the data set view. Queries in the query service use data from this view and filter this data as necessary.
++
+. Register the query:
++
+.Registering a query
+[source,java]
+----
+queryService.registerQuery(query);
+----
++
+. If required, collect all the data from the dataset, without any filtering:
++
+.Collecting all the data from the dataset
+[source,java]
+----
+Collection<ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), new QueryContext());
+----
++
+This simple query uses defaults from `QueryContext` for paging and sorting.
++
+. If required, use a `QueryContext` object that changes the defaults of the paging and sorting:
++
+.Changing defaults using a `QueryContext` object
+[source,java]
+----
+QueryContext ctx = new QueryContext(0, 100, "start_date", true);
+         
+Collection<ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), ctx);
+----
++
+. If required, use the query to filter data:
++
+.Using a query to filter data
+[source,java]
+----
+// single filter param
+Collection<ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), new QueryContext(), QueryParam.likeTo(COLUMN_PROCESSID, true, "org.jbpm%"));
+ 
+// multiple filter params (AND)
+Collection<ProcessInstanceDesc> instances = queryService.query("getAllProcessInstances", ProcessInstanceQueryMapper.get(), new QueryContext(),
+ QueryParam.likeTo(COLUMN_PROCESSID, true, "org.jbpm%"),
+ QueryParam.in(COLUMN_STATUS, 1, 3));
+----
+
+With the query service, you can define what data to fetch and how to filter it. Limitation of the JPA provider or other similar limitations do not apply. You can tailor database queries to your environment to increase performance.
+
+ifdef::DROOLS,JBPM,OP[]
+Further examples can be found http://mswiderski.blogspot.com/2016/01/advanced-queries-in-jbpm-64.html[here].
+endif::DROOLS,JBPM,OP[]

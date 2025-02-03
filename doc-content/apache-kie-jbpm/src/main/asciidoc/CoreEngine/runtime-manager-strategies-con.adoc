@@ -1,0 +1,71 @@
+[id='runtime-manager-strategies-con_{context}']
+= Runtime manager strategies
+
+The `RuntimeManager` class supports the following strategies for managing KIE sessions.
+
+Singleton strategy::
++
+--
+This strategy instructs the runtime manager to maintain a single `RuntimeEngine` instance (and in turn single `KieSession` and `TaskService` instances). Access to the runtime engine is synchronized and, therefore, thread safe, although it comes with a performance penalty due to synchronization.
+
+ifdef::DROOLS,JBPM,OP[]
+This strategy is similar to what was available by default in jBPM version 5.x.
+endif::DROOLS,JBPM,OP[]
+Use this strategy for simple use cases.
+
+This strategy has the following characteristics:
+
+* It has a small memory footprint, with single instances of the runtime engine and the task service.
+* It is simple and compact in design and usage.
+* It is a good fit for low-to-medium load on the {PROCESS_ENGINE} because of synchronized access.
+* In this strategy, because of the single `KieSession` instance, all state objects (such as facts) are directly visible to all process instances and vice versa.
+* The strategy is not contextual. When you retrieve instances of `RuntimeEngine` from a singleton `RuntimeManager`, you do not need to take the `Context` instance into account. Usually, you can use `EmptyContext.get()` as the context, although a null argument is acceptable as well.
+* In this strategy, the runtime manager keeps track of the ID of the `KieSession`, so that the same session remains in use after a `RuntimeManager` restart. The ID is stored as a serialized file in a temporary location in the file system that, depending on the environment, can be one of the following directories:
+** The value of the `jbpm.data.dir` system property
+** The value of the `jboss.server.data.dir` system property
+** The value of the `java.io.tmpdir` system property
+
+[WARNING]
+====
+A combination of the Singleton strategy and the EJB Timer Scheduler might raise Hibernate issues under load. Do not use this combination in production applications. The EJB Timer Scheduler is the default scheduler in {KIE_SERVER}.
+====
+--
+
+Per request strategy::
++
+--
+This strategy instructs the runtime manager to provide a new instance of `RuntimeEngine` for every request. One or more invocations of the {PROCESS_ENGINE} within a single transaction are considered a single request.
+
+The same instance of `RuntimeEngine` must be used within a single transaction to ensure correctness of state. Otherwise, an operation completed in one call would not be visible in the next call.
+
+This strategy is stateless, as process state is preserved only within the request. When a request is completed, the `RuntimeEngine` instance is permanently destroyed. If persistence is used, information related to the KIE session is removed from the persistence database as well.
+
+This strategy has the following characteristics:
+
+* It provides completely isolated {PROCESS_ENGINE} and task service operations for every request.
+* It is completely stateless, because facts are stored only for the duration of the request.
+* It is a good fit for high-load, stateless processes, where no facts or timers must be preserved between requests.
+* In this strategy, the KIE session is only available during the life of a request and is destroyed at the end of the request.
+* The strategy is not contextual. When you retrieve instances of `RuntimeEngine` from a per-request `RuntimeManager`, you do not need to take the `Context` instance into account. Usually, you can use `EmptyContext.get()` as the context, although a null argument is acceptable as well.
+--
+
+Per process instance strategy::
++
+--
+This strategy instructs `RuntimeManager` to maintain a strict relationship between a KIE session and a process instance. Each `KieSession` is available as long as the `ProcessInstance` to which it belongs is active.
+
+This strategy provides the most flexible approach for using advanced capabilities of the {PROCESS_ENGINE}, such as  rule evaluation and isolation between process instances. It maximizes performance and reduces potential bottlenecks introduced by synchronization. At the same time, unlike the request strategy, it reduces the number of KIE sessions to the actual number of process instances, rather than the total number of requests.
+
+This strategy has the following characteristics:
+
+* It provides isolation for every process instance.
+* It maintains a strict relationship between `KieSession` and `ProcessInstance` to ensure that it always delivers the same `KieSession` for a given `ProcessInstance`.
+* It merges the lifecycle of `KieSession` with `ProcessInstance`, and both are disposed when the process instance completes or aborts.
+* It enables maintenance of data, such as facts and timers, in the scope of the process instance. Only the process instance has access to the data.
+* It introduces some overhead because of the need to look up and load the `KieSession` for the process instance.
+* It validates every usage of a `KieSession` so it cannot be used for other process instances. An exception is thrown if another process instance uses the same `KieSession`.
+* The strategy is contextual and accepts the following context instances:
+** `EmptyContext` or null: Used when starting a process instance because no process instance ID is available yet
+** `ProcessInstanceIdContext`: Used after the process instance is created
+** `CorrelationKeyContext`: Used as an alternative to `ProcessInstanceIdContext` to use a custom (business) key instead of the process instance ID
+--

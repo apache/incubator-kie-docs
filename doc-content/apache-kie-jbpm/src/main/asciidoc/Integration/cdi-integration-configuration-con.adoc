@@ -1,0 +1,162 @@
+[id='cdi-integration-configuration-con_{context}']
+= CDI integration configuration
+
+To use the `jbpm-services-cdi` module in your CDI framework, you must provide some beans to satisfy the dependencies of the included service implementations.
+
+Several beans can be required, depending on the usage scenario:
+
+* The entity manager and entity manager factory 
+* The user group callback for human tasks
+* The identity provider to pass authenticated user information to the services
+
+When running in a JEE environment, such as {EAP}, the following producer bean satisfies all requirements of the `jbpm-services-cdi` module.
+
+.The producer bean that satisfies all requirements of the `jbpm-services-cdi` module in a JEE environment 
+[source,java]
+----
+public class EnvironmentProducer { 
+   
+    @PersistenceUnit(unitName = "org.jbpm.domain")
+    private EntityManagerFactory emf;
+
+    @Inject
+    @Selectable
+    private UserGroupInfoProducer userGroupInfoProducer;
+
+    @Inject
+    @Kjar
+    private DeploymentService deploymentService;
+
+    @Produces
+    public EntityManagerFactory getEntityManagerFactory() {
+        return this.emf;
+    }
+
+    @Produces
+    public org.kie.api.task.UserGroupCallback produceSelectedUserGroupCalback() {
+        return userGroupInfoProducer.produceCallback();
+    }
+
+    @Produces
+    public UserInfo produceUserInfo() {
+        return userGroupInfoProducer.produceUserInfo();
+    }
+
+    @Produces
+    @Named("Logs")
+    public TaskLifeCycleEventListener produceTaskAuditListener() {
+        return new JPATaskLifeCycleEventListener(true);
+    }
+
+    @Produces
+    public DeploymentService getDeploymentService() {
+        return this.deploymentService;
+    }
+
+    @Produces
+    public IdentityProvider produceIdentityProvider {
+        return new IdentityProvider() {
+             // implement IdentityProvider
+        };
+    }
+}
+----
+
+The `beans.xml` file for the application must enable a proper alternative for user group info callback. This alternative is taken based on the `@Selectable` qualifier.
+
+.Definition of the alternative for user group info callback in the `beans.xml` file`
+[source,xml]
+----
+<beans xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://java.sun.com/xml/ns/javaee https://docs.jboss.org/cdi/beans_1_0.xsd">
+
+  <alternatives>
+    <class>org.jbpm.kie.services.cdi.producer.JAASUserGroupInfoProducer</class>
+  </alternatives>
+
+</beans>
+----
+
+
+
+[NOTE]
+====
+`org.jbpm.kie.services.cdi.producer.JAASUserGroupInfoProducer` is an example value. This value is usually a good fit for {EAP}, as it reuses security settings on the application server, regardless of which security method the server uses, for example, LDAP or database.
+ifdef::JPBM,DROOLS,OP[]
+See the xref:_jbpmtaskservice[Human Task section] for more alternatives for `UserGroupCallback`.
+endif::JPBM,DROOLS,OP[]
+====
+
+Optionally, you can provide several other producers to deliver `WorkItemHandlers` and `Process`, `Agenda`, `WorkingMemory` event listeners. You can provide these components by implementing the following interfaces:
+
+.Work item handler producer interface for {PROCESS_ENGINE} integration with CDI
+[source,java]
+----
+/**
+ * Enables providing custom implementations to deliver WorkItem name and WorkItemHandler instance pairs
+ * for the runtime.
+ * <br/>
+ * This interface is invoked by the RegisterableItemsFactory implementation (in particular InjectableRegisterableItemsFactory 
+ * in the CDI framework) for every KieSession. Always return new instances of objects to avoid unexpected 
+ * results. 
+ *
+ */
+public interface WorkItemHandlerProducer {
+
+    /**
+     * Returns map of work items(key = work item name, value = work item handler instance) 
+     * to be registered on KieSession
+     * <br/>
+     * The following parameters might be given:
+     * <ul>
+     *  <li>ksession</li>
+     *  <li>taskService</li>
+     *  <li>runtimeManager</li>
+     * </ul>
+     * 
+     * @param identifier - identifier of the owner - usually the RuntimeManager. This parameter allows the producer to filter out
+     * and provide valid instances for a given owner
+     * @param params - the owner might provide some parameters, usually KieSession, TaskService, RuntimeManager instances
+     * @return map of work item handler instances (always return new instances when this method is invoked)
+     */
+    Map<String, WorkItemHandler> getWorkItemHandlers(String identifier, Map<String, Object> params);
+}
+----
+
+.Event listener producer interface for {PROCESS_ENGINE} integration with CDI
+[source,java]
+----
+/**
+ * Enables defining custom producers for known EventListeners. There might be several
+ * implementations that might provide a different listener instance based on the context in which they are executed. 
+ * <br/>
+ * This interface is invoked by the RegisterableItemsFactory implementation (in particular, InjectableRegisterableItemsFactory 
+ * in the CDI framework) for every KieSession. Always return new instances of objects to avoid unexpected results.
+ *
+ * @param <T> type of the event listener - ProcessEventListener, AgendaEventListener, WorkingMemoryEventListener
+ */
+public interface EventListenerProducer<T> {
+
+    /**
+     * Returns list of instances for given (T) type of listeners
+     * <br/>
+     * Parameters that might be given are:
+     * <ul>
+     *  <li>ksession</li>
+     *  <li>taskService</li>
+     *  <li>runtimeManager</li>
+     * </ul>
+     * @param identifier - identifier of the owner - usually RuntimeManager. This parameter allows the producer to filter out
+     * and provide valid instances for given owner
+     * @param params - the owner might provide some parameters, usually KieSession, TaskService, RuntimeManager instances
+     * @return list of listener instances (always return new instances when this method is invoked)
+     */
+    List<T> getEventListeners(String identifier, Map<String, Object>  params);
+}
+----
+
+The beans implementing these two interfaces are collected at runtime and invoked when the `RuntimeManager` class builds a `KieSession` instance.
+
+ifdef::DROOLS,JBPM,OP[]
+A complete runnable example of an application built with CDI can be found https://github.com/jsvitak/jbpm-6-examples/tree/master/rewards-cdi-jsf[here].
+endif::DROOLS,JBPM,OP[]

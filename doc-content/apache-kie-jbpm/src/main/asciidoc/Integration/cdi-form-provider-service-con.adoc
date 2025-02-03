@@ -1,0 +1,29 @@
+[id='cdi-form-provider-service-con_{context}']
+= Form provider service for CDI
+
+The `FormProviderService` service provides access to form representations, which are usually displayed on the user interface for both process forms and user task forms.
+
+The service relies on the concept of isolated form providers that can provide different capabilities and be backed by different technologies. The `FormProvider` interface describes the contract for implementations of form providers.
+
+.Definition of the `FormProvider` interface
+[source,java]
+----
+public interface FormProvider {
+
+    int getPriority();
+
+    String render(String name, ProcessDesc process, Map<String, Object> renderContext);
+
+    String render(String name, Task task, ProcessDesc process, Map<String, Object> renderContext);
+}
+----
+
+Implementations of the `FormProvider` interface must define a priority value. When the `FormProviderService` service needs to render a form, it calls the available providers in their priority order.
+
+The lower the priority value, the higher priority the provider gets. For example, a provider with a priority of 5 is evaluated before a provider with a priority of 10. For each required form, the service iterates over the available providers in the order of their priority, until one of them delivers the content. In the worst-case scenario, a simple text-based form is returned.
+
+The {PROCESS_ENGINE} provides the following implementations of `FormProvider`:
+
+* A provider that delivers forms created in the Form Modeller tool, with a priority of 2
+* A FreeMarker-based implementation that supports process and task forms, with a priority of 3
+* The default forms provider, returning a simple text-based form, used as a last resort if no other provider delivers any content, with a priority of 1000

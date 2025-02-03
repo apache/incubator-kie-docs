@@ -1,0 +1,205 @@
+[id='controller-java-api-con_{context}']
+= {CONTROLLER} Java client API for {KIE_SERVER} templates and instances
+
+{PRODUCT} provides a {CONTROLLER} Java client API that enables you to connect to the {CONTROLLER} using REST or WebSocket protocol from your Java client application. You can use the {CONTROLLER} Java client API as an alternative to the {CONTROLLER} REST API to interact with your {KIE_SERVER} templates (configurations), {KIE_SERVER} instances (remote servers), and associated KIE containers (deployment units) in {PRODUCT} without using the {CENTRAL} user interface. This API support enables you to maintain your {PRODUCT} servers and resources more efficiently and optimize your integration and development with {PRODUCT}.
+
+With the {CONTROLLER} Java client API, you can perform the following actions also supported by the {CONTROLLER} REST API:
+
+* Retrieve information about {KIE_SERVER} templates, instances, and associated KIE containers
+* Update, start, or stop KIE containers associated with {KIE_SERVER} templates and instances
+* Create, update, or delete {KIE_SERVER} templates
+* Create, update, or delete {KIE_SERVER} instances
+
+{CONTROLLER} Java client API requests require the following components:
+
+Authentication::
+The {CONTROLLER} Java client API requires HTTP Basic authentication for the following user roles, depending on controller type:
++
+--
+* `rest-all` user role if you installed {CENTRAL} and you want to use the built-in {CONTROLLER}
+* `kie-server` user role if you installed the {HEADLESS_CONTROLLER} separately from {CENTRAL}
+
+To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
+
+To add a user with the `kie-server` role or the `rest-all` role or both (assuming a Keystore is already set), navigate to `~/$SERVER_HOME/bin` and run the following command with the role or roles specified:
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['rest-all','kie-server'])"
+----
+
+In case the Keystore is not set, then execute the following command to create a Keystore:
+[source,bash]
+----
+$ keytool -importpassword -keystore $SERVER_HOME/standalone/configuration/kie_keystore.jceks -keypass <SECRETKEYPASSWORD> -alias kieserver -storepass <SECRETSTOREPASSWORD> -storetype JCEKS
+----
+
+Also, add the following properties to `~/$SERVER_HOME/standalone/configuration/standalone-full.xml`:
+[source,xml,subs="attributes+"]
+----
+    <property name="kie.keystore.keyStoreURL" value="file:///data/jboss/rhpam780/standalone/configuration/kie_keystore.jceks"/>
+    <property name="kie.keystore.keyStorePwd" value="<SECRETSTOREPASSWORD>"/>
+    <property name="kie.keystore.key.server.alias" value="kieserver"/>
+    <property name="kie.keystore.key.server.pwd" value="<SECRETKEYPASSWORD>"/>
+    <property name="kie.keystore.key.ctrl.alias" value="kieserver"/>
+    <property name="kie.keystore.key.ctrl.pwd" value="<SECRETKEYPASSWORD>"/>
+----
+
+To configure the `kie-server` or `rest-all` user with {CONTROLLER} access, navigate to `~/$SERVER_HOME/standalone/configuration/standalone-full.xml`, uncomment the `org.kie.server` properties (if applicable), and add the controller user login credentials and controller location (if needed):
+
+[source,xml,subs="attributes+"]
+----
+<property name="org.kie.server.location" value="http://localhost:8080/kie-server/services/rest/server"/>
+<property name="org.kie.server.controller" value="http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller"/>
+<property name="org.kie.server.controller.user" value="<USERNAME>"/>
+<property name="org.kie.server.id" value="default-kieserver"/>
+----
+
+For more information about user roles and {PRODUCT} installation options, see
+ifdef::PAM,DM[]
+{URL_INSTALLING_AND_CONFIGURING}#assembly-planning[_{PLANNING_INSTALL}_].
+endif::[]
+ifdef::DROOLS,JBPM[]
+<<_installing_the_kie_server>>.
+endif::[]
+--
+
+Project dependencies::
+The {CONTROLLER} Java client API requires the following dependencies on the relevant classpath of your Java project:
++
+--
+[source,xml,subs="attributes+"]
+----
+<!-- For remote execution on controller -->
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-controller-client</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- For REST client -->
+<dependency>
+  <groupId>org.jboss.resteasy</groupId>
+  <artifactId>resteasy-client</artifactId>
+  <version>${resteasy.version}</version>
+</dependency>
+
+<!-- For WebSocket client -->
+<dependency>
+  <groupId>io.undertow</groupId>
+  <artifactId>undertow-websockets-jsr</artifactId>
+  <version>${undertow.version}</version>
+</dependency>
+
+<!-- For debug logging (optional) -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+----
+
+The `<version>` for {PRODUCT} dependencies is the Maven artifact version for {PRODUCT} currently used in your project (for example, {MAVEN_ARTIFACT_VERSION}).
+
+ifdef::DM,PAM[]
+[NOTE]
+====
+Instead of specifying a {PRODUCT} `<version>` for individual dependencies, consider adding the {PRODUCT_BA} bill of materials (BOM) dependency to your project `pom.xml` file. The {PRODUCT_BA} BOM applies to both {PRODUCT_DM} and {PRODUCT_PAM}. When you add the BOM files, the correct versions of transitive dependencies from the provided Maven repositories are included in the project.
+
+Example BOM dependency:
+
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>com.redhat.ba</groupId>
+  <artifactId>ba-platform-bom</artifactId>
+  <version>{BOM_VERSION}</version>
+  <scope>import</scope>
+  <type>pom</type>
+</dependency>
+----
+
+For more information about the {PRODUCT_BA} BOM, see
+ifdef::PAM[]
+https://access.redhat.com/solutions/3405361[What is the mapping between RHPAM product and maven library version?].
+endif::[]
+ifdef::DM[]
+https://access.redhat.com/solutions/3363991[What is the mapping between RHDM product and maven library version?].
+endif::[]
+====
+endif::DM,PAM[]
+--
+
+Client request configuration::
+All Java client requests with the {CONTROLLER} Java client API must define at least the following controller communication components:
++
+--
+* Credentials of the `rest-all` user if you installed {CENTRAL}, or the `kie-server` user if you installed the {HEADLESS_CONTROLLER} separately from {CENTRAL}
+* {CONTROLLER} location for REST or WebSocket protocol:
+** Example REST URL: `\http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller`
+** Example WebSocket URL: `ws://localhost:8080/headless-controller/websocket/controller`
+* Marshalling format for API requests and responses (JSON or JAXB)
+* A `KieServerControllerClient` object, which serves as the entry point for starting the server communication using the Java client API
+* A `KieServerControllerClientFactory` defining REST or WebSocket protocol and user access
+* The {CONTROLLER} client service or services used, such as `listServerTemplates`, `getServerTemplate`, or `getServerInstances`
+
+The following are examples of REST and WebSocket client configurations with these components:
+
+.Client configuration example with REST
+[source,java,subs="attributes+"]
+----
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.controller.api.model.spec.ServerTemplateList;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+
+public class ListServerTemplatesExample {
+
+    private static final String URL = "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller";
+    private static final String USER = "baAdmin";
+    private static final String PASSWORD = "password@1";
+
+    private static final MarshallingFormat FORMAT = MarshallingFormat.JSON;
+
+    public static void main(String[] args) {
+        KieServerControllerClient client = KieServerControllerClientFactory.newRestClient(URL,
+                                                                                          USER,
+                                                                                          PASSWORD);
+
+        final ServerTemplateList serverTemplateList = client.listServerTemplates();
+        System.out.println(String.format("Found %s server template(s) at controller url: %s",
+                                         serverTemplateList.getServerTemplates().length,
+                                         URL));
+    }
+}
+----
+
+.Client configuration example with WebSocket
+[source,java,subs="attributes+"]
+----
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.controller.api.model.spec.ServerTemplateList;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+
+public class ListServerTemplatesExample {
+
+    private static final String URL = "ws://localhost:8080/my-controller/websocket/controller";
+    private static final String USER = "baAdmin";
+    private static final String PASSWORD = "password@1";
+
+    private static final MarshallingFormat FORMAT = MarshallingFormat.JSON;
+
+    public static void main(String[] args) {
+        KieServerControllerClient client = KieServerControllerClientFactory.newWebSocketClient(URL,
+                                                                                               USER,
+                                                                                               PASSWORD);
+
+        final ServerTemplateList serverTemplateList = client.listServerTemplates();
+        System.out.println(String.format("Found %s server template(s) at controller url: %s",
+                                         serverTemplateList.getServerTemplates().length,
+                                         URL));
+    }
+}
+----
+--

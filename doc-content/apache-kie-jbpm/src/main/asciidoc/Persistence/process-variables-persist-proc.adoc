@@ -1,0 +1,155 @@
+[id='process-variables-persist-proc_{context}']
+
+= Persisting process variables in a separate database schema in {PRODUCT}
+
+When you create process variables to use within the processes that you define, {PRODUCT} stores those process variables as binary data in a default database schema. You can persist process variables in a separate database schema for greater flexibility in maintaining and implementing your process data.
+
+For example, persisting your process variables in a separate database schema can help you perform the following tasks:
+
+* Maintain process variables in human-readable format
+* Make the variables available to services outside of {PRODUCT}
+* Clear the log of the default database tables in {PRODUCT} without losing process variable data
+
+NOTE: This procedure applies to process variables only. This procedure does not apply to case variables.
+
+.Prerequisites
+* You have defined processes in {PRODUCT} for which you want to implement variables.
+* If you want to persist variables in a database schema outside of {PRODUCT}, you have created a data source and the separate database schema that you want to use. For information about creating data sources, see
+ifdef::PAM[]
+{URL_MANAGING_SETTINGS}#managing-business-central-data-sources-con[_{CONFIGURING_CENTRAL}_].
+endif::[]
+ifdef::JBPM[]
+<<_wb.datasources>>.
+endif::[]
+
+.Procedure
+. In the data object file that you use as a process variable, add the following elements to configure variable persistence:
++
+--
+.Example Person.java object configured for variable persistence
+[source,java]
+----
+@javax.persistence.Entity  //<1>
+@javax.persistence.Table(name = "Person")  //<2>
+public class Person extends org.drools.persistence.jpa.marshaller.VariableEntity  //<3>
+implements java.io.Serializable {  //<4>
+
+	static final long serialVersionUID = 1L;
+
+	@javax.persistence.GeneratedValue(strategy = javax.persistence.GenerationType.AUTO, generator = "PERSON_ID_GENERATOR")
+	@javax.persistence.Id  //<5>
+	@javax.persistence.SequenceGenerator(name = "PERSON_ID_GENERATOR", sequenceName = "PERSON_ID_SEQ")
+	private java.lang.Long id;
+
+	private java.lang.String name;
+
+	private java.lang.Integer age;
+
+	public Person() {
+	}
+
+	public java.lang.Long getId() {
+		return this.id;
+	}
+
+	public void setId(java.lang.Long id) {
+		this.id = id;
+	}
+
+	public java.lang.String getName() {
+		return this.name;
+	}
+
+	public void setName(java.lang.String name) {
+		this.name = name;
+	}
+
+	public java.lang.Integer getAge() {
+		return this.age;
+	}
+
+	public void setAge(java.lang.Integer age) {
+		this.age = age;
+	}
+
+	public Person(java.lang.Long id, java.lang.String name,
+			java.lang.Integer age) {
+		this.id = id;
+		this.name = name;
+		this.age = age;
+	}
+
+}
+----
+
+<1> Configures the data object as a persistence entity.
+<2> Defines the database table name used for the data object.
+<3> Creates a separate `MappedVariable` mapping table that maintains the relationship between this data object and the associated process instance. If you do not need this relationship maintained, you do not need to extend the `VariableEntity` class. Without this extension, the data object is still persisted, but contains no additional data.
+<4> Configures the data object as a serializable object.
+<5> Sets a persistence ID for the object.
+
+To make the data object persistable using {CENTRAL}, navigate to the data object file in your project, click the *Persistence* icon in the upper-right corner of the window, and configure the persistence behavior:
+
+.Persistence configuration in {CENTRAL}
+image::Persistence/persistence-in-central.png[]
+--
+
+. In the `pom.xml` file of your project, add the following dependency for persistence support. This dependency contains the `VariableEntity` class that you configured in your data object.
++
+.Project dependency for persistence
+[source,xml,subs="attributes+"]
+----
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-persistence-jpa</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+  <scope>provided</scope>
+</dependency>
+----
+
+. In the `~/META-INF/kie-deployment-descriptor.xml` file of your project, configure the JPA marshalling strategy and a persistence unit to be used with the marshaller. The JPA marshalling strategy and persistence unit are required for objects defined as entities.
++
+.JPA marshaller and persistence unit configured in the kie-deployment-descriptor.xml file
+[source,xml]
+----
+<marshalling-strategy>
+  <resolver>mvel</resolver>
+  <identifier>new org.drools.persistence.jpa.marshaller.JPAPlaceholderResolverStrategy("myPersistenceUnit", classLoader)</identifier>
+  <parameters/>
+</marshalling-strategy>
+----
+
+. In the `~/META-INF` directory of your project, create a `persistence.xml` file that specifies in which data source you want to persist the process variable:
++
+--
+.Example persistence.xml file with data source configuration
+[source,xml]
+----
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:orm="http://java.sun.com/xml/ns/persistence/orm" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.0" xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd http://java.sun.com/xml/ns/persistence/orm http://java.sun.com/xml/ns/persistence/orm_2_0.xsd">
+    <persistence-unit name="myPersistenceUnit" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <jta-data-source>java:jboss/datasources/ExampleDS</jta-data-source>  //<1>
+        <class>org.space.example.Person</class>
+        <exclude-unlisted-classes>true</exclude-unlisted-classes>
+        <properties>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+            <property name="hibernate.max_fetch_depth" value="3"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.id.new_generator_mappings" value="false"/>
+            <property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.JBossAppServerJtaPlatform"/>
+        </properties>
+    </persistence-unit>
+</persistence>
+----
+
+<1> Sets the data source in which the process variable is persisted
+
+To configure the marshalling strategy, persistence unit, and data source using {CENTRAL}, navigate to project *Settings* -> *Deployments* -> *Marshalling Strategies* and to project *Settings* -> *Persistence*:
+
+.JPA marshaller configuration in {CENTRAL}
+image::Persistence/jpa-marhsalling-strategy.png[]
+
+.Persistence unit and data source configuration in {CENTRAL}
+image::Persistence/persistence-unit.png[]
+--

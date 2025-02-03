@@ -1,0 +1,43 @@
+[id='proc-test-external-services_{context}']
+= Testing integration with external services
+
+Business processes often include the invocation of external services. Unit testing of a business process enables you to register test handlers that verify whether the specific services are requested correctly, and also provide test responses for the requested services.
+
+To test the interaction with external services, use the default `TestWorkItemHandler` handler. You can register the `TestWorkItemHandler` to collect all the work items of a particular type. Also, `TestWorkItemHandler` contains data related to a task. A work item represents one unit of work, such as sending a specific email or invoking a specific service. The `TestWorkItemHandler` verifies whether a specific work item is requested during an execution of a process, and the associated data is correct.
+
+The following example shows how to verify an email task and whether an exception is raised if the email is not sent. The unit test uses a test handler that is executed when an email is requested and enables you to test the data related to the email, such as the sender and recipient. Once the `abortWorkItem()` method notifies the engine about the email delivery failure, the unit test verifies that the process handles such case by generating an error and logging the action. In this case, the process instance is eventually aborted.
+
+.Example email process
+image::BPMN2/bpmn-example-email-task-process-test.png[Example email process for testing]
+
+[source,java]
+----
+public void testProcess2() {
+
+    createRuntimeManager("sample-process.bpmn");
+
+    RuntimeEngine runtimeEngine = getRuntimeEngine();
+
+    KieSession ksession = runtimeEngine.getKieSession();
+
+    TestWorkItemHandler testHandler = getTestWorkItemHandler();
+
+    ksession.getWorkItemManager().registerWorkItemHandler("Email", testHandler);
+
+    ProcessInstance processInstance = ksession.startProcess("com.sample.bpmn.hello2");
+
+    assertProcessInstanceActive(processInstance.getId(), ksession);
+    assertNodeTriggered(processInstance.getId(), "StartProcess", "Email");
+
+    WorkItem workItem = testHandler.getWorkItem();
+    assertNotNull(workItem);
+    assertEquals("Email", workItem.getName());
+    assertEquals("me@mail.com", workItem.getParameter("From"));
+    assertEquals("you@mail.com", workItem.getParameter("To"));
+
+    ksession.getWorkItemManager().abortWorkItem(workItem.getId());
+    assertProcessInstanceNotActive(processInstance.getId(), ksession);
+    assertNodeTriggered(processInstance.getId(), "Gateway", "Failed", "Error");
+
+}
+----

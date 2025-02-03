@@ -1,0 +1,36 @@
+[id='ejb-api-services-ref_{context}']
+
+// Workaround until we address the EAP/Wildfly variable issue properly and globally. (Stetson, 22 Oct 2019)
+ifdef::JBPM[]
+:EAP: Wildfly
+endif::[]
+
+= Supported EJB services
+
+For the full list of available Enterprise JavaBeans (EJB) services in {PRODUCT},
+ifdef::PAM[]
+download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Maven Repository* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jboss-{PRODUCT_FILE_BA}.GA-maven-repository/maven-repository/org/jbpm/jbpm-services-ejb-*`.
+endif::[]
+ifdef::JBPM[]
+see the EJB services source in https://github.com/kiegroup/jbpm/tree/master/jbpm-services/jbpm-services-ejb[GitHub].
+endif::[]
+
+The artifacts that provide the EJB interface to the {PRODUCT_JBPM} services are in the following packages:
+
+* `org.jbpm.services.ejb.api`: Contains extensions of the {PRODUCT_JBPM} services API for the EJB interface
+* `org.jbpm.services.ejb.impl`: Contains EJB wrappers on top of the core service implementation
+* `org.jbpm.services.ejb.client`: Contains the EJB remote client implementation, supported on {EAP} only
+
+The `org.jbpm.services.ejb.api` package contains the following service interfaces that you can use with remote EJB clients:
+
+* `DefinitionServiceEJBRemote`: Use this interface to gather information about processes (ID, name, and version), process variables (name and type), defined reusable sub-processes, domain-specific services, user tasks, and user task inputs and outputs.
+* `DeploymentServiceEJBRemote`: Use this interface to initiate deployments and undeployments. The interface includes the methods `deploy`, `undeploy`, `getRuntimeManager`, `getDeployedUnits`, `isDeployed`, `activate`, `deactivate`, and `getDeployedUnit`. Calling the `deploy` method with an instance of `DeploymentUnit` deploys the unit into the runtime engine by building a `RuntimeManager` instance. After a successful deployment, an instance of `DeployedUnit` is created and cached for further use. (To use these methods, you must install the artifacts of the project in a Maven repository.)
+* `ProcessServiceEJBRemote`: Use this interface to control the life cycle of one or more processes and work items.
+* `RuntimeDataServiceEJBRemote`: Use this interface to retrieve data related to the run time, such as process instances, process definitions, node instance information, and variable information. The interface includes several convenience methods for gathering task information based on owner, status, and time.
+* `UserTaskServiceEJBRemote`: Use this interface to control the life cycle of a user task. The interface includes several convenience methods for interacting with user tasks, such as `activate`, `start`, `stop`, and `execute`.
+* `QueryServiceEJBRemote`: Use this interface for advanced queries.
+* `ProcessInstanceMigrationServiceEJBRemote`: Use this interface to migrate process instances when a new version of a process definition is deployed.
+
+If you run EJB applications and {CENTRAL} on the same {KIE_SERVER} instance, you can synchronize the information between EJB and {CENTRAL} at a specified interval by setting the `org.jbpm.deploy.sync.int` system property. After the service finishes the synchronization, you can access the updated information using REST operations.
+
+NOTE: EJB services in {PRODUCT} are intended for embedded use cases. If you run EJB applications and {CENTRAL} on the same {KIE_SERVER} instance, you must also add the `kie-services` package on the class path of your EJB application.

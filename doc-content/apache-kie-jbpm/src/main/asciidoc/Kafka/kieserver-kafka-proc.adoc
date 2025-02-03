@@ -1,0 +1,82 @@
+[id='kieserver-kafka-proc_{context}']
+= Configuring {KIE_SERVER} to send and receive Kafka messages from the process
+
+To run a process that sends or receives Kafka messages using events, you must use {KIE_SERVER}. You must configure the {KIE_SERVER} instance to integrate with {KAFKA_PRODUCT}.
+
+.Prerequisites
+
+* A {KIE_SERVER} instance is installed.
+
+.Procedure
+
+. To enable integration with {KAFKA_PRODUCT}, set the following system properties according to your environment:
+** If you are using {KIE_SERVER} on {EAP}, set the `org.kie.kafka.server.ext.disabled` {KIE_SERVER} system property of to `false`.
+** If you are using Spring Boot, set the `kieserver.kafka.enabled` system property to `true`.
++
+. To configure the connection to the Kafka broker, set the `org.kie.server.jbpm-kafka.ext.bootstrap.servers` system property to the host and port of the broker. The default value is `localhost:9092`. You can use a comma-separated list of multiple host:port pairs.
+. Optional: Set any of the following system properties related to both sending and receiving Kafka messages:
++
+.Optional {KIE_SERVER} system properties related to both sending and receiving Kafka messages
+[cols="45%,55%", options="header"]
+|===
+|Property
+|Description
+
+|`org.kie.server.jbpm-kafka.ext.client.id`
+|An identifier string to pass to the broker when making requests. {KAFKA_PRODUCT} uses this string for logging.
+
+|`org.kie.server.jbpm-kafka.ext.topics.*`
+|Mapping of message names to topic names. For example, if you want to send or receive a message in the `ExampleTopic` topic when `ExampleName` is the name of the message, set the `org.kie.server.jbpm-kafka.ext.topics.ExampleName` system property to `ExampleTopic`. You can set any number of such system properties. If a message name is not mapped using a system property, the {PROCESS_ENGINE} uses this name as the topic name.
+
+|`org.kie.server.jbpm-kafka.ext._property_name_`
+|Set any {KAFKA_PRODUCT} consumer or producer property by using the `org.kie.server.jbpm-kafka.ext` prefix. For example, to set a value for the `buffer.memory` producer property, set the `org.kie.server.jbpm-kafka.ext.buffer.memory` {KIE_SERVER} system property.
+
+This setting applies to all processes that send or receive Kafka messages using events on this {KIE_SERVER}.
+
+For a list of {KAFKA_PRODUCT} consumer and producer properties, see
+ifdef::PAM,DM[]
+the _Consumer configuration parameters_ and _Producer configuration parameters_ appendixes in https://access.redhat.com/documentation/en-us/red_hat_amq/{AMQ_URL_QUARTERLY}/html-single/using_amq_streams_on_rhel/index[_Using AMQ Streams on RHEL_].
+endif::PAM,DM[]
+ifdef::JBPM,DROOLS,OP[]
+the _Consumer Configs_ and _Producer Configs_ sections in https://kafka.apache.org/documentation/[the Apache Kafka documentation].
+endif::JBPM,DROOLS,OP[]
+|===
++
+. Optional: Set any of the following system properties related to receiving Kafka messages:
++
+.Optional {KIE_SERVER} system properties related to receiving Kafka messages
+[cols="35%,35%,30%", options="header"]
+|===
+|Property
+|Description
+|Default value
+
+|`org.kie.server.jbpm-kafka.ext.allow.auto.create.topics`
+|Allow automatic topic creation.
+|`true`
+
+|`org.kie.server.jbpm-kafka.ext.group.id`
+|A unique string that identifies the group to which this Kafka message consumer belongs.
+|`jbpm-consumer`.
+
+|===
++
+. Optional: Set any of the following system properties related to sending Kafka messages:
++
+.Optional {KIE_SERVER} system properties related to sending Kafka messages
++
+[cols="35%,35%,30%", options="header"]
+|===
+|Property
+|Description
+|Default value
+
+|`org.kie.server.jbpm-kafka.ext.acks`
+|The number of acknowledgements that the Kafka leader must receive before marking the request as complete.
+|`1`. This value means the leader writes the record to its local log and then responds to the {PROCESS_ENGINE}, without waiting for full acknowledgement from all followers.
+
+|`org.kie.server.jbpm-kafka.ext.max.block.ms`
+|The number of milliseconds for which the publish method blocks. After this time, the {PROCESS_ENGINE} can resume execution of the business process.
+|`2000` (2 seconds).
+
+|===

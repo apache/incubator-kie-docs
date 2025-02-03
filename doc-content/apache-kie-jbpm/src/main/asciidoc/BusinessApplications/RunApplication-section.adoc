@@ -1,0 +1,122 @@
+= Run your business application
+
+Once your business application is created, the next step is to actually run it.
+
+== Launch application
+
+By default business application has a single runnable project - that is the service project. The service project is equipped with
+two scripts (both for linux and windows)
+
+* launch.sh/launch.bat
+* launch-dev.sh/launch-dev.bat
+
+the main difference between these two scripts is the target execution
+
+* launch.sh/bat is dedicated to start application in standalone mode, without additional requirements.
+* launch-dev.sh/bat is dedicated to start application in sort of development mode (in other words managed mode) so it will require {CENTRAL} to be available as {CONTROLLER}.
+
+Development mode is meant to allow people to work on the business assets projects and dynamically deploy changes to the business application
+without the need to restart it. At the same time it provides a complete monitoring environment over business automation capabilities (process instances,
+  tasks, jobs, etc).
+
+To launch your application just go into service project (_{your business application name}-service_)
+and invoke
+
+`./launch.sh clean install` for Linux/Unix
+
+`./launch.bat clean install` for Windows
+
+the `clean install` part of the command is to tell maven how to build. It will then
+build projects in following order
+
+* Data model
+* Business assets
+* Service
+
+the first time it might take a while as it will download all dependencies of the project.
+At the end of the build it will start the application and after few seconds you should
+see output similar to following..,
+
+[source, bash]
+----
+INFO  o.k.s.s.a.KieServerAutoConfiguration     : KieServer (id business-application-service (name business-application-service)) started initialization process
+INFO  o.k.server.services.impl.KieServerImpl   : Server Default Extension has been successfully registered as server extension
+INFO  o.k.server.services.impl.KieServerImpl   : Drools KIE Server extension has been successfully registered as server extension
+INFO  o.k.server.services.impl.KieServerImpl   : DMN KIE Server extension has been successfully registered as server extension
+INFO  o.k.s.api.marshalling.MarshallerFactory  : Marshaller extensions init
+INFO  o.k.server.services.impl.KieServerImpl   : jBPM KIE Server extension has been successfully registered as server extension
+INFO  o.k.server.services.impl.KieServerImpl   : Case-Mgmt KIE Server extension has been successfully registered as server extension
+INFO  o.k.server.services.impl.KieServerImpl   : jBPM-UI KIE Server extension has been successfully registered as server extension
+INFO  o.k.s.s.impl.policy.PolicyManager        : Registered KeepLatestContainerOnlyPolicy{interval=0 ms} policy under name KeepLatestOnly
+INFO  o.k.s.s.impl.policy.PolicyManager        : Policy manager started successfully, activated policies are []
+INFO  o.k.server.services.impl.KieServerImpl   : Selected startup strategy ControllerBasedStartupStrategy - deploys kie containers given by controller ignoring locally defined
+INFO  o.k.s.services.impl.ContainerManager     : About to install containers '[]' on kie server 'KieServer{id='business-application-service'name='business-application-service'version='7.9.0.Final'location='http://localhost:8090/rest/server'}'
+INFO  o.k.server.services.impl.KieServerImpl   : KieServer business-application-service is ready to receive requests
+INFO  o.k.s.s.a.KieServerAutoConfiguration     : KieServer (id business-application-service) started successfully
+INFO  o.s.j.e.a.AnnotationMBeanExporter        : Registering beans for JMX exposure on startup
+INFO  s.b.c.e.t.TomcatEmbeddedServletContainer : Tomcat started on port(s): 8090 (http)
+INFO  c.c.b.service.Application                : Started Application in 14.534 seconds (JVM running for 15.193)
+----
+
+and you should be able to access your business application at http://localhost:8090/[http://localhost:8090/]
+
+image::BusinessApplications/business-app-start-page.png[Business application landing page]
+
+== Launch application in development mode
+
+NOTE: Development mode requires {CENTRAL} to be available, by default at http://localhost:8080/business-central.
+The easiest way to get that up and running is to use jBPM single distribution that can be downloaded at http://jbpm.org[jbpm.org]
+Look at the Getting Started guide to get yourself familiar with {CENTRAL}.
+
+Make sure you have {CENTRAL} up and running before launching your business
+application in development mode.
+
+== Import your business assets project into {CENTRAL}
+
+Business assets projects that was just created can be easily imported into {CENTRAL}
+as soon as it's a valid git repository. To make it as such
+
+* Go into business assets project - _{your business application name}-kjar_
+* Execute `git init`
+* Execute `git add -A`
+* Execute `git commit -m "Initial project structure"`
+* Log in to {CENTRAL} and go to projects
+* Select import project and enter the following URL `file:///{path to your business application}/{your business application name}-kjar`
+* Click import and confirm project to be imported
+
+=== Work on your business assets
+
+Once the business assets project is imported into {CENTRAL} you can start working on it.
+Just go to the project and add assets such as business process, rules, decision tables etc.
+
+=== Launch business application in development mode
+
+To launch your application just go into service project (_{your business application name}-service_)
+and invoke
+
+`./launch-dev.sh clean install` for Linux/Unix
+
+`./launch-dev.bat clean install` for Windows
+
+this should print the first entry after the build as follows
+
+`Launching the application in development mode - requires connection to controller ({CENTRAL})`
+
+and similar as to launching in the standalone more after couple of seconds
+should be able to access your business application at http://localhost:8090/[http://localhost:8090/]
+
+Once the application started, it should be successfully connect to {CONTROLLER} and by that
+be visible in the servers perspective of {CENTRAL}.
+
+image::BusinessApplications/exec-server-empty.png[Connected business application]
+
+=== Deploy business assets project into running business application
+
+After adding assets to your project in {CENTRAL} you can just deploy it to a running server instance.
+Click the `Deploy` button on your project and in few seconds you should see the
+project deployed on your business application.
+
+image::BusinessApplications/exec-server-deployed.png[Connected business application with deployed project]
+
+You can use Process Definitions and Process Instance perspectives of {CENTRAL}
+to interact with your newly deployed business assets such as processes or user tasks.

@@ -1,0 +1,146 @@
+[[_taskescalationsandnotifications]]
+= Task escalations and notifications
+
+There are a number of situations that can raise the need for task escalation. For example, if a user is assigned to a task, but is unavailable, the task should be automatically reassigned to another user or group.
+Escalation can be defined for tasks that are in one of the following states:
+
+* not started (READY or RESERVED)
+* not completed (IN_PROGRESS)
+
+Whenever an escalation is reached its associated users/groups will be assigned to the task as potential owners, replacing those that were previously set.
+In case the task had an actual owner assigned, it will be reset and the task will be placed in READY state.
+
+== Designing a task escalation
+You must set the following attribute values when designing a task escalation in the BPMN2 editor:
+
+image::TaskService/editor-reassignment.png[align="center"]
+
+* *Users*: Comma-separated list of user IDs that must be assigned to the task during escalation. Acceptable values are strings and expressions, such as #{user-id}.
+* *Groups*: Comma-separated list of group IDs that must be assigned to the task during escalation. Acceptable values are strings and expressions such as #{group-id}.
+* *Expires At*: Time or duration definition stating when the escalation should start. For a detailed description, see the <<_timedurationdefinitions>> section.
+* *Type*: Identifies the type of task state that the escalation should start. For example, not-started or not-completed.
+
+== Email notifications
+In addition to defining task escalation values, email notifications can be defined and sent for tasks that are in one of the following states:
+
+* not started (READY or RESERVED)
+* not completed (IN_PROGRESS)
+
+== Designing email notifications
+The following attributes must be set when designing an email notification in the BPMN2 editor:
+
+image::TaskService/editor-notification.png[align="center"]
+
+* *Type*: Identifies the type of task state that the escalation should start. For example, not-started or not-completed.
+* *Task expiration definition*: This definition states about the time or duration of escalation. For more information, see the <<_timedurationdefinitions>> section.
+* *From*: (Optional) user or group ID. Acceptable values are strings and expressions.
+* *To Users*: Comma-separated list of user IDs that are the recipients of the notification.
+* *To Groups*: Comma-separated list of group IDs that are recipients of the notification.
+* *Reply To*: (Optional) user or group ID that will receive replies from the notification.
+* *Subject*: Subject of the notification. Acceptable values are strings and expressions.
+* *Body*: Body of the notification. Acceptable values are strings and expressions.
+
+A Notification can reference process variables using the #{processVariable} expression and task variables using the ${taskVariable} expression.
+The process variables are resolved during task creation time and task variables are resolved at notification time. The following additional task variables can be defined for notifications:
+
+* *taskId*: Internal ID of a task instance
+* *processInstanceId*: Internal ID of a process instance that the task belongs to
+* *workItemId*: Internal ID of a work item that created this task
+* *owners*: List of users and groups that are potential owners of the task
+* *doc*: Map that contains regular task variables
+
+The following illustration contains the body of a simple notification message and shows how the different variables can be accessed:
+
+[source,html]
+----
+<html>
+	<body>
+		<b>${owners[0].id} you have been assigned to a task (task-id ${taskId})</b><br>
+		You can access it in your task
+		<a href="http://localhost:8080/business-central/app.html#errai_ToolSet_Tasks;Group_Tasks.3">inbox</a><br/>
+		Important technical information that can be of use when working on it<br/>
+		- process instance id - ${processInstanceId}<br/>
+		- work item id - ${workItemId}<br/>
+
+		<hr/>
+
+		Here are some task variables available
+		<ul>
+			<li>ActorId = ${doc['ActorId']}</li>
+			<li>GroupId = ${doc['GroupId']}</li>
+			<li>Comment = ${doc['Comment']}</li>
+		</ul>
+		<hr/>
+		Here are all potential owners for this task
+		<ul>
+		$foreach{orgEntity : owners}
+			<li>Potential owner = ${orgEntity.id}</li>
+		$end{}
+		</ul>
+
+		<i>Regards from jBPM team</i>
+	</body>
+</html>
+----
+
+[[_timedurationdefinitions]]
+== Time and Duration definitions
+
+IMPORTANT: With the ISO 8601 format addition, duration definition such as "2s" or "4h" became single time executions. In order to define repeatable executions you must now use the ISO 8601 repeatable format (see <<_repeatableexecution_>> below.)
+
+Use the Task expiration definition attribute for both task escalations and notifications to define when the escalation or notification will occur.
+The Task expiration definition attribute can be set in several ways: as Time period, as Date/time and as Expression.
+
+
+=== Time period
+
+In default mode the Time period widget will generate One time execution (see <<_onetimeexecution_>> below.), if needed, the
+Notification repeat switch allows to set Repeatable execution of two types: until Task state changes (like R/P1Y
+) and until Repeat count reaches (like R4/P1Y) (see <<_repeatableexecution_>> below.)
+
+
+===  Date/time
+
+Notify after task expiration can be set by choosing the date and time in dateTime picker and by choosing the timezone.
+If needed, time zone can be switched from timezone offset to time zone naming and back. It is possible to set Notification
+repeat by switching on Notification repeat like it works for Time period and it is also possible to set how often notify will fire.
+
+
+=== Expression
+
+In other cases it is possible to set Task expiration as a string value or an expression. For example, #{expiresAt}.
+The following options are available to define your escalation or notification definitions:
+
+[[_onetimeexecution_]]
+=== One time execution
+Can be defined with both time format, for example:
+
+* *2m* - in two minutes
+* *4h* - in four hours
+* *6d* - in 6 days
+
+or with ISO 8601 date and time format, for example:
+
+* *PT2M* - in two minutes
+* *PT4H* - in four hours
+* *P6D* - in six days
+
+[[_repeatableexecution_]]
+=== Repeatable execution
+When using the ISO 8601 format, you can define the rescheduling of your task escalation or notification using one of the following options that follow the ISO 8601 repeating intervals specification:
+
+* *R/duration* - First triggers at current time, plus duration and repeats at each duration time interval. For example, "R5/PT4H" triggers four hours from now and repeats five times in four hour intervals.
+"R/PT2S" is an unbounded interval and triggers every two seconds until the task is no longer in the not-started or not-completed states.
+
+* *R/startDate/duration* - First triggers at the startDate with the repeat period using the set duration.
+For example "R2/2019-01-01T13:00:00Z/PT6H" is a trigger that first fires on January 1st 2019 at 1pm and re-fires two times six and twelve hours from the first fire.
+
+* *R/duration/endDate* - First triggers at endDate - duration with the repeat period using the set duration.
+For example "R2/PT6H/2019-01-01T13:00:00Z" is a trigger that first fires on January 1st 2019 at 7am and re-fires two times six and twelve hours from the first fire.
+
+* *R/startDate/endDate* - First triggers at the startDate and the duration set at endDate - startDate.
+For example: "R2/2019-01-01T13:00:00Z/2019-01-01T16:00:00Z" is a trigger that fires on January 1st 2019 at 1pm and re-fires two times three and six hours from the first fire.
+
+IMPORTANT: You can use one unbounded or multiple bounded (non-ISO8601) definitions for each escalation or notification type (such as `not-completed` or `not-started`).
+You cannot mix unbounded and bounded notifications and escalations. For example, you cannot use R2/PT1S for a `not-completed` notification and R/PT2S for a `not-completed` escalation because both are of the `not-completed` type.
+However, you can use R2/PT1S for a `not-started` escalation and R/PT2S for a `not-completed` escalation. Whether a definition is an escalation or a notification is irrelevant, but the type distinction is important.

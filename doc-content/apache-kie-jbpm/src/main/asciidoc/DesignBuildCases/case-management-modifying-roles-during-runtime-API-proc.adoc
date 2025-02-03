@@ -1,0 +1,119 @@
+[id='case-management-modifying-roles-during-runtime-API-proc-{context}']
+= Modifying case role assignments during run time using REST API
+
+You can change case instance role assignments during case run time using the REST API or Swagger application. Roles are defined in the case definition and assigned to tasks in the case life cycle. Roles cannot change during run time because they are predefined, but you can change the actors assigned to the roles to change who is responsible for carrying out case tasks.
+
+The following procedure includes examples based on the *IT_Orders* sample project. You can use the same REST API endpoints in the Swagger application or any other REST API client, or using Curl.
+
+.Prerequisites
+* An IT Orders case instance has been started with `owner`, `manager`, and `supplier` roles already assigned to actors.
+
+.Procedure
+. Retrieve the list of current role assignments using a `GET` request on the following endpoint:
++
+`\http://localhost:8080/kie-server/services/rest/server/containers/{id}/cases/instances/{caseId}/roles`
++
+.Parameters
+[cols="40%,60%",options="header"]
+|===
+|Name| Description
+|`id` | `itorders`
+|`caseId` | `IT-0000000001`
+|===
++
+This returns the following response:
++
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<case-role-assignment-list>
+      <role-assignments>
+            <name>owner</name>
+            <users>Aimee</users>
+      </role-assignments>
+      <role-assignments>
+            <name>manager</name>
+            <users>Katy</users>
+      </role-assignments>
+      <role-assignments>
+            <name>supplier</name>
+            <groups>Lenovo</groups>
+      </role-assignments>
+</case-role-assignment-list>
+----
+. To change the user assigned to the `manager` role, you must first remove the role assignment from the user `Katy` using `DELETE`.
++
+`/server/containers/{id}/cases/instances/{caseId}/roles/{caseRoleName}`
++
+Include the following information in the Swagger client request:
++
+.Parameters
+[cols="40%,60%",options="header"]
+|===
+|Name| Description
+|`id` | `itorders`
+|`caseId` | `IT-0000000001`
+|`caseRoleName` | `manager`
+|`user` | `Katy`
+|===
++
+Click *Execute*.
+
+. Execute the `GET` request from the first step again to check that the `manager` role no longer has a user assigned:
++
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<case-role-assignment-list>
+      <role-assignments>
+            <name>owner</name>
+            <users>Aimee</users>
+      </role-assignments>
+      <role-assignments>
+            <name>manager</name>
+      </role-assignments>
+      <role-assignments>
+            <name>supplier</name>
+            <groups>Lenovo</groups>
+      </role-assignments>
+</case-role-assignment-list>
+----
++
+
+. Assign the user `Cami` to the `manager` role using a `PUT` request on the following endpoint:
++
+`/server/containers/{id}/cases/instances/{caseId}/roles/{caseRoleName}`
++
+Include the following information in the Swagger client request:
++
+.Parameters
+[cols="40%,60%",options="header"]
+|===
+|Name| Description
+|`id` | `itorders`
+|`caseId` | `IT-0000000001`
+|`caseRoleName` | `manager`
+|`user` | `Cami`
+|===
++
+Click *Execute*.
+. Execute the `GET` request from the first step again to check that the `manager` role is now assigned to `Cami`:
++
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<case-role-assignment-list>
+      <role-assignments>
+            <name>owner</name>
+            <users>Aimee</users>
+      </role-assignments>
+      <role-assignments>
+            <name>manager</name>
+            <users>Cami</users>
+      </role-assignments>
+      <role-assignments>
+            <name>supplier</name>
+            <groups>Lenovo</groups>
+      </role-assignments>
+</case-role-assignment-list>
+----

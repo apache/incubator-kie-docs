@@ -1,0 +1,34 @@
+[id='service-usertask-con_{context}']
+= User Task Service
+
+The user task service covers the complete lifecycle of an individual task, and you can use the service to manage a user task from start to end.
+
+Task queries are not a part of the user task service. Use the runtime data service to query for tasks. Use the user task service for scoped operations on one task, including the following actions:
+
+* Modification of selected properties
+* Access to task variables
+* Access to task attachments
+* Access to task comments
+
+The user task service is also a command executor. You can use it to execute custom task commands.
+
+The following example shows starting a process and interacting with a task in the process:
+
+.Starting a process and interacting with a user task in this process
+[source,java]
+----
+long processInstanceId =
+processService.startProcess(deployUnit.getIdentifier(), "org.jbpm.writedocument");
+
+List<Long> taskIds =
+runtimeDataService.getTasksByProcessInstanceId(processInstanceId);
+
+Long taskId = taskIds.get(0);
+
+userTaskService.start(taskId, "john");
+UserTaskInstanceDesc task = runtimeDataService.getTaskById(taskId);
+
+Map<String, Object> results = new HashMap<String, Object>();
+results.put("Result", "some document data");
+userTaskService.complete(taskId, "john", results);
+----

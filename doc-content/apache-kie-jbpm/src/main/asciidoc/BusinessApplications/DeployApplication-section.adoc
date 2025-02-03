@@ -1,0 +1,134 @@
+= Deploy business application
+
+Business applications are designed to run in pretty much any environment but for production
+the usual target is cloud-based runtimes that allow scalability and operational efficiency.
+
+Business application deployable components are composed of services. Every application consists of
+one or more services that are deployed in isolation and in many cases will follow different release cycle.
+
+== OpenShift deployment
+
+Business applications can be easily deployed to OpenShift Container Platform. It's as easy as starting
+the application locally, meaning by using launch.sh/bat scripts.
+
+NOTE: You need to have OpenShift installed (good choice for local installation is minishift) or remote installation
+that can be accessed over network.
+
+So first of all login to OpenShift Cluster
+
+[source, bash]
+----
+oc login -u system:admin
+----
+
+once successfully logged in following output (or similar) should be displayed
+
+[source, bash]
+----
+Logged into "https://192.168.64.2:8443" as "system:admin" using existing credentials.
+
+You have access to the following projects and can switch between them with 'oc project <projectname>':
+
+    default
+    kube-public
+    kube-system
+  * myproject
+    openshift
+    openshift-infra
+    openshift-node
+    openshift-web-console
+
+Using project "myproject".
+----
+
+To deploy your application as to OpenShift Container Platform just go into service
+project (_{your business application name}-service_) and invoke
+
+`./launch.sh clean install -Popenshift,h2` for Linux/Unix
+
+`./launch.bat clean install -Popenshift,h2` for Windows
+
+The launch script will perform the build with openshift profile (see pom.xml in the business assets project
+and service project for details). The significant difference that is done for openshift
+is that the business assets project will generate an offline maven repository with the project itself and
+all its dependencies. Next this maven repository will be included in the image itself and maven
+(used by business automation capability) will work in offline mode - meaning no access to internet will
+be attempted.
+
+[source, bash]
+----
+Launching the application on OpenShift...
+--> Found image ef440f7 (15 seconds old) in image stream "myproject/business-application-service" under tag "1.0-SNAPSHOT" for "business-application-service:1.0-SNAPSHOT"
+
+    * This image will be deployed in deployment config "business-application-service"
+    * Ports 8090/tcp, 8778/tcp, 9779/tcp will be load balanced by service "business-application-service"
+      * Other containers can access this service through the hostname "business-application-service"
+
+--> Creating resources ...
+    deploymentconfig "business-application-service" created
+    service "business-application-service" created
+--> Success
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/business-application-service'
+    Run 'oc status' to view your app.
+route "business-application-service" exposed
+----
+
+You can then go to OpenShift Web Console and look at the Overview of your project (myproject by default)
+
+image::BusinessApplications/business-app-openshift-overview.png[Business application on OpenShift]
+
+By clicking on the route url (in this case `http://business-application-service-myproject.192.168.64.2.nip.io`)
+you can go to the application already deployed and running.
+
+== Docker deployment
+
+Business applications are by default configured with option to deploy service as docker container.
+
+This is done in very similar way as launching the service locally - via launch.sh/bat script.
+
+NOTE: You must have Docker installed on your machine to make this work!
+
+To deploy your application as docker container just go into service project (_{your business application name}-service_)
+and invoke
+
+`./launch.sh clean install -Pdocker,h2` for Linux/Unix
+
+`./launch.bat clean install -Pdocker,h2` for Windows
+
+NOTE: When building with docker proper database profile needs to be selected as well - this is done via -Pdocker,{db}
+so the image and the application gets proper JDBC driver selected.
+
+The launch script will perform the build with docker profile (see pom.xml in the business assets project
+and service project for details). The significant difference that is done for docker container
+is that the business assets project will generate an offline maven repository with the project itself and
+all its dependencies. Next this maven repository will be included in the docker image itself and maven
+(used by business automation capability) will work in offline mode - meaning no access to internet will
+be attempted.
+
+Once the build is complete launch script will directly create container and start it, this should be done once
+the following line is printed to console
+
+[source, bash]
+----
+Launching the application as docker container...
+d40e4cdb662d3b1d9ddee27c5a843be31cb6e7dc4936b0fc1937ce8e48f440ae
+----
+
+the second line is the container id that can be later on used to interact with the container, for instance
+to follow the logs
+
+[source, bash]
+----
+docker logs -f d40e4cdb662d3b1d9ddee27c5a843be31cb6e7dc4936b0fc1937ce8e48f440ae
+----
+
+the business application will be accessible at the same port as configured by default that is 8090, simply
+go to http://localhost:8090[http://localhost:8090] to see your application running as docker container.
+
+== Using external database
+
+Currently business applications that require an external database need to provide the database in advance -
+before the application is launched and properly configured within the application configuration files.
+
+Further releases will improve this by relying on docker compose/OpenShift templates.

@@ -1,0 +1,119 @@
+[id='dmn-execution-business-process']
+= Invoking a Decision Model and Notation (DMN) service in a business process
+
+You can use Decision Model and Notation (DMN) to model a decision service graphically in a decision requirements diagram (DRD) in {CENTRAL} and then invoke that DMN service as part of a business process in {CENTRAL}. Business processes interact with DMN services by identifying the DMN service and mapping business data between DMN inputs and the business process properties.
+
+As an illustration, this procedure uses an example *TrainStation* project that defines train routing logic. This example project contains the following data object and DMN components designed in {CENTRAL} for the routing decision logic:
+
+.Example `Train` object
+[source,java,align="center"]
+----
+public class Train {
+
+     private String departureStation;
+
+     private String destinationStation;
+
+     private BigDecimal railNumber;
+
+     // Getters and setters
+}
+----
+
+.Example `Compute Rail` DMN model
+image::dmn/dmn-execution-graph.png[]
+
+.Example `Rail` DMN decision table
+image::dmn/dmn-execution-expression.png[]
+
+.Example `tTrain` DMN data type
+image::dmn/dmn-execution-data-type.png[]
+
+For more information about creating DMN models in {CENTRAL}, see
+ifdef::PAM[]
+{URL_DEVELOPING_DECISION_SERVICES}#assembly-dmn-models[_{DMN_MODELS}_].
+endif::[]
+ifdef::JBPM[]
+https://docs.jboss.org/drools/release/latestFinal/drools-docs/html_single/#drools.DMN[Decision Model and Notation (DMN)] in the {PRODUCT_DROOLS} documentation.
+endif::[]
+
+.Prerequisites
+* All required data objects and DMN model components are defined in the project.
+
+.Procedure
+. In {CENTRAL}, go to *Menu* -> *Design* -> *Projects* and click the project name.
+. Select or create the business process asset in which you want to invoke the DMN service.
+. In the process designer, use the left toolbar to drag and drop BPMN components as usual to define your overall business process logic, connections, events, tasks, or other elements.
+. To incorporate a DMN service in the business process, add a *Business Rule* task from the left toolbar or from the start-node options and insert the task in the relevant location in the process flow.
++
+--
+For this example, the following `Accept Train` business process incorporates the DMN service in the `Route To Rail` node:
+
+.Example `Accept Train` business process with a DMN service
+image::dmn/dmn-execution-business-process.png[]
+--
+. Select the business rule task node that you want to use for the DMN service, click *Properties* in the upper-right corner of the process designer, and under *Implementation/Execution*, define the following fields:
+* *Rule Language*: Select `DMN`.
+* *Namespace*: Enter the unique namespace from the DMN model file. Example: `\https://www.drools.org/kie-dmn`
+* *Decision Name*: Enter the name of the DMN decision node that you want to invoke in the selected process node. Example: `Rail`
+* *DMN Model Name*: Enter the DMN model name. Example: `Compute Rail`
++
+IMPORTANT: When you explore the root node, ensure that the *Namespace* and *DMN Model Name* fields consist of the same value in BPMN as DMN diagram. 
+
+. Under *Data Assignments* -> *Assignments*, click the *Edit* icon and add the DMN input and output data to define the mapping between the DMN service and the process data.
++
+--
+For the `Route To Rail` DMN service node in this example, you add an input assignment for `Train` that corresponds to the input node in the DMN model, and add an output assignment for `Rail` that corresponds to the decision node in the DMN model. The *Data Type* must match the type that you set for that node in the DMN model, and the *Source* and *Target* definition is the relevant variable or field for the specified object.
+
+.Example input and output mapping for the `Route To Rail` DMN service node
+image::dmn/dmn-execution-io-mapping.png[]
+--
+. Click *Save* to save the data input and output data.
+. Define the remainder of your business process according to how you want the completed DMN service to be handled.
++
+--
+For this example, the *Properties* -> *Implementation/Execution* -> *On Exit Action* value is set to the following code to store the rail number after the `Route To Rail` DMN service is complete:
+
+.Example code for `On Exit Action`
+[source,java]
+----
+train.setRailNumber(rail);
+----
+
+If the rail number is not computed, the process reaches a `No Appropriate Rail` end error node that is defined with the following condition expression:
+
+.Example condition for `No Appropriate Rail` end error node
+image::dmn/dmn-execution-negative-condition.png[]
+
+If the rail number is computed, the process reaches an `Accept Train` script task that is defined with the following condition expression:
+
+.Example condition for `Accept Train` script task node
+image::dmn/dmn-execution-positive-condition.png[]
+
+The `Accept Train` script task also uses the following script in *Properties* -> *Implementation/Execution* -> *Script* to print a message about the train route and current rail:
+
+[source,java]
+----
+com.myspace.trainstation.Train t =
+    (com.myspace.trainstation.Train) kcontext.getVariable("train");
+System.out.println("Train from: " + t.getDepartureStation() +
+                   ", to: " + t.getDestinationStation() +
+                   ",  is on rail: " + t.getRailNumber());
+----
+--
+. After you define your business process with the incorporated DMN service, save your process in the process designer, deploy the project, and run the corresponding process definition to invoke the DMN service.
++
+--
+For this example, when you deploy the *TrainStation* project and run the corresponding process definition, you open the process instance form for the `Accept Train` process definition and set the `departure station` and `destination station` fields to test the execution:
+
+.Example process instance form for the `Accept Train` process definition
+image::dmn/dmn-execution-process-instance-form.png[]
+
+After the process is executed, a message appears in the server log with the train route that you specified:
+
+.Example server log output for the `Accept Train` process
+[source]
+----
+Train from: Zagreb, to: Belgrade,  is on rail: 1
+----
+--

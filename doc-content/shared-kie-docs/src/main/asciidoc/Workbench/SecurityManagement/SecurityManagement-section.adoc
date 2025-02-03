@@ -1,0 +1,523 @@
+[[_wb.userandgroupmgmt]]
+= Security management
+
+This section describes how administrator users can manage the application's users, groups and permissions using an intuitive and friendly user interface in order to
+configure who can access the different resources and features available.
+
+== Basic concepts
+
+=== Introduction to {CENTRAL} users, groups and roles
+
+The {CENTRAL} security domain defines three kinds of entities: __user__, __group__ and __role__.
+
+The security entities are being registered in the domain by consuming some __realm__. The realm can be either the application server's one (Wildfly, EAP, Tomcat) or any other of the supported types, for example, using some Keycloak remote server that performs handles the target realm.
+
+On the other hand, it's important to notice that each realm provides, or potentially provides, its own capabilities, semantics or structure on the security domain. These kind of differences on the security domain results on inconsistencies between different environments when moving into the {CENTRAL} security domain. This way there exist some conventions which are important to understand - how security entities are being declared and how the platform behaves behind that complexity,
+
+The way {CENTRAL} integrates the security entities from an external realm corresponds to:
+
+* *User*
+
+A user, rather than attributes and any other kind of metadata, which can be different across domains, represents the same kind of entity in any of the supported security environments (Wildfly, EAP, Tomcat, Keycloak, etc), so the entity results in a user on {CENTRAL} as well
+
+* *Role* / *Group*
+
+Both role and group are security entities, but rather than a user, the semantics, the behaviors or the structure in the domain is not usually common across environments. As an example, consider domains which do not support both of them, or domains where the semantics for group or role differs.
+As a result, the way the application behaves and figures out if an entity should be considered a group or a role is by checking the application's Role Registry. This way an entity will be considered a role in case its identifier is present in the application's Role Registry, otherwise, the entity will be considered as a group.
+
+[NOTE]
+====
+The *Role Registry* is an application's component that provides the set of roles in the {CENTRAL} security domain. It's being populated by consuming the entities (__role-name__) declared in the __security-constraints__ section on the application's deployment descriptor (__web.xml__).
+See source file __org.uberfire.ext.security.server.RolesRegistry__.
+====
+
+[NOTE]
+====
+It means that depending on the concrete environment's configuration, some entity can be as a role, on the security environment consumed by {CENTRAL}, but it results in a group in the {CENTRAL} security domain, or vice versa. It depends on the entity's identifier by checking it it is present in the Role Registry.
+====
+
+[NOTE]
+====
+A User can be assigned to multiple roles and groups, but it is mandatory to have at least, a single role assignment for being considered valid in the {CENTRAL} security domain.
+It does not mean, for instance, that the user is able to login, or able to consume remote services, because it depends on the concrete role/s assigned and how the roles and permissions are defined the application.
+====
+
+=== Permissions
+
+A permission is basically something the user can do within the application. Usually, an action related to a specific resource. For instance:
+
+* View a page
+* Save a project
+* View a repository
+* Delete a dashboard
+
+A permission can be granted or denied and it can be global or resource specific. For instance:
+
+* Global: “Create new pages”
+* Specific: “View the home page”
+
+As you can see, a permission is a `resource + action` pair. In the concrete case of a page we have: _read_, _update_, _delete_ and _create_ as the available actions. That means that there are four possible permissions that could be granted for pages.
+
+Permissions do not necessarily need to be tied to a resource. Sometimes it is also necessary to protect access to specific features, like for instance "_generate a sales report_". That means, permissions can be used not only to protect access to resources but also to custom features within the application.
+
+=== Authorization policy
+
+The set of permissions assigned to every role and/or group is called the authorization (or security) policy. Every application contains a single security policy which is used every time the system checks a permission.
+
+The authorization policy file is stored in a file called _WEB-INF/classes/security-policy.properties_ under the application's WAR structure.
+
+
+NOTE: If no policy is defined then the authorization management features are disabled
+and the application behaves as if all the resources & features were granted by default.
+
+Here is an example of a security policy file:
+
+[source]
+--
+# Role "admin"
+role.admin.permission.perspective.read=true
+role.admin.permission.perspective.read.Dashboard=false
+
+# Role "user"
+role.user.permission.perspective.read=false
+role.user.permission.perspective.read.Home=true
+role.user.permission.perspective.read.Dashboard=true
+--
+
+Every entry defines a single permission which is assigned to a role/group. On application startup, the policy file is loaded and stored into memory.
+
+=== Security provider
+
+A security environment is usually provided by the use of a __realm__.
+Realms are used to restrict access to the different application's resources.
+So realms contains the information about the users, groups, roles, permissions and any other related information.
+
+In most typical scenarios the application's security is delegated to the container's security mechanism, which consumes a given realm at the same time.
+It's important to consider that there exist several realm implementations, for example Wildfly provides a realm based on the __application-users.properties__/__application-roles.properties__ files, Tomcat provides a realm based on the _tomcat-users.xml_ file, etc.
+So there is no single security realm to rely on, it can be different in each installation.
+
+Due to the potential different security environments that have to be supported, the security module provides a well defined API with some default built-in security providers.
+A *security provider* is the formal name given to a concrete user and group management service implementation for a given realm.
+
+The user & group management features available will depend on the security provider configured.
+If the built-in providers do not fit with the application's security realm, it is easy to build and register your own provider.
+
+
+== Installation and setup
+
+At the time of this writing, the application provides two preinstalled security providers:
+
+* *Wildfly 11 / EAP 7 distribution* - Both distributions use the https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management/uberfire-security-management-wildfly[Wildfly security provider] configured for the use of the default realm files _application-users.properties_ and _application-roles.properties_
+* *Tomcat distribution* - It uses the https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management/uberfire-security-management-tomcat[Tomcat security provider] configured for the use of the default realm file _tomcat-users.xml_
+
+Please read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] in order to apply the concrete settings for the target deployment environment.
+
+On the other hand, when either using a custom security provider or using one of the available security providers, consider the following installation options:
+
+* Enable the security management feature on an existing WAR distribution
+* Setup and installation in an existing or new project
+
+__NOTE__: If no security provider is installed, there will be no available user interface for managing the security realm.
+Once a security provider is installed and setup, the user and group management features are automatically enabled in the security management UI (see the <<Usage>> section below).
+
+=== Enabling user & group management
+
+Given an existing WAR distribution, follow these steps in order to install and enable the user & group management features:
+
+* Ensure the following libraries are present on __WEB-INF/lib__:
++
+** WEB-INF/lib/uberfire-security-management-api-?.jar
+** WEB-INF/lib/uberfire-security-management-backend-?.jar
+* Copy the security provider library to __WEB-INF/lib__:
++
+** Eg: WEB-INF/lib/uberfire-security-management-wildfly-?.jar
+** If the provider requires additional libraries, copy them as well (read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] for more information).
+* Replace the whole content of the __WEB-INF/classes/security-management.properties__ file, or if not present, create it. The settings present on this file depend on the concrete implementation used. Please read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] for more information.
+* If deploying on Wildfly or EAP, check if the __WEB-INF/jboss-deployment-structure.xml __requires any update (read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] for more information).
+
+
+=== Disabling user & group management
+
+The user & groups management features can be disabled, and thus no services or user interface will be available, by means of either:
+
+* Uninstalling the security provider from the application
++
+When no concrete security provider is installed, the user and group management features will be disabled and no services or user interface will be displayed to the user. This is the case for instance, in
+_Weblogic_ and _Websphere_ installations as there is no security provider implementation available at the time of this writing.
+* Removing or commenting the security management configuration file
++
+Removing or commenting all the lines in the configuration file located at__ WEB-INF/classes/security-management.properties__ is another way to disable the user and group management features.
+
+
+=== Upgrading an existing installation
+
+In versions prior to 7, the only way to grant access to resources like Organizational Units, Repositories or Projects was to indicate which roles were able to access a given instance. Those roles were stored in GIT as part of the instance persistent status. The CLI was the tool used to add/remove roles:
+
+* **remove-role-repo**: remove role(s) from repository
+* **add-role-org-unit**: add role(s) to organizational unit
+* **remove-role-org-unit**: remove role(s) from organizational unit
+* **add-role-project**: add role(s) to project
+* **remove-role-project**: remove role(s) from project
+
+As of version 7, the authorization policy is based on permissions. That means is no longer required to keep a list of roles per resource instance. What is required is to define proper permission entries into the active authorization policy using the security management UI (see the <<Usage>> section below).
+
+The commands above are no longer required so they have been removed. Basically, what those commands did is to set what roles were able to read a specific item.
+
+In order to guarantee backward compatibility with versions prior to 7, an automatic migration tool is bundled within the application, which converts the list of roles assigned to any organizational unit, repository or project into read permission entries of the security policy.
+
+This tool is executed when the application starts for the first time, during the security policy deployment. So existing customers, do not have to worry about it, as they will keep their security settings.
+
+== Usage
+
+The Security Management page is available under the _Home_ section in the top menu bar.
+
+.Link to the Security Management page
+image::Workbench/SecurityManagement/SecurityManagementMenuEntry.png[]
+
+The next screenshot shows how this new page looks:
+
+.Security Management Home
+image::Workbench/SecurityManagement/SecurityManagementHome.png[]
+
+This page supports:
+
+* List all the roles, groups and users available
+* Create & delete users and groups
+* Edit users, assign roles or groups, and change user properties
+* Edit both roles & groups security settings, which include:
+** The home page a user will be directed to after login
+** The permissions granted or denied to the different {CENTRAL} resources and features available
+
+All of the above together provides a complete users and groups management subsystem as well as a permission configuration UI for protecting access to specific resources or features.
+
+The next sections provide a deep insight into all these features.
+
+
+NOTE: The user and group management related features can be entirely disabled. See the previous section
+ <<Disabling user & group management>>. If that's the case then both the _Groups and _Users_ tabs will remain hidden from the user.
+
+=== User management
+
+By selecting the _Users_ tab in the left sidebar, the application shows all the users present by default on the application's security realm:
+
+image::Workbench/SecurityManagement/SecurityManagementUsersExplorer.png[]
+
+
+* *Searching for users*
+
+In addition to listing all the users, search is also allowed:
++
+When specifying the search pattern in the search box the users listed will be reduced to only those that matches the search pattern.
++
+
+image::Workbench/SecurityManagement/SecurityManagementUsersSearch.png[]
+
++
+Search patterns depend on the concrete security provider being used by the application.
+Please read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] for more information.
+
+* *Creating new users*
++
+By clicking on the "__New user +__" anchor, a form is displayed on the screen's right.
++
+
+image::Workbench/SecurityManagement/SecurityManagementNewUserForm.png[]
+
+This is a wizard like interface where the application asks for the new user name, a password as well as what roles/groups to assign.
+
+* *Editing a user*
+
+After clicking on a user in the left sidebar, the user editor is opened on the screen's right.
+
+For instance, the details screen for the _admin_ user when using the Wildfly security provider looks like the following screenshot:
+
+image::Workbench/SecurityManagement/SecurityManagementViewUser.png[]
+
+Same screen but when using the Keycloak security provider looks as:
+
+
+image::Workbench/SecurityManagement/SecurityManagementViewUserKC.png[]
+
+
+Note that when using the Keycloak provider, a new user attributes section is displayed, but it's not present when using the Wildfly provider.
+This is due to the fact that the information and actions available always depend on each provider's capabilities as explained in the
+<<Security provider capabilities>> section below.
+
+Next is the type of information handled in the user's details screen:
+
+* The user name
+* The user's attributes
+* The assigned groups
+* The assigned roles
+* The permissions granted or denied
+
+In order to **update or delete an existing user**, click the _Edit_ button present near to the user name in the user editor screen:
+
+image::Workbench/SecurityManagement/SecurityManagementEditUser.png[]
+
+Once the editor is in edit mode, different operations can be done (provided the security provider supports them):
+
+For instance, to modify the set of roles and groups assigned to the user or to change the user's password as well.
+
+* *Permissions summary*
+
+The _Permissions_ tab shows a summary of all the permissions assigned to this particular user. This is a very helpful view as it allows
+administrator users to verify if a target user has the right permission levels according to the security settings of its roles and
+groups.
+
+image::Workbench/SecurityManagement/SecurityManagementUserPermissions.png[]
+
+Further details about how to assign permissions to roles and groups are in the <<Security Settings Editor>> section below.
+
+* *Updating the user's attributes*
++
+User attributes can be added or deleted using the actions available in the attributes table:
++
+
+image::Workbench/SecurityManagement/SecurityManagementUserAttributes.png[]
+
+* *Updating assigned groups*
+
++
+From the _Groups_ tab, a group selection popup is presented when clicking on the _Add to groups_ button:
++
+
+image::Workbench/SecurityManagement/SecurityManagementGroupsSelection.png[]
+
++
+This popup screen allows the user to search and select or deselect the groups assigned to the user.
+
+* *Updating assigned roles*
++
+From the _Roles_ tab, a role selection popup is presented when clicking on _Add to roles_ button:
++
+
+image::Workbench/SecurityManagement/SecurityManagementRolesSelection.png[]
+
++
+This popup screen allows the user to search and select or deselect the roles assigned to the user.
+
+* *Changing the user's password*
++
+A change password popup screen is presented when clicking on the _Change password_ button:
++
+
+image::Workbench/SecurityManagement/SecurityManagementChangePassword.png[]
+
+* *Deleting users*
++
+The user currently being edited can be deleted from the realm by clicking on the _Delete_ button.
+
+image::Workbench/SecurityManagement/SecurityManagementDeleteUser.png[]
+
+
+==== Security provider capabilities
+
+Each security realm can provide support for different operations.
+For example, consider the use of a Wildfly's realm based on properties files. The contents for the _applications-users.properties_ is like:
+
+[source]
+----
+admin=207b6e0cc556d7084b5e2db7d822555c
+salaboy=d4af256e7007fea2e581d539e05edd1b
+maciej=3c8609f5e0c908a8c361ca633ed23844
+kris=0bfd0f47d4817f2557c91cbab38bb92d
+katy=fd37b5d0b82ce027bfad677a54fbccee
+john=afda4373c6021f3f5841cd6c0a027244
+jack=984ba30e11dda7b9ed86ba7b73d01481
+director=6b7f87a92b62bedd0a5a94c98bd83e21
+user=c5568adea472163dfc00c19c6348a665
+guest=b5d048a237bfd2874b6928e1f37ee15e
+kiewb=78541b7b451d8012223f29ba5141bcc2
+kieserver=16c6511893651c9b4b57e0c027a96075
+----
+
+Notice that it's based on key-value pairs where the key is the __username__, and the value is the hashed value for the user's __password__.
+So a user is just represented by a key and its user name, it does not have a name nor an address or any other meta information.
+
+On the other hand, consider the use of a realm provided by a Keycloak server.
+The user information is composed by more meta-data, such as the surname, address, etc, as in the following image:
+
+image::Workbench/SecurityManagement/SecurityManagementViewUserKC.png[]
+
+So the different services and client side components from the User and Group Management API are based on __capabilities__. **Capabilities** are used to expose or restrict the available functionality provided by the different services and client side components.
+Examples of capabilities are:
+
+* Create a user
+* Update a user
+* Delete a user
+* Update user's attributes
+* Create a group
+* Update a group
+* Assign groups to a user
+* Assign roles to a user
+
+Each security provider must specify a set of capabilities supported. From the previous examples, it is noted that the Wildfly security provider does not support the attributes management capability - the user is only composed by the user name. On the other hand the Keycloak provider does support this capability.
+
+The different views and user interface components rely on the capabilities supported by each provider, so if a capability is not supported by the provider in use, the UI does not
+provide the views for the management of that capability. As an example, consider that a concrete provider does not support deleting users - the delete user button on the user interface
+will not be available.
+
+Please take a look at the concrete service provider documentation to check all the supported capabilities for each one, the default ones can be found https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[here].
+
+=== Group management
+
+By selecting the _Groups_ tab in the left sidebar, the application shows all the groups present by default on the application's security realm:
+
+
+image::Workbench/SecurityManagement/SecurityManagementGroupsExplorer.png[]
+
+
+* *Searching for groups*
+
+In addition to listing all the groups, search is also allowed:
++
+When specifying the search pattern in the search box the groups listed will be reduced to only those that matches the search pattern.
++
+
+image::Workbench/SecurityManagement/SecurityManagementGroupsSearch.png[]
+
++
+Search patterns depend on the concrete security provider being used by the application.
+Please read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] for more information.
+
+* *Creating new groups*
++
+By clicking on the "_New group +_" anchor, a new screen will be presented on the center panel to perform a new group creation.
+
+image::Workbench/SecurityManagement/SecurityManagementNewGroup.png[]
+
+After typing a name anc clicking _Save_, the next step is to assign users to it:
++
+
+image::Workbench/SecurityManagement/SecurityManagementNewGroupUserSelection.png[]
+
++
+Clicking on the "_Add selected users_" button finishes the group creation.
+
+* *Modifying a group*
+
+After clicking on a group in the left sidebar, the security settings editor for the selected group instance is opened on the screen's right. Further details at the
+<<Security Settings Editor>> section.
+
+* *Deleting groups*
+
+To delete an existing group just click the _Delete_ button.
+
+
+=== Role management
+
+By selecting the _Roles_ tab in the left sidebar, the application shows all the application roles:
+
+
+image::Workbench/SecurityManagement/SecurityManagementRolesExplorer.png[]
+
+Unlike users and groups, roles can neither be created nor deleted as they come from the application's web.xml descriptor. After clicking on a role in the left sidebar, the role editor is opened on the screen’s
+right, which is exactly the same security settings editor used for groups. Further details at the <<Security Settings Editor>> section.
+
+image::Workbench/SecurityManagement/SecurityManagementEditRole.png[]
+
+
+That means both role and group based permissions can be defined. The main difference between roles and groups are:
+
+** Roles are an application defined resource. They are defined as <security-role> entries in the application's web.xml descriptor.
+
+** Groups are dynamic and can be defined at runtime. The installed security provider determines where groups instances are stored.
+
+They can be used together without any trouble. Groups are recommended though as they are a more flexible than roles.
+
+* *Searching for roles*
+
+In addition to listing all the roles, search is also allowed:
++
+When specifying the search pattern in the search box the roles listed will be reduced to only those that matches the search pattern.
++
+
+image::Workbench/SecurityManagement/SecurityManagementRolesSearch.png[]
+
++
+Search patterns depend on the concrete security provider being used by the application.
+Please read each https://github.com/kiegroup/appformer/tree/master/uberfire-extensions/uberfire-security/uberfire-security-management[provider's documentation] for more information.
+
+
+== Security Settings Editor
+
+This editor is used to set several security settings for both roles and groups.
+
+image::Workbench/SecurityManagement/SecurityManagementSecuritySettsEditor.png[]
++
+
+=== Home page
+
+This is the page where the user is directed after login. This makes it possible to have different home pages for different users, since users can be assigned to
+different roles or groups.
+
+=== Priority
+
+It is used to determine what settings (home page, permissions, ...) have precedence for those users with more than one role or group assigned.
+
+Without this setting, it won't be possible to determine what role/group should take precedence. For instance, an administrative role has higher priority than a
+non-administrative one. For users with both administrative and non-administrative roles granted, administrative privileges will always win, provided the administrative role's
+priority is greater than the other.
+
+=== Permissions
+
+Currently, {CENTRAL} support the following permission categories.
+
+** {CENTRAL}: General {CENTRAL} permissions, not tied to any specific resource type.
+
+** Pages: If access to a page is denied then it will not be shown in any of application menus. Update, Delete and Create permissions change the behaviour of the page management plugin editor.
+
+** Organizational Units: Sets who can Create, Update or Delete organizational units from the Organizational Unit section at the Administration page. Sets also what organizational units are visible in the Project Explorer at the Project Authoring page.
+
+** Repositories: Sets who can Create, Update or Delete repositories from the Repositories section at the Administration page. Sets also what repositories are visible in the Project Explorer at the Project Authoring page.
+
+** Projects: In the Project Authoring page, sets who can Create, Update, Delete or Build projects from the Project Editor screen as well as what projects are visible in the Project Explorer.
+
+For pages, organizational units, repositories and projects it is possible to define global permissions and add single instance exceptions afterwards. For instance,
+_Read_ access can be granted to all the pages and deny access just to an individual page. This is called the _grant all deny a few_ strategy.
+
+image::Workbench/SecurityManagement/SecurityManagementPerspectiveDenied.png[]
+
+The opposite, _deny all grant a few_ strategy is also supported:
+
+image::Workbench/SecurityManagement/SecurityManagementPerspectiveGranted.png[]
+
+NOTE: In the example above, the _Update_ and _Delete_ permissions are disabled as it does not make sense to define such permissions if the user is not even able to read
+pages.
+
+
+== Security Policy Storage
+
+The security policy is stored under the {CENTRAL} VFS. Most concrete, in a GIT repo called “security”.
+The ACL table is stored in a file called “security-policy.properties” under the “authz” directory. Next is an example of the entries this file contains:
+
+[source]
+--
+role.admin.home=HomePage
+role.admin.priority=0
+role.admin.permission.perspective.read=true
+role.admin.permission.perspective.create=true
+role.admin.permission.perspective.delete=true
+role.admin.permission.perspective.update=true
+--
+
+Every time the ACL is modified from the security settings UI, the changes are stored in the GIT repo.
+
+Initially, when the application is deployed for the first time there is no security policy stored in GIT. However, the application might need to set-up a default policy with the different access profiles for each of the application roles.
+
+In order to support default policies the system allows for declaring a security policy as part of the webapp’s content. This can be done just by placing a security-policy.properties file under the webapp’s resource classpath (the WEB-INF/classes directory
+inside the WAR archive is a valid one). On app start-up the following steps are executed:
+
+* Check if an active policy is already stored in GIT
+* If not, then check if a policy has been defined under the webapp’s classpath
+* If found, such a policy is stored under GIT
+
+The above is an auto-deploy mechanism which is used in {CENTRAL} to set-up its default security policy.
+
+One slight variation of the deployment process is the ability to split the “security-policy.properties” file into small pieces so that it is possible, for example, to define one file
+per role. The split files must start by the “security-module-” prefix, for instance: “security-module-admin.properties”. The deployment mechanism will read and deploy both the
+"security-policy.properties" and all the optional “security-module-?.properties” found on the classpath.
+
+Notice, despite using the split approach, the “security-policy.properties” must always be present as it is used as a marker file by the security subsystem in order to locate the other policy files.
+This split mechanism allows for a better organization of the whole security policy.

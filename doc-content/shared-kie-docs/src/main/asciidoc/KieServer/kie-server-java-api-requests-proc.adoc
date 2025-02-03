@@ -1,0 +1,231 @@
+[id='kie-server-java-api-requests-proc_{context}']
+= Sending requests with the {KIE_SERVER} Java client API
+
+The {KIE_SERVER} Java client API enables you to connect to {KIE_SERVER} using REST protocol from your Java client application. You can use the {KIE_SERVER} Java client API as an alternative to the {KIE_SERVER} REST API to interact with your KIE containers and business assets (such as business rules, processes, and solvers) in {PRODUCT} without using the {CENTRAL} user interface.
+
+.Prerequisites
+* {KIE_SERVER} is installed and running.
+* You have `kie-server` user role access to {KIE_SERVER}.
+* You have a Java project with {PRODUCT} resources.
+
+.Procedure
+. In your client application, ensure that the following dependencies have been added to the relevant classpath of your Java project:
++
+[source,xml,subs="attributes+"]
+----
+<!-- For remote execution on {KIE_SERVER} -->
+<dependency>
+  <groupId>org.kie.server</groupId>
+  <artifactId>kie-server-client</artifactId>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- For runtime commands -->
+<dependency>
+  <groupId>org.drools</groupId>
+  <artifactId>drools-compiler</artifactId>
+  <scope>runtime</scope>
+  <version>${{PRODUCT_INIT}.version}</version>
+</dependency>
+
+<!-- For debug logging (optional) -->
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+----
+ifdef::DM,PAM[]
+. Download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/droolsjbpm-integration-$VERSION/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client` to access the {KIE_SERVER} Java clients.
+endif::[]
+. In the `~/kie/server/client` folder
+ifdef::DROOLS,JBPM,OP[]
+of the Java client API in https://github.com/kiegroup/droolsjbpm-integration/tree/main/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client[GitHub]
+endif::[]
+, identify the relevant Java client for the request you want to send, such as `KieServicesClient` to access client services for KIE containers and other assets in {KIE_SERVER}.
+. In your client application, create a `.java` class for the API request. The class must contain the necessary imports, {KIE_SERVER} location and user credentials, a `KieServicesClient` object, and the client method to execute, such as `createContainer` and `disposeContainer` from the `KieServicesClient` client. Adjust any configuration details according to your use case.
++
+--
+.Creating and disposing a container
+[source,java]
+----
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+import org.kie.server.api.model.KieContainerResource;
+import org.kie.server.api.model.ServiceResponse;
+
+public class MyConfigurationObject {
+
+  private static final String URL = "http://localhost:8080/kie-server/services/rest/server";
+  private static final String USER = "baAdmin";
+  private static final String PASSWORD = "password@1";
+
+  private static final MarshallingFormat FORMAT = MarshallingFormat.JSON;
+
+  private static KieServicesConfiguration conf;
+  private static KieServicesClient kieServicesClient;
+
+  public static void initialize() {
+    conf = KieServicesFactory.newRestConfiguration(URL, USER, PASSWORD);
+
+  public void disposeAndCreateContainer() {
+      System.out.println("== Disposing and creating containers ==");
+
+      // Retrieve list of KIE containers
+      List<KieContainerResource> kieContainers = kieServicesClient.listContainers().getResult().getContainers();
+      if (kieContainers.size() == 0) {
+          System.out.println("No containers available...");
+          return;
+      }
+
+      // Dispose KIE container
+      KieContainerResource container = kieContainers.get(0);
+      String containerId = container.getContainerId();
+      ServiceResponse<Void> responseDispose = kieServicesClient.disposeContainer(containerId);
+      if (responseDispose.getType() == ResponseType.FAILURE) {
+          System.out.println("Error disposing " + containerId + ". Message: ");
+          System.out.println(responseDispose.getMsg());
+          return;
+      }
+      System.out.println("Success Disposing container " + containerId);
+      System.out.println("Trying to recreate the container...");
+
+      // Re-create KIE container
+      ServiceResponse<KieContainerResource> createResponse = kieServicesClient.createContainer(containerId, container);
+      if(createResponse.getType() == ResponseType.FAILURE) {
+          System.out.println("Error creating " + containerId + ". Message: ");
+          System.out.println(responseDispose.getMsg());
+          return;
+      }
+      System.out.println("Container recreated with success!");
+      }
+  }
+}
+----
+
+You define service responses using the `org.kie.server.api.model.ServiceResponse<T>` object, where `T` represents the type of returned response. The `ServiceResponse` object has the following attributes:
+
+* `String _message_`: Returns the response message
+* `ResponseType _type_`: Returns either `SUCCESS` or `FAILURE`
+* `T _result_`: Returns the requested object
+
+In this example, when you dispose a container, the `ServiceResponse` returns a `Void` response. When you create a container, the `ServiceResponse` returns a `KieContainerResource` object.
+
+NOTE: A conversation between a client and a specific {KIE_SERVER} container in a clustered environment is secured by a unique `conversationID`. The `conversationID`  is transferred using the `X-KIE-ConversationId` REST header. If you update the container, unset the previous `conversationID`.  Use `KieServiesClient.completeConversation()` to unset the `conversationID` for Java API.
+
+--
+
+. Run the configured `.java` class from your project directory to execute the request, and review the {KIE_SERVER} response.
++
+--
+If you enabled debug logging, {KIE_SERVER} responds with a detailed response according to your configured marshalling format, such as JSON.
+
+Example server response for a new KIE container (log):
+
+[source]
+----
+10:23:35.194 [main] INFO  o.k.s.a.m.MarshallerFactory - Marshaller extensions init
+10:23:35.396 [main] DEBUG o.k.s.client.balancer.LoadBalancer - Load balancer RoundRobinBalancerStrategy{availableEndpoints=[http://localhost:8080/kie-server/services/rest/server]} selected url 'http://localhost:8080/kie-server/services/rest/server'
+10:23:35.398 [main] DEBUG o.k.s.c.i.AbstractKieServicesClientImpl - About to send GET request to 'http://localhost:8080/kie-server/services/rest/server'
+10:23:35.440 [main] DEBUG o.k.s.c.i.AbstractKieServicesClientImpl - About to deserialize content:
+ '{
+  "type" : "SUCCESS",
+  "msg" : "Kie Server info",
+  "result" : {
+    "kie-server-info" : {
+      "id" : "default-kieserver",
+      "version" : "7.11.0.Final-redhat-00003",
+      "name" : "default-kieserver",
+      "location" : "http://localhost:8080/kie-server/services/rest/server",
+      "capabilities" : [ "KieServer", "BRM", "BPM", "CaseMgmt", "BPM-UI", "BRP", "DMN", "Swagger" ],
+      "messages" : [ {
+        "severity" : "INFO",
+        "timestamp" : {
+  "java.util.Date" : 1540814906533
+},
+        "content" : [ "Server KieServerInfo{serverId='default-kieserver', version='7.11.0.Final-redhat-00003', name='default-kieserver', location='http://localhost:8080/kie-server/services/rest/server', capabilities=[KieServer, BRM, BPM, CaseMgmt, BPM-UI, BRP, DMN, Swagger], messages=null}started successfully at Mon Oct 29 08:08:26 EDT 2018" ]
+      } ]
+    }
+  }
+}'
+ into type: 'class org.kie.server.api.model.ServiceResponse'
+10:23:35.653 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - KieServicesClient connected to: default-kieserver version 7.11.0.Final-redhat-00003
+10:23:35.653 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Supported capabilities by the server: [KieServer, BRM, BPM, CaseMgmt, BPM-UI, BRP, DMN, Swagger]
+10:23:35.653 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability KieServer
+10:23:35.653 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - No builder found for 'KieServer' capability
+10:23:35.654 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability BRM
+10:23:35.654 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Builder 'org.kie.server.client.helper.DroolsServicesClientBuilder@6b927fb' for capability 'BRM'
+10:23:35.655 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Capability implemented by {interface org.kie.server.client.RuleServicesClient=org.kie.server.client.impl.RuleServicesClientImpl@4a94ee4}
+10:23:35.655 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability BPM
+10:23:35.656 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Builder 'org.kie.server.client.helper.JBPMServicesClientBuilder@4cc451f2' for capability 'BPM'
+10:23:35.672 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Capability implemented by {interface org.kie.server.client.JobServicesClient=org.kie.server.client.impl.JobServicesClientImpl@1189dd52, interface org.kie.server.client.admin.ProcessAdminServicesClient=org.kie.server.client.admin.impl.ProcessAdminServicesClientImpl@36bc55de, interface org.kie.server.client.DocumentServicesClient=org.kie.server.client.impl.DocumentServicesClientImpl@564fabc8, interface org.kie.server.client.admin.UserTaskAdminServicesClient=org.kie.server.client.admin.impl.UserTaskAdminServicesClientImpl@16d04d3d, interface org.kie.server.client.QueryServicesClient=org.kie.server.client.impl.QueryServicesClientImpl@49ec71f8, interface org.kie.server.client.ProcessServicesClient=org.kie.server.client.impl.ProcessServicesClientImpl@1d2adfbe, interface org.kie.server.client.UserTaskServicesClient=org.kie.server.client.impl.UserTaskServicesClientImpl@36902638}
+10:23:35.672 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability CaseMgmt
+10:23:35.672 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Builder 'org.kie.server.client.helper.CaseServicesClientBuilder@223d2c72' for capability 'CaseMgmt'
+10:23:35.676 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Capability implemented by {interface org.kie.server.client.admin.CaseAdminServicesClient=org.kie.server.client.admin.impl.CaseAdminServicesClientImpl@2b662a77, interface org.kie.server.client.CaseServicesClient=org.kie.server.client.impl.CaseServicesClientImpl@7f0eb4b4}
+10:23:35.676 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability BPM-UI
+10:23:35.676 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Builder 'org.kie.server.client.helper.JBPMUIServicesClientBuilder@5c33f1a9' for capability 'BPM-UI'
+10:23:35.677 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Capability implemented by {interface org.kie.server.client.UIServicesClient=org.kie.server.client.impl.UIServicesClientImpl@223191a6}
+10:23:35.678 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability BRP
+10:23:35.678 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Builder 'org.kie.server.client.helper.OptaplannerServicesClientBuilder@49139829' for capability 'BRP'
+10:23:35.679 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Capability implemented by {interface org.kie.server.client.SolverServicesClient=org.kie.server.client.impl.SolverServicesClientImpl@77fbd92c}
+10:23:35.679 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability DMN
+10:23:35.679 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Builder 'org.kie.server.client.helper.DMNServicesClientBuilder@67c27493' for capability 'DMN'
+10:23:35.680 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Capability implemented by {interface org.kie.server.client.DMNServicesClient=org.kie.server.client.impl.DMNServicesClientImpl@35e2d654}
+10:23:35.680 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - Building services client for server capability Swagger
+10:23:35.680 [main] DEBUG o.k.s.c.impl.KieServicesClientImpl - No builder found for 'Swagger' capability
+10:23:35.681 [main] DEBUG o.k.s.client.balancer.LoadBalancer - Load balancer RoundRobinBalancerStrategy{availableEndpoints=[http://localhost:8080/kie-server/services/rest/server]} selected url 'http://localhost:8080/kie-server/services/rest/server'
+10:23:35.701 [main] DEBUG o.k.s.c.i.AbstractKieServicesClientImpl - About to send PUT request to 'http://localhost:8080/kie-server/services/rest/server/containers/employee-rostering3' with payload '{
+  "container-id" : null,
+  "release-id" : {
+    "group-id" : "employeerostering",
+    "artifact-id" : "employeerostering",
+    "version" : "1.0.0-SNAPSHOT"
+  },
+  "resolved-release-id" : null,
+  "status" : null,
+  "scanner" : null,
+  "config-items" : [ ],
+  "messages" : [ ],
+  "container-alias" : null
+}'
+10:23:38.071 [main] DEBUG o.k.s.c.i.AbstractKieServicesClientImpl - About to deserialize content:
+ '{
+  "type" : "SUCCESS",
+  "msg" : "Container employee-rostering3 successfully deployed with module employeerostering:employeerostering:1.0.0-SNAPSHOT.",
+  "result" : {
+    "kie-container" : {
+      "container-id" : "employee-rostering3",
+      "release-id" : {
+        "group-id" : "employeerostering",
+        "artifact-id" : "employeerostering",
+        "version" : "1.0.0-SNAPSHOT"
+      },
+      "resolved-release-id" : {
+        "group-id" : "employeerostering",
+        "artifact-id" : "employeerostering",
+        "version" : "1.0.0-SNAPSHOT"
+      },
+      "status" : "STARTED",
+      "scanner" : {
+        "status" : "DISPOSED",
+        "poll-interval" : null
+      },
+      "config-items" : [ ],
+      "messages" : [ {
+        "severity" : "INFO",
+        "timestamp" : {
+  "java.util.Date" : 1540909418069
+},
+        "content" : [ "Container employee-rostering3 successfully created with module employeerostering:employeerostering:1.0.0-SNAPSHOT." ]
+      } ],
+      "container-alias" : null
+    }
+  }
+}'
+ into type: 'class org.kie.server.api.model.ServiceResponse'
+----
+
+If you encounter request errors, review the returned error code messages and adjust your Java configurations accordingly.
+--

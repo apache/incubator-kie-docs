@@ -1,0 +1,144 @@
+[id='prometheus-monitoring-ocp-proc_{context}']
+
+= Configuring Prometheus metrics monitoring for {KIE_SERVER} on {OPENSHIFT}
+
+You can configure your {KIE_SERVER} deployment on {OPENSHIFT} to use Prometheus to collect and store metrics related to your business asset activity in {PRODUCT}. For the list of available metrics that {KIE_SERVER} exposes with Prometheus,
+ifdef::DM,PAM[]
+download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/droolsjbpm-integration-$VERSION/kie-server-parent/kie-server-services/kie-server-services-prometheus/src/main/java/org/kie/server/services/prometheus`.
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+see the https://github.com/kiegroup/droolsjbpm-integration/tree/main/kie-server-parent/kie-server-services/kie-server-services-prometheus[{KIE_SERVER} Prometheus Extension] page in GitHub.
+endif::[]
+
+.Prerequisites
+* {KIE_SERVER} is installed and deployed on {OPENSHIFT}. For more information about {KIE_SERVER} on OpenShift, see the relevant OpenShift deployment option in the https://access.redhat.com/documentation/en-us/{URL_COMPONENT_PRODUCT}/{ENTERPRISE_VERSION}/[Product documentation for {PRODUCT} {PRODUCT_VERSION}].
+* You have `kie-server` user role access to {KIE_SERVER}.
+* Prometheus Operator is installed. For information about downloading and using Prometheus Operator, see the https://github.com/coreos/prometheus-operator[Prometheus Operator] project in GitHub.
+
+.Procedure
+. In the `DeploymentConfig` object of your {KIE_SERVER} deployment on OpenShift, set the `PROMETHEUS_SERVER_EXT_DISABLED` environment variable to `false` to enable the Prometheus extension. You can set this variable in the OpenShift web console or use the `oc` command in a command terminal:
++
+--
+[source]
+----
+oc set env dc/<dc_name> PROMETHEUS_SERVER_EXT_DISABLED=false -n <namespace>
+----
+
+If you have not yet deployed your {KIE_SERVER} on OpenShift, then in the OpenShift template that you plan to use for your OpenShift deployment (for example, `{PRODUCT_INIT}{ENTERPRISE_VERSION_SHORT}-prod-immutable-kieserver.yaml`), you can set the `PROMETHEUS_SERVER_EXT_DISABLED` template parameter to `false` to enable the Prometheus extension.
+
+If you are using the OpenShift Operator to deploy {KIE_SERVER} on OpenShift, then in your {KIE_SERVER} configuration, set the `PROMETHEUS_SERVER_EXT_DISABLED` environment variable to `false` to enable the Prometheus extension:
+
+[source,yaml]
+----
+apiVersion: app.kiegroup.org/v1
+kind: KieApp
+metadata:
+  name: enable-prometheus
+spec:
+  environment: rhpam-trial
+  objects:
+    servers:
+    - env:
+      - name: PROMETHEUS_SERVER_EXT_DISABLED
+        value: "false"
+----
+--
+
+. Create a `service-metrics.yaml` file to add a service that exposes the metrics from {KIE_SERVER} to Prometheus:
++
+[source,yaml,subs="attributes+"]
+----
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    description: {PRODUCT_INIT_CAP} Prometheus metrics exposed
+  labels:
+    app: myapp-kieserver
+    application: myapp-kieserver
+    template: myapp-kieserver
+    metrics: {PRODUCT_INIT}
+  name: {PRODUCT_INIT}-app-metrics
+spec:
+  ports:
+    - name: web
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    deploymentConfig: myapp-kieserver
+  sessionAffinity: None
+  type: ClusterIP
+----
+. In a command terminal, use the `oc` command to apply the `service-metrics.yaml` file to your OpenShift deployment:
++
+[source,yaml]
+----
+oc apply -f service-metrics.yaml
+----
+. Create an OpenShift secret, such as `metrics-secret`, to access the Prometheus metrics on {KIE_SERVER}. The secret must contain the "username" and "password" elements with {KIE_SERVER} user credentials. For information about OpenShift secrets, see the https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html/developer_guide/dev-guide-secrets[Secrets] chapter in the OpenShift _Developer Guide_.
+. Create a `service-monitor.yaml` file that defines the `ServiceMonitor` object. A service monitor enables Prometheus to connect to the {KIE_SERVER} metrics service.
++
+[source,yaml,subs="attributes+"]
+----
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {PRODUCT_INIT}-service-monitor
+  labels:
+    team: frontend
+spec:
+  selector:
+    matchLabels:
+      metrics: {PRODUCT_INIT}
+  endpoints:
+    - port: web
+      path: /services/rest/metrics
+      basicAuth:
+        password:
+          name: metrics-secret
+          key: password
+        username:
+          name: metrics-secret
+          key: username
+----
+
+. In a command terminal, use the `oc` command to apply the `service-monitor.yaml` file to your OpenShift deployment:
++
+[source,yaml]
+----
+oc apply -f service-monitor.yaml
+----
++
+--
+After you complete these configurations, Prometheus begins collecting metrics and {KIE_SERVER} publishes the metrics to the REST API endpoint `\http://HOST:PORT/kie-server/services/rest/metrics`.
+
+You can interact with your collected metrics in the Prometheus expression browser at `\http://HOST:PORT/graph`, or integrate your Prometheus data source with a data-graphing tool such as Grafana.
+
+The host and port for the Prometheus expression browser location `\http://HOST:PORT/graph` was defined in the route where you exposed the Prometheus web console when you installed the Prometheus Operator. For information about OpenShift routes, see the https://access.redhat.com/documentation/en-us/openshift_container_platform/3.11/html/architecture/networking#architecture-core-concepts-routes[Routes] chapter in the OpenShift _Architecture_ documentation.
+
+.Prometheus expression browser with {KIE_SERVER} metrics
+image::KieServer/prometheus-expression-browser-data.png[]
+
+.Prometheus expression browser with {KIE_SERVER} target
+image::KieServer/prometheus-expression-browser-targets-ocp.png[]
+
+.Grafana dashboard with {KIE_SERVER} metrics for DMN models
+image::KieServer/prometheus-grafana-data-dmn.png[]
+
+.Grafana dashboard with {KIE_SERVER} metrics for solvers
+image::KieServer/prometheus-grafana-data-optimizer.png[]
+
+ifdef::PAM,JBPM[]
+.Grafana dashboard with {KIE_SERVER} metrics for processes, cases, and tasks
+image::KieServer/prometheus-grafana-data-jbpm.png[]
+endif::[]
+--
+
+.Additional resources
+* https://github.com/coreos/prometheus-operator[Prometheus Operator]
+* https://github.com/coreos/prometheus-operator/blob/master/Documentation/user-guides/getting-started.md[Getting started with the Prometheus Operator]
+* https://github.com/coreos/prometheus-operator/blob/master/Documentation/rbac.md[Prometheus RBAC]
+* https://prometheus.io/docs/visualization/grafana/[Grafana Support for Prometheus]
+* https://grafana.com/docs/features/datasources/prometheus/[Using Prometheus in Grafana]
+* OpenShift deployment options in https://access.redhat.com/documentation/en-us/{URL_COMPONENT_PRODUCT}/{ENTERPRISE_VERSION}/[Product documentation for {PRODUCT} {PRODUCT_VERSION}]

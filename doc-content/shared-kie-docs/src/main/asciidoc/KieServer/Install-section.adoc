@@ -1,0 +1,97 @@
+= Installing the KIE Server
+
+The KIE Server is distributed as a web application archive (WAR) file.
+The WAR file comes in three different packagings:
+
+* _webc_ - WAR for ordinary Web (Servlet) containers like Tomcat
+* _ee6_ - WAR for JavaEE 6 containers like JBoss EAP 6.x
+* _ee7_ - WAR for JavaEE 7 containers like WildFly 11.x
+
+To install the KIE Execution Server and verify it is running, complete the following steps:
+
+. Deploy the WAR file into your web container.
+. Create a user with the role of `kie-server` on the container.
+. Test that you can access {KIE_SERVER} by navigating to the endpoint in a browser window: ``http://SERVER:PORT/CONTEXT/services/rest/server/``.
+. When prompted for user name/password, type in the user name and password that you created in step 2.
+. Once authenticated, you will see an XML response in the form of {KIE_SERVER} status, similar to this:
++
+
+.Sample handshaking server response
+====
+[source,xml,subs="verbatim,attributes"]
+----
+<response type="SUCCESS" msg="KIE Server info">
+  <kie-server-info>
+    <version>{revnumber}</version>
+  </kie-server-info>
+</response>
+----
+====
+
+== Installation details for different containers
+
+=== Tomcat 7.x/8.x
+
+. Download and unzip the Tomcat distribution. Let's call the root of the distribution ``TOMCAT_HOME``. This directory is named after the Tomcat version, so for example ``apache-tomcat-7.0.55``.
+. Download _kie-server- -webc.war_ and place it into ``TOMCAT_HOME/webapps``.
+. Configure user(s) and role(s). Make sure that file `TOMCAT_HOME/conf/tomcat-users.xml` contains the following user name and role definition. You can of course choose different user name and password, just make sure that the user has role ``kie-server``:
++
+
+.User name and role definition for Tomcat
+====
+[source,xml]
+----
+<role rolename="kie-server"/>
+<user username="serveruser" password="my.s3cr3t.pass" roles="kie-server"/>
+----
+====
+. Start the server by running ``TOMCAT_HOME/bin/startup.[sh|bat]``. You can check out the Tomcat logs in `TOMCAT_HOME/logs` to see if the application deployed successfully. Please read the table above for the bootstrap switches that can be used to properly configure the instance. For instance:
++
+[source]
+----
+./startup.sh -Dorg.kie.server.id=first-kie-server
+             -Dorg.kie.server.location=http://localhost:8080/kie-server/services/rest/server
+----
+. Verify the server is running. Go to `http://SERVER:PORT/CONTEXT/services/rest/server/` and type the specified user name and password. You should see simple XML message with basic information about the server.
+
+
+[IMPORTANT]
+====
+You can not leverage the JMS interface when running with Tomcat, or any other Web
+container. The Web container version of the WAR contains only the REST interface.
+====
+
+=== WildFly 11.x
+
+
+
+. Download and unzip the WildFly distribution. Let's call the root of the distribution ``WILDFLY_HOME``. This directory is named after the WildFly version, so for example ``wildfly-14.0.1.Final``.
+. Download _kie-server- -ee7.war_ and place it into ``WILDFLY_HOME/standalone/deployments``.
+. Configure users and roles by executing the following command:
+[source,sh]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity='kieserver'),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity='kieserver', clear={password='kieserver1!'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity='kieserver', name=role, value=['kie-server'])"
+----
+You can choose a different user name and password, just make sure that the user has role ``kie-server``.
+. Start the server by running ``WILDFLY_HOME/bin/standalone.[sh|bat] -c standalone-full.xml <bootstrap_switches>``. You can check out the standard output or WildFly logs in `WILDFLY_HOME/standalone/logs` to see if the application deployed successfully. Please read the table above for the bootstrap switches that can be used to properly configure the instance. For instance:
++
+[source]
+----
+./standalone.sh  --server-config=standalone-full.xml
+                 -Djboss.socket.binding.port-offset=150
+                 -Dorg.kie.server.id=first-kie-server
+                 -Dorg.kie.server.location=http://localhost:8230/kie-server/services/rest/server
+----
+. Verify the server is running. Go to `http://SERVER:PORT/CONTEXT/services/rest/server/` and type the specified user name and password. You should see simple XML message with basic information about the server.
++
+image::KieServer/kie-server-info.png[]
+
+include::kie-server-system-properties-ref.adoc[]
+
+include::kie-server-extensions-con.adoc[]
+
+include::kie-server-extensions-endpoint-proc.adoc[leveloffset=+1]
+
+include::kie-server-extensions-transport-proc.adoc[leveloffset=+1]
+
+include::kie-server-extensions-client-proc.adoc[leveloffset=+1]

@@ -1,0 +1,108 @@
+
+= Kie Server setup
+
+[IMPORTANT]
+====
+Server setup and registration changed significantly from versions 6.2 and before.
+The following applies only to version 6.3 and forward.
+====
+
+== Managed Kie Server
+
+
+A managed instance is one that requires a {CONTROLLER} to be available to properly start up the Kie Server instance.
+
+The {CONTROLLER} is a component responsible for keeping and managing a Kie Server Configuration in centralized way.
+Each {CONTROLLER} can manage multiple configurations at once and there can be multiple {CONTROLLER}s in the environment.
+Managed KIE Servers can be configured with a list of {CONTROLLER}s but will connect to only one at a time.
+
+
+
+[NOTE]
+====
+It's important to mention that even though there can be multiple
+{CONTROLLER}s they should be kept in sync to make sure that regardless
+which one of them is contacted by KIE Server instance it will provide
+same set of configuration.
+====
+
+At startup, if a Kie Server is configured with a list of {CONTROLLER}s, it will try successively to connect to each of them until a connection is successfully established with one of them.
+If for any reason a connection can't be established, the server will not start, even if there is local storage available with configuration.
+This happens by design in order to ensure consistency.
+For instance, if the Kie  Server was down and the configuration has changed, this restriction guarantees that it will run with up to date configuration or not at all.
+
+
+
+[NOTE]
+====
+In order to run the Kie Server in standalone mode, without connecting to
+any {CONTROLLER}s, please see "Unmanaged Kie Server".
+====
+
+The configuration sets, among other things:
+
+* kie containers to be deployed and started
+* configuration items - currently this is a placeholder for further enhancements that will allow remotely configure KIE Execution Server components - timers, persistence, etc
+
+The {CONTROLLER}, besides providing configuration management, is also responsible for overall management of Kie Servers.
+It provides a REST api that is divided into two parts:
+
+* the {CONTROLLER} itself that is exposed to interact with KIE Execution Server instances
+* an administration API that allows to remotely manage Kie Server instances:
++
+** add/remove servers
+** add/remove containers to/from the servers
+** start/stop containers on servers
+
+The {CONTROLLER} deals only with the Kie Server configuration or definition to put it differently.
+It does not handle any runtime components of KIE Execution Server instances.
+They are always considered remote to {CONTROLLER}.
+The {CONTROLLER} is responsible for persisting the configuration to preserve restarts of the {CONTROLLER} itself.
+It should manage the synchronization as well in case multiple {CONTROLLER}s are configured to keep all definitions up to date on all instances of the {CONTROLLER}.
+
+By default {CONTROLLER} is shipped with {CENTRAL} and provides a fully featured management interface (both REST api and UI). It uses underlying git repository as persistent store and thus when GIT repositories are clustered (using Apache Zookeeper and Apache Helix) it will cover the {CONTROLLER}s synchronization as well.
+
+image::KieServer/kie-server-simple-architecture.png[]
+
+The diagram above illustrates the single {CONTROLLER} ({CENTRAL}) setup with multiple Kie Server instances managed by it.
+
+The diagram below illustrates the clustered setup where there are multiple instances of {CONTROLLER} synchronized over Zookeeper.
+
+image::KieServer/kie-server-architecture.png[]
+
+In the above diagram we can see that the Kie Server instances are capable of connecting to any {CONTROLLER}s, but they will connect to only one.
+Each instance will attempt to connect to {CONTROLLER} as long as it can reach one.
+Once connection is established with one of the {CONTROLLER}s it will skip the others.
+
+=== Working with managed servers
+
+
+There are two approaches that users can take when working with managed KIE Server instances:
+
+* __Configuration first: __with this approach, a user will start working with the {CONTROLLER} (either UI or REST api) and create and configure Kie Server definitions. That consists basically of an identification for the server definition (id and name + optionally version for improved readability) and the configuration for the Kie Containers to run on the server.
+* _Registration first:_ with this approach, the Kie Server instances are started first and auto register themselves on {CONTROLLER}. The user then can configure the Kie Containers. This option simply skips the registration step done in the first approach and populates it with server id, name and version directly upon auto registration. There are no other differences between the two approaches.
+
+
+== Unmanaged KIE Execution Server
+
+
+An unmanaged Kie Server is in turn just a standalone instance, and thus must be configured individually using REST/JMS api from the Kie Server itself.
+There is no {CONTROLLER} involved.
+The configuration is automatically persisted by the server into a file and that is used as the internal server state, in case of restarts.
+
+The configuration is updated during the following operations:
+
+* deploy Kie Container
+* undeploy Kie Container
+* start Kie Container
+* stop Kie Container
+
+
+[NOTE]
+====
+If the Kie Server is restarted, it will try to establish the same state
+that was persisted before shutdown. That means that Kie Containers that were
+running, will be started, but the ones that were stopped/disposed before, will not.
+====
+
+In most use cases, the Kie Server should be executed in managed mode as that provides some benefits, like a web user interface (if using {CENTRAL} as a {CONTROLLER}) and some facilities for clustering.

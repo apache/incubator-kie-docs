@@ -1,0 +1,157 @@
+[id="proc-standalone-editors_{context}"]
+= Configuring the {PRODUCT} standalone editors
+
+{PRODUCT} provides standalone editors that are distributed in a self-contained library providing an all-in-one JavaScript file for each editor. The JavaScript file uses a comprehensive API to set and control the editor.
+
+You can install the standalone editors using the following methods:
+
+ifdef::DROOLS,JBPM,OP[]
+* Use hosted JavaScript files directly
+endif::[]
+* Download each JavaScript file manually
+* Use the NPM package
+
+.Procedure
+. Install the standalone editors using one of the following methods:
++
+--
+ifdef::DROOLS,JBPM,OP[]
+*Use hosted JavaScript files directly*: For this method, add the following `<script>` tags to your HTML page:
+
+.Script tags for your HTML page
+[source]
+----
+<script src="https://<YOUR_PAGE>/dmn/index.js"></script>
+<script src="https://<YOUR_PAGE>/bpmn/index.js"></script>
+----
+endif::[]
+
+*Download each JavaScript file manually*: For this method, follow these steps:
+
+.. Download the JavaScript files.
+.. Add the downloaded Javascript files to your hosted application.
+.. Add the following `<script>` tag to your HTML page:
++
+.Script tag for your HTML page for the DMN editor
+[source]
+----
+<script src="https://<YOUR_PAGE>/dmn/index.js"></script>
+----
++
+.Script tag for your HTML page for the BPMN editor
+[source]
+----
+<script src="https://<YOUR_PAGE>/bpmn/index.js"></script>
+----
+
+*Use the NPM package*: For this method, follow these steps:
+
+.. Add the NPM package to your `package.json` file:
++
+.Adding the NPM package
+[source]
+----
+npm install @kie-tools/kie-editors-standalone
+----
+.. Import each editor library to your `TypeScript` file:
++
+.Importing each editor
+[source]
+----
+import * as DmnEditor from "@kie-tools/kie-editors-standalone/dist/dmn"
+import * as BpmnEditor from "@kie-tools/kie-editors-standalone/dist/bpmn"
+----
+--
+. After you install the standalone editors, open the required editor by using the provided editor API, as shown in the following example for opening a DMN editor. The API is the same for each editor.
++
+--
+.Opening the DMN standalone editor
+[source,java]
+----
+const editor = DmnEditor.open({
+  container: document.getElementById("dmn-editor-container"),
+  initialContent: Promise.resolve(""),
+  readOnly: false,
+  origin: "",
+  resources: new Map([
+    [
+      "MyIncludedModel.dmn",
+      {
+        contentType: "text",
+        content: Promise.resolve("")
+      }
+    ]
+  ])
+});
+----
+
+Use the following parameters with the editor API:
+
+.Example parameters
+[cols="40%,60%", options="header"]
+|===
+|Parameter
+|Description
+
+|`container`
+|HTML element in which the editor is appended.
+
+|`initialContent`
+a|Promise to a DMN model content. This parameter can be empty, as shown in the following examples:
+
+* `Promise.resolve("")`
+* `Promise.resolve("<DIAGRAM_CONTENT_DIRECTLY_HERE>")`
+* `fetch("MyDmnModel.dmn").then(content => content.text())`
+
+|`readOnly` (Optional)
+a|Enables you to allow changes in the editor. Set to `false` (default) to allow content editing and `true` for read-only mode in editor.
+
+|`origin` (Optional)
+|Origin of the repository. The default value is `window.location.origin`.
+
+|`resources` (Optional)
+a|Map of resources for the editor. For example, this parameter is used to provide included models for the DMN editor or work item definitions for the BPMN editor. Each entry in the map contains a resource name and an object that consists of `content-type` (`text` or `binary`) and `content` (similar to the `initialContent` parameter).
+|===
+
+The returned object contains the methods that are required to manipulate the editor.
+
+.Returned object methods
+[cols="40%,60%", options="header"]
+|===
+|Method
+|Description
+
+|`getContent(): Promise<string>`
+|Returns a promise containing the editor content.
+
+|`setContent(path: string, content: string): void`
+|Sets the content of the editor.
+
+|`getPreview(): Promise<string>`
+|Returns a promise containing an SVG string of the current diagram.
+
+|`subscribeToContentChanges(callback: (isDirty: boolean) => void): (isDirty: boolean) => void`
+|Sets a callback to be called when the content changes in the editor and returns the same callback to be used for unsubscription.
+
+|`unsubscribeToContentChanges(callback: (isDirty: boolean) => void): void`
+|Unsubscribes the passed callback when the content changes in the editor.
+
+|`markAsSaved(): void`
+|Resets the editor state that indicates that the content in the editor is saved. Also, it activates the subscribed callbacks related to content change.
+
+|`undo(): void`
+|Undoes the last change in the editor. Also, it activates the subscribed callbacks related to content change.
+
+|`redo(): void`
+|Redoes the last undone change in the editor. Also, it activates the subscribed callbacks related to content change.
+
+|`close(): void`
+|Closes the editor.
+
+|`getElementPosition(selector: string): Promise<Rect>`
+|Provides an alternative to extend the standard query selector when an element lives inside a canvas or a video component. The `selector` parameter must follow the `<PROVIDER>:::<SELECT>` format, such as `Canvas:::MySquare` or `Video:::PresenterHand`. This method returns a `Rect` representing the element position.
+
+|`envelopeApi: MessageBusClientApi<KogitoEditorEnvelopeApi>`
+|This is an advanced editor API. For more information about advanced editor API, see https://github.com/kiegroup/kie-tools/blob/master/packages/envelope-bus/src/api/index.ts#L43-L56[MessageBusClientApi] and https://github.com/kiegroup/kie-tools/blob/master/packages/editor/src/api/KogitoEditorEnvelopeApi.ts#L34-L41[KogitoEditorEnvelopeApi].
+|===
+--

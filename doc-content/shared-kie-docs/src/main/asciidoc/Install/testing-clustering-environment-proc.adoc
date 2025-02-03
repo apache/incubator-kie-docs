@@ -1,0 +1,117 @@
+[id='testing-clustering-environment-proc_{context}']
+= Testing your high availability (HA) on-premise infrastructure
+
+When you create a production-ready high availability (HA) on-premises infrastructure for {CENTRAL}, you must ensure that it meets the minimum hardware and performance requirements for a viable HA environment. An HA on-premise infrastructure consists of the following four main components: {CENTRAL}, the message system (AMQ), the indexing server ({DATAGRID}), and a shared file system (NFS/GlusterFS/Ceph).
+
+.Prerequisites
+
+* A network environment of at least 3 nodes is configured with the following layout:
++
+Node 1: {CENTRAL}
++
+Node 2: {CENTRAL}
++
+Node 3: AMQ, {DATAGRID}, and NFS
+
+.Procedure
+. Test the network speed:
+.. In the command terminal of each server node, install `iPerf3`:
++
+----
+$ dnf install iperf3
+----
+.. In the command terminal of the NFS server node (server node 3), start `iPerf3` in server mode:
++
+----
+$ iperf3 -s
+----
+.. In the command terminal of each {CENTRAL} server node, enter the following command to start `iPerf3` in client mode with the NFS server node set as the host:
++
+----
+$ iperf3 -c <NFS_SERVER_IP>
++
+In this example, replace `<NFS_SERVER_IP>` with the IP address of the NFS server.
+----
+.. Compare the results from each server node with the following example of minimum values:
++
+----
+iperf3 -c 172.31.47.103
+Connecting to host 172.31.47.103, port 5201
+[  5] local 172.31.39.4 port 44820 connected to 172.31.47.103 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec   143 MBytes  1.20 Gbits/sec    0    419 KBytes
+[  5]   1.00-2.00   sec   111 MBytes   928 Mbits/sec    6    848 KBytes
+[  5]   2.00-3.00   sec  53.8 MBytes   451 Mbits/sec    0   1.08 MBytes
+[  5]   3.00-4.00   sec  52.5 MBytes   440 Mbits/sec    1   1022 KBytes
+[  5]   4.00-5.00   sec  53.8 MBytes   451 Mbits/sec    1    935 KBytes
+[  5]   5.00-6.00   sec  53.8 MBytes   451 Mbits/sec    1    848 KBytes
+[  5]   6.00-7.00   sec  52.5 MBytes   440 Mbits/sec    0   1.08 MBytes
+[  5]   7.00-8.00   sec  53.8 MBytes   451 Mbits/sec    1   1.01 MBytes
+[  5]   8.00-9.00   sec  53.8 MBytes   451 Mbits/sec    1    953 KBytes
+[  5]   9.00-10.00  sec  52.5 MBytes   440 Mbits/sec    1    856 KBytes
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec   680 MBytes   570 Mbits/sec   12             sender
+[  5]   0.00-10.04  sec   677 MBytes   566 Mbits/sec                  receiver
+
+iperf Done.
+----
+. Verify the NFS information:
+.. In the command terminal of each {CENTRAL} server node, mount the NFS node:
++
+----
+$ mount -o actimeo=1 <NFS_SERVER_IP>:/opt/nfs/kie /opt/kie/niogit
+----
+.. In the command terminal of each mounted node, enter `nfsiostat`:
++
+----
+$ nfsiostat
+----
+.. Compare the results from each server node with the following example of minimum values:
++
+----
+nfsiostat
+ops/s	rpc bklog
+6.415	0.000
+
+read:
+ops/s	kB/s	kB/op	retrans	avg RTT (ms)	avg exe (ms)	avg queue (ms)	errors
+0.031	0.045	1.452	0 (0.0%)	0.129		0.166		0.019		0 (0.0%)
+
+write:
+ops/s	kB/s	kB/op	retrans	avg RTT (ms)	avg exe (ms)	avg queue (ms)	errors
+0.517	0.467	0.903	0 (0.0%)	1.235		1.269		0.01 8		0 (0.0%)
+----
+. Verify that the disk is an SSD:
+.. In the command terminal of the NFS server, enter `df -h` to identify the disk as shown in the following example:
++
+----
+$ df -h
+Filesystem               Size  Used Avail Use% Mounted on
+devtmpfs                 3.8G     0  3.8G   0% /dev
+tmpfs                    3.9G     0  3.9G   0% /dev/shm
+tmpfs                    3.9G   33M  3.8G   1% /run
+tmpfs                    3.9G     0  3.9G   0% /sys/fs/cgroup
+/dev/xvda2                25G  3.2G   22G  13% /
+tmpfs                    781M     0  781M   0% /run/user/1000
+172.31.47.103:/root/nfs   25G  2.1G   23G   9% /root/nfs
+----
+.. Enter `lsblk -d` to verify that the disk is an SSD:
++
+----
+$ lsblk -d
+----
+.. Enter `hdparm -Tt` to test the disk:
++
+----
+$ hdparm -Tt /dev/xvda2
+----
+.. Compare the results from each server node with the following example of minimum values:
++
+----
+$ hdparm -Tt /dev/xvda2
+
+/dev/xvda2:
+ Timing cached reads:   18670 MB in  1.99 seconds = 9389.01 MB/sec
+ Timing buffered disk reads: 216 MB in  3.03 seconds =  71.40 MB/sec
+----

@@ -1,0 +1,144 @@
+
+= Sending messages exchanges
+
+
+In order to send messages to a Camel Endpoint we need to create a http://camel.apache.org/producertemplate.html[ProducerTemplate]
+
+[source,java]
+----
+ProducerTemplate template = camelContext.createProducerTemplate();
+----
+
+
+After you have a template, you can start to send message exchange to your route:
+
+[source,java]
+----
+String xml = "<xml>example</xml>";
+template.requestBody("direct:with-session-xstream", xml);
+----
+
+
+
+== Without marshallers
+
+
+If you don't want to use marshallers to send the messages, you can send the Commands objects directly but remember that all your own objects must be serializable.
+
+
+[source]
+----
+Person person = new Person();
+person.setName("darth");
+InsertObjectCommand cmd = (InsertObjectCommand) CommandFactory.newInsert(person, "vader");
+ExecutionResults response = (ExecutionResults) template.requestBody("direct:test-with-session", cmd);
+----
+
+[NOTE]
+====
+Remember that to send commands in this way you don't have to create the route using a Drools Policy.
+====
+
+== Using XStream
+
+
+Using XStream To create XML commands with XStream we use the BatchExecutionHelper.
+The steps are the following:
+
+. BatchExecutionCommand marshalling
++ 
+String xml = BatchExecutionHelper.newXStreamMarshaller().toXML(batchExecutionCommand);
+. Sending the commands through the ProducerTemplate
++ 
+String xmlOutput = new String((byte[])template.requestBody("direct:test-with-session", xml)
+. Transforming the Drools Endpoint XML response into a ExecutionResults instance
++ 
+ExecutionResults result = (ExecutionResults) BatchExecutionHelper.newXStreamMarshaller().fromXML(xmlOutput);
+
+
+
+== Using JAXB
+
+
+JAXB is more powerful because it allows us to define our model in a XSD file, making it unnecessary to duplicate our Java model, or even create a Java model in our project.
+In this case we need to send the JAXBContext with our XML command.
+
+You can use XSD files to represent your fact model inside a KnowledgeBuilder.
+In the following example we are going to use a POJO Java model and a XSD to duplicate the same model representation.
+
+. JAXBContext creation:
++ 
+Here we are adding our XSD model definition to our KnowledgeBuilder as a resource
++
+
+[source,java]
+----
+Options xjcOpts = new Options();
+xjcOpts.setSchemaLanguage( Language.XMLSCHEMA );
+JaxbConfiguration jaxbConfiguration = KnowledgeBuilderFactory.newJaxbConfiguration( xjcOpts, "xsd" );
+kbuilder.add( ResourceFactory.newClassPathResource("person.xsd", getClass()), ResourceType.XSD, jaxbConfiguration);
+----
++
+Then you need to add your knowledge resources into the kbuilder and create your KnowledgeBase.
+These steps are the same as those in the Drools Expert documentation.
+Finally, we are going to create the JAXBContext
++
+
+[source,java]
+----
+JAXBContext jaxbContext = null;
+JaxbDataFormat def = new JaxbDataFormat();
+def.setPrettyPrint(true);
+// Set the package names to be registered by JAXB
+def.setContextPath("org.drools.model:org.drools.pipeline.camel");
+
+// create a jaxbContext for the test to use outside of Camel.
+StatefulKnowledgeSession ksession1 = (StatefulKnowledgeSession) node.get(DirectoryLookupFactoryService.class).lookup("ksession1");
+KnowledgeBase kbase = ksession1.getKnowledgeBase();
+ClassLoader originalCl = Thread.currentThread().getContextClassLoader();
+try {
+    Thread.currentThread().setContextClassLoader(((ReteooRuleBase) ((KnowledgeBaseImpl) kbase).getRuleBase()).getRootClassLoader());
+    def = DroolsPolicy.augmentJaxbDataFormatDefinition(def);
+    org.apache.camel.converter.jaxb.JaxbDataFormat jaxbDataformat = (org.apache.camel.converter.jaxb.JaxbDataFormat) def.getDataFormat(this.context.getRoutes().get(0).getRouteContext());
+    jaxbContext = jaxbDataformat.getContext();
+} catch (JAXBException e) {
+    throw new RuntimeException(e);
+} finally {
+    Thread.currentThread().setContextClassLoader(originalCl);
+}
+----
+. BatchExecutionCommand marshalling
++
+
+[source,java]
+----
+StringWriter xmlReq = new StringWriter();
+Marshaller marshaller = jaxbContext.createMarshaller();
+marshaller.setProperty("jaxb.formatted.output", true);
+marshaller.marshal(batchExecutionCommand, xmlReq);
+----
+. Sending the commands through the ProducerTemplate
++
+
+[source,java]
+----
+String xml = xmlReq.toString();
+byte[] xmlOutput = (byte[]) template.requestBodyAndHeader("direct:test-with-session", xmlReq.toString());
+----
+. Transforming the Drools Endpoint XML response to ExecutionResults
++ 
+And the final step is to convert the XML output to an ExecutionResults instance
++
+
+[source,java]
+----
+ExecutionResults resp = (ExecutionResults) jaxbContext.createUnmarshaller().unmarshal(new ByteArrayInputStream(xmlOutput));
+----
+
+
+
+[NOTE]
+====
+The XML output conversion is not required, but is recommended to have a more legible data output.
+====
+

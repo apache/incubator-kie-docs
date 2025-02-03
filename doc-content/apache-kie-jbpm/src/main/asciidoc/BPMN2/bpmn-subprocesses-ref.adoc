@@ -1,0 +1,81 @@
+[id='bpmn-sub-processes-ref_{context}']
+
+= BPMN2 sub-processes in process designer
+
+A sub-process is an activity that contains nodes. You can embed part of the main process within a sub-process. You can also include variable definitions within the sub-process. These variables are accessible to all nodes inside the sub-process.
+
+A sub-process must have at least one incoming connection and one outgoing connection. A terminate end event inside a sub-process ends the sub-process instance but does not automatically end the parent process instance. A sub-process ends when there are no more active elements in it.
+
+The following sub-process types are supported in {PRODUCT}:
+
+* Embedded sub-process: A sub-process that is a part of the parent process execution and shares the parent process data, along with declaring its own local sub-process variables.
+* Ad hoc sub-process: A sub-process that has no strict element execution order.
+* Reusable sub-process: A sub-process that is independent of its parent process.
+* Event sub-process: A sub-process that is only triggered on a start event or a timer.
+* Multi-instance sub-process: A sub-process that is instantiated multiple times.
+
+In the following example, the Place order sub-process checks whether sufficient stock is available to place the order and updates the stock information if the order can be placed. The customer is then notified through the main process based on whether or not the order was placed.
+
+image:BPMN2/subprocess.png[]
+
+.Embedded sub-process
+
+An embedded sub-process encapsulates a part of the process. It must contain a start event and at least one end event. Note that the element enables you to define local sub-process variables that are accessible to all elements inside this container.
+
+[[_adhoc_sub_process]]
+.AdHoc sub-process
+
+An ad hoc sub-process or process contains a number of embedded inner activities and is intended to be executed with a more flexible ordering compared to the typical process flow. Unlike regular processes, an ad hoc sub-process does not contain a complete, structured BPMN2 diagram description, for example, from start event to end event. Instead, the ad hoc sub-process contains only activities, sequence flows, gateways, and intermediate events. An ad hoc sub-process can also contain data objects and data associations. The activities within the ad hoc sub-processes are not required to have incoming and outgoing sequence flows. However, you can specify sequence flows between some of the contained activities. When used, sequence flows provide the same ordering constraints as in a regular process. To have any meaning, intermediate events must have outgoing sequence flows and they can be triggered multiple times while the ad hoc sub-process is active.
+
+.Reusable sub-process
+Reusable sub-processes appear collapsed within the parent process. To configure a reusable sub-process, select the reusable sub-process, click image:getting-started/diagram_properties.png[the Properties icon], and expand *Implementation/Execution*. Set the following properties:
+
+* *Called Element*: The ID of the sub-process that the activity calls and instantiates.
+* *Independent*: If selected, the sub-process is started as an independent process. If not selected, the active sub-process is canceled when the parent process is terminated.
+* *Abort Parent*: If selected, non-independent reusable sub-processes can abort the parent process when there is an error during the execution of the called process instance. For example, when there's an error when trying to invoke the sub-process or when the sub-process instance is aborted. This property is visible only when the *Independent* property is not selected. The following rules apply:
+** If the reusable sub-process is independent, *Abort parent* is not available.
+** If the reusable sub-process is not independent, *Abort parent* is available.
+* *Wait for completion*: If selected, the specified *On Exit Action* is not performed until the called sub-process instance is terminated. The parent process execution continues when the *On Exit Action* completes. This property is selected (set to `true`) by default.
+* *Is Async*: Select if the task should be invoked asynchronously and cannot be executed instantly.
+* *Multiple Instance*: Select to execute the sub-process elements a specified number of times. If selected, the following options are available:
+** *MI Execution mode*: Indicates if the multiple instances execute in parallel or sequentially. If set to *Sequential*, new instances are not created until the previous instance completes.
+** *MI Collection input*: Select a variable that represents a collection of elements for which new instances are created. The sub-process is instantiated as many times as the size of the collection.
+** *MI Data Input*: Specifies the name of the variable containing the selected element in the collection. The variable is used to access elements in the collection.
+** *MI Collection output*: Optional variable that represents the collection of elements that will gather the output of the multi-instance node.
+** *MI Data Output*: Specifies the name of the variable that is added to the output collection that you selected in the *MI Collection output* property.
+** *MI Completion Condition (mvel)*: MVEL expression that is evaluated on each completed instance to check if the specified multiple instance node can complete. If it evaluates to `true`, all remaining instances are canceled.
+* *On Entry Action*: A Java or MVEL script that specifies an action at the start of the task.
+* *On Exit Action*: A Java or MVEL script that specifies an action at the end of the task.
+* *SLA Due Date*: The date that the service level agreement (SLA) expires. You can specify the duration in days, minutes, seconds, and milliseconds. For example, `1m` value in SLA due date field indicates one minute.
+* *Metadata Attributes*: Add any custom metadata attribute name and value that you want to use for custom event listeners, such as a listener to implement some action when a metadata attribute is present.
+
+.Reusable sub-process properties
+image::BPMN2/subproc-props.png[A screenshot of sub-process properties]
+
+
+You can open the sub-process in a new editor in {CENTRAL} by clicking the *Place order* task in the main process and then clicking the *Open Sub-process* task icon.
+
+image::cases/open-sub-proc.png[]
+
+
+[[_event_sub_process]]
+.Event sub-process
+An event sub-process becomes active when its start event is triggered. It can interrupt the parent process context or run in parallel with it.
+
+With no outgoing or incoming connections, only an event or a timer can trigger the sub-process. The sub-process is not part of the regular control flow.
+Although self-contained, it is executed in the context of the bounding process.
+
+Use an event sub-process within a process flow to handle events that happen outside of the main process flow.
+For example, while booking a flight, two events may occur:
+
+* Cancel booking (interrupting)
+* Check booking status (non-interrupting)
+
+You can model both of these events using the event sub-process.
+
+[[_multiple_instances]]
+.Multiple instance sub-process
+
+A multiple instances sub-process is instantiated multiple times when its execution is triggered. The instances are created sequentially or parallelly. If you set the sequential mode, a new sub-process instance is created only after the previous instance has finished. However, when you set the parallel mode, all the sub-process instances are created at once.
+
+A multiple instances sub-process has one incoming connection and one outgoing connection.

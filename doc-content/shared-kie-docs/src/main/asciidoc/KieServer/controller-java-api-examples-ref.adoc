@@ -1,0 +1,216 @@
+[id='controller-java-api-examples-ref_{context}']
+= Example requests with the {CONTROLLER} Java client API
+
+The following are examples of {CONTROLLER} Java client API requests for basic interactions with the {CONTROLLER}. For the full list of available {CONTROLLER} Java clients,
+ifdef::DM,PAM[]
+download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/droolsjbpm-integration-$VERSION/kie-server-parent/kie-server-controller/kie-server-controller-client/src/main/java/org/kie/server/controller/client`.
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+see the Java client API source in https://github.com/kiegroup/droolsjbpm-integration/tree/main/kie-server-parent/kie-server-controller/kie-server-controller-client/src/main/java/org/kie/server/controller/client[GitHub].
+endif::[]
+
+Creating and interacting with {KIE_SERVER} templates and KIE containers::
+You can use the `ServerTemplate` and `ContainerSpec` services in the REST or WebSocket {CONTROLLER} clients to create, dispose, and update {KIE_SERVER} templates and KIE containers, and to start and stop KIE containers, as illustrated in this example.
++
+--
+.Example request to create and interact with a {KIE_SERVER} template and KIE containers
+[source,java,subs="attributes+"]
+----
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.api.model.KieContainerStatus;
+import org.kie.server.api.model.KieScannerStatus;
+import org.kie.server.api.model.ReleaseId;
+import org.kie.server.controller.api.model.spec.*;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+
+public class RestTemplateContainerExample {
+
+  private static final String URL = "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller";
+  private static final String USER = "baAdmin";
+  private static final String PASSWORD = "password@1";
+
+    private static KieServerControllerClient client;
+
+    public static void main(String[] args) {
+        KieServerControllerClient client = KieServerControllerClientFactory.newRestClient(URL,
+                                                                                          USER,
+                                                                                          PASSWORD,
+                                                                                          MarshallingFormat.JSON);
+        // Create server template and KIE container, start and stop KIE container, and delete server template
+        ServerTemplate serverTemplate = createServerTemplate();
+        ContainerSpec container = createContainer(serverTemplate);
+        client.startContainer(container);
+        client.stopContainer(container);
+        client.deleteServerTemplate(serverTemplate.getId());
+    }
+
+    // Re-create and configure server template
+    protected static ServerTemplate createServerTemplate() {
+        ServerTemplate serverTemplate = new ServerTemplate();
+        serverTemplate.setId("example-client-id");
+        serverTemplate.setName("example-client-name");
+        serverTemplate.setCapabilities(Arrays.asList(Capability.PROCESS.name(),
+                                                     Capability.RULE.name(),
+                                                     Capability.PLANNING.name()));
+
+        client.saveServerTemplate(serverTemplate);
+
+        return serverTemplate;
+    }
+
+    // Re-create and configure KIE containers
+    protected static ContainerSpec createContainer(ServerTemplate serverTemplate){
+        Map<Capability, ContainerConfig> containerConfigMap = new HashMap();
+
+        ProcessConfig processConfig = new ProcessConfig("PER_PROCESS_INSTANCE", "kieBase", "kieSession", "MERGE_COLLECTION");
+        containerConfigMap.put(Capability.PROCESS, processConfig);
+
+        RuleConfig ruleConfig = new RuleConfig(500l, KieScannerStatus.SCANNING);
+        containerConfigMap.put(Capability.RULE, ruleConfig);
+
+        ReleaseId releaseId = new ReleaseId("org.kie.server.testing", "stateless-session-kjar", "1.0.0-SNAPSHOT");
+
+        ContainerSpec containerSpec = new ContainerSpec("example-container-id", "example-client-name", serverTemplate, releaseId, KieContainerStatus.STOPPED, containerConfigMap);
+        client.saveContainerSpec(serverTemplate.getId(), containerSpec);
+
+        return containerSpec;
+    }
+}
+----
+--
+
+Listing {KIE_SERVER} templates and specifying connection timeout (REST)::
+When you use REST protocol for {CONTROLLER} Java client API requests, you can provide your own `javax.ws.rs.core.Configuration` specification to modify the underlying REST client API, such as connection timeout.
++
+--
+.Example REST request to return server templates and specify connection timeout
+[source,java,subs="attributes+"]
+----
+import java.util.concurrent.TimeUnit;
+import javax.ws.rs.core.Configuration;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
+
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.controller.api.model.spec.ServerTemplateList;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+
+public class RESTTimeoutExample {
+
+  private static final String URL = "http://localhost:8080/{URL_COMPONENT_CENTRAL}/rest/controller";
+  private static final String USER = "baAdmin";
+  private static final String PASSWORD = "password@1";
+
+  public static void main(String[] args) {
+
+      // Specify connection timeout
+      final Configuration configuration =
+              new ResteasyClientBuilder()
+                      .establishConnectionTimeout(10,
+                                                    TimeUnit.SECONDS)
+                      .socketTimeout(60,
+                                       TimeUnit.SECONDS)
+                        .getConfiguration();
+        KieServerControllerClient client = KieServerControllerClientFactory.newRestClient(URL,
+                                                                                          USER,
+                                                                                          PASSWORD,
+                                                                                          MarshallingFormat.JSON,
+                                                                                          configuration);
+
+        // Retrieve list of server templates
+        final ServerTemplateList serverTemplateList = client.listServerTemplates();
+        System.out.println(String.format("Found %s server template(s) at controller url: %s",
+                                         serverTemplateList.getServerTemplates().length,
+                                         URL));
+    }
+}
+----
+--
+
+Listing {KIE_SERVER} templates and specifying event notifications (WebSocket)::
+When you use WebSocket protocol for {CONTROLLER} Java client API requests, you can enable event notifications based
+on changes that happen in the particular {CONTROLLER} to which the client API is connected. For example, you can
+receive notifications when {KIE_SERVER} templates or instances are connected to or updated in the {CONTROLLER}.
++
+--
+.Example WebSocket request to return server templates and specify event notifications
+[source,java]
+----
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.controller.api.model.events.*;
+import org.kie.server.controller.api.model.spec.ServerTemplateList;
+import org.kie.server.controller.client.KieServerControllerClient;
+import org.kie.server.controller.client.KieServerControllerClientFactory;
+import org.kie.server.controller.client.event.EventHandler;
+
+public class WebSocketEventsExample {
+
+    private static final String URL = "ws://localhost:8080/my-controller/websocket/controller";
+    private static final String USER = "baAdmin";
+    private static final String PASSWORD = "password@1";
+
+    public static void main(String[] args) {
+        KieServerControllerClient client = KieServerControllerClientFactory.newWebSocketClient(URL,
+                                                                                               USER,
+                                                                                               PASSWORD,
+                                                                                               MarshallingFormat.JSON,
+                                                                                               new TestEventHandler());
+
+        // Retrieve list of server templates
+        final ServerTemplateList serverTemplateList = client.listServerTemplates();
+        System.out.println(String.format("Found %s server template(s) at controller url: %s",
+                                         serverTemplateList.getServerTemplates().length,
+                                         URL));
+        try {
+            Thread.sleep(60 * 1000);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Set up event notifications
+    static class TestEventHandler implements EventHandler {
+
+        @Override
+        public void onServerInstanceConnected(ServerInstanceConnected serverInstanceConnected) {
+            System.out.println("serverInstanceConnected = " + serverInstanceConnected);
+        }
+
+        @Override
+        public void onServerInstanceDeleted(ServerInstanceDeleted serverInstanceDeleted) {
+            System.out.println("serverInstanceDeleted = " + serverInstanceDeleted);
+        }
+
+        @Override
+        public void onServerInstanceDisconnected(ServerInstanceDisconnected serverInstanceDisconnected) {
+            System.out.println("serverInstanceDisconnected = " + serverInstanceDisconnected);
+        }
+
+        @Override
+        public void onServerTemplateDeleted(ServerTemplateDeleted serverTemplateDeleted) {
+            System.out.println("serverTemplateDeleted = " + serverTemplateDeleted);
+        }
+
+        @Override
+        public void onServerTemplateUpdated(ServerTemplateUpdated serverTemplateUpdated) {
+            System.out.println("serverTemplateUpdated = " + serverTemplateUpdated);
+        }
+
+        @Override
+        public void onServerInstanceUpdated(ServerInstanceUpdated serverInstanceUpdated) {
+            System.out.println("serverInstanceUpdated = " + serverInstanceUpdated);
+        }
+
+        @Override
+        public void onContainerSpecUpdated(ContainerSpecUpdated containerSpecUpdated) {
+            System.out.println("onContainerSpecUpdated = " + containerSpecUpdated);
+        }
+    }
+}
+----
+--

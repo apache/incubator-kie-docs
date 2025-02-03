@@ -1,0 +1,236 @@
+[[_cdichapter]]
+= CDI
+
+== Introduction
+
+http://www.cdi-spec.org[CDI], Contexts and Dependency Injection, is Java specification that provides declarative controls and structures to an application.
+KIE can use it to automatically instantiate and bind things, without the need to use the programmatic API. 
+
+== Annotations
+
+
+@KContainer, @KBase and @KSession all support an optional 'name' attribute.
+CDI typically does "getOrCreate" when it injects, all injections receive the same instance for the same set of annotations.
+the 'name' annotation forces a unique instance for each name, although all instance for that name will be identity equals.
+
+=== @KReleaseId
+
+
+Used to bind an instance to a specific version of a KieModule.
+If kie-ci is on the classpath this will resolve dependencies automatically, downloading from remote repositories.
+
+=== @KContainer
+
+
+@KContainer is optional as it can be detected and added by the use of @Inject and variable type inferrence.
+
+.Injects Classpath KieContainer
+[source,java]
+----
+@Inject
+private KieContainer kContainer;
+----
+
+.Injects KieContainer for Dynamic KieModule
+[source,java]
+----
+@Inject
+@KReleaseId(groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieContainer kContainer;
+----
+
+.Injects named KieContainer for Dynamic KieModule
+[source,java]
+----
+@Inject
+@KContainer(name = "kc1")
+@KReleaseId(groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieContainer kContainer;
+----
+
+=== @KBase
+
+
+@KBase is optional as it can be detected and added by the use of @Inject and variable type inference.
+
+The default argument, if given, maps to the value attribute and specifies the name of the KieBase from the kmodule.xml file.
+
+.Injects the Default KieBase from the Classpath KieContainer
+[source,java]
+----
+@Inject
+private KieBase kbase;
+----
+
+.Injects the Default KieBase from a Dynamic KieModule
+[source,java]
+----
+@Inject
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")   
+private KieBase kbase;
+----
+
+.Side by side version loading for 'jar1.KBase1' KieBase
+[source,java]
+----
+@Inject
+@KBase("kbase1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieBase kbase1v10;
+
+@Inject
+@KBase("kbase1") 
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieBase kbase1v10;
+----
+
+.Use 'name' attribute to force new Instance for 'jar1.KBase1' KieBase
+[source,java]
+----
+@Inject
+@KSession(value="kbase1", name="kb1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieBase kbase1kb1;
+
+@Inject  
+@KSession(value="kbase1", name="kb2")    
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieBase kbase1kb2;
+----
+
+=== @KSession for KieSession
+
+
+@KSession is optional as it can be detected and added by the use of @Inject and variable type inference.
+
+The default argument, if given, maps to the value attribute and specifies the name of the KieSession from the kmodule.xml file
+
+.Injects the Default KieSession from the Classpath KieContainer
+[source,java]
+----
+@Inject
+private KieSession ksession;
+----
+
+.Injects the Default KieSession from a Dynamic KieModule
+[source,java]
+----
+@Inject
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")   
+private KieSession ksession;
+----
+
+.Side by side version loading for 'jar1.KBase1' KieBase
+[source,java]
+----
+@Inject
+@KSession("ksession1") 
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksessionv10;
+
+@Inject
+@KSession("ksession1") 
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private KieSession ksessionv11;
+----
+
+.Use 'name' attribute to force new Instance for 'jar1.KBase1' KieSession
+[source,java]
+----
+@Inject
+@KSession(value="ksession1", name="ks1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksession1ks1
+
+@Inject  
+@KSession(value="ksession1", name="ks2")    
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private KieSession ksession1ks2
+----
+
+=== @KSession for StatelessKieSession
+
+
+@KSession is optional as it can be detected and added by the use of @Inject and variable type inference.
+
+The default argument, if given, maps to the value attribute and specifies the name of the KieSession from the kmodule.xml file.
+
+.Injects the Default StatelessKieSession from the Classpath KieContainer
+[source,java]
+----
+@Inject
+private StatelessKieSession ksession;
+----
+
+.Injects the Default StatelessKieSession from a Dynamic KieModule
+[source,java]
+----
+@Inject
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")   
+private StatelessKieSession ksession;
+----
+
+.Side by side version loading for 'jar1.KBase1' KieBase
+[source,java]
+----
+@Inject
+@KSession("ksession1") 
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksessionv10;
+
+@Inject
+@KSession("ksession1") 
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.1")
+private StatelessKieSession ksessionv11;
+----
+
+.Use 'name' attribute to force new Instance for 'jar1.KBase1'StatelessKieSession
+[source,java]
+----
+@Inject
+@KSession(value="ksession1", name="ks1")
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksession1ks1
+
+@Inject  
+@KSession(value="ksession1", name="ks2")    
+@KReleaseId( groupId = "jar1", artifactId = "art1", version = "1.0")
+private StatelessKieSession ksession1ks2
+----
+
+== API Example Comparison
+
+
+CDI can inject instances into fields, or even pass them as arguments.
+In this example field injection is used.
+
+.CDI example for a named KieSession
+[source,java]
+----
+@Inject
+@KSession("ksession1")
+KieSession kSession;
+
+public void go(PrintStream out) {
+    kSession.setGlobal("out", out);
+    kSession.insert(new Message("Dave", "Hello, HAL. Do you read me, HAL?"));
+    kSession.fireAllRules();
+}
+----
+
+
+This is less code and more declarative than the API approach.
+
+.API equivalent example for a named KieSession
+[source,java]
+----
+public void go(PrintStream out) {
+    KieServices ks = KieServices.Factory.get();
+    KieContainer kContainer = ks.getKieClasspathContainer();
+
+    KieSession kSession = kContainer.newKieSession("ksession1");
+    kSession.setGlobal("out", out);
+    kSession.insert(new Message("Dave", "Hello, HAL. Do you read me, HAL?"));
+    kSession.fireAllRules();
+}
+----

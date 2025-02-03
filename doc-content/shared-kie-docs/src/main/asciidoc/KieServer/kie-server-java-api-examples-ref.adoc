@@ -1,0 +1,283 @@
+[id='kie-server-java-api-examples-ref_{context}']
+= Example requests with the {KIE_SERVER} Java client API
+
+The following are examples of {KIE_SERVER} Java client API requests for basic interactions with {KIE_SERVER}. For the full list of available {KIE_SERVER} Java clients,
+ifdef::DM,PAM[]
+download the *{PRODUCT_PAM} {PRODUCT_VERSION_LONG} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/{PRODUCT_FILE}-sources/src/droolsjbpm-integration-$VERSION/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client`.
+endif::[]
+ifdef::DROOLS,JBPM,OP[]
+see the Java client API source in https://github.com/kiegroup/droolsjbpm-integration/tree/main/kie-server-parent/kie-server-remote/kie-server-client/src/main/java/org/kie/server/client[GitHub].
+endif::[]
+
+Listing {KIE_SERVER} capabilities::
+You can use the `org.kie.server.api.model.KieServerInfo` object to identify server capabilities. The `KieServicesClient` client requires the server capability information to correctly produce service clients. You can specify the capabilities globally in `KieServicesConfiguration`; otherwise they are automatically retrieved from {KIE_SERVER}.
++
+--
+.Example request to return {KIE_SERVER} capabilities
+[source,java]
+----
+public void listCapabilities() {
+
+  KieServerInfo serverInfo = kieServicesClient.getServerInfo().getResult();
+  System.out.print("Server capabilities:");
+
+  for (String capability : serverInfo.getCapabilities()) {
+    System.out.print(" " + capability);
+  }
+
+  System.out.println();
+}
+----
+--
+
+Listing KIE containers in {KIE_SERVER}::
+KIE containers are represented by the `org.kie.server.api.model.KieContainerResource` object. The list of resources is represented by the `org.kie.server.api.model.KieContainerResourceList` object.
++
+--
+.Example request to return KIE containers from {KIE_SERVER}
+[source,java]
+----
+public void listContainers() {
+    KieContainerResourceList containersList = kieServicesClient.listContainers().getResult();
+    List<KieContainerResource> kieContainers = containersList.getContainers();
+    System.out.println("Available containers: ");
+    for (KieContainerResource container : kieContainers) {
+        System.out.println("\t" + container.getContainerId() + " (" + container.getReleaseId() + ")");
+    }
+}
+----
+
+You can optionally filter the KIE container results using an instance of the `org.kie.server.api.model.KieContainerResourceFilter` class, which is passed to the `org.kie.server.client.KieServicesClient.listContainers()` method.
+
+.Example request to return KIE containers by release ID and status
+[source,java]
+----
+public void listContainersWithFilter() {
+
+    // Filter containers by releaseId "org.example:container:1.0.0.Final" and status FAILED
+    KieContainerResourceFilter filter = new KieContainerResourceFilter.Builder()
+            .releaseId("org.example", "container", "1.0.0.Final")
+            .status(KieContainerStatus.FAILED)
+            .build();
+
+    // Using previously created KieServicesClient
+    KieContainerResourceList containersList = kieServicesClient.listContainers(filter).getResult();
+    List<KieContainerResource> kieContainers = containersList.getContainers();
+
+    System.out.println("Available containers: ");
+
+    for (KieContainerResource container : kieContainers) {
+        System.out.println("\t" + container.getContainerId() + " (" + container.getReleaseId() + ")");
+    }
+}
+----
+--
+
+Creating and disposing KIE containers in {KIE_SERVER}::
+You can use the `createContainer` and `disposeContainer` methods in the `KieServicesClient` client to dispose and create KIE containers. In this example, when you dispose a container, the `ServiceResponse` returns a `Void` response. When you create a container, the `ServiceResponse` returns a `KieContainerResource` object.
++
+--
+.Example request to dispose and re-create a KIE container
+[source,java]
+----
+public void disposeAndCreateContainer() {
+    System.out.println("== Disposing and creating containers ==");
+
+    // Retrieve list of KIE containers
+    List<KieContainerResource> kieContainers = kieServicesClient.listContainers().getResult().getContainers();
+    if (kieContainers.size() == 0) {
+        System.out.println("No containers available...");
+        return;
+    }
+
+    // Dispose KIE container
+    KieContainerResource container = kieContainers.get(0);
+    String containerId = container.getContainerId();
+    ServiceResponse<Void> responseDispose = kieServicesClient.disposeContainer(containerId);
+    if (responseDispose.getType() == ResponseType.FAILURE) {
+        System.out.println("Error disposing " + containerId + ". Message: ");
+        System.out.println(responseDispose.getMsg());
+        return;
+    }
+    System.out.println("Success Disposing container " + containerId);
+    System.out.println("Trying to recreate the container...");
+
+    // Re-create KIE container
+    ServiceResponse<KieContainerResource> createResponse = kieServicesClient.createContainer(containerId, container);
+    if(createResponse.getType() == ResponseType.FAILURE) {
+        System.out.println("Error creating " + containerId + ". Message: ");
+        System.out.println(responseDispose.getMsg());
+        return;
+    }
+    System.out.println("Container recreated with success!");
+}
+----
+--
+Executing runtime commands in {KIE_SERVER}::
+{PRODUCT} supports runtime commands that you can send to {KIE_SERVER} for asset-related operations, such as inserting or retracting objects in a KIE session or firing all rules. The full list of supported runtime commands is located in the `org.drools.core.command.runtime` package in your {PRODUCT} instance.
++
+--
+You can use the `org.kie.api.command.KieCommands` class to insert commands, and use `org.kie.api.KieServices.get().getCommands()` to instantiate the `KieCommands` class. If you want to add multiple commands, use the `BatchExecutionCommand` wrapper.
+
+.Example request to insert an object and fire all rules
+[source,java]
+----
+import org.kie.api.command.Command;
+import org.kie.api.command.KieCommands;
+import org.kie.server.api.model.ServiceResponse;
+import org.kie.server.client.RuleServicesClient;
+import org.kie.server.client.KieServicesClient;
+import org.kie.api.KieServices;
+
+import java.util.Arrays;
+
+...
+
+public void executeCommands() {
+
+  String containerId = "hello";
+  System.out.println("== Sending commands to the server ==");
+  RuleServicesClient rulesClient = kieServicesClient.getServicesClient(RuleServicesClient.class);
+  KieCommands commandsFactory = KieServices.Factory.get().getCommands();
+
+  Command<?> insert = commandsFactory.newInsert("Some String OBJ");
+  Command<?> fireAllRules = commandsFactory.newFireAllRules();
+  Command<?> batchCommand = commandsFactory.newBatchExecution(Arrays.asList(insert, fireAllRules));
+
+  ServiceResponse<String> executeResponse = rulesClient.executeCommands(containerId, batchCommand);
+
+  if(executeResponse.getType() == ResponseType.SUCCESS) {
+    System.out.println("Commands executed with success! Response: ");
+    System.out.println(executeResponse.getResult());
+  } else {
+    System.out.println("Error executing rules. Message: ");
+    System.out.println(executeResponse.getMsg());
+  }
+}
+----
+
+NOTE: A conversation between a client and a specific {KIE_SERVER} container in a clustered environment is secured by a unique `conversationID`. The `conversationID`  is transferred using the `X-KIE-ConversationId` REST header. If you update the container, unset the previous `conversationID`.  Use `KieServiesClient.completeConversation()` to unset the `conversationID` for Java API.
+
+--
+ifdef::PAM,JBPM[]
+
+Listing available business processes in a KIE container::
+You can use the `QueryServicesClient` client to list available process definitions. The `QueryServicesClient` methods use pagination, so in addition to the query you make, you must provide the current page and the number of results per page. In this example, the query starts on page `0` and lists the first `1000` results.
++
+--
+.Example request to list business processes in {KIE_SERVER}
+[source,java]
+----
+
+public void listProcesses() {
+    System.out.println("== Listing Business Processes ==");
+    QueryServicesClient queryClient = kieServicesClient.getServicesClient(QueryServicesClient.class);
+    List<ProcessDefinition> findProcessesByContainerId = queryClient.findProcessesByContainerId("rewards", 0, 1000);
+    for (ProcessDefinition def : findProcessesByContainerId) {
+        System.out.println(def.getName() + " - " + def.getId() + " v" + def.getVersion());
+    }
+}
+----
+--
+
+Starting a business process in a KIE container::
+You can use the `ProcessServicesClient` client to start a business process. Ensure that any custom classes that you require for your process are added into the `KieServicesConfiguration` object, using the `addExtraClasses()` method.
++
+--
+.Example request to start a business process
+[source,java]
+----
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
+import org.kie.server.api.marshalling.MarshallingFormat;
+import org.kie.server.client.KieServicesClient;
+import org.kie.server.client.KieServicesConfiguration;
+import org.kie.server.client.KieServicesFactory;
+import org.kie.server.client.ProcessServicesClient;
+...
+
+public static void startProcess() {
+
+  //Client configuration setup
+  KieServicesConfiguration config = KieServicesFactory.newRestConfiguration(SERVER_URL, LOGIN, PASSWORD);
+
+  //Add custom classes, such as Obj.class, to the configuration
+  Set<Class<?>> extraClassList = new HashSet<Class<?>>();
+  extraClassList.add(Obj.class);
+  config.addExtraClasses(extraClassList);
+  config.setMarshallingFormat(MarshallingFormat.JSON);
+
+  // ProcessServicesClient setup
+  KieServicesClient client = KieServicesFactory.newKieServicesClient(config);
+  ProcessServicesClient processServicesClient = client.getServicesClient(ProcessServicesClient.class);
+
+  // Create an instance of the custom class
+  Obj obj = new Obj();
+  obj.setOk("ok");
+
+  Map<String, Object> variables = new HashMap<String, Object>();
+  variables.put("test", obj);
+
+  // Start the process with custom class
+  processServicesClient.startProcess(CONTAINER, processId, variables);
+}
+----
+--
+
+Running a custom query::
+You can use the `QueryDefinition` object of the `QueryServicesClient` client to register and execute custom queries in {KIE_SERVER}.
++
+--
+.Example request to register and execute a custom query in {KIE_SERVER}
+[source,java]
+----
+// Client setup
+KieServicesConfiguration conf = KieServicesFactory.newRestConfiguration(SERVER_URL, LOGIN, PASSWORD);
+KieServicesClient client = KieServicesFactory.newKieServicesClient(conf);
+
+// Get the QueryServicesClient
+QueryServicesClient queryClient = client.getServicesClient(QueryServicesClient.class);
+
+// Build the query
+QueryDefinition queryDefinition = QueryDefinition.builder().name(QUERY_NAME)
+        .expression("select * from Task t")
+        .source("java:jboss/datasources/ExampleDS")
+        .target("TASK").build();
+
+// Specify that two queries cannot have the same name
+queryClient.unregisterQuery(QUERY_NAME);
+
+// Register the query
+queryClient.registerQuery(queryDefinition);
+
+// Execute the query with parameters: query name, mapping type (to map the fields to an object), page number, page size, and return type
+List<TaskInstance> query = queryClient.query(QUERY_NAME, QueryServicesClient.QUERY_MAP_TASK, 0, 100, TaskInstance.class);
+
+// Read the result
+for (TaskInstance taskInstance : query) {
+    System.out.println(taskInstance);
+}
+----
+
+In this example, the `target` instructs the query service to apply default filters. Alternatively, you can set filter parameters manually. The `Target` class supports the following values:
+
+[source,java]
+----
+public enum Target {
+    PROCESS,
+    TASK,
+    BA_TASK,
+    PO_TASK,
+    JOBS,
+    CUSTOM;
+}
+----
+--
+endif::PAM,JBPM[]

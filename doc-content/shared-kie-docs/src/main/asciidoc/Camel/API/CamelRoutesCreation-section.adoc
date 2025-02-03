@@ -1,0 +1,152 @@
+
+= Camel Routes creation
+
+
+This is the most powerful feature of this integration, because of the very large library of http://camel.apache.org/component.html[Components] provided by Camel to build pipelines.
+If you check the Camel Components you can see how many integration possibilities are added now to Camel, and if this component doesn't exists you can create this by your own.
+
+[NOTE]
+====
+A Camel Component is a factory of Endpoint instances
+====
+
+
+The first step is know how create a Drools endpoint, which has the next syntax
+
+[source]
+----
+drools:{0}/{1}
+----
+
+
+{0} : Execution Node identifier that was registered in the CamelContext
+
+{1} : KIE session identifier that was registered in the Execution Node with identifier {0}
+
+
+Now that you know how define a drools endpoint, you can create your routes and add them to the Camel Context
+
+[source,java]
+----
+RouteBuilder rb = new RouteBuilder() {
+   public void configure() throws Exception {
+      from("direct:test-with-session").policy(new DroolsPolicy()).unmarshal("xstream").to("drools:node/ksession1").marshal("xstream");
+   }
+};
+camelContext.addRoutes(rb);
+----
+
+
+
+[NOTE]
+====
+Camel Drools Policy is used to add Drools support in Camel, what it does is to add interceptors into the camel route to create Camel Processors on the fly and modify the internal navigation route.
+====
+In this example we created a simple route with a http://camel.apache.org/direct.html[Direct Endpoint] as the input and a Drools Endpoint as the output.
+A Direct input allow us to send the commands directly to the next endpoint in the route, invoking their consumer, which in this case will process the XML command.
+
+But there are several ways to create Drools endpoints, and different configurations to support extra features
+
+
+
+== Programmatically
+
+* Processing the commands objects directly
++
+
+[source]
+----
+RouteBuilder rb = new RouteBuilder() {
+  public void configure() throws Exception {
+    from("direct:test-with-session").to("drools://node/ksession1");
+  }
+};
+camelContext.addRoutes(rb);
+----
+* Processing the commands in a XML representation, using XStream or JSON as the marshaller/unmarshaller
++
+
+[source]
+----
+RouteBuilder rb = new RouteBuilder() {
+  public void configure() throws Exception {
+    from("direct:test-with-session").policy(new DroolsPolicy()).unmarshal("xstream").to("drools:node/ksession1").marshal("xstream");
+  }
+};
+camelContext.addRoutes(rb);
+----
++
+
+[NOTE]
+====
+To use JSON just change the unmarshall() and marshall() parameter to "`json`"
+====
+* Using a custom XStream Data Format with your own XStream Converters
++
+
+[source]
+----
+org.apache.camel.model.dataformat.XStreamDataFormat xstreamDataFormat = new org.apache.camel.model.dataformat.XStreamDataFormat();
+xstreamDataFormat.setConverters(Arrays.asList(new String[]{PersonConverter.class.getName()}));
+
+Map dataFormats = new HashMap();
+dataFormats.put("custom-xstream",xstreamDataFormat);
+camelContext.setDataFormats(dataFormats);
+
+RouteBuilder rb = new RouteBuilder() {
+  public void configure() throws Exception {
+    from("direct:test-no-session-custom").policy(new DroolsPolicy()).unmarshal("custom-xstream").to("drools:node").marshal("custom-xstream");
+  }
+};
+camelContext.addRoutes(rb);
+----
+* Using JAXB as the marshaller/unmarshaller
++
+
+[source]
+----
+JaxbDataFormat def = new JaxbDataFormat();
+def.setPrettyPrint(true);
+// Set the package names to be registered by JAXB
+def.setContextPath("org.drools.model:org.drools.pipeline.camel");
+
+RouteBuilder rb = new RouteBuilder() {
+  public void configure() throws Exception {
+    from("direct:test-with-session").policy(new DroolsPolicy()).unmarshal(def).to("drools:node/ksession1").marshal(def);
+  }
+};
+camelContext.addRoutes(rb);
+----
+
+
+== Using Spring
+
+* Simple configuration with XStream
++
+[source,xml]
+----
+<bean id="droolsPolicy" class="org.drools.camel.component.DroolsPolicy" />
+  <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+  <route>
+    <from uri="direct:entryPoint"/>
+    <policy ref="droolsPolicy">
+      <unmarshal ref="xstream" />
+      <to uri="drools:node1/ksession1" />
+      <marshal ref="xstream" />
+    </policy>
+  </route>
+</camelContext>
+----
+
+
+[NOTE]
+====
+Using spring we can create the same configurations that in the programmatically way.
+====
+
+
+
+[NOTE]
+====
+As you can see, in all this examples we are using Direct Endpoints as the main entry point, but you can use any others of the available Camel Components.
+====

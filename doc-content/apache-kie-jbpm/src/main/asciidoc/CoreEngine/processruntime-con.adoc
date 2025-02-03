@@ -1,0 +1,102 @@
+[id='processruntime-con-{context}']
+= ProcessRuntime interface
+
+The `KieSession` class exposes the `ProcessRuntime` interface, which defines all the session methods for interacting with processes, as the following definition shows.
+
+.Definition of the `ProcessRuntime` interface
+[source,java,subs="attributes+"]
+----
+
+  /**
+	 * Start a new process instance.  Use the process (definition) that 
+	 * is referenced by the given process ID.
+	 *
+	 * @param processId  The ID of the process to start
+	 * @return the ProcessInstance that represents the instance of the process that was started
+	 */
+    ProcessInstance startProcess(String processId);
+
+    /**
+	 * Start a new process instance.  Use the process (definition) that 
+	 * is referenced by the given process ID.  You can pass parameters 
+	 * to the process instance as name-value pairs, and these parameters set
+	 * variables of the process instance.
+   *
+	 * @param processId  the ID of the process to start
+   * @param parameters  the process variables to set when starting the process instance
+	 * @return the ProcessInstance that represents the instance of the process that was started
+     */
+    ProcessInstance startProcess(String processId,
+                                 Map<String, Object> parameters);
+
+    /**
+     * Signals the {PROCESS_ENGINE} that an event has occurred. The type parameter defines
+     * the type of event and the event parameter can contain additional information
+     * related to the event.  All process instances that are listening to this type
+     * of (external) event will be notified.  For performance reasons, use this type of
+     * event signaling only if one process instance must be able to notify
+     * other process instances. For internal events within one process instance, use the
+     * signalEvent method that also include the processInstanceId of the process instance
+     * in question.
+     *
+     * @param type the type of event
+     * @param event the data associated with this event
+     */
+    void signalEvent(String type,
+                     Object event);
+
+    /**
+     * Signals the process instance that an event has occurred. The type parameter defines
+     * the type of event and the event parameter can contain additional information
+     * related to the event.  All node instances inside the given process instance that
+     * are listening to this type of (internal) event will be notified.  Note that the event
+     * will only be processed inside the given process instance.  All other process instances
+     * waiting for this type of event will not be notified.
+     *
+     * @param type the type of event
+     * @param event the data associated with this event
+     * @param processInstanceId the id of the process instance that should be signaled
+     */
+    void signalEvent(String type,
+                     Object event,
+                     long processInstanceId);
+
+    /**
+     * Returns a collection of currently active process instances.  Note that only process
+     * instances that are currently loaded and active inside the {PROCESS_ENGINE} are returned.
+     * When using persistence, it is likely not all running process instances are loaded
+     * as their state is stored persistently.  It is best practice not to use this
+     * method to collect information about the state of your process instances but to use
+     * a history log for that purpose.
+     *
+     * @return a collection of process instances currently active in the session
+     */
+    Collection<ProcessInstance> getProcessInstances();
+
+    /**
+     * Returns the process instance with the given ID.  Note that only active process instances
+     * are returned. If a process instance has been completed already, this method returns
+     * null.
+     *
+     * @param id the ID of the process instance
+     * @return the process instance with the given ID, or null if it cannot be found
+     */
+    ProcessInstance getProcessInstance(long processInstanceId);
+
+    /**
+     * Aborts the process instance with the given ID. If the process instance has been completed
+     * (or aborted), or if the process instance cannot be found, this method will throw an
+     * IllegalArgumentException.
+     *
+     * @param id the ID of the process instance
+     */
+    void abortProcessInstance(long processInstanceId);
+
+    /**
+     * Returns the WorkItemManager related to this session. This object can be used to
+     * register new WorkItemHandlers or to complete (or abort) WorkItems.
+     *
+     * @return the WorkItemManager related to this session
+     */
+    WorkItemManager getWorkItemManager();
+----

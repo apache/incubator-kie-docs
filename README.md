@@ -3,17 +3,13 @@
 
 If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
 
-# Kogito documentation
+# Apache KIE Kogito documentation
 
 <p align="center"><img width=55% height=55% src="_images/logos/kogitoLogo.png"_></p>
 
 Kogito is a cloud-native business automation technology for building cloud-ready business applications. Kogito includes components that are based on well-known business automation projects in the Knowledge Is Everything (KIE) community, specifically [Drools](https://drools.org), [jBPM](https://jbpm.org), and [OptaPlanner](https://optaplanner.org), to offer dependable, open source solutions for business rules, business processes, and constraint solving.
 
-This `main-kogito` branch of the `kie-docs` repository contains the source of the Kogito documentation for both KIE community and Red Hat Business Automation enterprise publications. The latest version of the Kogito documentation for the KIE community is published at https://docs.jboss.org/kogito/release/latest/html_single/.
-
 As a Kogito user, developer, or technical writer, you can contribute to Kogito documentation by forking and cloning this repository, updating or adding content, and submitting a pull request for review.
-
->**NOTE**: The other branches in the `kie-docs` repository contain the source of the Drools, jBPM, and OptaPlanner documentation, which are the basis for [Red Hat Decision Manager](https://access.redhat.com/documentation/en-us/red_hat_decision_manager/) and [Red Hat Process Automation Manager](https://access.redhat.com/documentation/en-us/red_hat_process_automation_manager/).
 
 Contents
 =================
@@ -55,7 +51,7 @@ To work with the `kie-docs` documentation source, you need the following softwar
 
   For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Atom documentation](http://flight-manual.atom.io/).
 
-* **Apache Maven 3.5.4 or later**: Used for building the KIE community version of Kogito documentation. To install Maven on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
+* **Apache Maven 3.9.6**: Used for building the KIE community version of Kogito documentation. To install Maven on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
 
   ```
   # yum install maven
@@ -84,7 +80,6 @@ The files in the `main-kogito` branch of the `kie-docs` repository are organized
                     ├── ...
                     └── index.adoc
         └── pom.xml
-├── titles-enterprise  // For Red Hat enterprise documentation testing only
 ├── ...
 ├── pom.xml    
 └── README.md
@@ -98,8 +93,6 @@ The file structure contains the following core folders:
 
   * **Chapter files**: Chapter files (prefix `chap-`) formatted to accommodate a modular documentation structure that is generated separately from this source repository for Red Hat enterprise documentation. For more information about modular documentation conventions, see the Red Hat [`modular-docs`](https://github.com/redhat-documentation/modular-docs) repository in GitHub. If any formatting conventions are unclear to you, use existing content as a starting template and write what makes sense to you. The `kie-docs` documentation team can work with the content that you contribute.
   * **Index file**: Single index file (`index.adoc`) that lists chapter files with `include` statements and contains any additional introductory content for the Kogito documentation as a whole.
-
-* `titles-enterprise`: Directory for testing Red Hat enterprise documentation. This directory is used internally by Red Hat technical writers only.
 
 # Contributing to Kogito documentation
 
@@ -169,8 +162,8 @@ The following is a high-level view of the content workflow between the upstream 
 
     In your pull request, include the following components:
     * **Description**: Summarize your changes and include any links to JIRA tasks or document previews, if available
-    * **Reviewers**: Assign two reviewers: a developer from the KIE development team and a writer from the Red Hat Business Automation team. If you do not know who to assign, leave this field empty and the documentation team can assign the reviewers.  
+    * **Reviewers**: Assign two reviewers from the Apache KIE community. If you do not know who to assign ask on Zulip channels.
 
-# Contributing to Kogito software
+# Contributing to Apache KIE Kogito software
 
-To contribute to Kogito software, see the [`kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
+To contribute to Kogito software, see the [`incubator-kie-kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.

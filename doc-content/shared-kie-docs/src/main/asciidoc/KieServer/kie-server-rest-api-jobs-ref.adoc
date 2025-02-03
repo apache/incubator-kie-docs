@@ -1,0 +1,647 @@
+// To reuse this module, ifeval the title to be more specific as needed.
+
+[id='kie-server-rest-api-jobs-ref_{context}']
+= Jobs
+
+// The {KIE_SERVER} REST API supports the following endpoints for managing jobs and job execution. The {KIE_SERVER} REST API base URL is `\http://SERVER:PORT/kie-server/services/rest/`. All requests require HTTP Basic authentication or token-based authentication for the `kie-server` user role.
+
+== [GET] /server/jobs
+
+Returns jobs by job status.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`status`
+|Status of jobs to be retrieved (such as `QUEUED`, `DONE`, or `CANCELLED`)
+|Array [string]
+|Required
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/jobs?status=DONE&page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "request-info-instance": [
+    {
+      "request-instance-id": 1,
+      "request-status": "DONE",
+      "request-business-key": "job1",
+      "request-message": "Ready to execute",
+      "request-retries": 2,
+      "request-executions": 1,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540299058209
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    },
+    {
+      "request-instance-id": 2,
+      "request-status": "DONE",
+      "request-business-key": "job2",
+      "request-message": "Ready to execute",
+      "request-retries": 0,
+      "request-executions": 0,
+      "request-command": "java.lang.String",
+      "request-scheduled-date": {
+        "java.util.Date": 1540328449419
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    }
+  ]
+}
+----
+
+== [POST] /server/jobs
+
+Schedules a job and returns the ID for the new job.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container where the job is located
+|String
+|Optional
+
+|*body*
+|Map containing the job `type`, `businessKey`, and other components of the job definition
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "job-command": "org.jbpm.executor.commands.LogCleanupCommand",
+  "scheduled-date": {
+    "java.util.Date": 1540328449419
+  },
+  "request-data": {
+    "businessKey": "job3"
+  }
+}
+----
+
+NOTE: For a list of supported job commands in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-executor/src/main/java/org/jbpm/executor/commands`.
+
+*<@Maciej/@Tiho: The server responds with only the job ID (example: 3). It should respond more fully and say something like the response below.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Job 3 successfully created."
+    }
+  ]
+}
+----
+
+== [POST] /server/jobs/{jobId}/data
+
+Updates parameters for job commands, if used, such as a job type `org.jbpm.executor.commands.LogCleanupCommand`.
+
+NOTE: For a list of supported job commands in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-executor/src/main/java/org/jbpm/executor/commands`.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`jobId`
+|ID of the job with a command to be updated
+|Integer
+|Required
+
+|`containerId`
+|ID of the KIE container where the job is located
+|String
+|Optional
+
+|*body*
+|Map containing the job command parameters to be updated
+|Request body
+|Required
+|===
+
+.Example request body (JSON)
+[source,json]
+----
+{
+  "SkipProcessLog": true,
+  "NextRun": "1d"
+}
+----
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Job 3 successfully updated."
+    }
+  ]
+}
+----
+
+== [GET] /server/jobs/commands/{commandName}
+
+Returns jobs configured to run job commands, such as a job type `org.jbpm.executor.commands.LogCleanupCommand`.
+
+NOTE: For a list of supported job commands in {PRODUCT}, download and extract the *{PRODUCT} {PRODUCT_VERSION} Source Distribution* from the https://access.redhat.com/jbossnetwork/restricted/listSoftware.html[Red Hat Customer Portal] and navigate to `~/jbpm-$VERSION/jbpm-services/jbpm-executor/src/main/java/org/jbpm/executor/commands`.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`commandName`
+|Name of the command by which to retrieve jobs (such as `org.jbpm.executor.commands.LogCleanupCommand` or `org.jbpm.executor.commands.PrintOutCommand`)
+|String
+|Required
+
+|`status`
+|Status of jobs to be retrieved (such as `QUEUED`, `DONE`, or `CANCELLED`)
+|Array [string]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/jobs/commands/org.jbpm.executor.commands.LogCleanupCommand?page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "request-info-instance": [
+    {
+      "request-instance-id": 6,
+      "request-status": "DONE",
+      "request-business-key": "job6",
+      "request-message": "Ready to execute",
+      "request-retries": 5,
+      "request-executions": 1,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540385144520
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    },
+    {
+      "request-instance-id": 7,
+      "request-status": "QUEUED",
+      "request-business-key": "job6",
+      "request-message": "Rescheduled reoccurring job",
+      "request-retries": 5,
+      "request-executions": 0,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540471544536
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    }
+  ]
+}
+----
+
+== [GET] /server/jobs/{jobId}
+
+Returns information about a specified job.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`jobId`
+|ID of the job to be retrieved
+|Integer
+|Required
+
+|`withErros`
+|Returns job execution errors when set to `true` (default: `null`)
+|Boolean
+|Optional
+
+|`withData`
+|Returns job execution data when set to `true` (default: `null`)
+|Boolean
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/jobs/6?withErrors=true&withData=true
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "request-instance-id": 6,
+  "request-status": "DONE",
+  "request-business-key": "job3",
+  "request-message": "Ready to execute",
+  "request-retries": 5,
+  "request-executions": 1,
+  "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+  "request-scheduled-date": {
+    "java.util.Date": 1540385144520
+  },
+  "request-data": {
+    "retries": "5",
+    "businessKey": "job3"
+  },
+  "response-data": {
+    "RequestInfoLogsRemoved": 2,
+    "BAMLogRemoved": 0,
+    "VariableInstanceLogRemoved": 0,
+    "ProcessInstanceLogRemoved": 0,
+    "TaskAuditLogRemoved": 0,
+    "ErrorInfoLogsRemoved": 0,
+    "TaskEventLogRemoved": 0,
+    "TaskVariableLogRemoved": 0,
+    "NodeInstanceLogRemoved": 0
+  },
+  "request-errors": {
+    "error-info-instance": []
+  },
+  "request-container-id": null
+}
+----
+
+== [PUT] /server/jobs/{jobId}
+
+Re-queues a specified job.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`jobId`
+|ID of the job to be re-queued
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Job 3 successfully re-queued."
+    }
+  ]
+}
+----
+
+== [DELETE] /server/jobs/{jobId}
+
+Deletes a specified job.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`jobId`
+|ID of the job to be deleted
+|Integer
+|Required
+|===
+
+*<@Maciej/@Tiho: The request works but the server responds "undocumented". Need to update the server so that it responds with the following, or similar.>*
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "response": [
+    {
+      "type": "SUCCESS",
+      "msg": "Job 3 successfully deleted."
+    }
+  ]
+}
+----
+
+== [GET] /server/jobs/keys/{businessKey}
+
+Returns information about a job with a specified business key.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`businessKey`
+|Business key by which to retrieve jobs
+|String
+|Required
+
+|`status`
+|Status of jobs to be retrieved (such as `QUEUED`, `DONE`, or `CANCELLED`)
+|Array [string]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/jobs/keys/job6?page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "request-info-instance": [
+    {
+      "request-instance-id": 6,
+      "request-status": "DONE",
+      "request-business-key": "job3",
+      "request-message": "Ready to execute",
+      "request-retries": 5,
+      "request-executions": 1,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540385144520
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    },
+    {
+      "request-instance-id": 7,
+      "request-status": "QUEUED",
+      "request-business-key": "job3",
+      "request-message": "Rescheduled reoccurring job",
+      "request-retries": 5,
+      "request-executions": 0,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540471544536
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    }
+  ]
+}
+----
+
+== [GET] /server/jobs/containers/{containerId}
+
+Returns jobs for specified KIE container.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`containerId`
+|ID of the KIE container for which you are retrieving jobs
+|String
+|Required
+
+|`status`
+|Status of jobs to be retrieved (such as `QUEUED`, `DONE`, or `CANCELLED`)
+|Array [string]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/jobs/containers/evaluation_1.0.0-SNAPSHOT?page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "request-info-instance": [
+    {
+      "request-instance-id": 6,
+      "request-status": "QUEUED",
+      "request-business-key": "job3",
+      "request-message": "Ready to execute",
+      "request-retries": 5,
+      "request-executions": 1,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540385144520
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    },
+    {
+      "request-instance-id": 7,
+      "request-status": "QUEUED",
+      "request-business-key": "job3",
+      "request-message": "Rescheduled reoccurring job",
+      "request-retries": 5,
+      "request-executions": 0,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540471544536
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    }
+  ]
+}
+----
+
+== [GET] /server/jobs/processes/instances/{processInstanceId}
+
+Returns jobs for specified process instance.
+
+.Request parameters
+[cols="25%,45%,15%,15%", frame="all", options="header"]
+|===
+|Name
+|Description
+|Type
+|Requirement
+
+|`processInstanceId`
+|ID of the process instance for which you are retrieving jobs
+|String
+|Required
+
+|`status`
+|Status of jobs to be retrieved (such as `QUEUED`, `DONE`, or `CANCELLED`)
+|Array [string]
+|Optional
+
+|`page`
+|Page number at which to start (default: `0`)
+|Integer
+|Optional
+
+|`pageSize`
+|Number or results per page (default: `10`)
+|Integer
+|Optional
+|===
+
+.Example GET endpoint with parameters
+[source]
+----
+http://localhost:8080/kie-server/services/rest/server/jobs/processes/instances/16?status=&page=0&pageSize=10
+----
+
+.Example server response (JSON)
+[source,json]
+----
+{
+  "request-info-instance": [
+    {
+      "request-instance-id": 6,
+      "request-status": "QUEUED",
+      "request-business-key": "job3",
+      "request-message": "Ready to execute",
+      "request-retries": 5,
+      "request-executions": 1,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540385144520
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    },
+    {
+      "request-instance-id": 7,
+      "request-status": "QUEUED",
+      "request-business-key": "job3",
+      "request-message": "Rescheduled reoccurring job",
+      "request-retries": 5,
+      "request-executions": 0,
+      "request-command": "org.jbpm.executor.commands.LogCleanupCommand",
+      "request-scheduled-date": {
+        "java.util.Date": 1540471544536
+      },
+      "request-data": null,
+      "response-data": null,
+      "request-errors": null,
+      "request-container-id": null
+    }
+  ]
+}
+----

@@ -1,0 +1,89 @@
+[id='kie-server-rest-api-con_{context}']
+= {KIE_SERVER} REST API for KIE containers and business assets
+
+{PRODUCT} provides a {KIE_SERVER} REST API that you can use to interact with your KIE containers and business assets (such as business rules, processes, and solvers) in {PRODUCT} without using the {CENTRAL} user interface. This API support enables you to maintain your {PRODUCT} resources more efficiently and optimize your integration and development with {PRODUCT}.
+
+With the {KIE_SERVER} REST API, you can perform the following actions:
+
+* Deploy or dispose KIE containers
+* Retrieve and update KIE container information
+* Return {KIE_SERVER} status and basic information
+* Retrieve and update business asset information
+* Execute business assets (such as rules and processes)
+
+{KIE_SERVER} REST API requests require the following components:
+
+Authentication::
+The {KIE_SERVER} REST API requires HTTP Basic authentication or token-based authentication for the user role `kie-server`. To view configured user roles for your {PRODUCT} distribution, navigate to `~/$SERVER_HOME/standalone/configuration/application-roles.properties` and `~/application-users.properties`.
++
+--
+To add a user with the `kie-server` role, navigate to `~/$SERVER_HOME/bin` and run the following command:
+
+[source,bash]
+----
+$ ./bin/jboss-cli.sh --commands="embed-server --std-out=echo,/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity(identity=<USERNAME>),/subsystem=elytron/filesystem-realm=ApplicationRealm:set-password(identity=<USERNAME>, clear={password='<PASSWORD>'}),/subsystem=elytron/filesystem-realm=ApplicationRealm:add-identity-attribute(identity=<USERNAME>, name=role, value=['kie-server'])"
+----
+
+For more information about user roles and {PRODUCT} installation options, see
+ifdef::PAM,DM[]
+{URL_INSTALLING_AND_CONFIGURING}#assembly-planning[_{PLANNING_INSTALL}_].
+endif::[]
+ifdef::DROOLS,JBPM[]
+<<_installing_the_kie_server>>.
+endif::[]
+--
+
+HTTP headers::
+The {KIE_SERVER} REST API requires the following HTTP headers for API requests:
++
+* `Accept`: Data format accepted by your requesting client:
+** `application/json` (JSON)
+** `application/xml` (XML, for JAXB or XSTREAM)
+* `Content-Type`: Data format of your `POST` or `PUT` API request data:
+** `application/json` (JSON)
+** `application/xml` (XML, for JAXB or XSTREAM)
+* `X-KIE-ContentType`: Required header for `application/xml` XSTREAM API requests and responses:
+** `XSTREAM`
+
+HTTP methods::
+The {KIE_SERVER} REST API supports the following HTTP methods for API requests:
++
+* `GET`: Retrieves specified information from a specified resource endpoint
+* `POST`: Updates a resource or resource instance
+* `PUT`: Updates or creates a resource or resource instance
+* `DELETE`: Deletes a resource or resource instance
+
+Base URL::
+The base URL for {KIE_SERVER} REST API requests is `\http://SERVER:PORT/kie-server/services/rest/`, such as  `\http://localhost:8080/kie-server/services/rest/`.
+
+Endpoints::
+{KIE_SERVER} REST API endpoints, such as `/server/containers/{containerId}` for a specified KIE container, are the URIs that you append to the {KIE_SERVER} REST API base URL to access the corresponding resource or type of resource in {PRODUCT}.
++
+--
+.Example request URL for `/server/containers/{containerId}` endpoint
+`\http://localhost:8080/kie-server/services/rest/server/containers/MyContainer`
+--
+
+Request parameters and request data::
+Many {KIE_SERVER} REST API requests require specific parameters in the request URL path to identify or filter specific resources and to perform specific actions. You can append URL parameters to the endpoint in the format `?<PARAM>=<VALUE>&<PARAM>=<VALUE>`.
++
+--
+.Example GET request URL with parameters
+`\http://localhost:8080/kie-server/services/rest/server/containers?groupId=com.redhat&artifactId=Project1&version=1.0&status=STARTED`
+
+HTTP `POST` and `PUT` requests may additionally require a request body or file with data to accompany the request.
+
+.Example POST request URL and JSON request body data
+`\http://localhost:8080/kie-server/services/rest/server/containers/MyContainer/release-id`
+
+[source,json]
+----
+{
+  "release-id": {
+    "artifact-id": "Project1",
+    "group-id": "com.redhat",
+    "version": "1.1"
+  }
+}
+----
+--

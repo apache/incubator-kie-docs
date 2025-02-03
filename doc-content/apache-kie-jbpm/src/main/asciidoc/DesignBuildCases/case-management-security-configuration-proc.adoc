@@ -1,0 +1,53 @@
+[id='case-management-security-configuration-proc-{context}']
+= Configuring security for case management
+
+You can turn off case instance authorization by setting the following system property to `false`:
+
+`org.jbpm.cases.auth.enabled`
+
+This system property is just one of the security components for case instances. In addition, you can configure case operations at the execution server level using the `case-authorization.properties` file, available at the root of the class path of the execution server application (`kie-server.war/WEB-INF/classes`).
+
+Using a simple configuration file for all possible case definitions encourages you to think about case management as domain-specific. `AuthorizationManager` for case security is pluggable, which allows you to include custom code for specific security handling.
+
+You can restrict the following case instance operations to case roles:
+
+* `CANCEL_CASE`
+* `DESTROY_CASE`
+* `REOPEN_CASE`
+* `ADD_TASK_TO_CASE`
+* `ADD_PROCESS_TO_CASE`
+* `ADD_DATA`
+* `REMOVE_DATA`
+* `MODIFY_ROLE_ASSIGNMENT`
+* `MODIFY_COMMENT`
+
+.Prerequisites
+* The {PRODUCT} {KIE_SERVER} is not running.
+
+.Procedure
+. Open the `JBOSS_HOME/standalone/deployments/kie-server.war/WEB-INF/classes/case-authorization.properties` file in your preferred editor.
++
+By default, the file contains the following operation restrictions:
++
+[source]
+----
+CLOSE_CASE=owner,admin
+CANCEL_CASE=owner,admin
+DESTROY_CASE=owner,admin
+REOPEN_CASE=owner,admin
+----
+. Add or remove role permissions for these operations as needed:
+.. To remove permission for a role to perform an operation, remove it from the list of authorized roles for that operation in the `case-authorization.properties` file. For example, removing the `admin` role from the `CLOSE_CASE` operation restricts permission to close a case to the case owner for all cases.
+.. To give a role permission to perform a case operation, add it to the list of authorized roles for that operation in the `case-authorization.properties` file. For example, to allow anyone with the `manager` role to perform a `CLOSE_CASE` operation, add it to the list of roles, separated by a comma:
++
+`CLOSE_CASE=owner,admin,manager`
+
+. To add role restrictions to other case operations listed in the file, remove the `#` from the line and list the role names in the following format:
++
+`OPERATION=role1,role2,roleN`
++
+Operations in the file that begin with `#` have restrictions ignored and can be performed by anyone involved in the case.
+. When you have finished assigning role permissions, save and close the `case-authorization.properties` file.
+. Start the execution server.
++
+The case authorization settings apply to all cases on the execution server.

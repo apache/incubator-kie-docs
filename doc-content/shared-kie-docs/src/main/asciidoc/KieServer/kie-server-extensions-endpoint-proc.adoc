@@ -1,0 +1,259 @@
+[id='kie-server-extensions-endpoint-proc_{context}']
+
+= Extending an existing {KIE_SERVER} capability with a custom REST API endpoint
+
+The {KIE_SERVER} REST API enables you to interact with your KIE containers and business assets (such as business rules, processes, and solvers) in {PRODUCT} without using the {CENTRAL} user interface. The available REST endpoints are determined by the capabilities enabled in your {KIE_SERVER} system properties (for example, `org.drools.server.ext.disabled=false` for the `BRM` capability). You can extend an existing {KIE_SERVER} capability with a custom REST API endpoint to further adapt the {KIE_SERVER} REST API to your business needs.
+
+As an example, this procedure extends the `Drools` {KIE_SERVER} extension (for the `BRM` capability) with the following custom REST API endpoint:
+
+.Example custom REST API endpoint
+[source]
+----
+/server/containers/instances/{containerId}/ksession/{ksessionId}
+----
+
+This example custom endpoint accepts a list of facts to be inserted into the working memory of the {DECISION_ENGINE}, automatically executes all rules, and retrieves all objects from the KIE session in the specified KIE container.
+
+.Procedure
+. Create an empty Maven project and define the following packaging type and dependencies in the `pom.xml` file for the project:
++
+.Example pom.xml file in the sample project
+[source,xml,subs="attributes+"]
+----
+<packaging>jar</packaging>
+
+<properties>
+  <version.org.kie>{MAVEN_ARTIFACT_VERSION}</version.org.kie>
+</properties>
+
+<dependencies>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie</groupId>
+    <artifactId>kie-internal</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-api</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-common</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-services-drools</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.kie.server</groupId>
+    <artifactId>kie-server-rest-common</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-core</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.drools</groupId>
+    <artifactId>drools-compiler</artifactId>
+    <version>${version.org.kie}</version>
+  </dependency>
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.25</version>
+  </dependency>
+</dependencies>
+----
+. Implement the `org.kie.server.services.api.KieServerApplicationComponentsService` interface in a Java class in your project, as shown in the following example:
++
+--
+.Sample implementation of the `KieServerApplicationComponentsService` interface
+[source,java]
+----
+public class CusomtDroolsKieServerApplicationComponentsService implements KieServerApplicationComponentsService {  // <1>
+
+    private static final String OWNER_EXTENSION = "Drools";  // <2>
+
+    public Collection<Object> getAppComponents(String extension, SupportedTransports type, Object... services) {  // <3>
+        // Do not accept calls from extensions other than the owner extension:
+        if ( !OWNER_EXTENSION.equals(extension) ) {
+            return Collections.emptyList();
+        }
+
+        RulesExecutionService rulesExecutionService = null;  // <4>
+        KieServerRegistry context = null;
+
+        for( Object object : services ) {
+            if( RulesExecutionService.class.isAssignableFrom(object.getClass()) ) {
+                rulesExecutionService = (RulesExecutionService) object;
+                continue;
+            } else if( KieServerRegistry.class.isAssignableFrom(object.getClass()) ) {
+                context = (KieServerRegistry) object;
+                continue;
+            }
+        }
+
+        List<Object> components = new ArrayList<Object>(1);
+        if( SupportedTransports.REST.equals(type) ) {
+            components.add(new CustomResource(rulesExecutionService, context));  // <5>
+        }
+
+        return components;
+    }
+
+}
+----
+<1> Delivers REST endpoints to the {KIE_SERVER} infrastructure that is deployed when the application starts.
+<2> Specifies the extension that you are extending, such as the `Drools` extension in this example.
+<3> Returns all resources that the REST container must deploy. Each extension that is enabled in your {KIE_SERVER} instance calls the `getAppComponents` method, so the `if ( !OWNER_EXTENSION.equals(extension) )` call returns an empty collection for any extensions other than the specified `OWNER_EXTENSION` extension.
+<4> Lists the services from the specified extension that you want to use, such as the `RulesExecutionService` and `KieServerRegistry` services from the `Drools` extension in this example.
+<5> Specifies the transport type for the extension, either `REST` or `JMS` (`REST` in this example), and the `CustomResource` class that returns the resource as part of the `components` list.
+--
+. Implement the `CustomResource` class that {KIE_SERVER} can use to provide the additional functionality for the new REST resource, as shown in the following example:
++
+--
+.Sample implementation of the `CustomResource` class
+[source,java]
+----
+// Custom base endpoint:
+@Path("server/containers/instances/{containerId}/ksession")
+public class CustomResource {
+
+    private static final Logger logger = LoggerFactory.getLogger(CustomResource.class);
+
+    private KieCommands commandsFactory = KieServices.Factory.get().getCommands();
+
+    private RulesExecutionService rulesExecutionService;
+    private KieServerRegistry registry;
+
+    public CustomResource() {
+
+    }
+
+    public CustomResource(RulesExecutionService rulesExecutionService, KieServerRegistry registry) {
+        this.rulesExecutionService = rulesExecutionService;
+        this.registry = registry;
+    }
+
+    // Supported HTTP method, path parameters, and data formats:
+    @POST
+    @Path("/{ksessionId}")
+    @Consumes({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
+    public Response insertFireReturn(@Context HttpHeaders headers,
+            @PathParam("containerId") String id,
+            @PathParam("ksessionId") String ksessionId,
+            String cmdPayload) {
+
+        Variant v = getVariant(headers);
+        String contentType = getContentType(headers);
+
+        // Marshalling behavior and supported actions:
+        MarshallingFormat format = MarshallingFormat.fromType(contentType);
+        if (format == null) {
+            format = MarshallingFormat.valueOf(contentType);
+        }
+        try {
+            KieContainerInstance kci = registry.getContainer(id);
+
+            Marshaller marshaller = kci.getMarshaller(format);
+
+            List<?> listOfFacts = marshaller.unmarshall(cmdPayload, List.class);
+
+            List<Command<?>> commands = new ArrayList<Command<?>>();
+            BatchExecutionCommand executionCommand = commandsFactory.newBatchExecution(commands, ksessionId);
+
+            for (Object fact : listOfFacts) {
+                commands.add(commandsFactory.newInsert(fact, fact.toString()));
+            }
+            commands.add(commandsFactory.newFireAllRules());
+            commands.add(commandsFactory.newGetObjects());
+
+            ExecutionResults results = rulesExecutionService.call(kci, executionCommand);
+
+            String result = marshaller.marshall(results);
+
+
+            logger.debug("Returning OK response with content '{}'", result);
+            return createResponse(result, v, Response.Status.OK);
+        } catch (Exception e) {
+            // If marshalling fails, return the `call-container` response to maintain backward compatibility:
+            String response = "Execution failed with error : " + e.getMessage();
+            logger.debug("Returning Failure response with content '{}'", response);
+            return createResponse(response, v, Response.Status.INTERNAL_SERVER_ERROR);
+        }
+
+    }
+}
+----
+
+In this example, the `CustomResource` class for the custom endpoint specifies the following data and behavior:
+
+* Uses the base endpoint `server/containers/instances/{containerId}/ksession`
+* Uses `POST` HTTP method
+* Expects the following data to be given in REST requests:
+** The `containerId` as a path argument
+** The `ksessionId` as a path argument
+** List of facts as a message payload
+* Supports all {KIE_SERVER} data formats:
+** XML (JAXB, XStream)
+** JSON
+* Unmarshals the payload into a `List<?>` collection and, for each item in the list, creates an `InsertCommand` instance followed by `FireAllRules` and `GetObject` commands.
+* Adds all commands to the `BatchExecutionCommand` instance that calls to the {DECISION_ENGINE}.
+--
+. To make the new endpoint discoverable for {KIE_SERVER}, create a `META-INF/services/org.kie.server.services.api.KieServerApplicationComponentsService` file in your Maven project and add the fully qualified class name of the `KieServerApplicationComponentsService` implementation class within the file. For this example, the file contains the single line `org.kie.server.ext.drools.rest.CusomtDroolsKieServerApplicationComponentsService`.
+. Build your project and copy the resulting JAR file into the `~/kie-server.war/WEB-INF/lib` directory of your project.
+ifdef::DM,PAM[]
+For example, on {EAP}, the path to this directory is `_EAP_HOME_/standalone/deployments/kie-server.war/WEB-INF/lib`.
+endif::[]
+. Start {KIE_SERVER} and deploy the built project to the running {KIE_SERVER}. You can deploy the project using either the {CENTRAL} interface or the {KIE_SERVER} REST API (a `PUT` request to `\http://SERVER:PORT/kie-server/services/rest/server/containers/{containerId}`).
++
+--
+After your project is deployed on a running {KIE_SERVER}, you can start interacting with your new REST endpoint.
+
+For this example, you can use the following information to invoke the new endpoint:
+
+* *Example request URL:* `\http://localhost:8080/kie-server/services/rest/server/containers/instances/demo/ksession/defaultKieSession`
+* *HTTP method:* `POST`
+* *HTTP headers:*
+** `Content-Type: application/json`
+** `Accept: application/json`
+
+* *Example message payload:*
++
+[source,json]
+----
+[
+  {
+    "org.jbpm.test.Person": {
+      "name": "john",
+      "age": 25
+    }
+  },
+  {
+    "org.jbpm.test.Person": {
+      "name": "mary",
+      "age": 22
+    }
+  }
+]
+----
+* *Example server response:* `200` (success)
+* *Example server log output:*
++
+[source]
+----
+13:37:20,347 INFO  [stdout] (default task-24) Hello mary
+13:37:20,348 INFO  [stdout] (default task-24) Hello john
+----
+--

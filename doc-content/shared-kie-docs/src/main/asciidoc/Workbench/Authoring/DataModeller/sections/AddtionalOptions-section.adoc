@@ -1,0 +1,201 @@
+[[_sect_datamodeler_additionaloptions]]
+= Additional options
+
+
+As stated before, both Data Objects as well as Fields require some of their initial properties to be set upon creation.
+Additionally there are three domains of properties that can be configured for a given Data Object.
+A domain is basically a set of properties related to a given business area.
+Current available domains are, "Drools & jBPM", "Persistence" and the "Advanced" domain.
+To work on a given domain the user should select the corresponding "Tool window" (see below) on the right side toolbar.
+Every tool window usually provides two editors, the "Data Object" level editor and the "Field" level editor, that will be shown depending on the last selected item, the Data Object or the Field.
+
+== Drools & jBPM domain
+
+
+The Drools & jBPM domain editors manages the set of Data Object or Field properties related to drools applications.
+
+=== Drools & jBPM object editor
+
+
+The Drools & jBPM object editor manages the object level drools properties
+
+.The data object's properties
+image::Workbench/Authoring/DataModeller/6.3/data-object-drools-tool-window.png[align="center"]
+
+
+
+* TypeSafe: this property allows to enable/disable the type safe behaviour for current type. By default all type declarations are compiled with type safety enabled. (See Drools for more information on this matter).
+* ClassReactive: this property allows to mark this type to be treated as "Class Reactive" by the {DECISION_ENGINE}. (See Drools for more information on this matter).
+* PropertyReactive: this property allows to mark this type to be treated as "Property Reactive" by the {DECISION_ENGINE}. (See Drools for more information on this matter).
+* Role: this property allows to configure how the {DECISION_ENGINE} should handle instances of this type: either as regular facts or as events. By default all types are handled as a regular fact, so for the time being the only value that can be set is "Event" to declare that this type should be handled as an event. (See Drools Fusion for more information on this matter).
+* Timestamp: this property allows to configure the "timestamp" for an event, by selecting one of his attributes. If set the {DECISION_ENGINE} will use the timestamp from the given attribute instead of reading it from the Session Clock. If not, the {DECISION_ENGINE} will automatically assign a timestamp to the event. (See Drools Fusion for more information on this matter).
+* Duration: this property allows to configure the "duration" for an event, by selecting one of his attributes. If set the {DECISION_ENGINE} will use the duration from the given attribute instead of using the default event duration = 0. (See Drools Fusion for more information on this matter).
+* Expires: this property allows to configure the "time offset" for an event expiration. If set, this value must be a temporal interval in the form: [#d][#h][#m][#s][#[ms]] Where [ ] means an optional parameter and # means a numeric value. e.g.: 1d2h, means one day and two hours. (See Drools Fusion for more information on this matter).
+* Remotable: If checked this property makes the Data Object available to be used with jBPM remote services as REST, JMS and WS. (See jBPM for more information on this matter).
++
+
+
+=== Drools & jBPM field editor
+
+
+The Drools & jBPM object editor manages the field level drools properties
+
+.The data object's field properties
+image::Workbench/Authoring/DataModeller/6.3/field-drools-tool-window.png[align="center"]
+
+
+
+* Equals: checking this property for a Data Object field implies that it will be taken into account, at the code generation level, for the creation of both the equals() and hashCode() methods in the generated Java class. We will explain this in more detail in the following section.
+* Position: this field requires a zero or positive integer. When set, this field will be interpreted by the {DECISION_ENGINE} as a positional argument (see the section below and also the Drools documentation for more information on this subject).
+
+
+== Persistence domain
+
+
+The Persistence domain editors manages the set of Data Object or Field properties related to persistence.
+
+=== Persistence domain object editor
+
+
+Persistence domain object editor manages the object level persistence properties
+
+.The data object's properties
+image::Workbench/Authoring/DataModeller/6.3/data-object-persistence-tool-window.png[align="center"]
+
+
+
+* Persistable: this property allows to configure current Data Object as persistable.
+* Table name: this property allows to set a user defined database table name for current Data Object.
+
+
+=== Persistence domain field editor
+
+
+The persistence domain field editor manages the field level persistence properties and is divided into three sections.
+
+.Persistence domain field editor sections
+image::Workbench/Authoring/DataModeller/6.3/field-persistence-tool-window-sections.png[align="center"]
+
+
+
+==== Identifier:
+
+
+A persistable Data Object should have one and only one field defined as the Data Object identifier.
+The identifier is typically a unique number that distinguishes a given Data Object instance from all other instances of the same class.
+
+* Is Identifier: marks current field as the Data Object identifier. A persistable Data Object should have one and only one field marked as identifier, and it should be a base java type, like String, Integer, Long, etc. A field that references a Data Object, or is a multiple field can not be marked as identifier. And also composite identifiers are not supported in this version. When a persistable Data Object is created an identifier field is created by default with the properly initializations, it's strongly recommended to use this identifier.
+* Generation Strategy: the generation strategy establishes how the identifier values will be automatically generated when the Data Object instances are created and stored in a database. (e.g. by the forms associated to jBPM processes human tasks.) When the by default Identifier field is created, the generation strategy will be also automatically set and it's strongly recommended to use this configuration.
+* Sequence Generator: the generator represents the seed for the values that will be used by the Generation Strategy. When the by default Identifier field is created the Sequence Generator will be also automatically generated and properly configured to be used by the Generation Strategy.
+
+
+==== Column Properties:
+
+
+The column properties section enables the customization of some properties of the database column that will store the field value.
+
+* Column name: optional value that sets the database column name for the given field.
+* Unique: When checked the unique property establishes that current field value should be a unique key when stored in the database. (if not set the default value is false)
+* Nullable: When checked establishes that current field value can be null when stored in a database. (if not set the default value is true)
+* Insertable: When checked establishes that column will be included in SQL INSERT statements generated by the persistence provider. (if not set the default value is true)
+* Updatable: When checked establishes that the column will be included SQL UPDATE statements generated by the persistence provider. (if not set the default value is true)
+
+
+==== Relationship Properties:
+
+
+When the field's type is a Data Object type, or a list of a Data Object type a relationship type should be set in order to let the persistence provider to manage the relation.
+Fortunately this relation type is automatically set when such kind of fields are added to an already marked as persistable Data Object.
+The relationship type is set by the following popup.
+
+.Relationship configuration popup
+image::Workbench/Authoring/DataModeller/6.3/field-persistence-tool-window-sections-relationship-dialog.png[align="center"]
+
+
+* Relationship type: sets the type of relation from one of the following options:
++
+One to one: typically used for 1:1 relations where "A is related to one instance of B", and B exists only when A exists.
+e.g.
+PurchaseOrder -> PurchaseOrderHeader (a PurchaseOrderHeader exists only if the PurchaseOrder exists)
++
+One to many: typically used for 1:N relations where "A is related to N instances of B", and the related instances of B exists only when A exists.
+e.g.
+PurchaseOrder -> PurchaseOrderLine (a PurchaseOrderLine exists only if the PurchaseOrder exists)
++
+Many to one: typically used for 1:1 relations where "A is related to one instance of B", and B can exist even without A.
+e.g.
+PurchaseOrder -> Client (a Client can exist in the database even without an associated PurchaseOrder)
++
+Many to many: typically used for N:N relations where "A can be related to N instances of B, and B can be related to M instances of A at the same time", and both B and A instances can exist in the database independently of the related instances.
+e.g.
+Course -> Student.
+(Course can be related to N Students, and a given Student can attend to M courses)
++
+When a field of type "Data Object" is added to a given persistable Data Object, the "Many to One" relationship type is generated by default.
++
+And when a field of type "list of Data Object" is added to a given persistable Data Object , the "One to Many" relationship is generated by default.
+* Cascade mode: Defines the set of cascadable operations that are propagated to the associated entity. The value cascade=ALL is equivalent to cascade={PERSIST, MERGE, REMOVE, REFRESH}. e.g. when A -> B, and cascade "PERSIST or ALL" is set, if A is saved, then B will also be saved.
++
+The by default cascade mode created by the data modeller is "ALL" and it's strongly recommended to use this mode when Data Objects are being used by jBPM processes and forms.
+* Fetch mode: Defines how related data will be fetched from database at reading time.
++
+EAGER: related data will be read at the same time.
+e.g.
+If A -> B, when A is read from database B will be read at the same time.
++
+LAZY: reading of related data will be delayed usually to the moment they are required.
+e.g.
+If PurchaseOrder -> PurchaseOrderLine the lines reading will be postponed until a method "getLines()" is invoked on a PurchaseOrder instance.
++
+The default fetch mode created by the data modeller is "EAGER" and it's strongly recommended to use this mode when Data Objects are being used by jBPM processes and forms.
+* Optional: establishes if the right side member of a relationship can be null.
+* Mapped by: used for reverse relations.
+
+
+== Advanced domain
+
+
+The advanced domain enables the configuration of whatever parameter set by the other domains as well as the adding of arbitrary parameters.
+As it will be shown in the code generation section every "Data Object / Field" parameter is represented by a java annotation.
+The advanced mode enables the configuration of this annotations.
+
+=== Advanced domain Data Object / Field editor.
+
+
+The advanced domain editor has the same shape for both Data Object and Field.
+
+.Advanced domain editor.
+image::Workbench/Authoring/DataModeller/6.3/data-object-or-field-advanced-tool-window.png[align="center"]
+
+
+The following operations are available
+
+* delete: enables the deletion of a given Data Object or Field annotation.
+* clear: clears a given annotation parameter value.
+* edit: enables the edition of a given annotation parameter value.
+* add annotation: The add annotation button will start a wizard that will let the addition of whatever java annotation available in the project dependencies.
++
+Add annotation wizard step #1: the first step of the wizard requires the entering of a fully qualified class name of an annotation, and by pressing the "search" button the annotation definition will be loaded into the wizard.
+Additionally when the annotation definition is loaded, different wizard steps will be created in order to enable the completion of the different annotation parameters.
+Required parameters will be marked with "*".
++
+
+.Annotation definition loaded into the wizard.
+image::Workbench/Authoring/DataModeller/6.3/add-annotation-wizard-step1-annotation-loaded.png[align="center"]
+
++
+Whenever it's possible the wizard will provide a suitable editor for the given parameters.
++
+
+.Automatically generated enum values editor for an Enumeration annotation parameter.
+image::Workbench/Authoring/DataModeller/6.3/add-annotation-wizard-step2-enum-param-editor.png[align="center"]
+
++
+A generic parameter editor will be provided when it's not possible to calculate a customized editor
++
+
+.Generic annotation parameter editor
+image::Workbench/Authoring/DataModeller/6.3/add-annotation-wizard-step2-generic-param-editor.png[align="center"]
+
++
+When all required parameters have been entered and validated, the finish button will be enabled and the wizard can be completed by adding an annotation to the given Data Object or Field.
