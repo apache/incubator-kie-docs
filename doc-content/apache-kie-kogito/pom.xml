@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.kie.kogito</groupId>
+    <artifactId>apache-kie-guides</artifactId>
+    <version>10.0.0</version>
+  </parent>
+
+  <groupId>org.kie.kogito</groupId>
+  <artifactId>kogito-docs</artifactId>
+  <version>10.0.0</version>
+  <packaging>jar</packaging>
+
+  <name>Apache KIE :: Kogito Documentation :: Kogito</name>
+  <description>Kogito Documentation</description>
+
+  <properties>
+    <java.module.name>org.drools.docs</java.module.name>
+  </properties>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>topics</directory>
+      </resource>
+      <resource>
+        <directory>community</directory>
+      </resource>
+    </resources>
+
+    <plugins>
+      <plugin>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctor-maven-plugin</artifactId>
+        <configuration>
+          <imagesDir>${project.basedir}/../../_images</imagesDir>
+          <attributes>
+            <artifact-dir>${project.basedir}/../../_artifacts</artifact-dir>
+          </attributes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+      </plugin>
+    </plugins>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.asciidoctor</groupId>
+          <artifactId>asciidoctor-maven-plugin</artifactId>
+          <configuration>
+            <attributes>
+              <html-googleAnalyticsId>UA-62250098-1</html-googleAnalyticsId>
+            </attributes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  
+  <profiles>
+    <profile>
+      <id>syncchecks</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>verify</phase>
+                <configuration>
+                  <target>
+                    <mkdir dir="${project.build.directory}/download/DMN" />
+                    <get src="https://raw.githubusercontent.com/apache/incubator-kie-drools/10.0.x/kie-dmn/kie-dmn-feel/ref-dmn-feel-builtin-functions.adoc"
+                         dest="${project.build.directory}/download/DMN/ref-dmn-feel-builtin-functions.adoc"
+                         verbose="true"
+                         usetimestamp="false"/>
+                    <echo message="Now checking that DMN content is up-to-date with main source repo..."/>
+                    <fail message="DMN content is not up-to-date with main source repo.">
+                      <condition>
+                          <not>
+                            <filesmatch file1="${project.basedir}/src/main/asciidoc/DMN/ref-dmn-feel-builtin-functions.adoc"
+                                        file2="${project.build.directory}/download/DMN/ref-dmn-feel-builtin-functions.adoc"
+                                        textfile="true"/>
+                          </not>
+                      </condition>
+                    </fail>
+                    <echo message="DMN content looks to be up-to-date with main source repo!"/>
+                  </target>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>
