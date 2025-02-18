@@ -1,0 +1,2771 @@
+[id="chap-kogito-decision-engine"]
+= {DECISION_ENGINE_CAP} in {PRODUCT}
+ifdef::context[:parent-context: {context}]
+:context: kogito-decision-engine
+
+[role="_abstract"]
+As a developer of business decisions, your understanding of the {DECISION_ENGINE} in {PRODUCT} can help you design more effective business assets and a more scalable decision management architecture. The {DECISION_ENGINE} is the {PRODUCT} component that stores, processes, and evaluates data to execute business rules and to reach the decisions that you define. This document describes basic concepts and functions of the {DECISION_ENGINE} to consider as you create your business rule system and decision services in {PRODUCT}.
+
+[id="con-decision-engine_{context}"]
+== {DECISION_ENGINE_CAP} in {PRODUCT}
+
+[role="_abstract"]
+The {DECISION_ENGINE} is the rules engine in {PRODUCT}. The {DECISION_ENGINE} stores, processes, and evaluates data to execute the business rules or decision models that you define. The basic function of the {DECISION_ENGINE} is to match incoming data, or _facts_, to the conditions of rules and determine whether and how to execute the rules.
+
+The {DECISION_ENGINE} operates using the following basic components:
+
+* *Rules:* Business rules or DMN decisions that you define. All rules must contain at a minimum the conditions that trigger the rule and the actions that the rule dictates.
+* *Facts:* Data that enters or changes in the {DECISION_ENGINE} that the {DECISION_ENGINE} matches to rule conditions to execute applicable rules.
+* *Production memory:* Location where rules are stored in the {DECISION_ENGINE}.
+* *Working memory:* Location where facts are stored in the {DECISION_ENGINE}.
+* *Agenda:* Location where activated rules are registered and sorted (if applicable) in preparation for execution.
+
+When a business user or an automated system adds or updates rule-related information in {PRODUCT}, that information is inserted into the working memory of the {DECISION_ENGINE} in the form of one or more facts. The {DECISION_ENGINE} matches those facts to the conditions of the rules that are stored in the production memory to determine eligible rule executions. (This process of matching facts to rules is often referred to as _pattern matching_.) When rule conditions are met, the {DECISION_ENGINE} activates and registers rules in the agenda, where the {DECISION_ENGINE} then sorts prioritized or conflicting rules in preparation for execution.
+
+The following diagram illustrates these basic components of the {DECISION_ENGINE}:
+
+.Overview of basic {DECISION_ENGINE} components
+image::kogito/decision-engine/rule-engine-inkscape_enterprise.png[align="center"]
+
+These core concepts can help you to better understand other more advanced components, processes, and subprocesses of the {DECISION_ENGINE}, and as a result, to design more effective business assets in {PRODUCT}.
+
+////
+//@comment: Excluded for now, not applicable to Kogito, no replacement yet. (Stetson, 9 Mar 2020)
+
+[id="con-kie-sessions_{context}"]
+== KIE sessions
+
+[role="_abstract"]
+In {PRODUCT}, a KIE session stores and executes runtime data. The KIE session is created from a KIE base or directly from a KIE container if you have defined the KIE session in the KIE module descriptor file (`kmodule.xml`) for your project.
+
+.Example KIE session configuration in a `kmodule.xml` file
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase>
+    ...
+    <ksession name="KSession2_1" type="stateless" default="true" clockType="realtime">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+
+A KIE base is a repository that you define in the KIE module descriptor file (`kmodule.xml`) for your project and contains all
+ifdef::DM[]
+rules and other business assets
+endif::DM[]
+ifdef::PAM[]
+rules, processes, and other business assets
+endif::PAM[]
+in {PRODUCT}, but does not contain any runtime data.
+
+.Example KIE base configuration in a `kmodule.xml` file
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase name="KBase2" default="false" eventProcessingMode="stream" equalsBehavior="equality" declarativeAgenda="enabled" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+
+A KIE session can be stateless or stateful. In a stateless KIE session, data from a previous invocation of the KIE session (the previous session state) is discarded between session invocations. In a stateful KIE session, that data is retained. The type of KIE session you use depends on your project requirements and how you want data from different asset invocations to be persisted.
+
+[id="con-kie-sessions-stateless_{context}"]
+=== Stateless KIE sessions
+
+[role="_abstract"]
+A stateless KIE session is a session that does not use inference to make iterative changes to facts over time. In a stateless KIE session, data from a previous invocation of the KIE session (the previous session state) is discarded between session invocations, whereas in a stateful KIE session, that data is retained. A stateless KIE session behaves similarly to a function in that the results that it produces are determined by the contents of the KIE base and by the data that is passed into the KIE session for execution at a specific point in time. The KIE session has no memory of any data that was passed into the KIE session previously.
+
+Stateless KIE sessions are commonly used for the following use cases:
+
+* *Validation*, such as validating that a person is eligible for a mortgage
+* *Calculation*, such as computing a mortgage premium
+* *Routing and filtering*, such as sorting incoming emails into folders or sending incoming emails to a destination
+
+For example, consider the following driver's license data model and sample DRL rule:
+
+.Data model for driver's license application
+[source,java]
+----
+public class Applicant {
+  private String name;
+  private int age;
+  private boolean valid;
+  // Getter and setter methods
+}
+----
+
+.Sample DRL rule for driver's license application
+[source]
+----
+package com.company.license
+
+rule "Is of valid age"
+when
+  $a : Applicant(age < 18)
+then
+  $a.setValid(false);
+end
+----
+
+The `Is of valid age` rule disqualifies any applicant younger than 18 years old. When the `Applicant` object is inserted into the {DECISION_ENGINE}, the {DECISION_ENGINE} evaluates the constraints for each rule and searches for a match. The `"objectType"` constraint is always implied, after which any number of explicit field constraints are evaluated. The variable `$a` is a binding variable that references the matched object in the rule consequence.
+
+[NOTE]
+====
+The dollar sign (`$`) is optional and helps to differentiate between variable names and field names.
+====
+
+In this example, the sample rule and all other files in the `~/resources` folder of the {PRODUCT} project are built with the following code:
+
+.Create the KIE container
+[source,java]
+----
+KieServices kieServices = KieServices.Factory.get();
+
+KieContainer kContainer = kieServices.getKieClasspathContainer();
+----
+
+This code compiles all the rule files found on the class path and adds the result of this compilation, a `KieModule` object, in the `KieContainer`.
+
+Finally, the `StatelessKieSession` object is instantiated from the `KieContainer` and is executed against specified data:
+
+.Instantiate the stateless KIE session and enter data
+[source,java]
+----
+StatelessKieSession kSession = kContainer.newStatelessKieSession();
+
+Applicant applicant = new Applicant("Mr John Smith", 16);
+
+assertTrue(applicant.isValid());
+
+ksession.execute(applicant);
+
+assertFalse(applicant.isValid());
+----
+
+In a stateless KIE session configuration, the `execute()` call acts as a combination method that instantiates the `KieSession` object, adds all the user data and executes user commands, calls `fireAllRules()`, and then calls `dispose()`. Therefore, with a stateless KIE session, you do not need to call `fireAllRules()` or call `dispose()` after session invocation as you do with a stateful KIE session.
+
+In this case, the specified applicant is under the age of 18, so the application is declined.
+
+For a more complex use case, see the following example. This example uses a stateless KIE session and executes rules against an iterable list of objects, such as a collection.
+
+.Expanded data model for driver's license application
+[source,java]
+----
+public class Applicant {
+  private String name;
+  private int age;
+  // Getter and setter methods
+}
+
+public class Application {
+  private Date dateApplied;
+  private boolean valid;
+  // Getter and setter methods
+}
+----
+
+.Expanded DRL rule set for driver's license application
+[source]
+----
+package com.company.license
+
+rule "Is of valid age"
+when
+  Applicant(age < 18)
+  $a : Application()
+then
+  $a.setValid(false);
+end
+
+rule "Application was made this year"
+when
+  $a : Application(dateApplied > "01-jan-2009")
+then
+  $a.setValid(false);
+end
+----
+
+.Expanded Java source with iterable execution in a stateless KIE session
+[source,java]
+----
+StatelessKieSession ksession = kbase.newStatelessKnowledgeSession();
+Applicant applicant = new Applicant("Mr John Smith", 16);
+Application application = new Application();
+
+assertTrue(application.isValid());
+ksession.execute(Arrays.asList(new Object[] { application, applicant }));  // <1>
+assertFalse(application.isValid());
+
+ksession.execute
+  (CommandFactory.newInsertIterable(new Object[] { application, applicant }));  // <2>
+
+List<Command> cmds = new ArrayList<Command>();  // <3>
+cmds.add(CommandFactory.newInsert(new Person("Mr John Smith"), "mrSmith"));
+cmds.add(CommandFactory.newInsert(new Person("Mr John Doe"), "mrDoe"));
+
+BatchExecutionResults results = ksession.execute(CommandFactory.newBatchExecution(cmds));
+assertEquals(new Person("Mr John Smith"), results.getValue("mrSmith"));
+----
+
+<1> Method for executing rules against an iterable collection of objects produced by the `Arrays.asList()` method. Every collection element is inserted before any matched rules are executed. The `execute(Object object)` and `execute(Iterable objects)` methods are wrappers around the `execute(Command command)` method that comes from the `BatchExecutor` interface.
+<2> Execution of the iterable collection of objects using the `CommandFactory` interface.
+<3> `BatchExecutor` and `CommandFactory` configurations for working with many different commands or result output identifiers. The `CommandFactory` interface supports other commands that you can use in the `BatchExecutor`, such as `StartProcess`, `Query`, and `SetGlobal`.
+
+[id="con-kie-sessions-stateless-globals_{context}"]
+==== Global variables in stateless KIE sessions
+
+[role="_abstract"]
+The `StatelessKieSession` object supports global variables (globals) that you can configure to be resolved as session-scoped globals, delegate globals, or execution-scoped globals.
+
+* *Session-scoped globals:* For session-scoped globals, you can use the method `getGlobals()` to return a `Globals` instance that provides access to the KIE session globals. These globals are used for all execution calls. Use caution with mutable globals because execution calls can be executing simultaneously in different threads.
++
+.Session-scoped global
+[source,java]
+----
+import org.kie.api.runtime.StatelessKieSession;
+
+StatelessKieSession ksession = kbase.newStatelessKieSession();
+
+// Set a global `myGlobal` that can be used in the rules.
+ksession.setGlobal("myGlobal", "I am a global");
+
+// Execute while resolving the `myGlobal` identifier.
+ksession.execute(collection);
+----
+
+* *Delegate globals:* For delegate globals, you can assign a value to a global (with `setGlobal(String, Object)`) so that the value is stored in an internal collection that maps identifiers to values. Identifiers in this internal collection have priority over any supplied delegate. If an identifier cannot be found in this internal collection, the delegate global (if any) is used.
+
+* *Execution-scoped globals:* For execution-scoped globals, you can use the `Command` object to set a global that is passed to the `CommandExecutor` interface for execution-specific global resolution.
+
+The `CommandExecutor` interface also enables you to export data using out identifiers for globals, inserted facts, and query results:
+
+.Out identifiers for globals, inserted facts, and query results
+[source,java]
+----
+import org.kie.api.runtime.ExecutionResults;
+
+// Set up a list of commands.
+List cmds = new ArrayList();
+cmds.add(CommandFactory.newSetGlobal("list1", new ArrayList(), true));
+cmds.add(CommandFactory.newInsert(new Person("jon", 102), "person"));
+cmds.add(CommandFactory.newQuery("Get People" "getPeople"));
+
+// Execute the list.
+ExecutionResults results = ksession.execute(CommandFactory.newBatchExecution(cmds));
+
+// Retrieve the `ArrayList`.
+results.getValue("list1");
+// Retrieve the inserted `Person` fact.
+results.getValue("person");
+// Retrieve the query as a `QueryResults` instance.
+results.getValue("Get People");
+----
+
+[id="con-kie-sessions-stateful_{context}"]
+=== Stateful KIE sessions
+
+[role="_abstract"]
+A stateful KIE session is a session that uses inference to make iterative changes to facts over time. In a stateful KIE session, data from a previous invocation of the KIE session (the previous session state) is retained between session invocations, whereas in a stateless KIE session, that data is discarded.
+
+WARNING: Ensure that you call the `dispose()` method after running a stateful KIE session so that no memory leaks occur between session invocations.
+
+Stateful KIE sessions are commonly used for the following use cases:
+
+* *Monitoring*, such as monitoring a stock market and automating the buying process
+* *Diagnostics*, such as running fault-finding processes or medical diagnostic processes
+* *Logistics*, such as parcel tracking and delivery provisioning
+* *Ensuring compliance*, such as verifying the legality of market trades
+
+For example, consider the following fire alarm data model and sample DRL rules:
+
+.Data model for sprinklers and fire alarm
+[source,java]
+----
+public class Room {
+  private String name;
+  // Getter and setter methods
+}
+
+public class Sprinkler {
+  private Room room;
+  private boolean on;
+  // Getter and setter methods
+}
+
+public class Fire {
+  private Room room;
+  // Getter and setter methods
+}
+
+public class Alarm { }
+----
+
+.Sample DRL rule set for activating sprinklers and alarm
+[source]
+----
+rule "When there is a fire turn on the sprinkler"
+when
+  Fire($room : room)
+  $sprinkler : Sprinkler(room == $room, on == false)
+then
+  modify($sprinkler) { setOn(true) };
+  System.out.println("Turn on the sprinkler for room "+$room.getName());
+end
+
+rule "Raise the alarm when we have one or more fires"
+when
+    exists Fire()
+then
+    insert( new Alarm() );
+    System.out.println( "Raise the alarm" );
+end
+
+rule "Cancel the alarm when all the fires have gone"
+when
+    not Fire()
+    $alarm : Alarm()
+then
+    delete( $alarm );
+    System.out.println( "Cancel the alarm" );
+end
+
+
+rule "Status output when things are ok"
+when
+    not Alarm()
+    not Sprinkler( on == true )
+then
+    System.out.println( "Everything is ok" );
+end
+----
+
+For the `When there is a fire turn on the sprinkler` rule, when a fire occurs, the instances of the `Fire` class are created for that room and inserted into the KIE session. The rule adds a constraint for the specific `room` matched in the `Fire` instance so that only the sprinkler for that room is checked. When this rule is executed, the sprinkler activates. The other sample rules determine when the alarm is activated or deactivated accordingly.
+
+Whereas a stateless KIE session relies on standard Java syntax to modify a field, a stateful KIE session relies on the `modify` statement in rules to notify the {DECISION_ENGINE} of changes. The {DECISION_ENGINE} then reasons over the changes and assesses impact on subsequent rule executions. This process is part of the {DECISION_ENGINE} ability to use _inference_ and _truth maintenance_ and is essential in stateful KIE sessions.
+
+In this example, the sample rules and all other files in the `~/resources` folder of the {PRODUCT} project are built with the following code:
+
+.Create the KIE container
+[source,java]
+----
+KieServices kieServices = KieServices.Factory.get();
+KieContainer kContainer = kieServices.getKieClasspathContainer();
+----
+
+This code compiles all the rule files found on the class path and adds the result of this compilation, a `KieModule` object, in the `KieContainer`.
+
+Finally, the `KieSession` object is instantiated from the `KieContainer` and is executed against specified data:
+
+.Instantiate the stateful KIE session and enter data
+[source,java]
+----
+KieSession ksession = kContainer.newKieSession();
+
+String[] names = new String[]{"kitchen", "bedroom", "office", "livingroom"};
+Map<String,Room> name2room = new HashMap<String,Room>();
+for( String name: names ){
+    Room room = new Room( name );
+    name2room.put( name, room );
+    ksession.insert( room );
+    Sprinkler sprinkler = new Sprinkler( room );
+    ksession.insert( sprinkler );
+}
+
+ksession.fireAllRules();
+----
+
+.Console output
+[source]
+----
+> Everything is ok
+----
+
+With the data added, the {DECISION_ENGINE} completes all pattern matching but no rules have been executed, so the configured verification message appears. As new data triggers rule conditions, the {DECISION_ENGINE} executes rules to activate the alarm and later to cancel the alarm that has been activated:
+
+.Enter new data to trigger rules
+[source,java]
+----
+Fire kitchenFire = new Fire( name2room.get( "kitchen" ) );
+Fire officeFire = new Fire( name2room.get( "office" ) );
+
+FactHandle kitchenFireHandle = ksession.insert( kitchenFire );
+FactHandle officeFireHandle = ksession.insert( officeFire );
+
+ksession.fireAllRules();
+----
+
+.Console output
+[source]
+----
+> Raise the alarm
+> Turn on the sprinkler for room kitchen
+> Turn on the sprinkler for room office
+----
+
+[source,java]
+----
+ksession.delete( kitchenFireHandle );
+ksession.delete( officeFireHandle );
+
+ksession.fireAllRules();
+----
+
+.Console output
+[source]
+----
+> Cancel the alarm
+> Turn off the sprinkler for room office
+> Turn off the sprinkler for room kitchen
+> Everything is ok
+----
+
+In this case, a reference is kept for the returned `FactHandle` object. A fact handle is an internal engine reference to the inserted instance and enables instances to be retracted or modified later.
+
+As this example illustrates, the data and results from previous stateful KIE sessions (the activated alarm) affect the invocation of subsequent sessions (alarm cancellation).
+
+[id="con-kie-sessions-pools_{context}"]
+=== KIE session pools
+
+[role="_abstract"]
+In use cases with large amounts of KIE runtime data and high system activity, KIE sessions might be created and disposed very frequently. A high turnover of KIE sessions is not always time consuming, but when the turnover is repeated millions of times, the process can become a bottleneck and require substantial clean-up effort.
+
+For these high-volume cases, you can use KIE session pools instead of many individual KIE sessions. To use a KIE session pool, you obtain a KIE session pool from a KIE container, define the initial number of KIE sessions in the pool, and create the KIE sessions from that pool as usual:
+
+.Example KIE session pool
+[source,java]
+----
+// Obtain a KIE session pool from the KIE container
+KieContainerSessionsPool pool = kContainer.newKieSessionsPool(10);
+
+// Create KIE sessions from the KIE session pool
+KieSession kSession = pool.newKieSession();
+----
+
+In this example, the KIE session pool starts with 10 KIE sessions in it, but you can specify the number of KIE sessions that you need. This integer value is the number of KIE sessions that are only initially created in the pool. If required by the running application, the number of KIE sessions in the pool can dynamically grow beyond that value.
+
+After you define a KIE session pool, the next time you use the KIE session as usual and call `dispose()` on it, the KIE session is reset and pushed back into the pool instead of being destroyed.
+
+KIE session pools typically apply to stateful KIE sessions, but KIE session pools can also affect stateless KIE sessions that you reuse with multiple `execute()` calls. When you create a stateless KIE session directly from a KIE container, the KIE session continues to internally create a new KIE session for each `execute()` invocation. Conversely, when you create a stateless KIE session from a KIE session pool, the KIE session internally uses only the specific KIE sessions provided by the pool.
+
+When you finish using a KIE session pool, you can call the `shutdown()` method on it to avoid memory leaks. Alternatively, you can call `dispose()` on the KIE container to shut down all the pools created from the KIE container.
+
+//@comment evacchi not totally sure how to make it "flow" with OOPath @MarkP ?
+[id="con-inference-and-truth-maintenance_{context}"]
+== Inference and truth maintenance in the {DECISION_ENGINE}
+
+[role="_abstract"]
+The basic function of the {DECISION_ENGINE} is to match data to business rules and determine whether and how to execute rules. To ensure that relevant data is applied to the appropriate rules, the {DECISION_ENGINE} makes _inferences_ based on existing knowledge and performs the actions based on the inferred information.
+
+For example, the following DRL rule determines the age requirements for adults, such as in a bus pass policy:
+
+.Rule to define age requirement
+[source]
+----
+rule "Infer Adult"
+when
+  $p : Person(age >= 18)
+then
+  insert(new IsAdult($p))
+end
+----
+
+Based on this rule, the {DECISION_ENGINE} infers whether a person is an adult or a child and performs the specified action (the `then` consequence). Every person who is 18 years old or older has an instance of `IsAdult` inserted for them in the working memory. This inferred relation of age and bus pass can then be invoked in any rule, such as in the following rule segment:
+
+[source]
+----
+$p : Person()
+IsAdult(person == $p)
+----
+
+In many cases, new data in a rule system is the result of other rule executions, and this new data can affect the execution of other rules. If the {DECISION_ENGINE} asserts data as a result of executing a rule, the {DECISION_ENGINE} uses truth maintenance to justify the assertion and enforce truthfulness when applying inferred information to other rules. Truth maintenance also helps to identify inconsistencies and to handle contradictions. For example, if two rules are executed and result in a contradictory action, the {DECISION_ENGINE} chooses the action based on assumptions from previously calculated conclusions.
+
+The {DECISION_ENGINE} inserts facts using either stated or logical insertions:
+
+* *Stated insertions:* Defined with `insert()`. After stated insertions, facts are generally retracted explicitly. (The term _insertion_, when used generically, refers to _stated insertion_.)
+* *Logical insertions:* Defined with `insertLogical()`. After logical insertions, the facts that were inserted are automatically retracted when the conditions in the rules that inserted the facts are no longer true. The facts are retracted when no condition supports the logical insertion. A fact that is logically inserted is considered to be _justified_ by the {DECISION_ENGINE}.
+
+For example, the following sample DRL rules use stated fact insertion to determine the age requirements for issuing a child bus pass or an adult bus pass:
+
+.Rules to issue bus pass, stated insertion
+[source]
+----
+rule "Issue Child Bus Pass"
+when
+  $p : Person(age < 18)
+then
+  insert(new ChildBusPass($p));
+end
+
+rule "Issue Adult Bus Pass"
+when
+  $p : Person(age >= 18)
+then
+  insert(new AdultBusPass($p));
+end
+----
+
+These rules are not easily maintained in the {DECISION_ENGINE} as bus riders increase in age and move from child to adult bus pass. As an alternative, these rules can be separated into rules for bus rider age and rules for bus pass type using logical fact insertion. The logical insertion of the fact makes the fact dependent on the truth of the `when` clause.
+
+The following DRL rules use logical insertion to determine the age requirements for children and adults:
+
+.Children and adult age requirements, logical insertion
+[source]
+----
+rule "Infer Child"
+when
+  $p : Person(age < 18)
+then
+  insertLogical(new IsChild($p))
+end
+
+rule "Infer Adult"
+when
+  $p : Person(age >= 18)
+then
+  insertLogical(new IsAdult($p))
+end
+----
+
+IMPORTANT: For logical insertions, your fact objects must override the `equals` and `hashCode` methods from the `java.lang.Object` object according to the Java standard. Two objects are equal if their `equals` methods return `true` for each other and if their `hashCode` methods return the same values. For more information, see the Java API documentation for your Java version.
+
+When the condition in the rule is false, the fact is automatically retracted. This behavior is helpful in this example because the two rules are mutually exclusive. In this example, if the person is younger than 18 years old, the rule logically inserts an `IsChild` fact. After the person is 18 years old or older, the `IsChild` fact is automatically retracted and the `IsAdult` fact is inserted.
+
+The following DRL rules then determine whether to issue a child bus pass or an adult bus pass and logically insert the `ChildBusPass` and `AdultBusPass` facts. This rule configuration is possible because the truth maintenance system in the {DECISION_ENGINE} supports chaining of logical insertions for a cascading set of retracts.
+
+.Rules to issue bus pass, logical insertion
+[source]
+----
+rule "Issue Child Bus Pass"
+when
+  $p : Person()
+    IsChild(person == $p)
+then
+  insertLogical(new ChildBusPass($p));
+end
+
+rule "Issue Adult Bus Pass"
+when
+  $p : Person()
+    IsAdult(person =$p)
+then
+  insertLogical(new AdultBusPass($p));
+end
+----
+
+When a person turns 18 years old, the `IsChild` fact and the person's `ChildBusPass` fact is retracted. To these set of conditions, you can relate another rule that states that a person must return the child pass after turning 18 years old. When the {DECISION_ENGINE} automatically retracts the `ChildBusPass` object, the following rule is executed to send a request to the person:
+
+.Rule to notify bus pass holder of new pass
+[source]
+----
+rule "Return ChildBusPass Request"
+when
+  $p : Person()
+    not(ChildBusPass(person == $p))
+then
+  requestChildBusPass($p);
+end
+----
+
+The following flowcharts illustrate the lifecycle of stated and logical insertions:
+
+.Stated insertion
+image::kogito/decision-engine/Stated_Assertion_enterprise.png[]
+
+.Logical insertion
+image::kogito/decision-engine/Logical_Assertion_enterprise.png[]
+
+When the {DECISION_ENGINE} logically inserts an object during a rule execution, the {DECISION_ENGINE} _justifies_ the object by executing the rule. For each logical insertion, only one equal object can exist, and each subsequent equal logical insertion increases the justification counter for that logical insertion. A justification is removed when the conditions of the rule become untrue. When no more justifications exist, the logical object is automatically retracted.
+
+ifdef::KOGITO-COMM[]
+=== Government ID example
+
+So now we know what inference is, and have a basic example, how does this facilitate good rule design and maintenance?
+
+Consider a government ID department that is responsible for issuing ID cards when children become adults.
+They might have a decision table that includes logic like this, which says when an adult living in London is 18 or over, issue the card:
+
+
+[cols="4*^"]
+|===
+
+|{set:cellbgcolor:#bfbfbf}
+3+|[white]#RuleTable ID Card{set:cellbgcolor:#000000}#
+
+|{set:cellbgcolor:#bfbfbf}
+|CONDITION{set:cellbgcolor:#ffcc99}
+|CONDITION
+|ACTION
+
+|{set:cellbgcolor:#bfbfbf}
+2+|p : Person{set:cellbgcolor:#ffcc99}
+|
+
+|{set:cellbgcolor:#bfbfbf}
+|location{set:cellbgcolor:#ffcc99}
+|age >= $1
+|issueIdCard($1)
+
+|{set:cellbgcolor:#ccffcc}
+|Select Person{set:cellbgcolor:#ccffff}
+|Select Adults
+|Issue ID Card{set:cellbgcolor:#ffff99}
+
+|Issue ID Card to Adults{set:cellbgcolor:#ffffff}
+|London
+|18
+|p
+
+|===
+
+
+However the ID department does not set the policy on who an adult is.
+That's done at a central government level.
+If the central government were to change that age to 21, this would initiate a change management process.
+Someone would have to liaise with the ID department and make sure their systems are updated, in time for the law going live.
+
+This change management process and communication between departments is not ideal for an agile environment, and change becomes costly and error prone.
+Also the card department is managing more information than it needs to be aware of with its "monolithic" approach to rules management which is "leaking" information better placed elsewhere.
+By this we mean that it doesn't care what explicit `"age >= 18"` information determines whether someone is an adult, only that they are an adult.
+
+In contrast to this, let's pursue an approach where we split (de-couple) the authoring responsibilities, so that both the central government and the ID department maintain their own rules.
+
+It's the central government's job to determine who is an adult.
+If they change the law they just update their central repository with the new rules, which others use:
+
+
+[cols="3*^"]
+|===
+
+|{set:cellbgcolor:#bfbfbf}
+2+|[white]#RuleTable Age Policy{set:cellbgcolor:#000000}#
+
+|{set:cellbgcolor:#bfbfbf}
+|CONDITION{set:cellbgcolor:#ffcc94}
+|ACTION
+
+|{set:cellbgcolor:#bfbfbf}
+|p : Person{set:cellbgcolor:#ffcc94}
+
+|
+|{set:cellbgcolor:#bfbfbf}
+|age >= $1{set:cellbgcolor:#ffcc94}
+|insert($1)
+
+|{set:cellbgcolor:#b9ffca}
+|Adult Age Policy{set:cellbgcolor:#ccffff}
+|Add Adult Relation{set:cellbgcolor:#f7ff92}
+|Infer Adult{set:cellbgcolor:#ffffff}
+
+|18
+|new IsAdult( p )
+
+|===
+
+The `IsAdult` fact, as discussed previously, is inferred from the policy rules.
+It encapsulates the seemingly arbitrary piece of logic `"age >= 18"` and provides semantic abstractions for its meaning.
+Now if anyone uses the above rules, they no longer need to be aware of explicit information that determines whether someone is an adult or not.
+They can just use the inferred fact:
+
+[cols="4*^"]
+|===
+
+|{set:cellbgcolor:#c0c0c0}
+3+|[white]#RuleTable ID Card{set:cellbgcolor:#000000}#
+
+|{set:cellbgcolor:#c0c0c0}
+|CONDITION{set:cellbgcolor:#ffcc99}
+|CONDITION
+|ACTION
+
+|{set:cellbgcolor:#c0c0c0}
+|p : Person{set:cellbgcolor:#ffcc99}
+|isAdult
+|
+
+|{set:cellbgcolor:#c0c0c0}
+|location{set:cellbgcolor:#ffcc99}
+|person == $1
+|issueIdCard($1)
+
+|{set:cellbgcolor:#ccffcc}
+|Select Person{set:cellbgcolor:#ccffff}
+|Select Adults
+|Issue ID Card{set:cellbgcolor:#ffff99}
+
+|Issue ID Card to Adults{set:cellbgcolor:#ffffff}
+|London
+|p
+|p
+|
+
+|===
+
+
+While the example is very minimal and trivial it illustrates some important points.
+We started with a monolithic and leaky approach to our knowledge engineering.
+We created a single decision table that had all possible information in it and that leaks information from central government that the ID department did not care about and did not want to manage.
+
+We first de-coupled the knowledge process so each department was responsible for only what it needed to know.
+We then encapsulated this leaky knowledge using an inferred fact `IsAdult`.
+The use of the term `IsAdult` also gave a semantic abstraction to the previously arbitrary logic `"age >= 18"`.
+
+So a general rule of thumb when doing your knowledge engineering is:
+
+* *Bad*
+** Monolithic
+** Leaky
+* *Good*
+** De-couple knowledge responsibilities
+** Encapsulate knowledge
+** Provide semantic abstractions for those encapsulations
+endif::[]
+
+//@comment evacchi equality mode currently defaults to identity and there is really no real way to override. So I'd just leave this out for now
+[id="con-fact-equality-modes_{context}"]
+=== Fact equality modes in the {DECISION_ENGINE}
+
+*<@Edoardo, see this section.>*
+
+[role="_abstract"]
+The {DECISION_ENGINE} supports the following fact equality modes that determine how the {DECISION_ENGINE} stores and compares inserted facts:
+
+* `identity`: (Default) The {DECISION_ENGINE} uses an `IdentityHashMap` to store all inserted facts. For every new fact insertion, the {DECISION_ENGINE} returns a new `FactHandle` object. If a fact is inserted again, the {DECISION_ENGINE} returns the original `FactHandle` object, ignoring repeated insertions for the same fact. In this mode, two facts are the same for the {DECISION_ENGINE} only if they are the very same object with the same identity.
+* `equality`: The {DECISION_ENGINE} uses a `HashMap` to store all inserted facts. The {DECISION_ENGINE} returns a new `FactHandle` object only if the inserted fact is not equal to an existing fact, according to the `equals()` method of the inserted fact. In this mode, two facts are the same for the {DECISION_ENGINE} if they are composed the same way, regardless of identity. Use this mode when you want objects to be assessed based on feature equality instead of explicit identity.
+
+As an illustration of fact equality modes, consider the following example facts:
+
+.Example facts
+[source]
+----
+Person p1 = new Person("John", 45);
+Person p2 = new Person("John", 45);
+----
+
+In `identity` mode, facts `p1` and `p2` are different instances of a `Person` class and are treated as separate objects because they have separate identities. In `equality` mode, facts `p1` and `p2` are treated as the same object because they are composed the same way. This difference in behavior affects how you can interact with fact handles.
+
+For example, assume that you insert facts `p1` and `p2` into the {DECISION_ENGINE} and later you want to retrieve the fact handle for `p1`. In `identity` mode, you must specify `p1` to return the fact handle for that exact object, whereas in `equality` mode, you can specify `p1`, `p2`, or `new Person("John", 45)` to return the fact handle.
+
+.Example code to insert a fact and return the fact handle in `identity` mode
+[source]
+----
+ksession.insert(p1);
+
+ksession.getFactHandle(p1);
+----
+
+.Example code to insert a fact and return the fact handle in `equality` mode
+[source]
+----
+ksession.insert(p1);
+
+ksession.getFactHandle(p1);
+
+// Alternate option:
+ksession.getFactHandle(new Person("John", 45));
+----
+
+To set the fact equality mode, use one of the following options:
+
+* Set the system property `drools.equalityBehavior` to `identity` (default) or `equality`.
+* Set the equality mode while creating the KIE base programmatically:
++
+[source,java]
+----
+KieServices ks = KieServices.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(EqualityBehaviorOption.EQUALITY);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+* Set the equality mode in the KIE module descriptor file (`kmodule.xml`) for a specific {PRODUCT} project:
++
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase name="KBase2" default="false" equalsBehavior="equality" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+////
+
+[id="con-execution-control_{context}"]
+== Execution control in the {DECISION_ENGINE}
+
+[role="_abstract"]
+When new rule data enters the working memory of the {DECISION_ENGINE}, rules may become fully matched and eligible for execution. A single working memory action can result in multiple eligible rule executions. When a rule is fully matched, the {DECISION_ENGINE} creates an activation instance, referencing the rule and the matched facts, and adds the activation onto the {DECISION_ENGINE} agenda. The agenda controls the execution order of these rule activations using a conflict resolution strategy.
+
+When rules are executed, the {DECISION_ENGINE} cycles repeatedly through two phases:
+
+* *Agenda evaluation.* In this phase, the {DECISION_ENGINE} selects all rules that can be executed. If no executable rules exist, the execution cycle ends. If an executable rule is found, the {DECISION_ENGINE} registers the activation in the agenda and then moves on to the working memory actions phase to perform rule consequence actions.
+* *Working memory actions.* In this phase, the {DECISION_ENGINE} performs the rule consequence actions (the `then` portion of each rule) for all activated rules previously registered in the agenda. After all the consequence actions are complete or the rules are executed again, the {DECISION_ENGINE} returns to the agenda evaluation phase to reassess rules.
+
+.Two-phase execution process in the {DECISION_ENGINE}
+image::kogito/decision-engine/Two_Phase_enterprise.png[align="center"]
+
+When multiple rules exist on the agenda, the execution of one rule may cause another rule to be removed from the agenda. To avoid this, you can define how and when rules are executed in the {DECISION_ENGINE}. Some common methods for defining rule execution order are by using rule salience, agenda groups, activation groups, or rule units for DRL rule sets.
+
+=== Salience for rules
+
+Each rule has an integer `salience` attribute that determines the order of execution. Rules with a higher salience value are given higher priority when ordered in the activation queue. The default salience value for rules is zero, but the salience can be negative or positive.
+
+For example, the following sample DRL rules are listed in the {DECISION_ENGINE} stack in the order shown:
+
+[source]
+----
+rule "RuleA"
+salience 95
+  when
+    $fact : /myFact[ field1 == true ]
+  then
+    System.out.println("Rule2 : " + $fact);
+    update($fact);
+end
+
+rule "RuleB"
+salience 100
+  when
+    $fact : /myFact[ field1 == false ]
+  then
+    System.out.println("Rule1 : " + $fact);
+    $fact.setField1(true);
+    update($fact);
+end
+----
+
+The `RuleB` rule is listed second, but it has a higher salience value than the `RuleA` rule and is therefore executed first.
+
+////
+//Excluded per recommendation by Edoardo, since replaced by rule units. (Stetson, 9 Mar 2020)
+=== Agenda groups for rules
+
+An agenda group is a set of rules bound together by the same `agenda-group` rule attribute. Agenda groups partition rules on the {DECISION_ENGINE} agenda. At any one time, only one group has a _focus_ that gives that group of rules priority for execution before rules in other agenda groups. You determine the focus with a `setFocus()` call for the agenda group. You can also define rules with an `auto-focus` attribute so that the next time the rule is activated, the focus is automatically given to the entire agenda group to which the rule is assigned.
+
+Each time the `setFocus()` call is made in a Java application, the {DECISION_ENGINE} adds the specified agenda group to the top of the rule stack. The default agenda group `"MAIN"` contains all rules that do not belong to a specified agenda group and is executed first in the stack unless another group has the focus.
+
+For example, the following sample DRL rules belong to specified agenda groups and are listed in the {DECISION_ENGINE} stack in the order shown:
+
+.Sample DRL rules for banking application
+[source]
+----
+rule "Increase balance for credits"
+  agenda-group "calculation"
+when
+  ap : AccountPeriod()
+  acc : Account( $accountNo : accountNo )
+  CashFlow( type == CREDIT,
+            accountNo == $accountNo,
+            date >= ap.start && <= ap.end,
+            $amount : amount )
+then
+  acc.balance  += $amount;
+end
+----
+
+[source]
+----
+rule "Print balance for AccountPeriod"
+  agenda-group "report"
+when
+  ap : AccountPeriod()
+  acc : Account()
+then
+  System.out.println( acc.accountNo +
+                      " : " + acc.balance );
+end
+----
+
+For this example, the rules in the `"report"` agenda group must always be executed first and the rules in the `"calculation"` agenda group must always be executed second. Any remaining rules in other agenda groups can then be executed. Therefore, the `"report"` and `"calculation"` groups must receive the focus to be executed in that order, before other rules can be executed:
+
+.Set the focus for the order of agenda group execution
+[source,java]
+----
+Agenda agenda = ksession.getAgenda();
+agenda.getAgendaGroup( "report" ).setFocus();
+agenda.getAgendaGroup( "calculation" ).setFocus();
+ksession.fireAllRules();
+----
+
+You can also use the `clear()` method to cancel all the activations generated by the rules belonging to a given agenda group before each has had a chance to be executed:
+
+.Cancel all other rule activations
+[source,java]
+----
+ksession.getAgenda().getAgendaGroup( "Group A" ).clear();
+----
+////
+
+=== Activation groups for rules
+
+An activation group is a set of rules bound together by the same `activation-group` rule attribute. In this group, only one rule can be executed. After conditions are met for a rule in that group to be executed, all other pending rule executions from that activation group are removed from the agenda.
+
+For example, the following sample DRL rules belong to the specified activation group and are listed in the {DECISION_ENGINE} stack in the order shown:
+
+.Sample DRL rules for banking
+[source]
+----
+rule "Print balance for AccountPeriod1"
+activation-group "report"
+  when
+    ap : AccountPeriod1()
+    acc : Account()
+  then
+    System.out.println( acc.accountNo +
+                      " : " + acc.balance );
+end
+----
+
+[source]
+----
+rule "Print balance for AccountPeriod2"
+activation-group "report"
+  when
+    ap : AccountPeriod2()
+    acc : Account()
+  then
+    System.out.println( acc.accountNo +
+                      " : " + acc.balance );
+end
+----
+
+For this example, if the first rule in the `"report"` activation group is executed, the second rule in the group and all other executable rules on the agenda are removed from the agenda.
+
+////
+//@comment Currently TBD for Kogito. (Stetson 7 Apr 2020)
+[id="con-rule-execution-modes_{context}"]
+=== Rule execution modes and thread safety in the {DECISION_ENGINE}
+
+*<@Edoardo, see this section. Not sure how we want to communicate this now. This came up a lot in 7.x so is/was a hot topic.>*
+
+[role="_abstract"]
+The {DECISION_ENGINE} supports the following rule execution modes that determine how and when the {DECISION_ENGINE} executes rules:
+
+* *Passive mode*: (Default) The {DECISION_ENGINE} evaluates rules when a user or an application explicitly calls `fireAllRules()`. Passive mode in the {DECISION_ENGINE} is best for applications that require direct control over rule evaluation and execution, or for complex event processing (CEP) applications that use the pseudo clock implementation in the {DECISION_ENGINE}.
++
+.Example CEP application code with the {DECISION_ENGINE} in passive mode
+[source,java]
+----
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("pseudo") );
+KieSession session = kbase.newKieSession( conf, null );
+SessionPseudoClock clock = session.getSessionClock();
+
+session.insert( tick1 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick2 );
+session.fireAllRules();
+
+clock.advanceTime(1, TimeUnit.SECONDS);
+session.insert( tick3 );
+session.fireAllRules();
+
+session.dispose();
+----
+
+* *Active mode*: If a user or application calls `fireUntilHalt()`, the {DECISION_ENGINE} starts in active mode and evaluates rules continually until the user or application explicitly calls `halt()`. Active mode in the {DECISION_ENGINE} is best for applications that delegate control of rule evaluation and execution to the {DECISION_ENGINE}, or for complex event processing (CEP) applications that use the real-time clock implementation in the {DECISION_ENGINE}. Active mode is also optimal for CEP applications that use active queries.
++
+--
+.Example CEP application code with the {DECISION_ENGINE} in active mode
+[source,java]
+----
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+config.setOption( ClockTypeOption.get("realtime") );
+KieSession session = kbase.newKieSession( conf, null );
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+session.insert( tick1 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick2 );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( tick3 );
+
+session.halt();
+session.dispose();
+----
+
+This example calls `fireUntilHalt()` from a dedicated execution thread to prevent the current thread from being blocked indefinitely while the {DECISION_ENGINE} continues evaluating rules. The dedicated thread also enables you to call `halt()` at a later stage in the application code.
+--
+
+Although you should avoid using both `fireAllRules()` and `fireUntilHalt()` calls, especially from different threads, the {DECISION_ENGINE} can handle such situations safely using thread-safety logic and an internal state machine. If a `fireAllRules()` call is in progress and you call `fireUntilHalt()`, the {DECISION_ENGINE} continues to run in passive mode until the `fireAllRules()` operation is complete and then starts in active mode in response to the `fireUntilHalt()` call. However, if the {DECISION_ENGINE} is running in active mode following a `fireUntilHalt()` call and you call `fireAllRules()`, the `fireAllRules()` call is ignored and the {DECISION_ENGINE} continues to run in active mode until you call `halt()`.
+ifdef::DROOLS,JBPM,OP[]
+For more details about thread-safety and the internal state machine, see <<_improved_multi_threading_behaviour>>.
+endif::[]
+
+For added thread safety in active mode, the {DECISION_ENGINE} supports a `submit()` method that you can use to group and perform operations on a KIE session in a thread-safe, atomic action:
+
+.Example application code with `submit()` method to perform atomic operations in active mode
+[source,java]
+----
+KieSession session = ...;
+
+new Thread( new Runnable() {
+  @Override
+  public void run() {
+      session.fireUntilHalt();
+  }
+} ).start();
+
+final FactHandle fh = session.insert( fact_a );
+
+... Thread.sleep( 1000L ); ...
+
+session.submit( new KieSession.AtomicAction() {
+  @Override
+  public void execute( KieSession kieSession ) {
+    fact_a.setField("value");
+    kieSession.update( fh, fact_a );
+    kieSession.insert( fact_1 );
+    kieSession.insert( fact_2 );
+    kieSession.insert( fact_3 );
+  }
+} );
+
+... Thread.sleep( 1000L ); ...
+
+session.insert( fact_z );
+
+session.halt();
+session.dispose();
+----
+
+Thread safety and atomic operations are also helpful from a client-side perspective. For example, you might need to insert more than one fact at a given time, but require the {DECISION_ENGINE} to consider the insertions as an atomic operation and to wait until all the insertions are complete before evaluating the rules again.
+
+[id="con-fact-propagation-modes_{context}"]
+=== Fact propagation modes in the {DECISION_ENGINE}
+
+*<@Edoardo, also this section. This is coupled with rule execution modes and also came up a lot in 7.x and is/was a hot topic.>*
+
+[role="_abstract"]
+The {DECISION_ENGINE} supports the following fact propagation modes that determine how the {DECISION_ENGINE} progresses inserted facts through the engine network in preparation for rule execution:
+
+* *Lazy*: (Default) Facts are propagated in batch collections at rule execution, not in real time as the facts are individually inserted by a user or application. As a result, the order in which the facts are ultimately propagated through the {DECISION_ENGINE} may be different from the order in which the facts were individually inserted.
+* *Immediate*: Facts are propagated immediately in the order that they are inserted by a user or application.
+* *Eager*: Facts are propagated lazily (in batch collections), but before rule execution. The {DECISION_ENGINE} uses this propagation behavior for rules that have the `no-loop` or `lock-on-active` attribute.
+
+By default, the Phreak rule algorithm in the {DECISION_ENGINE} uses lazy fact propagation for improved rule evaluation overall. However, in few cases, this lazy propagation behavior can alter the expected result of certain rule executions that may require immediate or eager propagation.
+
+For example, the following rule uses a specified query with a `?` prefix to invoke the query in pull-only or passive fashion:
+
+.Example rule with a passive query
+[source]
+----
+query Q (Integer i)
+    String( this == i.toString() )
+end
+
+rule "Rule"
+  when
+    $i : Integer()
+    ?Q( $i; )
+  then
+    System.out.println( $i );
+end
+----
+
+For this example, the rule should be executed only when a `String` that satisfies the query is inserted before the `Integer`, such as in the following example commands:
+
+.Example commands that should trigger the rule execution
+[source,java]
+----
+KieSession ksession = ...
+ksession.insert("1");
+ksession.insert(1);
+ksession.fireAllRules();
+----
+
+However, due to the default lazy propagation behavior in Phreak, the {DECISION_ENGINE} does not detect the insertion sequence of the two facts in this case, so this rule is executed regardless of `String` and `Integer` insertion order. For this example, immediate propagation is required for the expected rule evaluation.
+
+To alter the {DECISION_ENGINE} propagation mode to achieve the expected rule evaluation in this case, you can add the `@Propagation(__TYPE__)` tag to your rule and set `__TYPE__` to `LAZY`, `IMMEDIATE`, or `EAGER`.
+
+In the same example rule, the immediate propagation annotation enables the rule to be evaluated only when a `String` that satisfies the query is inserted before the `Integer`, as expected:
+
+.Example rule with a passive query and specified propagation mode
+[source]
+----
+query Q (Integer i)
+    String( this == i.toString() )
+end
+
+rule "Rule" @Propagation(IMMEDIATE)
+  when
+    $i : Integer()
+    ?Q( $i; )
+  then
+    System.out.println( $i );
+end
+----
+
+[id="con-agenda-filters_{context}"]
+=== Agenda evaluation filters
+
+*<@Edoardo, see this section.>*
+
+ifdef::KOGITO-COMM[]
+.AgendaFilters
+image::UserGuide/AgendaFilter.png[align="center"]
+endif::[]
+
+[role="_abstract"]
+The {DECISION_ENGINE} supports an `AgendaFilter` object in the filter interface that you can use to allow or deny the evaluation of specified rules during agenda evaluation. You can specify an agenda filter as part of a `fireAllRules()` call.
+
+The following example code permits only rules ending with the string `"Test"` to be evaluated and executed. All other rules are filtered out of the {DECISION_ENGINE} agenda.
+
+.Example agenda filter definition
+[source,java]
+----
+ksession.fireAllRules( new RuleNameEndsWithAgendaFilter( "Test" ) );
+----
+////
+
+[id="con-phreak-algorithm_{context}"]
+== Phreak rule algorithm in the {DECISION_ENGINE}
+
+[role="_abstract"]
+The {DECISION_ENGINE} in {PRODUCT} uses the Phreak algorithm for rule evaluation. Phreak evolved from the Rete algorithm, including the enhanced Rete algorithm ReteOO that was introduced in previous versions of Drools for object-oriented systems. Overall, Phreak is more scalable than Rete and ReteOO, and is faster in large systems.
+
+While Rete is considered eager (immediate rule evaluation) and data oriented, Phreak is considered lazy (delayed rule evaluation) and goal oriented. The Rete algorithm performs many actions during the insert, update, and delete actions in order to find partial matches for all rules. This eagerness of the Rete algorithm during rule matching requires a lot of time before eventually executing rules, especially in large systems. With Phreak, this partial matching of rules is delayed deliberately to handle large amounts of data more efficiently.
+
+The Phreak algorithm adds the following set of enhancements to previous Rete algorithms:
+
+* Three layers of contextual memory: Node, segment, and rule memory types
+* Rule-based, segment-based, and node-based linking
+* Lazy (delayed) rule evaluation
+* Stack-based evaluations with pause and resume
+* Isolated rule evaluation
+* Set-oriented propagations
+
+[id="con-phreak-rule-evaluation_{context}"]
+=== Rule evaluation in Phreak
+
+[role="_abstract"]
+When the {DECISION_ENGINE} starts, all rules are considered to be _unlinked_ from pattern-matching data that can trigger the rules. At this stage, the Phreak algorithm in the {DECISION_ENGINE} does not evaluate the rules. The rule actions are queued, and Phreak uses a heuristic, based on the rule most likely to result in execution, to calculate and select the next rule for evaluation. When all the required input values are populated for a rule, the rule is considered to be _linked_ to the relevant pattern-matching data. Phreak then creates a goal that represents this rule and places the goal into a priority queue that is ordered by rule salience. Only the rule for which the goal was created is evaluated, and other potential rule evaluations are delayed. While individual rules are evaluated, node sharing is still achieved through the process of segmentation.
+
+Unlike the tuple-oriented Rete, the Phreak propagation is collection oriented. For the rule that is being evaluated, the {DECISION_ENGINE} accesses the first node and processes all queued insert, update, and delete actions. The results are added to a set, and the set is propagated to the child node. In the child node, all queued insert, update, and delete actions are processed, adding the results to the same set. The set is then propagated to the next child node and the same process repeats until it reaches the terminal node. This cycle creates a batch process effect that can provide performance advantages for certain rule constructs.
+
+The linking and unlinking of rules happens through a layered bit-mask system, based on network segmentation. When the rule network is built, segments are created for rule network nodes that are shared by the same set of rules. A rule is composed of a path of segments. In case a rule does not share any node with any other rule, it becomes a single segment.
+
+A bit-mask offset is assigned to each node in the segment. Another bit mask is assigned to each segment in the path of the rule according to these requirements:
+
+* If at least one input for a node exists, the node bit is set to the `on` state.
+* If each node in a segment has the bit set to the `on` state, the segment bit is also set to the `on` state.
+* If any node bit is set to the `off` state, the segment is also set to the `off` state.
+* If each segment in the path of the rule is set to the `on` state, the rule is considered linked, and a goal is created to schedule the rule for evaluation.
+
+The same bit-mask technique is used to track modified nodes, segments, and rules. This tracking ability enables an already linked rule to be unscheduled from evaluation if it has been modified since the evaluation goal for it was created. As a result, no rules can ever evaluate partial matches.
+
+This process of rule evaluation is possible in Phreak because, as opposed to a single unit of memory in Rete, Phreak has three layers of contextual memory with node, segment, and rule memory types. This layering enables much more contextual understanding during the evaluation of a rule.
+
+.Phreak three-layered memory system
+image::kogito/decision-engine/LayeredMemory_enterprise.png[align="center"]
+
+The following examples illustrate how rules are organized and evaluated in this three-layered memory system in Phreak.
+
+*Example 1:* A single rule (R1) with three patterns: A, B and C. The rule forms a single segment, with bits 1, 2, and 4 for the nodes. The single segment has a bit offset of 1.
+
+.Example 1: Single rule
+image::kogito/decision-engine/segment1_enterprise.png[align="center"]
+
+*Example 2:* Rule R2 is added and shares pattern A.
+
+.Example 2: Two rules with pattern sharing
+image::kogito/decision-engine/segment2_enterprise.png[align="center"]
+
+Pattern A is placed in its own segment, resulting in two segments for each rule. Those two segments form a path for their respective rules. The first segment is shared by both paths. When pattern A is linked, the segment becomes linked. The segment then iterates over each path that the segment is shared by, setting the bit 1 to `on`. If patterns B and C are later turned on, the second segment for path R1 is linked, and this causes bit 2 to be turned on for R1. With bit 1 and bit 2 turned on for R1, the rule is now linked and a goal is created to schedule the rule for later evaluation and execution.
+
+When a rule is evaluated, the segments enable the results of the matching to be shared. Each segment has a staging memory to queue all inserts, updates, and deletes for that segment. When R1 is evaluated, the rule processes pattern A, and this results in a set of tuples. The algorithm detects a segmentation split, creates peered tuples for each insert, update, and delete in the set, and adds them to the R2 staging memory. Those tuples are then merged with any existing staged tuples and are executed when R2 is eventually evaluated.
+
+*Example 3:* Rules R3 and R4 are added and share patterns A and B.
+
+.Example 3: Three rules with pattern sharing
+image::kogito/decision-engine/segment3_enterprise.png[align="center"]
+
+Rules R3 and R4 have three segments and R1 has two segments. Patterns A and B are shared by R1, R3, and R4, while pattern D is shared by R3 and R4.
+
+*Example 4:* A single rule (R1) with a subnetwork and no pattern sharing.
+
+.Example 4: Single rule with a subnetwork and no pattern sharing
+image::kogito/decision-engine/segment4_enterprise.png[align="center"]
+
+Subnetworks are formed when a `Not`, `Exists`, or `Accumulate` node contains more than one element. In this example, the element `B not( C )` forms the subnetwork. The element `not( C )` is a single element that does not require a subnetwork and is therefore merged inside of the `Not` node. The subnetwork uses a dedicated segment. Rule R1 still has a path of two segments and the subnetwork forms another inner path. When the subnetwork is linked, it is also linked in the outer segment.
+
+*Example 5:* Rule R1 with a subnetwork that is shared by rule R2.
+
+.Example 5: Two rules, one with a subnetwork and pattern sharing
+image::kogito/decision-engine/segment5_enterprise.png[align="center"]
+
+The subnetwork nodes in a rule can be shared by another rule that does not have a subnetwork. This sharing causes the subnetwork segment to be split into two segments.
+
+Constrained `Not` nodes and `Accumulate` nodes can never unlink a segment, and are always considered to have their bits turned on.
+
+The Phreak evaluation algorithm is stack based instead of method-recursion based. Rule evaluation can be paused and resumed at any time when a `StackEntry` is used to represent the node currently being evaluated.
+
+When a rule evaluation reaches a subnetwork, a `StackEntry` object is created for the outer path segment and the subnetwork segment. The subnetwork segment is evaluated first, and when the set reaches the end of the subnetwork path, the segment is merged into a staging list for the outer node that the segment feeds into. The previous `StackEntry` object is then resumed and can now process the results of the subnetwork. This process has the added benefit, especially for `Accumulate` nodes, that all work is completed in a batch, before propagating to the child node.
+
+The same stack system is used for efficient backward chaining. When a rule evaluation reaches a query node, the evaluation is paused and the query is added to the stack. The query is then evaluated to produce a result set, which is saved in a memory location for the resumed `StackEntry` object to pick up and propagate to the child node. If the query itself called other queries, the process repeats, while the current query is paused and a new evaluation is set up for the current query node.
+
+[id="con-forward-and-backward-chaining_{context}"]
+==== Rule evaluation with forward and backward chaining
+
+[role="_abstract"]
+The {DECISION_ENGINE} in {PRODUCT} is a hybrid reasoning system that uses both forward chaining and backward chaining to evaluate rules. A forward-chaining rule system is a data-driven system that starts with a fact in the working memory of the {DECISION_ENGINE} and reacts to changes to that fact. When objects are inserted into working memory, any rule conditions that become true as a result of the change are scheduled for execution by the agenda.
+
+In contrast, a backward-chaining rule system is a goal-driven system that starts with a conclusion that the {DECISION_ENGINE} attempts to satisfy, often using recursion. If the system cannot reach the conclusion or goal, it searches for subgoals, which are conclusions that complete part of the current goal. The system continues this process until either the initial conclusion is satisfied or all subgoals are satisfied.
+
+The following diagram illustrates how the {DECISION_ENGINE} evaluates rules using forward chaining overall with a backward-chaining segment in the logic flow:
+
+.Rule evaluation logic using forward and backward chaining
+image::kogito/decision-engine/RuleEvaluation_enterprise.png[align="center"]
+
+////
+//@comment Currently TBD for Kogito (Stetson 7 Apr 2020)
+[id="con-rule-base-configuration_{context}"]
+=== Rule base configuration
+
+*<@Edoardo, see this section.>*
+
+[role="_abstract"]
+{PRODUCT} contains a `RuleBaseConfiguration.java` object that you can use to configure exception handler settings, multithreaded execution, and sequential mode in the {DECISION_ENGINE}.
+
+For the rule base configuration options,
+
+The following rule base configuration options are available for the {DECISION_ENGINE}:
+
+drools.consequenceExceptionHandler::
+When configured, this system property defines the class that manages the exceptions thrown by rule consequences. You can use this property to specify a custom exception handler for rule evaluation in the {DECISION_ENGINE}.
++
+--
+Default value: `org.drools.core.runtime.rule.impl.DefaultConsequenceExceptionHandler`
+
+You can specify the custom exception handler using one of the following options:
+
+* Specify the exception handler in a system property:
++
+[source]
+----
+drools.consequenceExceptionHandler=org.drools.core.runtime.rule.impl.MyCustomConsequenceExceptionHandler
+----
+
+* Specify the exception handler while creating the KIE base programmatically:
++
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration(); kieBaseConf.setOption(ConsequenceExceptionHandlerOption.get(MyCustomConsequenceExceptionHandler.class));
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+--
+
+drools.multithreadEvaluation::
+When enabled, this system property enables the {DECISION_ENGINE} to evaluate rules in parallel by dividing the Phreak rule network into independent partitions. You can use this property to increase the speed of rule evaluation for specific rule bases.
++
+--
+Default value: `false`
+
+You can enable multithreaded evaluation using one of the following options:
+
+* Enable the multithreaded evaluation system property:
++
+[source]
+----
+drools.multithreadEvaluation=true
+----
+
+* Enable multithreaded evaluation while creating the KIE base programmatically:
++
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(MultithreadEvaluationOption.YES);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+
+[WARNING]
+====
+Rules that use queries, salience, or agenda groups are currently not supported by the parallel {DECISION_ENGINE}. If these rule elements are present in the KIE base, the compiler emits a warning and automatically switches back to single-threaded evaluation. However, in some cases, the {DECISION_ENGINE} might not detect the unsupported rule elements and rules might be evaluated incorrectly. For example, the {DECISION_ENGINE} might not detect when rules rely on implicit salience given by rule ordering inside the DRL file, resulting in incorrect evaluation due to the unsupported salience attribute.
+====
+--
+
+drools.sequential::
+When enabled, this system property enables sequential mode in the {DECISION_ENGINE}. In sequential mode, the {DECISION_ENGINE} evaluates rules one time in the order that they are listed in the {DECISION_ENGINE} agenda without regard to changes in the working memory. This means that the {DECISION_ENGINE} ignores any `insert`, `modify`, or `update` statements in rules and executes rules in a single sequence. As a result, rule execution may be faster in sequential mode, but important updates may not be applied to your rules. You can use this property if you use stateless KIE sessions and you do not want the execution of rules to influence subsequent rules in the agenda. Sequential mode applies to stateless KIE sessions only.
++
+--
+Default value: `false`
+
+You can enable sequential mode using one of the following options:
+
+* Enable the sequential mode system property:
++
+[source]
+----
+drools.sequential=true
+----
+
+* Enable sequential mode while creating the KIE base programmatically:
++
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(SequentialOption.YES);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+
+* Enable sequential mode in the KIE module descriptor file (`kmodule.xml`) for a specific {PRODUCT} project:
++
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase name="KBase2" default="false" sequential="true" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+--
+
+[id="con-phreak-sequential-mode_{context}"]
+=== Sequential mode in Phreak
+
+*<@Edoardo, see this section. This was another hot topic in 7.x.>*
+
+[role="_abstract"]
+Sequential mode is an advanced rule base configuration in the {DECISION_ENGINE}, supported by Phreak, that enables the {DECISION_ENGINE} to evaluate rules one time in the order that they are listed in the {DECISION_ENGINE} agenda without regard to changes in the working memory. In sequential mode, the {DECISION_ENGINE} ignores any `insert`, `modify`, or `update` statements in rules and executes rules in a single sequence. As a result, rule execution may be faster in sequential mode, but important updates may not be applied to your rules.
+
+Sequential mode applies to only stateless KIE sessions because stateful KIE sessions inherently use data from previously invoked KIE sessions. If you use a stateless KIE session and you want the execution of rules to influence subsequent rules in the agenda, then do not enable sequential mode. Sequential mode is disabled by default in the {DECISION_ENGINE}.
+
+To enable sequential mode, use one of the following options:
+
+* Set the system property `drools.sequential` to `true`.
+* Enable sequential mode while creating the KIE base programmatically:
++
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(SequentialOption.YES);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+* Enable sequential mode in the KIE module descriptor file (`kmodule.xml`) for a specific {PRODUCT} project:
++
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase name="KBase2" default="false" sequential="true" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+
+To configure sequential mode to use a dynamic agenda, use one of the following options:
+
+* Set the system property `drools.sequential.agenda` to `dynamic`.
+* Set the sequential agenda option while creating the KIE base programmatically:
++
+[source,java]
+----
+KieServices ks = KieServices.Factory.get();
+KieBaseConfiguration kieBaseConf = ks.newKieBaseConfiguration();
+kieBaseConf.setOption(SequentialAgendaOption.DYNAMIC);
+KieBase kieBase = kieContainer.newKieBase(kieBaseConf);
+----
+
+When you enable sequential mode, the {DECISION_ENGINE} evaluates rules in the following way:
+
+. Rules are ordered by salience and position in the rule set.
+. An element for each possible rule match is created. The element position indicates the execution order.
+. Node memory is disabled, with the exception of the right-input object memory.
+. The left-input adapter node propagation is disconnected and the object with the node is referenced in a `Command` object. The `Command` object is added to a list in the working memory for later execution.
+. All objects are asserted, and then the list of `Command` objects is checked and executed.
+. All matches that result from executing the list are added to elements based on the sequence number of the rule.
+. The elements that contain matches are executed in a sequence. If you set a maximum number of rule executions, the {DECISION_ENGINE} activates no more than that number of rules in the agenda for execution.
+
+In sequential mode, the `LeftInputAdapterNode` node creates a `Command` object and adds it to a list in the working memory of the {DECISION_ENGINE}. This `Command` object contains references to the `LeftInputAdapterNode` node and the propagated object. These references stop any left-input propagations at insertion time so that the right-input propagation never needs to attempt to join the left inputs. The references also avoid the need for the left-input memory.
+
+All nodes have their memory turned off, including the left-input tuple memory, but excluding the right-input object memory. After all the assertions are finished and the right-input memory of all the objects is populated, the {DECISION_ENGINE} iterates over the list of `LeftInputAdatperNode` `Command` objects. The objects propagate down the network, attempting to join the right-input objects, but they are not retained in the left input.
+
+The agenda with a priority queue to schedule the tuples is replaced by an element for each rule. The sequence number of the `RuleTerminalNode` node indicates the element where to place the match. After all `Command` objects have finished, the elements are checked and existing matches are executed. To improve performance, the first and the last populated cell in the elements are retained.
+
+When the network is constructed, each `RuleTerminalNode` node receives a sequence number based on its salience number and the order in which it was added to the network.
+
+The right-input node memories are typically hash maps for fast object deletion. Because object deletions are not supported, Phreak uses an object list when the values of the object are not indexed. For a large number of objects, indexed hash maps provide a performance increase. If an object has only a few instances, Phreak uses an object list instead of an index.
+////
+
+// tag::con-property-change-listeners[]
+[id="con-property-change-listeners_{context}"]
+=== Property-change settings and listeners for fact types
+
+[role="_abstract"]
+By default, the {DECISION_ENGINE} does not re-evaluate all fact patterns for fact types each time a rule is triggered, but instead reacts only to modified properties that are constrained or bound inside a given pattern. For example, if a rule calls `modify()` on a fact as part of the rule actions, this modification does not automatically trigger the re-evaluation of all patterns referring to the modified type. Only the patterns constrained on the changed properties of that fact are re-evaluated. This property reactivity behavior prevents unwanted recursions and results in more efficient rule evaluation. This behavior also avoids the need of using the `no-loop` rule attribute to prevent infinite recursion.
+
+You can modify or disable this property reactivity behavior with the following options, and then use a property-change setting in your Java class or DRL files to fine-tune property reactivity as needed:
+
+* `ALWAYS`: (Default) All types are property reactive, but you can disable property reactivity for a specific type by using the `@classReactive` property-change setting.
+* `ALLOWED`: No types are property reactive, but you can enable property reactivity for a specific type by using the `@propertyReactive` property-change setting.
+* `DISABLED`: No types are property reactive. All property-change listeners are ignored.
+
+To set the property reactivity behavior, update the `drools.propertySpecific` system property in the `application.properties` file of your {PRODUCT} project:
+
+.Example property reactivity setting in system properties
+[source]
+----
+drools.propertySpecific=ALLOWED
+----
+
+The {DECISION_ENGINE} supports the following property-change settings and listeners for fact classes or declared DRL fact types:
+
+@classReactive::
+If property reactivity is set to `ALWAYS` in the {DECISION_ENGINE} (all types are property reactive), this tag disables the default property reactivity behavior for a specific Java class or a declared DRL fact type. You can use this tag if you want the {DECISION_ENGINE} to re-evaluate all fact patterns for the specified fact type each time the rule is triggered, instead of reacting only to modified properties that are constrained or bound inside a given pattern.
++
+--
+.Example: Disable default property reactivity in a DRL type declaration
+[source]
+----
+declare Person
+  @classReactive
+    firstName : String
+    lastName : String
+end
+----
+
+.Example: Disable default property reactivity in a Java class
+[source,java]
+----
+@classReactive
+public static class Person {
+    private String firstName;
+    private String lastName;
+}
+----
+--
+
+@propertyReactive::
+If property reactivity is set to `ALLOWED` in the {DECISION_ENGINE} (no types are property reactive unless specified), this tag enables property reactivity for a specific Java class or a declared DRL fact type. You can use this tag if you want the {DECISION_ENGINE} to react only to modified properties that are constrained or bound inside a given pattern for the specified fact type, instead of re-evaluating all fact patterns for the fact each time the rule is triggered.
++
+--
+.Example: Enable property reactivity in a DRL type declaration (when reactivity is disabled globally)
+[source]
+----
+declare Person
+  @propertyReactive
+    firstName : String
+    lastName : String
+end
+----
+
+.Example: Enable property reactivity in a Java class (when reactivity is disabled globally)
+[source,java]
+----
+@propertyReactive
+public static class Person {
+    private String firstName;
+    private String lastName;
+}
+----
+--
+
+//@comment Currently TBD in Kogito, so excluding for now. (Stetson 7 Apr 2020)
+////
+@watch::
+This tag enables property reactivity for additional properties that you specify in-line in fact patterns in DRL rules. This tag is supported only if property reactivity is set to `ALWAYS` in the {DECISION_ENGINE}, or if property reactivity is set to `ALLOWED` and the relevant fact type uses the `@propertyReactive` tag. You can use this tag in DRL rules to add or exclude specific properties in fact property reactivity logic.
++
+--
+Default parameter: None
+
+Supported parameters: Property name, `\*` (all), `!` (not), `!*` (no properties)
+
+[source]
+----
+<factPattern> @watch ( <property> )
+----
+
+.Example: Enable or disable property reactivity in fact patterns
+[source]
+----
+// Listens for changes in both `firstName` (inferred) and `lastName`:
+Person(firstName == $expectedFirstName) @watch( lastName )
+
+// Listens for changes in all properties of the `Person` fact:
+Person(firstName == $expectedFirstName) @watch( * )
+
+// Listens for changes in `lastName` and explicitly excludes changes in `firstName`:
+Person(firstName == $expectedFirstName) @watch( lastName, !firstName )
+
+// Listens for changes in all properties of the `Person` fact except `age`:
+Person(firstName == $expectedFirstName) @watch( *, !age )
+
+// Excludes changes in all properties of the `Person` fact (equivalent to using `@classReactivity` tag):
+Person(firstName == $expectedFirstName) @watch( !* )
+----
+
+The {DECISION_ENGINE} generates a compilation error if you use the `@watch` tag for properties in a fact type that uses the `@classReactive` tag (disables property reactivity) or when property reactivity is set to `ALLOWED` in the {DECISION_ENGINE} and the relevant fact type does not use the `@propertyReactive` tag. Compilation errors also arise if you duplicate properties in listener annotations, such as `@watch( firstName, ! firstName )`.
+--
+////
+
+@propertyChangeSupport::
+For facts that implement support for property changes as defined in the https://download.oracle.com/otndocs/jcp/7224-javabeans-1.01-fr-spec-oth-JSpec/[JavaBeans Specification], this tag enables the {DECISION_ENGINE} to monitor changes in the fact properties.
++
+--
+.Example: Declare property change support in JavaBeans object
+[source]
+----
+declare Person
+    @propertyChangeSupport
+end
+----
+--
+// end::con-property-change-listeners[]
+
+////
+//@comment: Excluded for now, not yet supported in Kogito. (9 Mar 2020)
+[id="con-cep_{context}"]
+== Complex event processing (CEP)
+
+[role="_abstract"]
+In {PRODUCT}, an event is a record of a significant change of state in the application domain at a point in time. Depending on how the domain is modeled, the change of state may be represented by a single event, multiple atomic events, or hierarchies of correlated events. From a complex event processing (CEP) perspective, an event is a type of fact or object that occurs at a specific point in time, and a business rule is a definition of how to react to the data from that fact or object. For example, in a stock broker application, a change in security prices, a change in ownership from seller to buyer, or a change in an account holder's balance are all considered to be events because a change has occurred in the state of the application domain at a given time.
+
+The {DECISION_ENGINE} in {PRODUCT} uses complex event processing (CEP) to detect and process multiple events within a collection of events, to uncover relationships that exist between events, and to infer new data from the events and their relationships.
+
+CEP use cases share several requirements and goals with business rule use cases.
+
+From a business perspective, business rule definitions are often defined based on the occurrence of scenarios triggered by events. In the following examples, events form the basis of business rules:
+
+* In an algorithmic trading application, a rule performs an action if the security price increases by X percent above the day opening price. The price increases are denoted by events on a stock trading application.
+* In a monitoring application, a rule performs an action if the temperature in the server room increases X degrees in Y minutes. The sensor readings are denoted by events.
+
+From a technical perspective, business rule evaluation and CEP have the following key similarities:
+
+* Both business rule evaluation and CEP require seamless integration with the enterprise infrastructure and applications. This is particularly important with life-cycle management, auditing, and security.
+* Both business rule evaluation and CEP have functional requirements such as pattern matching, and non-functional requirements such as response time limits and query-rule explanations.
+
+CEP scenarios have the following key characteristics:
+
+* Scenarios usually process large numbers of events, but only a small percentage of the events are relevant.
+* Events are usually immutable and represent a record of change in state.
+* Rules and queries run against events and must react to detected event patterns.
+* Related events usually have a strong temporal relationship.
+* Individual events are not prioritized. The CEP system prioritizes patterns of related events and the relationships between them.
+* Events usually need to be composed and aggregated.
+
+Given these common CEP scenario characteristics, the CEP system in {PRODUCT} supports the following features and functions to optimize event processing:
+
+* Event processing with proper semantics
+* Event detection, correlation, aggregation, and composition
+* Event stream processing
+* Temporal constraints to model the temporal relationships between events
+* Sliding windows of significant events
+* Session-scoped unified clock
+* Required volumes of events for CEP use cases
+* Reactive rules
+* Adapters for event input into the {DECISION_ENGINE} (pipeline)
+
+[id="con-cep-events_{context}"]
+=== Events in complex event processing
+
+[role="_abstract"]
+In {PRODUCT}, an event is a record of a significant change of state in the application domain at a point in time. Depending on how the domain is modeled, the change of state may be represented by a single event, multiple atomic events, or hierarchies of correlated events. From a complex event processing (CEP) perspective, an event is a type of fact or object that occurs at a specific point in time, and a business rule is a definition of how to react to the data from that fact or object. For example, in a stock broker application, a change in security prices, a change in ownership from seller to buyer, or a change in an account holder's balance are all considered to be events because a change has occurred in the state of the application domain at a given time.
+
+Events have the following key characteristics:
+
+* *Are immutable:* An event is a record of change that has occurred at some time in the past and cannot be changed.
++
+[NOTE]
+====
+The {DECISION_ENGINE} does not enforce immutability on the Java objects that represent events. This behavior makes event data enrichment possible. Your application should be able to populate unpopulated event attributes, and these attributes are used by the {DECISION_ENGINE} to enrich the event with inferred data. However, you should not change event attributes that have already been populated.
+====
+
+* *Have strong temporal constraints:* Rules involving events usually require the correlation of multiple events that occur at different points in time relative to each other.
+* *Have managed lifecycles:* Because events are immutable and have temporal constraints, they are usually only relevant for a specified period of time. This means that the {DECISION_ENGINE} can automatically manage the lifecycle of events.
+* *Can use sliding windows:* You can define sliding windows of time or length with events. A sliding time window is a specified period of time during which events can be processed. A sliding length window is a specified number of events that can be processed.
+
+[id="proc-cep-events_{context}"]
+=== Declaring facts as events
+
+[role="_abstract"]
+You can declare facts as events in your Java class or DRL rule file so that the {DECISION_ENGINE} handles the facts as events during complex event processing. You can declare the facts as interval-based events or point-in-time events. Interval-based events have a duration time and persist in the working memory of the {DECISION_ENGINE} until their duration time has lapsed. Point-in-time events have no duration and are essentially interval-based events with a duration of zero.
+
+.Procedure
+For the relevant fact type in your Java class or DRL rule file, enter the `@role( event )` metadata tag and parameter. The `@role` metadata tag accepts the following two values:
+
+* `fact`: (Default) Declares the type as a regular fact
+* `event`: Declares the type as an event
+
+For example, the following snippet declares that the `StockPoint` fact type in a stock broker application must be handled as an event:
+
+.Declare fact type as an event
+[source]
+----
+import some.package.StockPoint
+
+declare StockPoint
+  @role( event )
+end
+----
+
+If `StockPoint` is a fact type declared in the DRL rule file instead of in a pre-existing class, you can declare the event in-line in your application code:
+
+.Declare fact type in-line and assign it to event role
+[source]
+----
+declare StockPoint
+  @role( event )
+
+  datetime : java.util.Date
+  symbol : String
+  price : double
+end
+----
+
+[id="con-cep-modes_{context}"]
+=== Event processing modes in the {DECISION_ENGINE}
+
+[role="_abstract"]
+The {DECISION_ENGINE} runs in either cloud mode or stream mode. In cloud mode, the {DECISION_ENGINE} processes facts as facts with no temporal constraints, independent of time, and in no particular order. In stream mode, the {DECISION_ENGINE} processes facts as events with strong temporal constraints, in real time or near real time. Stream mode uses synchronization to make event processing possible in {PRODUCT}.
+
+Cloud mode::
+Cloud mode is the default operating mode of the {DECISION_ENGINE}. In cloud mode, the {DECISION_ENGINE} treats events as an unordered cloud. Events still have time stamps, but the {DECISION_ENGINE} running in cloud mode cannot draw relevance from the time stamp because cloud mode ignores the present time. This mode uses the rule constraints to find the matching tuples to activate and execute rules.
++
+--
+Cloud mode does not impose any kind of additional requirements on facts. However, because the {DECISION_ENGINE} in this mode has no concept of time, it cannot use temporal features such as sliding windows or automatic life-cycle management. In cloud mode, events must be explicitly retracted when they are no longer needed.
+
+The following requirements are not imposed in cloud mode:
+
+* No clock synchronization because the {DECISION_ENGINE} has no notion of time
+* No ordering of events because the {DECISION_ENGINE} processes events as an unordered cloud, against which the {DECISION_ENGINE} match rules
+
+You can specify cloud mode either by setting the system property in the relevant configuration files or by using the Java client API:
+
+.Set cloud mode using system property
+[source]
+----
+drools.eventProcessingMode=cloud
+----
+
+.Set cloud mode using Java client API
+[source,java]
+----
+import org.kie.api.conf.EventProcessingOption;
+import org.kie.api.KieBaseConfiguration;
+import org.kie.api.KieServices.Factory;
+
+KieBaseConfiguration config = KieServices.Factory.get().newKieBaseConfiguration();
+
+config.setOption(EventProcessingOption.CLOUD);
+----
+
+You can also specify cloud mode using the `eventProcessingMode="<mode>"` KIE base attribute in the KIE module descriptor file (`kmodule.xml`) for a specific {PRODUCT} project:
+
+.Set cloud mode using project `kmodule.xml` file
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase name="KBase2" default="false" eventProcessingMode="cloud" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+--
+
+Stream mode::
+Stream mode enables the {DECISION_ENGINE} to process events chronologically and in real time as they are inserted into the {DECISION_ENGINE}. In stream mode, the {DECISION_ENGINE} synchronizes streams of events (so that events in different streams can be processed in chronological order), implements sliding windows of time or length, and enables automatic life-cycle management.
++
+--
+The following requirements apply to stream mode:
+
+* Events in each stream must be ordered chronologically.
+* A session clock must be present to synchronize event streams.
+
+NOTE: Your application does not need to enforce ordering events between streams, but using event streams that have not been synchronized may cause unexpected results.
+
+You can specify stream mode either by setting the system property in the relevant configuration files or by using the Java client API:
+
+.Set stream mode using system property
+[source]
+----
+drools.eventProcessingMode=stream
+----
+
+.Set stream mode using Java client API
+[source,java]
+----
+import org.kie.api.conf.EventProcessingOption;
+import org.kie.api.KieBaseConfiguration;
+import org.kie.api.KieServices.Factory;
+
+KieBaseConfiguration config = KieServices.Factory.get().newKieBaseConfiguration();
+
+config.setOption(EventProcessingOption.STREAM);
+----
+
+You can also specify stream mode using the `eventProcessingMode="<mode>"` KIE base attribute in the KIE module descriptor file (`kmodule.xml`) for a specific {PRODUCT} project:
+
+.Set stream mode using project `kmodule.xml` file
+[source,xml]
+----
+<kmodule>
+  ...
+  <kbase name="KBase2" default="false" eventProcessingMode="stream" packages="org.domain.pkg2, org.domain.pkg3" includes="KBase1">
+    ...
+  </kbase>
+  ...
+</kmodule>
+----
+--
+
+[id="con-cep-negative-patterns_{context}"]
+==== Negative patterns in {DECISION_ENGINE} stream mode
+
+[role="_abstract"]
+A negative pattern is a pattern for conditions that are not met. For example, the following DRL rule activates a fire alarm if a fire is detected and the sprinkler is not activated:
+
+.Fire alarm rule with a negative pattern
+[source]
+----
+rule "Sound the alarm"
+when
+  $f : FireDetected()
+  not(SprinklerActivated())
+then
+  // Sound the alarm.
+end
+----
+
+In cloud mode, the {DECISION_ENGINE} assumes all facts (regular facts and events) are known in advance and evaluates negative patterns immediately. In stream mode, the {DECISION_ENGINE} can support temporal constraints on facts to wait for a set time before activating a rule.
+
+The same example rule in stream mode activates the fire alarm as usual, but applies a 10-second delay.
+
+.Fire alarm rule with a negative pattern and time delay (stream mode only)
+[source]
+----
+rule "Sound the alarm"
+when
+  $f : FireDetected()
+  not(SprinklerActivated(this after[0s,10s] $f))
+then
+  // Sound the alarm.
+end
+----
+
+The following modified fire alarm rule expects one `Heartbeat` event to occur every 10 seconds. If the expected event does not occur, the rule is executed. This rule uses the same type of object in both the first pattern and in the negative pattern. The negative pattern has the temporal constraint to wait 0 to 10 seconds before executing and excludes the `Heartbeat` event bound to `$h` so that the rule can be executed. The bound event `$h` must be explicitly excluded in order for the rule to be executed because the temporal constraint `[0s, ...]` does not inherently exclude that event from being matched again.
+
+.Fire alarm rule excluding a bound event in a negative pattern (stream mode only)
+[source]
+----
+rule "Sound the alarm"
+when
+  $h: Heartbeat() from entry-point "MonitoringStream"
+  not(Heartbeat(this != $h, this after[0s,10s] $h) from entry-point "MonitoringStream")
+then
+  // Sound the alarm.
+end
+----
+
+[id="ref-cep-temporal-operators_{context}"]
+=== Temporal operators for events
+
+[role="_abstract"]
+In stream mode, the {DECISION_ENGINE} supports the following temporal operators for events that are inserted into the working memory of the {DECISION_ENGINE}. You can use these operators to define the temporal reasoning behavior of the events that you declare in your Java class or DRL rule file. Temporal operators are not supported when the {DECISION_ENGINE} is running in cloud mode.
+
+* `after`
+* `before`
+* `coincides`
+* `during`
+* `includes`
+* `finishes`
+* `finished by`
+* `meets`
+* `met by`
+* `overlaps`
+* `overlapped by`
+* `starts`
+* `started by`
+
+after::
++
+--
+This operator specifies if the current event occurs after the correlated event. This operator can also define an amount of time after which the current event can follow the correlated event, or a delimiting time range during which the current event can follow the correlated event.
+
+For example, the following pattern matches if `$eventA` starts between 3 minutes and 30 seconds and 4 minutes after `$eventB` finishes. If `$eventA` starts earlier than 3 minutes and 30 seconds after `$eventB` finishes, or later than 4 minutes after `$eventB` finishes, then the pattern is not matched.
+
+[source]
+----
+$eventA : EventA(this after[3m30s, 4m] $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+3m30s <= $eventA.startTimestamp - $eventB.endTimeStamp <= 4m
+----
+
+The `after` operator supports up to two parameter values:
+
+* If two values are defined, the interval starts on the first value (3 minutes and 30 seconds in the example) and ends on the second value (4 minutes in the example).
+* If only one value is defined, the interval starts on the provided value and runs indefinitely with no end time.
+* If no value is defined, the interval starts at 1 millisecond and runs indefinitely with no end time.
+
+The `after` operator also supports negative time ranges:
+
+[source]
+----
+$eventA : EventA(this after[-3m30s, -2m] $eventB)
+----
+
+If the first value is greater than the second value, the {DECISION_ENGINE} automatically reverses them. For example, the following two patterns are interpreted by the {DECISION_ENGINE} in the same way:
+
+[source]
+----
+$eventA : EventA(this after[-3m30s, -2m] $eventB)
+$eventA : EventA(this after[-2m, -3m30s] $eventB)
+----
+--
+
+before::
+This operator specifies if the current event occurs before the correlated event. This operator can also define an amount of time before which the current event can precede the correlated event, or a delimiting time range during which the current event can precede the correlated event.
++
+--
+For example, the following pattern matches if `$eventA` finishes between 3 minutes and 30 seconds and 4 minutes before `$eventB` starts. If `$eventA` finishes earlier than 3 minutes and 30 seconds before `$eventB` starts, or later than 4 minutes before `$eventB` starts, then the pattern is not matched.
+
+[source]
+----
+$eventA : EventA(this before[3m30s, 4m] $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+3m30s <= $eventB.startTimestamp - $eventA.endTimeStamp <= 4m
+----
+
+The `before` operator supports up to two parameter values:
+
+* If two values are defined, the interval starts on the first value (3 minutes and 30 seconds in the example) and ends on the second value (4 minutes in the example).
+* If only one value is defined, the interval starts on the provided value and runs indefinitely with no end time.
+* If no value is defined, the interval starts at 1 millisecond and runs indefinitely with no end time.
+
+The `before` operator also supports negative time ranges:
+
+[source]
+----
+$eventA : EventA(this before[-3m30s, -2m] $eventB)
+----
+
+If the first value is greater than the second value, the {DECISION_ENGINE} automatically reverses them. For example, the following two patterns are interpreted by the {DECISION_ENGINE} in the same way:
+
+[source]
+----
+$eventA : EventA(this before[-3m30s, -2m] $eventB)
+$eventA : EventA(this before[-2m, -3m30s] $eventB)
+----
+--
+
+coincides::
+This operator specifies if the two events occur at the same time, with the same start and end times.
++
+--
+For example, the following pattern matches if both the start and end time stamps of `$eventA` and `$eventB` are identical:
+
+[source]
+----
+$eventA : EventA(this coincides $eventB)
+----
+
+The `coincides` operator supports up to two parameter values for the distance between the event start and end times, if they are not identical:
+
+* If only one parameter is given, the parameter is used to set the threshold for both the start and end times of both events.
+* If two parameters are given, the first is used as a threshold for the start time and the second is used as a threshold for the end time.
+
+The following pattern uses start and end time thresholds:
+
+[source]
+----
+$eventA : EventA(this coincides[15s, 10s] $eventB)
+----
+
+The pattern matches if the following conditions are met:
+
+[source]
+----
+abs($eventA.startTimestamp - $eventB.startTimestamp) <= 15s
+&&
+abs($eventA.endTimestamp - $eventB.endTimestamp) <= 10s
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `coincides` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+during::
+This operator specifies if the current event occurs within the time frame of when the correlated event starts and ends. The current event must start after the correlated event starts and must end before the correlated event ends. (With the `coincides` operator, the start and end times are the same or nearly the same.)
++
+--
+For example, the following pattern matches if `$eventA` starts after `$eventB` starts and ends before `$eventB` ends:
+
+[source]
+----
+$eventA : EventA(this during $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+$eventB.startTimestamp < $eventA.startTimestamp <= $eventA.endTimestamp < $eventB.endTimestamp
+----
+
+The `during` operator supports one, two, or four optional parameters:
+
+* If one value is defined, this value is the maximum distance between the start times of the two events and the maximum distance between the end times of the two events.
+* If two values are defined, these values are a threshold between which the current event start time and end time must occur in relation to the correlated event start and end times.
++
+For example, if the values are `5s` and `10s`, the current event must start between 5 and 10 seconds after the correlated event starts and must end between 5 and 10 seconds before the correlated event ends.
+* If four values are defined, the first and second values are the minimum and maximum distances between the start times of the events, and the third and fourth values are the minimum and maximum distances between the end times of the two events.
+--
+
+includes::
+This operator specifies if the correlated event occurs within the time frame of when the current event occurs. The correlated event must start after the current event starts and must end before the current event ends. (The behavior of this operator is the reverse of the `during` operator behavior.)
++
+--
+For example, the following pattern matches if `$eventB` starts after `$eventA` starts and ends before `$eventA` ends:
+
+[source]
+----
+$eventA : EventA(this includes $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+$eventA.startTimestamp < $eventB.startTimestamp <= $eventB.endTimestamp < $eventA.endTimestamp
+----
+
+The `includes` operator supports one, two, or four optional parameters:
+
+* If one value is defined, this value is the maximum distance between the start times of the two events and the maximum distance between the end times of the two events.
+* If two values are defined, these values are a threshold between which the correlated event start time and end time must occur in relation to the current event start and end times.
++
+For example, if the values are `5s` and `10s`, the correlated event must start between 5 and 10 seconds after the current event starts and must end between 5 and 10 seconds before the current event ends.
+* If four values are defined, the first and second values are the minimum and maximum distances between the start times of the events, and the third and fourth values are the minimum and maximum distances between the end times of the two events.
+--
+
+finishes::
++
+--
+This operator specifies if the current event starts after the correlated event but both events end at the same time.
+
+For example, the following pattern matches if `$eventA` starts after `$eventB` starts and ends at the same time when `$eventB` ends:
+
+[source]
+----
+$eventA : EventA(this finishes $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+$eventB.startTimestamp < $eventA.startTimestamp
+&&
+$eventA.endTimestamp == $eventB.endTimestamp
+----
+
+The `finishes` operator supports one optional parameter that sets the maximum time allowed between the end times of the two events:
+
+[source]
+----
+$eventA : EventA(this finishes[5s] $eventB)
+----
+
+This pattern matches if these conditions are met:
+
+[source]
+----
+$eventB.startTimestamp < $eventA.startTimestamp
+&&
+abs($eventA.endTimestamp - $eventB.endTimestamp) <= 5s
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `finishes` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+finished by::
+This operator specifies if the correlated event starts after the current event but both events end at the same time. (The behavior of this operator is the reverse of the `finishes` operator behavior.)
++
+--
+For example, the following pattern matches if `$eventB` starts after `$eventA` starts and ends at the same time when `$eventA` ends:
+
+[source]
+----
+$eventA : EventA(this finishedby $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+$eventA.startTimestamp < $eventB.startTimestamp
+&&
+$eventA.endTimestamp == $eventB.endTimestamp
+----
+
+The `finished by` operator supports one optional parameter that sets the maximum time allowed between the end times of the two events:
+
+[source]
+----
+$eventA : EventA(this finishedby[5s] $eventB)
+----
+
+This pattern matches if these conditions are met:
+
+[source]
+----
+$eventA.startTimestamp < $eventB.startTimestamp
+&&
+abs($eventA.endTimestamp - $eventB.endTimestamp) <= 5s
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `finished by` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+meets::
+This operator specifies if the current event ends at the same time when the correlated event starts.
++
+--
+For example, the following pattern matches if `$eventA` ends at the same time when `$eventB` starts:
+
+[source]
+----
+$eventA : EventA(this meets $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+abs($eventB.startTimestamp - $eventA.endTimestamp) == 0
+----
+
+The `meets` operator supports one optional parameter that sets the maximum time allowed between the end time of the current event and the start time of the correlated event:
+
+[source]
+----
+$eventA : EventA(this meets[5s] $eventB)
+----
+
+This pattern matches if these conditions are met:
+
+[source]
+----
+abs($eventB.startTimestamp - $eventA.endTimestamp) <= 5s
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `meets` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+met by::
+This operator specifies if the correlated event ends at the same time when the current event starts. (The behavior of this operator is the reverse of the `meets` operator behavior.)
++
+--
+For example, the following pattern matches if `$eventB` ends at the same time when `$eventA` starts:
+
+[source]
+----
+$eventA : EventA(this metby $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+abs($eventA.startTimestamp - $eventB.endTimestamp) == 0
+----
+
+The `met by` operator supports one optional parameter that sets the maximum distance between the end time of the correlated event and the start time of the current event:
+
+[source]
+----
+$eventA : EventA(this metby[5s] $eventB)
+----
+
+This pattern matches if these conditions are met:
+
+[source]
+----
+abs($eventA.startTimestamp - $eventB.endTimestamp) <= 5s
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `met by` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+overlaps::
+This operator specifies if the current event starts before the correlated event starts and it ends during the time frame that the correlated event occurs. The current event must end between the start and end times of the correlated event.
++
+--
+For example, the following pattern matches if `$eventA` starts before `$eventB` starts and then ends while `$eventB` occurs, before `$eventB` ends:
+
+[source]
+----
+$eventA : EventA(this overlaps $eventB)
+----
+
+The `overlaps` operator supports up to two parameters:
+
+* If one parameter is defined, the value is the maximum distance between the start time of the correlated event and the end time of the current event.
+* If two parameters are defined, the values are the minimum distance (first value) and the maximum distance (second value) between the start time of the correlated event and the end time of the current event.
+--
+
+overlapped by::
+This operator specifies if the correlated event starts before the current event starts and it ends during the time frame that the current event occurs. The correlated event must end between the start and end times of the current event. (The behavior of this operator is the reverse of the `overlaps` operator behavior.)
++
+--
+For example, the following pattern matches if `$eventB` starts before `$eventA` starts and then ends while `$eventA` occurs, before `$eventA` ends:
+
+[source]
+----
+$eventA : EventA(this overlappedby $eventB)
+----
+
+The `overlapped by` operator supports up to two parameters:
+
+* If one parameter is defined, the value is the maximum distance between the start time of the current event and the end time of the correlated event.
+* If two parameters are defined, the values are the minimum distance (first value) and the maximum distance (second value) between the start time of the current event and the end time of the correlated event.
+--
+
+starts::
+This operator specifies if the two events start at the same time but the current event ends before the correlated event ends.
++
+--
+For example, the following pattern matches if `$eventA` and `$eventB` start at the same time, and `$eventA` ends before `$eventB` ends:
+
+[source]
+----
+$eventA : EventA(this starts $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+$eventA.startTimestamp == $eventB.startTimestamp
+&&
+$eventA.endTimestamp < $eventB.endTimestamp
+----
+
+The `starts` operator supports one optional parameter that sets the maximum distance between the start times of the two events:
+
+[source]
+----
+$eventA : EventA(this starts[5s] $eventB)
+----
+
+This pattern matches if these conditions are met:
+
+[source]
+----
+abs($eventA.startTimestamp - $eventB.startTimestamp) <= 5s
+&&
+$eventA.endTimestamp < $eventB.endTimestamp
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `starts` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+started by::
+This operator specifies if the two events start at the same time but the correlated event ends before the current event ends. (The behavior of this operator is the reverse of the `starts` operator behavior.)
++
+--
+For example, the following pattern matches if `$eventA` and `$eventB` start at the same time, and `$eventB` ends before `$eventA` ends:
+
+[source]
+----
+$eventA : EventA(this startedby $eventB)
+----
+
+You can also express this operator in the following way:
+
+[source]
+----
+$eventA.startTimestamp == $eventB.startTimestamp
+&&
+$eventA.endTimestamp > $eventB.endTimestamp
+----
+
+The `started by` operator supports one optional parameter that sets the maximum distance between the start times of the two events:
+
+[source]
+----
+$eventA : EventA( this starts[5s] $eventB)
+----
+
+This pattern matches if these conditions are met:
+
+[source]
+----
+abs( $eventA.startTimestamp - $eventB.startTimestamp ) <= 5s
+&&
+$eventA.endTimestamp > $eventB.endTimestamp
+----
+
+WARNING: The {DECISION_ENGINE} does not support negative intervals for the `started by` operator. If you use negative intervals, the {DECISION_ENGINE} generates an error.
+
+--
+
+[id="ref-cep-clock_{context}"]
+=== Session clock implementations in the {DECISION_ENGINE}
+
+[role="_abstract"]
+During complex event processing, events in the {DECISION_ENGINE} may have temporal constraints and therefore require a session clock that provides the current time. For example, if a rule needs to determine the average price of a given stock over the last 60 minutes, the {DECISION_ENGINE} must be able to compare the stock price event time stamp with the current time in the session clock.
+
+The {DECISION_ENGINE} supports a real-time clock and a pseudo clock. You can use one or both clock types depending on the scenario:
+
+* *Rules testing:* Testing requires a controlled environment, and when the tests include rules with temporal constraints, you must be able to control the input rules and facts and the flow of time.
+* *Regular execution:* The {DECISION_ENGINE} reacts to events in real time and therefore requires a real-time clock.
+* *Special environments:* Specific environments may have specific time control requirements. For example, clustered environments may require clock synchronization or Java Enterprise Edition (JEE) environments may require a clock provided by the application server.
+* *Rules replay or simulation:* In order to replay or simulate scenarios, the application must be able to control the flow of time.
+
+Consider your environment requirements as you decide whether to use a real-time clock or pseudo clock in the {DECISION_ENGINE}.
+
+Real-time clock::
+The real-time clock is the default clock implementation in the {DECISION_ENGINE} and uses the system clock to determine the current time for time stamps. To configure the {DECISION_ENGINE} to use the real-time clock, set the KIE session configuration parameter to `realtime`:
++
+--
+.Configure real-time clock in KIE session
+[source,java]
+----
+import org.kie.api.KieServices.Factory;
+import org.kie.api.runtime.conf.ClockTypeOption;
+import org.kie.api.runtime.KieSessionConfiguration;
+
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+
+config.setOption(ClockTypeOption.get("realtime"));
+----
+--
+
+Pseudo clock::
+The pseudo clock implementation in the {DECISION_ENGINE} is helpful for testing temporal rules and it can be controlled by the application. To configure the {DECISION_ENGINE} to use the pseudo clock, set the KIE session configuration parameter to `pseudo`:
++
+--
+.Configure pseudo clock in KIE session
+[source,java]
+----
+import org.kie.api.runtime.conf.ClockTypeOption;
+import org.kie.api.runtime.KieSessionConfiguration;
+import org.kie.api.KieServices.Factory;
+
+KieSessionConfiguration config = KieServices.Factory.get().newKieSessionConfiguration();
+
+config.setOption(ClockTypeOption.get("pseudo"));
+----
+
+You can also use additional configurations and fact handlers to control the pseudo clock:
+
+.Control pseudo clock behavior in KIE session
+[source,java]
+----
+import java.util.concurrent.TimeUnit;
+
+import org.kie.api.runtime.KieSessionConfiguration;
+import org.kie.api.KieServices.Factory;
+import org.kie.api.runtime.KieSession;
+import org.drools.core.time.SessionPseudoClock;
+import org.kie.api.runtime.rule.FactHandle;
+import org.kie.api.runtime.conf.ClockTypeOption;
+
+KieSessionConfiguration conf = KieServices.Factory.get().newKieSessionConfiguration();
+
+conf.setOption( ClockTypeOption.get("pseudo"));
+KieSession session = kbase.newKieSession(conf, null);
+
+SessionPseudoClock clock = session.getSessionClock();
+
+// While inserting facts, advance the clock as necessary.
+FactHandle handle1 = session.insert(tick1);
+clock.advanceTime(10, TimeUnit.SECONDS);
+
+FactHandle handle2 = session.insert(tick2);
+clock.advanceTime(30, TimeUnit.SECONDS);
+
+FactHandle handle3 = session.insert(tick3);
+----
+--
+
+[id="con-cep-event-streams_{context}"]
+=== Event streams and entry points
+
+[role="_abstract"]
+The {DECISION_ENGINE} can process high volumes of events in the form of event streams. In DRL rule declarations, a stream is also known as an _entry point_. When you declare an entry point in a DRL rule or Java application, the {DECISION_ENGINE}, at compile time, identifies and creates the proper internal structures to use data from only that entry point to evaluate that rule.
+
+Facts from one entry point, or stream, can join facts from any other entry point in addition to facts already in the working memory of the {DECISION_ENGINE}. Facts always remain associated with the entry point through which they entered the {DECISION_ENGINE}. Facts of the same type can enter the {DECISION_ENGINE} through several entry points, but facts that enter the {DECISION_ENGINE} through entry point A can never match a pattern from entry point B.
+
+Event streams have the following characteristics:
+
+* Events in the stream are ordered by time stamp. The time stamps may have different semantics for different streams, but they are always ordered internally.
+* Event streams usually have a high volume of events.
+* Atomic events in streams are usually not useful individually, only collectively in a stream.
+* Event streams can be homogeneous and contain a single type of event, or heterogeneous and contain events of different types.
+
+[id="proc-cep-event-streams_{context}"]
+==== Declaring entry points for rule data
+
+[role="_abstract"]
+You can declare an entry point (event stream) for events so that the {DECISION_ENGINE} uses data from only that entry point to evaluate the rules. You can declare an entry point either implicitly by referencing it in DRL rules or explicitly in your Java application.
+
+.Procedure
+Use one of the following methods to declare the entry point:
+
+* In the DRL rule file, specify `from entry-point "<name>"` for the inserted fact:
++
+--
+.Authorize withdrawal rule with "ATM Stream" entry point
+[source]
+----
+rule "Authorize withdrawal"
+when
+  WithdrawRequest($ai : accountId, $am : amount) from entry-point "ATM Stream"
+  CheckingAccount(accountId == $ai, balance > $am)
+then
+  // Authorize withdrawal.
+end
+----
+
+.Apply fee rule with "Branch Stream" entry point
+[source]
+----
+rule "Apply fee on withdraws on branches"
+when
+  WithdrawRequest($ai : accountId, processed == true) from entry-point "Branch Stream"
+  CheckingAccount(accountId == $ai)
+then
+  // Apply a $2 fee on the account.
+end
+----
+
+Both example DRL rules from a banking application insert the event `WithdrawalRequest` with the fact `CheckingAccount`, but from different entry points. At run time, the {DECISION_ENGINE} evaluates the `Authorize withdrawal` rule using data from only the `"ATM Stream"` entry point, and evaluates the `Apply fee` rule using data from only the `"Branch Stream"` entry point. Any events inserted into the `"ATM Stream"` can never match patterns for the `"Apply fee"` rule, and any events inserted into the `"Branch Stream"` can never match patterns for the `"Authorize withdrawal rule"`.
+--
+
+* In the Java application code, use the `getEntryPoint()` method to specify and obtain an `EntryPoint` object and insert facts into that entry point accordingly:
++
+--
+.Java application code with EntryPoint object and inserted facts
+[source,java]
+----
+import org.kie.api.runtime.KieSession;
+import org.kie.api.runtime.rule.EntryPoint;
+
+// Create your KIE base and KIE session as usual.
+KieSession session = ...
+
+// Create a reference to the entry point.
+EntryPoint atmStream = session.getEntryPoint("ATM Stream");
+
+// Start inserting your facts into the entry point.
+atmStream.insert(aWithdrawRequest);
+----
+
+Any DRL rules that specify `from entry-point "ATM Stream"` are then evaluated based on the data in this entry point only.
+--
+
+[id="con-cep-sliding-windows_{context}"]
+=== Sliding windows of time or length
+
+[role="_abstract"]
+In stream mode, the {DECISION_ENGINE} can process events from a specified sliding window of time or length. A sliding time window is a specified period of time during which events can be processed. A sliding length window is a specified number of events that can be processed. When you declare a sliding window in a DRL rule or Java application, the {DECISION_ENGINE}, at compile time, identifies and creates the proper internal structures to use data from only that sliding window to evaluate that rule.
+
+For example, the following DRL rule snippets instruct the {DECISION_ENGINE} to process only the stock points from the last 2 minutes (sliding time window) or to process only the last 10 stock points (sliding length window):
+
+.Process stock points from the last 2 minutes (sliding time window)
+[source]
+----
+StockPoint() over window:time(2m)
+----
+
+.Process the last 10 stock points (sliding length window)
+[source]
+----
+StockPoint() over window:length(10)
+----
+
+[id="proc-cep-sliding-windows_{context}"]
+==== Declaring sliding windows for rule data
+
+[role="_abstract"]
+You can declare a sliding window of time (flow of time) or length (number of occurrences) for events so that the {DECISION_ENGINE} uses data from only that window to evaluate the rules.
+
+.Procedure
+In the DRL rule file, specify `over window:<time_or_length>(<value>)` for the inserted fact.
+
+For example, the following two DRL rules activate a fire alarm based on an average temperature. However, the first rule uses a sliding time window to calculate the average over the last 10 minutes while the second rule uses a sliding length window to calculate the average over the last one hundred temperature readings.
+
+.Average temperature over sliding time window
+[source]
+----
+rule "Sound the alarm if temperature rises above threshold"
+when
+  TemperatureThreshold($max : max)
+  Number(doubleValue > $max) from accumulate(
+    SensorReading($temp : temperature) over window:time(10m),
+    average($temp))
+then
+  // Sound the alarm.
+end
+----
+
+.Average temperature over sliding length window
+[source]
+----
+rule "Sound the alarm if temperature rises above threshold"
+when
+  TemperatureThreshold($max : max)
+  Number(doubleValue > $max) from accumulate(
+    SensorReading($temp : temperature) over window:length(100),
+    average($temp))
+then
+  // Sound the alarm.
+end
+----
+
+The {DECISION_ENGINE} discards any `SensorReading` events that are more than 10 minutes old or that are not part of the last one hundred readings, and continues recalculating the average as the minutes or readings "slide" forward in real time.
+
+The {DECISION_ENGINE} does not automatically remove outdated events from the KIE session because other rules without sliding window declarations might depend on those events. The {DECISION_ENGINE} stores events in the KIE session until the events expire either by explicit rule declarations or by implicit reasoning within the {DECISION_ENGINE} based on inferred data in the KIE base.
+
+[id="con-cep-memory-management_{context}"]
+=== Memory management for events
+
+[role="_abstract"]
+In stream mode, the {DECISION_ENGINE} uses automatic memory management to maintain events that are stored in KIE sessions. The {DECISION_ENGINE} can retract from a KIE session any events that no longer match any rule due to their temporal constraints and release any resources held by the retracted events.
+
+The {DECISION_ENGINE} uses either explicit or inferred expiration to retract outdated events:
+
+* *Explicit expiration:* The {DECISION_ENGINE} removes events that are explicitly set to expire in rules that declare the `@expires` tag:
++
+--
+.DRL rule snippet with explicit expiration
+[source]
+----
+declare StockPoint
+  @expires( 30m )
+end
+----
+
+This example rule sets any `StockPoint` events to expire after 30 minutes and to be removed from the KIE session if no other rules use the events.
+--
+
+* *Inferred expiration:* The {DECISION_ENGINE} can calculate the expiration offset for a given event implicitly by analyzing the temporal constraints in the rules:
++
+--
+.DRL rule with temporal constraints
+[source]
+----
+rule "Correlate orders"
+when
+  $bo : BuyOrder($id : id)
+  $ae : AckOrder(id == $id, this after[0,10s] $bo)
+then
+  // Perform an action.
+end
+----
+
+For this example rule, the {DECISION_ENGINE} automatically calculates that whenever a `BuyOrder` event occurs, the {DECISION_ENGINE} needs to store the event for up to 10 seconds and wait for the matching `AckOrder` event. After 10 seconds, the {DECISION_ENGINE} infers the expiration and removes the event from the KIE session. An `AckOrder` event can only match an existing `BuyOrder` event, so the {DECISION_ENGINE} infers the expiration if no match occurs and removes the event immediately.
+
+The {DECISION_ENGINE} analyzes the entire KIE base to find the offset for every event type and to ensure that no other rules use the events that are pending removal. Whenever an implicit expiration clashes with an explicit expiration value, the {DECISION_ENGINE} uses the greater time frame of the two to store the event longer.
+--
+
+[id="con-engine-queries_{context}"]
+== {DECISION_ENGINE_CAP} queries and live queries
+
+*<@Edoardo, so verdict on this?>*
+
+[role="_abstract"]
+You can use queries with the {DECISION_ENGINE} to retrieve fact sets based on fact patterns as they are used in rules. The patterns might also use optional parameters.
+
+To use queries with the {DECISION_ENGINE}, you add the query definitions in DRL files and then obtain the matching results in your application code. While a query iterates over a result collection, you can use any identifier that is bound to the query to access the corresponding fact or fact field by calling the `get()` method with the binding variable name as the argument. If the binding refers to a fact object, you can retrieve the fact handle by calling `getFactHandle()` with the variable name as the parameter.
+
+ifdef::KOGITO-COMM[]
+.QueryResults
+image::UserGuide/QueryResults.png[align="center"]
+
+.QueryResultsRow
+image::UserGuide/QueryResultsRow.png[align="center"]
+endif::[]
+
+.Example query definition in a DRL file
+[source]
+----
+query "people under the age of 21"
+    $person : Person( age < 21 )
+end
+----
+
+.Example application code to obtain and iterate over query results
+[source,java]
+----
+QueryResults results = ksession.getQueryResults( "people under the age of 21" );
+System.out.println( "we have " + results.size() + " people under the age of 21" );
+
+System.out.println( "These people are under the age of 21:" );
+
+for ( QueryResultsRow row : results ) {
+    Person person = ( Person ) row.get( "person" );
+    System.out.println( person.getName() + "\n" );
+}
+----
+
+Invoking queries and processing the results by iterating over the returned set can be difficult when you are monitoring changes over time. To alleviate this difficulty with ongoing queries, {PRODUCT} provides _live queries_, which use an attached listener for change events instead of returning an iterable result set. Live queries remain open by creating a view and publishing change events for the contents of this view.
+
+To activate a live query, start your query with parameters and monitor changes in the resulting view. You can use the `dispose()` method to terminate the query and discontinue this reactive scenario.
+
+
+.Example query definition in a DRL file
+[source]
+----
+query colors(String $color1, String $color2)
+    TShirt(mainColor = $color1, secondColor = $color2, $price: manufactureCost)
+end
+----
+
+.Example application code with an event listener and a live query
+[source,java]
+----
+final List updated = new ArrayList();
+final List removed = new ArrayList();
+final List added = new ArrayList();
+
+ViewChangedEventListener listener = new ViewChangedEventListener() {
+ public void rowUpdated(Row row) {
+  updated.add( row.get( "$price" ) );
+ }
+
+ public void rowRemoved(Row row) {
+  removed.add( row.get( "$price" ) );
+ }
+
+ public void rowAdded(Row row) {
+  added.add( row.get( "$price" ) );
+ }
+};
+
+// Open the live query:
+LiveQuery query = ksession.openLiveQuery( "colors",
+                                          new Object[] { "red", "blue" },
+                                          listener );
+...
+...
+
+// Terminate the live query:
+query.dispose()
+----
+
+ifdef::KOGITO-COMM[]
+For more live query examples, see http://blog.athico.com/2010/07/glazed-lists-examples-for-drools-live.html[Glazed Lists examples for Drools Live Queries].
+endif::[]
+////
+
+[id="con-engine-event-listeners_{context}"]
+== {DECISION_ENGINE_CAP} event listeners and debug logging
+
+[WARNING]
+====
+The APIs for {DECISION_ENGINE} event listeners in {PRODUCT} are subject to change.
+====
+
+[role="_abstract"]
+In {PRODUCT}, you can add or remove listeners for {DECISION_ENGINE} events, such as fact insertions and rule executions. With {DECISION_ENGINE} event listeners, you can be notified of {DECISION_ENGINE} activity and separate your logging and auditing work from the core of your application.
+
+The {DECISION_ENGINE} supports the following default event listeners for the agenda and working memory:
+
+* `AgendaEventListener`
+* `WorkingMemoryEventListener`
+
+ifdef::KOGITO-COMM[]
+.WorkingMemoryEventManager
+image::UserGuide/WorkingMemoryEventManager.png[align="center"]
+endif::[]
+
+For each event listener, the {DECISION_ENGINE} also supports the following specific events that you can specify to be monitored:
+
+* `MatchCreatedEvent`
+* `MatchCancelledEvent`
+* `BeforeMatchFiredEvent`
+* `AfterMatchFiredEvent`
+* `AgendaGroupPushedEvent`
+* `AgendaGroupPoppedEvent`
+* `ObjectInsertEvent`
+* `ObjectDeletedEvent`
+* `ObjectUpdatedEvent`
+* `ProcessCompletedEvent`
+* `ProcessNodeLeftEvent`
+* `ProcessNodeTriggeredEvent`
+* `ProcessStartEvent`
+
+For example, the following code uses a `DefaultAgendaEventListener` listener and specifies the `AfterMatchFiredEvent` event to be monitored. The code prints pattern matches after the rules are executed (fired):
+
+.Example code to monitor and print `AfterMatchFiredEvent` events in the agenda
+[source,java]
+----
+public class MyListener extends DefaultAgendaEventListener {
+    public void afterMatchFired(AfterMatchFiredEvent event) {
+        super.afterMatchFired( event );
+        System.out.println( event );
+    }
+}
+
+@ApplicationScoped
+public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
+    public RuleEventListenerConfig() {
+        super(new MyListener());
+    }
+}
+----
+
+The {DECISION_ENGINE} also supports the following agenda and working memory event listeners for debug logging:
+
+* `DebugAgendaEventListener`
+* `DebugRuleRuntimeEventListener`
+
+These event listeners implement the same supported event-listener methods and include a debug print statement by default. You can add a specific supported event to be monitored and documented, or monitor all agenda or working memory activity.
+
+For example, the following code uses the `DebugRuleRuntimeEventListener` event listener to monitor and print all working memory events:
+
+.Example code to monitor and print all working memory events
+[source,java]
+----
+@ApplicationScoped
+public class RuleEventListenerConfig extends DefaultRuleEventListenerConfig {
+    public RuleEventListenerConfig() {
+        super(new DebugRuleRuntimeEventListener());
+    }
+}
+----
+
+////
+//@comment: Excluded for now until deemed relevant to Kogito. (Stetson, 28 Oct 2020)
+
+[id="proc-logging-decision-engine_{context}"]
+=== Configuring a logging utility in the {DECISION_ENGINE}
+
+*<@Edoardo, see this section.>*
+
+[role="_abstract"]
+The {DECISION_ENGINE} uses the Java logging API SLF4J for system logging. You can use one of the following logging utilities with the {DECISION_ENGINE} to investigate {DECISION_ENGINE} activity, such as for troubleshooting or data gathering:
+
+* Logback
+* Apache Commons Logging
+* Apache Log4j
+* `java.util.logging` package
+
+.Procedure
+For the logging utility that you want to use, add the relevant dependency to your Maven project or save the relevant XML configuration file in the `org.drools` package of your {PRODUCT} distribution:
+
+.Example Maven dependency for Logback
+[source,xml]
+----
+<dependency>
+  <groupId>ch.qos.logback</groupId>
+  <artifactId>logback-classic</artifactId>
+  <version>${logback.version}</version>
+</dependency>
+----
+
+.Example logback.xml configuration file in org.drools package
+[source,xml]
+----
+<configuration>
+  <logger name="org.drools" level="debug"/>
+  ...
+<configuration>
+----
+
+.Example log4j.xml configuration file in org.drools package
+[source,xml]
+----
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+  <category name="org.drools">
+    <priority value="debug" />
+  </category>
+  ...
+</log4j:configuration>
+----
+
+NOTE: If you are developing for an ultra light environment, use the `slf4j-nop` or `slf4j-simple` logger.
+
+[id="ref-performance-tuning-decision-engine_{context}"]
+== Performance tuning considerations with the {DECISION_ENGINE}
+
+[role="_abstract"]
+The following key concepts or suggested practices can help you optimize {DECISION_ENGINE} performance. These concepts are summarized in this section as a convenience and are explained in more detail in the cross-referenced documentation, where applicable. This section will expand or change as needed with new releases of {PRODUCT}.
+
+Use sequential mode for stateless KIE sessions that do not require important {DECISION_ENGINE} updates::
+Sequential mode is an advanced rule base configuration in the {DECISION_ENGINE} that enables the {DECISION_ENGINE} to evaluate rules one time in the order that they are listed in the {DECISION_ENGINE} agenda without regard to changes in the working memory. As a result, rule execution may be faster in sequential mode, but important updates may not be applied to your rules. Sequential mode applies to stateless KIE sessions only.
++
+--
+To enable sequential mode, set the system property `drools.sequential` to `true`.
+
+For more information about sequential mode or other options for enabling it, see xref:con-phreak-sequential-mode_kogito-decision-engine[].
+--
+
+Use simple operations with event listeners::
+Limit the number of event listeners and the type of operations they perform. Use event listeners for simple operations, such as debug logging and setting properties. Complicated operations, such as network calls, in listeners can impede rule execution. After you finish working with a KIE session, remove the attached event listeners so that the session can be cleaned, as shown in the following example:
++
+--
+.Example event listener removed after use
+[source,java]
+----
+Listener listener = ...;
+StatelessKnowledgeSession ksession = createSession();
+try {
+    ksession.insert(fact);
+    ksession.fireAllRules();
+    ...
+} finally {
+    if (session != null) {
+        ksession.detachListener(listener);
+        ksession.dispose();
+    }
+}
+----
+
+For information about built-in event listeners and debug logging in the {DECISION_ENGINE}, see xref:con-engine-event-listeners_kogito-decision-engine[].
+--
+////
+
+[role="_additional-resources"]
+== Additional resources
+* {URL_CREATING_RUNNING}[_{CREATING_RUNNING}_]
+* {URL_PROCESS_SERVICES}[_{PROCESS_SERVICES}_]
+* {URL_CONFIGURING_KOGITO}[_{CONFIGURING_KOGITO}_]
+
+ifdef::parent-context[:context: {parent-context}]
+ifndef::parent-context[:!context:]
