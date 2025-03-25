@@ -148,6 +148,6 @@ To contribute to Kogito runtime software & engine related code, see the [`incuba
 
 To contribute to Kogito applications, see the [`incubator-kie-kogito-apps`](https://github.com/apache/incubator-kie-kogito-apps) repository in GitHub.
 
-To contribute to Kogito examples with no UI components, see the [`incubator-kie-kogito-examples`](https://github.com/apache/incubator-kie-kogito-example).
+To contribute to Kogito examples with no UI components, see the [`incubator-kie-kogito-examples`](https://github.com/apache/incubator-kie-kogito-examples).
 
 To contribute to Kogito example featuring UI components, see the [`examples`](https://github.com/apache/incubator-kie-tools/tree/main/examples) at [incubator-kie-tools](https://github.com/apache/incubator-kie-tools/) repository in GitHub.
