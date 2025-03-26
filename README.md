@@ -1,18 +1,6 @@
-### The drools contents are only for drools 7.x and no longer maintained in this repository.
-### The current drools docs content is maintained in subproject *drools-docs* here https://github.com/apache/incubator-kie-drools/
-
-___
-
-
-
-![Quality sync checks master](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master)
-![Quality sync checks master-kogito](https://github.com/kiegroup/kie-docs/workflows/Quality%20sync%20checks/badge.svg?branch=master-kogito)
-
-If either of the two badges above are not green, please get in contact with engineering: some document might no longer be aligned.
-
 # Apache KIE Kogito documentation
 
-On August 31, 2018, this `kie-docs` repository that contains KIE community and Red Hat Business Automation documentation was updated to enable shared content between KIE community and Red Hat Business Automation enterprise documentation, to remove obsolete content, and to prepare for an improved content building tool coming soon (Aura).
+<p align="center"><img width=55% height=55% src="_images/logos/kogitoLogo.png"_></p>
 
 Kogito is a cloud-native business automation technology for building cloud-ready business applications. Kogito includes components that are based on well-known business automation projects in the Knowledge Is Everything (KIE) community, specifically [Drools](https://drools.org), [jBPM](https://jbpm.org), and [OptaPlanner](https://optaplanner.org), to offer dependable, open source solutions for business rules, business processes, and constraint solving.
 
@@ -28,7 +16,7 @@ Contents
 
 # Required documentation tools
 
-To work with the `kie-docs` documentation source, you need the following software:
+To work with the `apache/incubator-kie-docs` documentation source, you need the following software:
 
 * **Git**: Used for version control with this repository.
 
@@ -48,17 +36,7 @@ To work with the `kie-docs` documentation source, you need the following softwar
 
   For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Asciidoctor documentation](http://asciidoctor.org/#installation).
 
-* **Atom (text editor)**: Used to edit Kogito documentation files. You can use another text editor of your choice or your existing integrated development environment (IDE), but Atom is recommended for optimal support of AsciiDoc and Asciidoctor and has many helpful add-on packages.
-
-  To install Atom on Fedora, CentOS, or RHEL, go to the [Atom homepage](https://atom.io/), download the appropriate RPM version, navigate to the downloaded file in a command terminal, and enter the following command (in Fedora, replace `yum` with `dnf`):
-
-  ```
-  # yum install -y atom.x86_64.rpm
-  ```
-
-  For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Atom documentation](http://flight-manual.atom.io/).
-
-* **Apache Maven 3.9.6**: Used for building the KIE community version of Kogito documentation. To install Maven on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
+* **Apache Maven 3.9.6**: Used for building the KIE Apache (incubating) Kogito documentation. To install Maven on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
 
   ```
   # yum install maven
@@ -66,15 +44,15 @@ To work with the `kie-docs` documentation source, you need the following softwar
 
   For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Maven documentation](http://maven.apache.org/).
 
-# File system layout of the `main-kogito` branch
+# File system layout of the `main` branch
 
-The files in the `main-kogito` branch of the `kie-docs` repository are organized in the following general structure:
+The files in the `main` branch of the `apache/incubator-kie-docs` repository are organized in the following general structure:
 
 ```
 ├── _artifacts
 ├── _images
 ├── doc-content
-    ├── kogito-docs
+    ├── apache-kie-kogito
         └── src
             └── main
                 └── asciidoc
@@ -92,19 +70,15 @@ The files in the `main-kogito` branch of the `kie-docs` repository are organized
 └── README.md
 ```
 
-**WARNING:** Do not rebase your existing master branch against `kie-docs` master branch to get the latest updates. The new master is substantially restructured, so rebasing creates extensive conflicts that, even when resolved, can introduce errors into the new structure.
-
-**To access legacy content from the former master branch,** use the branch `backup-master-2018.08.31`.
-
 ## Summary of KIE documentation changes
 
 # Contributing to Kogito documentation
 
-For more information about these documentation changes or about contributing to this `kie-docs` documentation repository, see [Contributing to KIE documentation](https://redhat-documentation.github.io/doc-guidelines/bpm/).
+For more information about these documentation changes or about contributing to this `incubator-kie-docs` documentation repository, see [community](https://kie.apache.org/docs/community/) information on our [kie.apache.org](https://kie.apache.org).
 
-# Developing Drools and jBPM
+# Developing KIE Apache (incubating) Kogito documentation
 
-For guidelines on contributing to a `kiegroup` development project, see [droolsjbpm-build-bootstrap/README.md](https://github.com/kiegroup/droolsjbpm-build-bootstrap/blob/master/README.md).
+For guidelines on contributing to a `KIE Apache (incubating)` development project, see [community](https://kie.apache.org/docs/community/) information on our [kie.apache.org](https://kie.apache.org).
 
 **Prerequisites**
 * You have installed the [required documentation tools](#required-documentation-tools).
@@ -113,39 +87,39 @@ For guidelines on contributing to a `kiegroup` development project, see [droolsj
 
 **Procedure**
 
-1. Fork the [`kie-docs`](https://github.com/apache/incubator-kie-docs/tree/main-kogito) repository in GitHub, and in a command terminal, clone your forked repository to a local directory and add a remote for the `upstream` repository.
+1. Fork the [`incubator-kie-docs`](https://github.com/apache/incubator-kie-docs/tree/main) repository in GitHub, and in a command terminal, clone your forked repository to a local directory and add a remote for the `upstream` repository.
 
     Cloning your fork:
     ```
     $ cd PATH_TO_REPO_DIRECTORY
-    $ git clone git@github.com:USER_NAME/kie-docs.git
+    $ git clone git@github.com:USER_NAME/incubator-kie-docs.git
     ```
 
     Adding and verifying the upstream remote:
     ```
     $ git remote add upstream https://github.com/apache/incubator-kie-docs.git
     $ git remote -v
-    origin git@github.com:jsmith/kie-docs.git (fetch)
-    origin git@github.com:jsmith/kie-docs.git (push)
+    origin git@github.com:jsmith/incubator-kie-docs.git (fetch)
+    origin git@github.com:jsmith/incbuator-kie-docs.git (push)
     upstream https://github.com/apache/incubator-kie-docs.git (fetch)
     upstream https://github.com/apache/incubator-kie-docs.git (push)
     ```
 
-2. Check out the `main-kogito` branch from your upstream remote and create a working branch based on that branch to begin making changes. You can name your branch based on a JIRA ID, such as `KOGITO-1234` or `BXMSDOC-1234`, or another logical name if the branch is not JIRA-based, such as `Update-DMN-content`.
+2. Check out the `main` branch from your upstream remote and create a working branch based on that branch to begin making changes. You can name your branch based on a Github Issue that is related to this change.
 
     Creating your work branch:
     ```
-    $ git checkout --track upstream/main-kogito
+    $ git checkout --track upstream/main
     $ git checkout -b Branch-name
     ```
 
-3. Open your Atom text editor (recommended) or other editor of your choice, and update or add content as needed according to the [file system layout](#file-system-layout-of-the-main-kogito-branch) requirements.
+3. Open your favourite text editor and update or add content as needed according to the [file system layout](#file-system-layout-of-the-main-branch) requirements.
 
-4. After you complete and save your changes in your working branch, navigate to the top-level `kie-docs` directory in your local repository and enter the following commands to build the documentation locally and verify the generated preview in a web browser.
+4. After you complete and save your changes in your working branch, navigate to the top-level `incubator-kie-docs` directory in your local repository and enter the following commands to build the documentation locally and verify the generated preview in a web browser.
 
     Building and verifying the documentation:
     ```
-    $ cd ~/kie-docs
+    $ cd ~/incubator-kie-docs
     $ mvn clean install -Dfull
     [Build output]
     $ google-chrome doc-content/kogito-docs/target/generated-docs/html_single/index.html
@@ -156,13 +130,13 @@ For guidelines on contributing to a `kiegroup` development project, see [droolsj
 
     Committing and pushing to your fork:
     ```
-    $ cd ~/kie-docs #Recommended to move back "up" in the directory to ensure all modified files are staged and committed.
+    $ cd ~/incubator-kie-docs #Recommended to move back "up" in the directory to ensure all modified files are staged and committed.
     $ git add --all
-    $ git commit -m "KOGITO-1234: Update section on DMN data types."
-    $ git push -u origin KOGITO-1234 #For first-time push, subsequently just `git push`
+    $ git commit -m "kie-issues-444: Update section on DMN data types."
+    $ git push -u origin kie-issues-444 #For first-time push, subsequently just `git push`
     ```
 
-6. In your `kie-docs` fork in GitHub, create a pull request to merge your work branch with the  `main-kogito` branch in the upstream `kie-docs` repository.
+6. In your `incubator-kie-docs` fork in GitHub, create a pull request to merge your work branch with the  `main` branch in the upstream `incubator-kie-docs` repository.
 
     In your pull request, include the following components:
     * **Description**: Summarize your changes and include any links to JIRA tasks or document previews, if available
@@ -170,4 +144,10 @@ For guidelines on contributing to a `kiegroup` development project, see [droolsj
 
 # Contributing to Apache KIE Kogito software
 
-To contribute to Kogito software, see the [`incubator-kie-kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
+To contribute to Kogito runtime software & engine related code, see the [`incubator-kie-kogito-runtimes`](https://github.com/apache/incubator-kie-kogito-runtimes) repository in GitHub.
+
+To contribute to Kogito applications, see the [`incubator-kie-kogito-apps`](https://github.com/apache/incubator-kie-kogito-apps) repository in GitHub.
+
+To contribute to Kogito examples with no UI components, see the [`incubator-kie-kogito-examples`](https://github.com/apache/incubator-kie-kogito-examples).
+
+To contribute to Kogito example featuring UI components, see the [`examples`](https://github.com/apache/incubator-kie-tools/tree/main/examples) at [incubator-kie-tools](https://github.com/apache/incubator-kie-tools/) repository in GitHub.
