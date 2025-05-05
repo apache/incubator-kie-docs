@@ -10,7 +10,7 @@ Contents
 =================
 
 * [Required documentation tools](#required-documentation-tools)
-* [File system layout of the `main-kogito` branch](#file-system-layout-of-the-main-kogito-branch)
+* [File system layout of the `main` branch](#file-system-layout-of-the-main-kogito-branch)
 * [Contributing to Kogito documentation](#contributing-to-kogito-documentation)
 * [Contributing to Kogito software](#contributing-to-kogito-software)
 
@@ -18,13 +18,7 @@ Contents
 
 To work with the `apache/incubator-kie-docs` documentation source, you need the following software:
 
-* **Git**: Used for version control with this repository.
-
-  To install Git on Fedora, CentOS, or RHEL, enter the following command in a command terminal (in Fedora, replace `yum` with `dnf`):
-  ```
-  # yum install git
-  ```
-  For Windows, Mac OS X, and other Linux distributions, follow the instructions in the [Git documentation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
+* **Java**: `Java 17`
 
 * **Asciidoctor (for AsciiDoc)**: Used for publishing content written in [AsciiDoc](http://asciidoc.org/) format, which is the format used in Kogito documentation files.
 
@@ -69,8 +63,6 @@ The files in the `main` branch of the `apache/incubator-kie-docs` repository are
 ├── pom.xml    
 └── README.md
 ```
-
-## Summary of KIE documentation changes
 
 # Contributing to Kogito documentation
 
