@@ -114,7 +114,7 @@ For guidelines on contributing to a `KIE Apache (incubating)` development projec
     $ cd ~/incubator-kie-docs/kogito-docs
     $ mvn clean install -Dfull
     [Build output]
-    $ google-chrome doc-content/apache-kogito-docs/target/generated-docs/html_single/index.html
+    $ google-chrome doc-content/apache-kie-kogito/target/generated-docs/html_single/index.html
       ```
     Replace `google-chrome` with the browser of your choice.
 
