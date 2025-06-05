@@ -1,0 +1,182 @@
+////
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License.
+////
+
+= Custom Operators
+
+Drools supports custom operators, which are defined in Java code and can be used in DRL rules.
+
+[NOTE]
+====
+Java static methods can be an alternative to custom operators. Typically, Java static methods are more flexible and easier to maintain than custom operators, while custom operators are more concise and easier to read in rules.
+
+.Java static method example
+[source]
+----
+Person( supersetOf(addresses, $alice.addresses) )
+----
+
+.Custom operator example
+[source]
+----
+Person( addresses supersetOf $alice.addresses)
+----
+====
+
+== Define Custom Operators
+
+Let's say you want to define a custom operator called `supersetOf` that checks if one collection is a superset of another.
+
+To define a custom operator, you need to create a Java class that implements the `EvaluatorDefinition` interface, which registers the operator and returns an instance of `Evaluator` that implements the logic for the operator.
+
+[source, java]
+----
+public class SupersetOfEvaluatorDefinition implements EvaluatorDefinition {
+
+    public static final Operator SUPERSET_OF = Operator.addOperatorToRegistry("supersetOf", false);
+    public static final Operator NOT_SUPERSET_OF = Operator.addOperatorToRegistry("supersetOf", true);
+    private static final String[] SUPPORTED_IDS = {SUPERSET_OF.getOperatorString()};
+
+    private Evaluator[] evaluator;
+
+    public SupersetOfEvaluatorDefinition() {
+    }
+
+    @Override
+    public String[] getEvaluatorIds() {
+        return SupersetOfEvaluatorDefinition.SUPPORTED_IDS;
+    }
+
+    @Override
+    public boolean isNegatable() {
+        return true;
+    }
+
+    @Override
+    public Evaluator getEvaluator(final ValueType type, final String operatorId, final boolean isNegated, final String parameterText, final Target leftTarget, final Target rightTarget) {
+        return new SupersetOfEvaluator(type, isNegated);
+    }
+
+    @Override
+    public Evaluator getEvaluator(final ValueType type, final String operatorId, final boolean isNegated, final String parameterText) {
+        return getEvaluator(type, operatorId, isNegated, parameterText, Target.FACT, Target.FACT);
+    }
+
+    @Override
+    public Evaluator getEvaluator(final ValueType type, final Operator operator, final String parameterText) {
+        return this.getEvaluator(type, operator.getOperatorString(), operator.isNegated(), parameterText);
+    }
+
+    @Override
+    public Evaluator getEvaluator(final ValueType type, final Operator operator) {
+        return this.getEvaluator(type, operator.getOperatorString(), operator.isNegated(), null);
+    }
+
+    @Override
+    public boolean supportsType(final ValueType vt) {
+        return true;
+    }
+
+    @Override
+    public Target getTarget() {
+        return Target.FACT;
+    }
+
+    @Override
+    public void writeExternal(final ObjectOutput out) throws IOException {
+        out.writeObject(evaluator);
+    }
+
+    @Override
+    public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
+        evaluator = (Evaluator[]) in.readObject();
+    }
+}
+----
+
+[source, java]
+----
+public class SupersetOfEvaluator extends BaseEvaluator {
+
+    public SupersetOfEvaluator() {
+    }
+
+    public SupersetOfEvaluator(final ValueType type, final boolean isNegated) {
+        super(type, isNegated ? SupersetOfEvaluatorDefinition.NOT_SUPERSET_OF : SupersetOfEvaluatorDefinition.SUPERSET_OF);
+    }
+
+    @Override
+    public boolean evaluate(final ValueResolver valueResolver, final ReadAccessor extractor, final FactHandle factHandle, final FieldValue value) {
+        final Object objectValue = extractor.getValue(valueResolver, factHandle);
+        return evaluateExpression((Collection) objectValue, (Collection) value.getValue());
+    }
+
+    @Override
+    public boolean evaluate(final ValueResolver valueResolver, final ReadAccessor ira, final FactHandle leftOperandFact, final ReadAccessor ira1, final FactHandle rightOperandFact) {
+        return evaluateExpression((Collection) leftOperandFact.getObject(), (Collection) rightOperandFact.getObject());
+    }
+
+    @Override
+    public boolean evaluateCachedLeft(final ValueResolver valueResolver, final VariableRestriction.VariableContextEntry context, final FactHandle right) {
+        final Object valRight = context.extractor.getValue(valueResolver, right.getObject());
+        // a left input is a right operand. a right input is a left operand. so swapped.
+        return evaluateExpression((Collection) valRight, (Collection) ((VariableRestriction.ObjectVariableContextEntry) context).left);
+    }
+
+    @Override
+    public boolean evaluateCachedRight(final ValueResolver reteEvaluator, final VariableRestriction.VariableContextEntry context, final FactHandle left) {
+        final Object varLeft = context.declaration.getExtractor().getValue(reteEvaluator, left);
+        // a left input is a right operand. a right input is a left operand. so swapped.
+        return evaluateExpression((Collection) ((VariableRestriction.ObjectVariableContextEntry) context).right, (Collection) varLeft);
+    }
+
+    private boolean evaluateExpression(final Collection leftOperandCollection, final Collection rightOperandCollection) {
+        return getOperator().isNegated() ^ leftOperandCollection.containsAll(rightOperandCollection);
+    }
+}
+----
+
+== Use Custom Operators
+
+Once you have the Java classes, create `kie.default.properties.conf` file under `META-INF` directory in your project and add the following line to make the engine aware of the evaluator definition class:
+[source,properties]
+----
+drools.evaluator.supersetOf = com.sample.SupersetOfEvaluatorDefinition
+----
+
+Now you can use the new operator in your rules, for example:
+[source]
+----
+rule "Find persons whose addresses are a superset of Alice's"
+when
+    $alice : Person( name == "Alice" )
+    $person : Person( addresses supersetOf $alice.addresses )
+then
+    System.out.println($person.getName() + "'s addresses are a superset of Alice's addresses.");
+end
+----
+
+[NOTE]
+====
+Custom operators cannot use brackets in their names. In other words, you cannot define an operator like `myStr[startsWith]`. Instead, you should use a name without brackets, such as `myStrStartsWith`. Drools has built-in operators like `str[startsWith]`, but they are an exceptional case and just kept for backward compatibility.
+====
+
+[NOTE]
+====
+In Language Level DRL10, custom operators must be prefixed with `##` to avoid ambiguity with other syntax. For example, the operator `supersetOf` should be used as `##supersetOf` in DRL10.
+====
