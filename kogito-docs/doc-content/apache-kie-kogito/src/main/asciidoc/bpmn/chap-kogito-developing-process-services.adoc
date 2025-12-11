@@ -2034,6 +2034,52 @@ public void transitionToPhase(WorkItem workItem, WorkItemManager manager, Transi
 
 The `lifeCycle` element is an implementation of `org.kie.{PRODUCT_INIT}.process.workitem.LifeCycle<T>` that defines the execution semantics.
 
+=== User task lifecycles
+{PRODUCT} provides two lifecycle implementations natively to choose from for user tasks which are `kogito` and `ws-human-task`. The default user task lifecycle `kogito` is a simplified lifecycle implementation compared to `ws-human-task` which is based on the Web Services - Human Task Specification 1.1 (see https://docs.oasis-open.org/bpel4people/ws-humantask-1.1-spec-cs-01.html[here]).
+
+==== Kogito User Task Lifecycle
+As mentioned earlier, this is the default lifecycle for {PRODUCT}.
+
+.kogito user task lifecycle state diagram
+image::kogito/bpmn/kogito-usertask-lifecycle.png[Image of kogito user task lifecycle]
+
+With the Default life cycle, when a User Task is initiated in the User Task Subsystem it starts in a Created state. At that moment, it automatically passes through the Activate phase that will set the task in Ready state, making the task available to the users that are allowed to work with it.
+
+The task will then remain in Ready state until a user claims it, which will make the task pass through the Claim phase making the move into a Reserved state and the user will become the owner of the task.
+
+With the task Reserved, the owner will be able to complete the task (Complete phase) that will finally move the task to a Completed that will successfully finalize the task allowing the Process Instance to continue.
+
+User Tasks in Ready or Reserved state, can also be reassigned (Reassign phase) that will unassign the task owner and will try to assign it to a different actor.
+
+Also, Users Tasks in Ready or Reserved state, can be finalized with the Fail phase, which causes the task to terminate in a Error state indicating an abnormal completion or through Skip phase that will finalize the task in a Obsolete state indicating that the task was not executed.
+
+==== Web Services - Human Task Lifecycle
+
+.WS-HumanTask lifecycle state diagram
+image::kogito/bpmn/ws-humantask-lifecycle.png[Image of ws-humantask lifecycle]
+
+Upon creation, a task goes into its initial state `Created`. Task creation succeeds irrespective of whether the people assignment returns a set of values or an empty set.
+
+If potential owners were not assigned automatically during task creation then they must be assigned explicitly using nomination, which is performed by the task’s business administrator. The result of evaluating potential owners removes the excluded owners from results. The task remains in the state `Created` until it is activated and has potential owners.
+
+When the task has a single potential owner, it transitions into the `Reserved` state, indicating that it is assigned to a single actual owner. Otherwise, (i.e., when it has multiple potential owners), it transitions into the `Ready` state, indicating that it can be claimed by one of its potential owners. Once a potential owner claims the task, it transitions into the `Reserved` state, making that potential owner the actual owner.
+
+Once work is started on a task that is in state `Ready` or `Reserved`, it goes into the `InProgress` state, indicating that it is being worked on – if the transition is from Ready, the user starting the work becomes its actual owner.
+
+On successful completion of the work, the task transitions into the `Completed` final state. On unsuccessful completion of the work, the task transitions into the `Failed` final state.
+
+The current actual owner of a human task can release a task to again make it available for all potential owners. A task can be released from active states that have an actual owner (`Reserved`, `InProgress`), transitioning it into the `Ready` state. Business data associated with the task (intermediate result data, ad-hoc attachments and comments) is kept.
+
+A task that is currently `InProgress` can be stopped by the actual owner, transitioning it into state `Reserved`. Business data associated with the task as well as its actual owner is kept.
+
+Task’s potential owners, actual owner or business administrator can delegate a task to another user, making that user the actual owner of the task, and also adding them to the list of potential owners in case they are not, yet. A task can be delegated when it is in an active state (`Ready`, `Reserved`, `InProgress`), and transitions the task into the `Reserved` state. Business data associated with the task is kept.
+
+Similarly, task’s potential owners, actual owner or business administrator can forward an active task to another person or a set of people, replacing himself by those people in the list of potential owners. Potential owners can only forward tasks that are in the `Ready` state. Forwarding is possible if the task has a set of individually assigned potential owners, not if its potential owners are assigned using one or many groups. If the task is in the `Reserved` or `InProgress` state then the task is implicitly released first, that is, the task is transitioned into the `Ready` state. Business data associated with the task is kept. The user performing the forward is removed from the set of potential owners of the task, and the forwardee is added to the set of potential owners.
+
+A task can be temporarily suspended transitioning into a `Suspended` state where the task cannot be acted upon. The task can continue its lifecycle only when the task is resumed from Suspended state back to its previous state. Suspend and Resume transitions are allowed for tasks in states `Ready`, `Reserved` or `InProgress`.
+
+A task can be skipped, if it is marked as skippable, and it moves to `Obsolete` final state. A task can also be moved to `Error` or `Exited` final states as required.
+
 === User task authorization
 
 The `org.jbpm.process.instance.impl.humantask.BaseHumanTaskLifeCycle` implementation in {PRODUCT} ensures that a user task is worked on by authorized users, based on the user or group assignments that you provide.
