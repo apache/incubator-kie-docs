@@ -429,6 +429,59 @@ declare LongTermStudent extends Student
 end
 ----
 
+When a declared subtype extends a type defined in Java, the {RULE_ENGINE} can generate a constructor for the subtype that also includes the inherited fields of the Java parent class, so that you can create a fully populated instance of the subtype in a rule consequence with a single constructor call.
+The inherited fields that are added to this constructor are the fields of the Java parent class that are annotated with `@Position`, ordered by their position value and placed before the fields that are declared in the subtype. These inherited arguments are forwarded to the parent class through a `super()` call, so the Java parent class must provide a constructor that accepts its `@Position` fields in the same order. If the Java parent class does not declare any `@Position` fields, the generated constructor includes only the fields that are declared in the subtype, and the parent class is initialized with its no-argument constructor.
+
+For example, consider the following Java class whose fields are annotated with `@Position`:
+
+.Example Java parent class with positional fields
+[source,java]
+----
+import org.kie.api.definition.type.Position;
+
+public class Person {
+
+    @Position(0)
+    private String name;
+
+    @Position(1)
+    private int age;
+
+    public Person() { }
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    // Other constructors, getters, and setters
+}
+----
+
+The following declaration extends the `Person` Java class with an additional `department` field:
+
+.Example extended type declaration from a Java class
+[source,drools]
+----
+import org.example.Person
+
+declare Person end
+
+declare Employee extends Person
+    department : String
+end
+----
+
+For this example, the {RULE_ENGINE} generates an `Employee(String name, int age, String department)` constructor that you can use directly in a rule consequence:
+
+.Example instantiation of the extended type in a rule consequence
+[source,drools]
+----
+insertLogical( new Employee( "Mario", 40, "Sales" ) );
+----
+
+For more information about the `@position` annotation and positional arguments, see the xref:ref-drl-declarations-metadata-tags_{context}[metadata tags for declarations].
+
 [id="con-drl-declarations-with-metadata_{context}"]
 === Type declarations with metadata in DRL
 
@@ -680,8 +733,6 @@ Person person = new Person( "John", "Doe" );
 ----
 --
 
-//@comment Currently TBD in Kogito, so excluding for now. (Stetson 7 Apr 2020)
-////
 @position::
 This tag determines the position of a declared fact type attribute or field in a positional argument, overriding the default declared order of attributes. You can use this tag to modify positional constraints in patterns while maintaining a consistent format in your type declarations and positional arguments. You can use this tag only for fields in classes on the classpath. If some fields in a single class use this tag and some do not, the attributes without this tag are positioned last, in the declared order. Inheritance of classes is supported, but not interfaces of methods.
 +
@@ -762,7 +813,6 @@ In this example, the attributes are prioritized in positional arguments in the f
 . `occupation` (first field with no position annotation)
 . `graduationDate` (second field with no position annotation)
 --
-////
 
 [id="con-drl-queries_{context}"]
 == Queries in DRL
