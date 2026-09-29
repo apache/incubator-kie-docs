@@ -137,14 +137,55 @@ The {RULE_ENGINE} generates a compilation error if you use the `@watch` tag for 
 
 
 @propertyChangeSupport::
-For facts that implement support for property changes as defined in the https://download.oracle.com/otndocs/jcp/7224-javabeans-1.01-fr-spec-oth-JSpec/[JavaBeans Specification], this tag enables the {RULE_ENGINE} to monitor changes in the fact properties.
+For facts that support property changes as defined in the https://download.oracle.com/otndocs/jcp/7224-javabeans-1.01-fr-spec-oth-JSpec/[JavaBeans Specification], this tag enables the {RULE_ENGINE} to monitor changes in the fact properties.
 +
 --
-.Example: Declare property change support in JavaBeans object
+To use this tag, your Java class must use `PropertyChangeSupport` and fire property change events in each setter method. The {RULE_ENGINE} registers itself as a listener and reacts to changes without requiring explicit `update()` calls.
+
+.Example: Java class with property change support
+[source,java]
+----
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
+
+public class Person {
+    private PropertyChangeSupport changes = new PropertyChangeSupport(this);
+    private String name;
+    private int age;
+
+    public void addPropertyChangeListener(PropertyChangeListener listener) {
+        changes.addPropertyChangeListener(listener);
+    }
+
+    public void removePropertyChangeListener(PropertyChangeListener listener) {
+        changes.removePropertyChangeListener(listener);
+    }
+
+    public String getName() { return name; }
+
+    public void setName(String newName) {
+        String oldName = this.name;
+        this.name = newName;
+        changes.firePropertyChange("name", oldName, newName);
+    }
+
+    public int getAge() { return age; }
+
+    public void setAge(int newAge) {
+        int oldAge = this.age;
+        this.age = newAge;
+        changes.firePropertyChange("age", oldAge, newAge);
+    }
+}
+----
+
+.Example: Declare property change support in DRL type declaration
 [source]
 ----
 declare Person
     @propertyChangeSupport
 end
 ----
+
+NOTE: The `insert(Object object, boolean dynamic)` method is internal and deprecated. Use `insert(Object object)` instead with `@propertyChangeSupport`.
 --
