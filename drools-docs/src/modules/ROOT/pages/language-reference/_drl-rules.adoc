@@ -819,6 +819,88 @@ In this example, the attributes are prioritized in positional arguments in the f
 . `graduationDate` (second field with no position annotation)
 --
 
+[id="ref-drl-declarations-java-annotation-precedence_{context}"]
+=== Precedence between Java annotations and DRL declarations
+
+An existing Java class can already carry the predefined metadata annotations that are described in xref:ref-drl-declarations-metadata-tags_{context}[metadata tags for declarations]. When you also declare the same class in DRL, the following precedence rules apply to each annotation independently:
+
+. *DRL explicit:* If the `declare` block specifies the annotation, the DRL annotation takes precedence over the Java class annotation.
+. *Java fallback:* If the `declare` block omits the annotation, the {RULE_ENGINE} preserves the Java class annotation. An empty `declare` block, or a `declare` block that contains only unrelated metadata such as `@author`, does not reset the settings of the Java class.
+. *Default:* If neither the DRL `declare` block nor the Java class provides the annotation, the default behavior of the {RULE_ENGINE} applies.
+
+These rules apply to the following annotations:
+
+[cols="1,1", options="header"]
+|===
+|Java annotation
+|DRL metadata tag
+
+|`@Role`
+|`@role`
+
+|`@Expires`
+|`@expires`
+
+|`@Timestamp`
+|`@timestamp`
+
+|`@Duration`
+|`@duration`
+
+|`@ClassReactive`
+|`@classReactive`
+
+|`@PropertyReactive`
+|`@propertyReactive`
+
+|`@PropertyChangeSupport`
+|`@propertyChangeSupport`
+|===
+
+For example, the following Java class is an event type with a custom time stamp, duration, and expiration offset:
+
+.Example Java class with metadata annotations
+[source,java]
+----
+@Role(Role.Type.EVENT)
+@Expires("10s")
+@Timestamp("start")
+@Duration("length")
+public class EventFact {
+    public long getStart() { return 0L; }
+    public long getLength() { return 0L; }
+}
+----
+
+The following empty declaration preserves all of the Java annotations. `EventFact` is still handled as an event with the `start` time stamp, the `length` duration, and a 10-second expiration offset:
+
+.Example empty declaration that preserves Java annotations
+[source]
+----
+import org.example.EventFact
+
+declare EventFact end
+----
+
+The following declaration overrides only the expiration offset. The remaining Java annotations are preserved:
+
+.Example declaration that overrides one Java annotation
+[source]
+----
+import org.example.EventFact
+
+declare EventFact
+    @expires( 5s )
+end
+----
+
+[NOTE]
+====
+* The `@propertyReactive` and `@classReactive` tags are two alternative settings of the same property-change behavior. If a `declare` block specifies either of them, the {RULE_ENGINE} ignores both `@PropertyReactive` and `@ClassReactive` on the Java class. For example, a DRL `@propertyReactive` tag is not combined with a Java `@ClassReactive` annotation.
+* The `@typesafe` tag is not read from Java annotations. You can specify it only in a DRL `declare` block.
+* *Known issue:* In the executable model, a DRL `@role( fact )` declaration does not override a Java `@Role(Role.Type.EVENT)` annotation, and the class is still handled as an event. The traditional model applies the DRL override as described above. To handle the class as a regular fact in the executable model, remove the `@Role` annotation from the Java class. For more information, see https://github.com/apache/incubator-kie/issues/7211[incubator-kie#7211].
+====
+
 [id="con-drl-queries_{context}"]
 == Queries in DRL
 
