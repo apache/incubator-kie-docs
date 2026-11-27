@@ -112,8 +112,8 @@ To define a rule unit, you declare the relevant fact types and declare the data 
 package org.mortgages;
 unit MortgageRules;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
+import org.drools.ruleunits.api.DataStream;
 
 declare Person
     name : String
@@ -122,7 +122,7 @@ declare Person
 end
 
 declare MortgageRules extends RuleUnitData
-  person: DataStream<Person> = DataSource.createStream()
+  person: DataStream<Person>
 end
 
 rule "Using a rule unit with a declared type"
@@ -155,11 +155,11 @@ end
 package org.mortgages;
 unit MortgageRules;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
+import org.drools.ruleunits.api.DataStream;
 
 declare MortgageRules extends RuleUnitData
-  person: DataStream<Person> = DataSource.createStream()
+  person: DataStream<Person>
 end
 
 rule "Using a rule unit with a declared type"
@@ -172,9 +172,9 @@ rule "Using a rule unit with a declared type"
 end
 ----
 
-In this example, `persons` is a `DataStream` data source for facts of type `Person`. Data sources are typed sources of data that rule units can subscribe to for updates. You interact with the rule unit through the data sources it exposes. A data source can be a `DataStream` source for append-only storage, a `DataStore` source for writable storage to add or remove data, or a `SingletonStore` source for writable storage to set and clear a single element.
+In this example, `person` is a `DataStream` data source for facts of type `Person`. Data sources are typed sources of data that rule units can subscribe to for updates. You interact with the rule unit through the data sources it exposes. A data source can be a `DataStream` source for append-only storage, a `DataStore` source for writable storage to add or remove data, or a `SingletonStore` source for writable storage to set and clear a single element.
 
-As part of your data source declaration, you also import `org.kie.kogito.rules.DataSource` and the relevant data source support, such as `import org.kie.kogito.rules.DataStream` in this example.
+As part of your data source declaration, you also import `org.drools.ruleunits.api.RuleUnitData` and the relevant data source support, such as `import org.drools.ruleunits.api.DataStream` in this example.
 
 You can add several rules to the same DRL file, or further break down the rule set and type declarations by creating more files. However you construct your rule sets, ensure that all DRL rule files exist in the same directory and start with the correct `package` and `unit` declarations.
 
@@ -211,19 +211,19 @@ The example service uses the following `MonitoringService.drl` file in the same 
 package com.acme;
 unit MonitoringService;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
+import org.drools.ruleunits.api.DataStream;
 
 declare MonitoringService extends RuleUnitData
-  temperature: DataStream<Temperature> = DataSource.createStream()
-  alertData: DataStream<Alert> = DataSource.createStream()
+  temperature: DataStream<Temperature>
+  alertData: DataStream<Alert>
 end
 
 rule "tooHot"
 when
     $temp : /temperature[value >= 80]
 then
-    alertData.append(new Alert("HIGH", "Temperature exceeds threshold: " + temp.value));
+    alertData.append(new Alert("HIGH", "Temperature exceeds threshold: " + $temp.value));
 end
 ----
 
@@ -345,8 +345,9 @@ public class Alert {
 ----
 package com.acme;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.DataSource;
+import org.drools.ruleunits.api.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
 
 public class MonitoringService implements RuleUnitData {
     private DataStream<Temperature> temperature = DataSource.createStream();
@@ -368,7 +369,7 @@ rule "tooHot"
   when
     $temp : /temperature[value >= 80]
   then
-    alertData.append(new Alert("HIGH", "Temperature exceeds threshold: " + temp.value));
+    alertData.append(new Alert("HIGH", "Temperature exceeds threshold: " + $temp.value));
 end
 ----
 
@@ -386,9 +387,9 @@ unit MonitoringService;
 
 rule "tooHot"
   when
-    $temp : Temperature( value >= 80 ) from temperature
+    $temp : /temperature[value >= 80]
   then
-    alertData.add(new Alert("HIGH", "Temperature exceeds threshold: " + temp.value));
+    alertData.append(new Alert("HIGH", "Temperature exceeds threshold: " + $temp.value));
 end
 ----
 
@@ -536,7 +537,7 @@ end
 
 rule "Using a declared Enum"
   when
-    $emp : /employee[ dayOff == DaysOfWeek.MONDAY ]
+    $emp : /employee[ dayOff == DaysOfWeek.MON ]
   then
     ...
 end
@@ -946,8 +947,9 @@ For this example, assume that the `MonitoringService` rule unit class has the fo
 ----
 package com.acme;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.DataSource;
+import org.drools.ruleunits.api.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
 
 public class MonitoringService implements RuleUnitData {
     private DataStream<Temperature> temperature = DataSource.createStream();
@@ -1109,12 +1111,14 @@ Example: `activation-group "GroupName"`
 Example: `duration 10000`
 
 |`timer`
-|A string identifying either `int` (interval) or `cron` timer definitions for scheduling the rule.
+|A string identifying either `int` (initialDelay interval) or `cron` timer definitions for scheduling the rule.
 
-Example: `timer ( cron:* 0/15 * * * ? )`  (every 15 minutes)
+Example: `timer ( int: 30s 5m )`  (every 5 minutes after a 30-second delay)
+
+         `timer ( cron:* 0/15 * * * ? )`  (every 15 minutes)
 
 |`calendar`
-|A http://www.quartz-scheduler.org/[Quartz] calendar definition for scheduling the rule.
+|A calendar definition for scheduling the rule.
 
 Example: `calendars "* * 0-7,18-23 ? * *"`  (exclude non-business hours)
 
@@ -1255,7 +1259,7 @@ In this example, the rule is scheduled for every hour, after a delay of 30 secon
 
 If the system is paused (for example, the session is serialized and then later deserialized), the rule is scheduled only one time to recover from missing activations regardless of how many activations were missed during the pause, and then the rule is subsequently scheduled again to continue in sync with the timer setting.
 
-The `calendar` attribute in DRL rules is a http://www.quartz-scheduler.org/[Quartz] calendar definition for scheduling a rule and supports the following format:
+The `calendar` attribute in DRL rules is a calendar definition for scheduling a rule and supports the following format:
 
 .Calendar attribute format
 [source,subs="+quotes"]
@@ -1273,18 +1277,24 @@ calendars "* * 0-7,18-23 ? * *"
 calendars "weekday"
 ----
 
-You can adapt a Quartz calendar based on the Quartz calendar API and then register the calendar in the KIE session, as shown in the following example:
+You can define a custom calendar and then register it in the KIE session, as shown in the following example:
 
-.Adapting a Quartz Calendar
+.Defining a Calendar
 [source,java]
 ----
-Calendar weekDayCal = QuartzHelper.quartzCalendarAdapter(org.quartz.Calendar quartzCal)
+private static final org.kie.api.time.Calendar WEEKDAY = timestamp -> {
+    final Calendar c = Calendar.getInstance();
+    c.setTimeInMillis(timestamp);
+
+    final int day = c.get(Calendar.DAY_OF_WEEK);
+    return day != Calendar.SATURDAY && day != Calendar.SUNDAY;
+};
 ----
 
 .Registering the calendar in the KIE session
 [source,java]
 ----
-ksession.getCalendars().set( "weekday", weekDayCal );
+ksession.getCalendars().set( "weekday", WEEKDAY );
 ----
 
 You can use calendars with standard rules and with rules that use timers. The calendar attribute can contain one or more comma-separated calendar names written as `String` literals.
@@ -1513,10 +1523,10 @@ For groups of constraints, you can use a delimiting comma `,` to use implicit `a
 .Example patterns with multiple constraints
 [source]
 ----
-// Person is at least 50 years old and weighs at least 80 kilograms:
+// Person is more than 50 years old and weighs more than 80 kilograms:
 /person[ age > 50, weight > 80 ]
 
-// Person is at least 50 years old, weighs at least 80 kilograms, and is taller than 2 meters:
+// Person is more than 50 years old, weighs more than 80 kilograms, and is taller than 2 meters:
 /person[ age > 50, weight > 80, height > 2 ]
 ----
 
@@ -2227,7 +2237,7 @@ endif::[]
 rule "All full-time employees have red ID badges"
   when
     forall( $emp : /employee[ type == "fulltime" ]
-                   /employee[ this == $emp, badgeColor = "red" ] )
+                   /employee[ this == $emp, badgeColor == "red" ] )
   then
     // True, all full-time employees have red ID badges.
 end
@@ -2242,7 +2252,7 @@ To state that all facts of a given type in the working memory of the {DECISION_E
 ----
 rule "All full-time employees have red ID badges"
   when
-    forall( /employee[ badgeColor = "red" ] )
+    forall( /employee[ badgeColor == "red" ] )
   then
     // True, all full-time employees have red ID badges.
 end
@@ -3558,13 +3568,13 @@ end
 package org.mortgages;
 unit MortgageRules;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
+import org.drools.ruleunits.api.DataStore;
 
 declare MortgageRules extends RuleUnitData
-  bankruptcy: DataStore<Bankruptcy> = DataSource.createStore()
-  applicant: DataStore<Applicant> = DataSource.createStore()
-  application: DataStore<LoanApplication> = DataSource.createStore()
+  bankruptcy: DataStore<Bankruptcy>
+  applicant: DataStore<Applicant>
+  application: DataStore<LoanApplication>
 end
 
 rule "Bankruptcy history"
@@ -3637,13 +3647,13 @@ This example defines the following fact types:
 package org.mortgages;
 unit MortgageRules;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStore;
+import org.drools.ruleunits.api.RuleUnitData;
+import org.drools.ruleunits.api.DataStore;
 
 declare MortgageRules extends RuleUnitData
-  bankruptcy: DataStore<Bankruptcy> = DataSource.createStore()
-  applicant: DataStore<Applicant> = DataSource.createStore()
-  application: DataStore<LoanApplication> = DataSource.createStore()
+  bankruptcy: DataStore<Bankruptcy>
+  applicant: DataStore<Applicant>
+  application: DataStore<LoanApplication>
 end
 ...
 ----
@@ -3663,13 +3673,13 @@ This example uses the `DataStore` data source to enable application data to be a
 package org.mortgages;
 unit MortgageRules;
 
-import org.kie.kogito.rules.DataSource;
-import org.kie.kogito.rules.DataStream;
+import org.drools.ruleunits.api.RuleUnitData;
+import org.drools.ruleunits.api.DataStore;
 
 declare MortgageRules extends RuleUnitData
-  bankruptcy: DataStore<Bankruptcy> = DataSource.createStore()
-  applicant: DataStore<Applicant> = DataSource.createStore()
-  application: DataStore<LoanApplication> = DataSource.createStore()
+  bankruptcy: DataStore<Bankruptcy>
+  applicant: DataStore<Applicant>
+  application: DataStore<LoanApplication>
 end
 
 rule "Bankruptcy history"
